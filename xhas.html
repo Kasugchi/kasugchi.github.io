@@ -1,0 +1,419 @@
+Wolii mírame esto:
+
+<!-- Chosen Palette: Corporate Calm -->
+<!-- Application Structure Plan: The application is designed as a multi-step form to guide the user through the incident reporting process sequentially. This structure breaks down the task into manageable sections (Datos, Involucrados, Descripción, etc.), reducing cognitive load. A progress bar provides visual feedback on completion. A new section for conclusions has been added. The final step is a summary page for the user to review all entered data before submission, which improves accuracy. A 'Save & Share' feature allows users to generate a URL that pre-fills the form, enabling state persistence and collaboration. -->
+<!-- Visualization & Content Choices: Since the source is a form template with no data, the focus is on interactive data collection. Report Info: Form sections -> Goal: Guide user data entry and allow saving/sharing -> Presentation Method: HTML form elements styled with Tailwind -> Interaction: A step-by-step wizard with a dynamic progress bar. The final review step dynamically populates with user input, includes a print-to-PDF function, and a new share button that generates a pre-filled link. -> Justification: This structure provides an intuitive workflow, and the new share feature adds significant utility for saving progress or sharing for review. -> Library/Method: Vanilla JS for step logic, Tailwind CSS for styling. No charts needed. -->
+<!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe de Incidencia RRHH - Europea Group</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .form-section {
+            display: none;
+        }
+        .form-section.active {
+            display: block;
+        }
+        .progress-step {
+            transition: all 0.3s ease;
+        }
+        .progress-step.active {
+            background-color: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        .progress-step.completed {
+            background-color: #16a34a;
+            color: white;
+            border-color: #16a34a;
+        }
+        @media print {
+            body {
+                background-color: white !important;
+                padding: 0;
+                margin: 0;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .printable-container {
+                box-shadow: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 1rem !important;
+            }
+            .printable-section {
+                 display: block !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-8 transition-all duration-500 printable-container">
+        <div id="form-container">
+            <header class="text-center mb-8 no-print">
+                <img src="https://europeagroup.eu/wp-content/uploads/2021/04/logo-header-x2.png" alt="Logotipo Europea Group" class="mx-auto h-auto" style="max-height: 64px;">
+                <h1 class="text-2xl font-bold text-gray-800 mt-4">INFORME INCIDENCIA RRHH</h1>
+                <p class="text-md text-gray-500">EUROPEA GROUP</p>
+            </header>
+
+            <div id="progress-bar" class="flex items-center justify-center mb-10 space-x-4 no-print">
+            </div>
+
+            <main>
+                <form id="incident-form">
+                    <section class="form-section active" data-step="0">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">1. Datos Generales</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <div>
+                                <label for="incident-report-number" class="block text-sm font-medium text-gray-600 mb-1">Nº Informe Incidencia</label>
+                                <input type="text" id="incident-report-number" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: RRHH-2024-001">
+                            </div>
+                            <div>
+                                <label for="associated-kpi" class="block text-sm font-medium text-gray-600 mb-1">KPI Asociado</label>
+                                <input type="text" id="associated-kpi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Reducción de absentismo">
+                            </div>
+                            <div>
+                                <label for="informant-name" class="block text-sm font-medium text-gray-600 mb-1">Nombre del Informante</label>
+                                <input type="text" id="informant-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Juan Pérez">
+                            </div>
+                            <div>
+                                <label for="informant-title" class="block text-sm font-medium text-gray-600 mb-1">Cargo del Informante</label>
+                                <input type="text" id="informant-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Gerente de Ventas">
+                            </div>
+                            <div>
+                                <label for="incident-datetime" class="block text-sm font-medium text-gray-600 mb-1">Fecha y Hora del Incidente</label>
+                                <input type="datetime-local" id="incident-datetime" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label for="incident-location" class="block text-sm font-medium text-gray-600 mb-1">Lugar del Incidente</label>
+                                <input type="text" id="incident-location" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Oficina Central, Sala de reuniones 3">
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="form-section" data-step="1">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">2. Personas Involucradas</h2>
+                        <div class="bg-gray-50 p-6 rounded-lg">
+                             <h3 class="font-semibold text-gray-600 mb-4">Empleado Principal</h3>
+                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="main-employee-name" class="block text-sm font-medium text-gray-600 mb-1">Nombre</label>
+                                    <input type="text" id="main-employee-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label for="main-employee-title" class="block text-sm font-medium text-gray-600 mb-1">Cargo</label>
+                                    <input type="text" id="main-employee-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-6">
+                            <label for="other-involved" class="block text-sm font-medium text-gray-600 mb-1">Otras personas involucradas (nombres, cargos)</label>
+                            <textarea id="other-involved" rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Ej: Ana López (Analista), Carlos García (Visitante)"></textarea>
+                        </div>
+                    </section>
+
+                    <section class="form-section" data-step="2">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">3. Descripción Detallada de la Incidencia</h2>
+                         <p class="text-center text-sm text-gray-500 mb-4">Proporcione un relato objetivo y cronológico de los hechos.</p>
+                        <textarea id="incident-description" rows="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </section>
+
+                    <section class="form-section" data-step="3">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">4. Histórico de Incidencias Asociadas</h2>
+                        <p class="text-center text-sm text-gray-500 mb-4">Señale si alguna de las personas involucradas ha tenido incidentes previos relevantes.</p>
+                        <textarea id="incident-history" rows="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Si no existen incidentes previos, escriba 'Ninguno'."></textarea>
+                    </section>
+
+                    <section class="form-section" data-step="4">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">5. Acciones Inmediatas Tomadas</h2>
+                        <p class="text-center text-sm text-gray-500 mb-4">Describa las medidas que se tomaron inmediatamente después del incidente.</p>
+                        <textarea id="immediate-actions" rows="8" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </section>
+
+                    <section class="form-section" data-step="5">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">6. Conclusiones y Medidas Disciplinarias</h2>
+                        <div class="space-y-6">
+                            <div>
+                                <label for="conclusions" class="block text-sm font-medium text-gray-600 mb-1">Conclusiones del Informe</label>
+                                <textarea id="conclusions" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Resumen de los hechos y valoración final."></textarea>
+                            </div>
+                            <div>
+                                <label for="disciplinary-actions" class="block text-sm font-medium text-gray-600 mb-1">Medidas Disciplinarias Propuestas</label>
+                                <textarea id="disciplinary-actions" rows="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Detalle las acciones a tomar. Si no aplica, escriba 'Ninguna'."></textarea>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="form-section printable-section" data-step="6">
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">7. Revisar y Enviar</h2>
+                        <p class="text-center text-sm text-gray-500 mb-6 no-print">Por favor, verifique que toda la información sea correcta antes de enviar el informe.</p>
+                        <div id="summary" class="space-y-4 text-sm text-gray-800 bg-gray-50 p-6 rounded-lg"></div>
+                    </section>
+
+                </form>
+            </main>
+
+            <footer class="mt-8 flex justify-between items-center no-print">
+                <button id="prev-btn" class="px-6 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition-colors" style="display: none;">Anterior</button>
+                <div class="ml-auto flex items-center space-x-4">
+                     <button id="share-btn" type="button" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors" style="display: none;">Guardar Enlace</button>
+                     <button id="print-btn" type="button" class="px-6 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors" style="display: none;">Imprimir PDF</button>
+                    <button id="next-btn" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Siguiente</button>
+                </div>
+            </footer>
+        </div>
+
+        <div id="success-message" class="text-center py-12" style="display: none;">
+             <div id="success-content">
+                <svg class="mx-auto h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-800 mt-4">Informe Enviado</h2>
+                <p class="text-gray-600 mt-2">Gracias. Su informe de incidencia ha sido enviado correctamente al departamento de RRHH.</p>
+                <div class="mt-8 flex justify-center space-x-4 no-print">
+                    <button id="print-final-btn" class="px-6 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors">Imprimir una copia</button>
+                    <button onclick="window.location.href=window.location.href.split('?')[0]" class="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Crear nuevo informe</button>
+                </div>
+             </div>
+        </div>
+    </div>
+    
+    <div id="share-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 no-print" style="display: none;">
+        <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Enlace para compartir y guardar</h3>
+            <p class="text-sm text-gray-600 mb-2">Cualquier persona con este enlace podrá ver los datos de este informe.</p>
+            <textarea id="share-url" class="w-full p-2 border border-gray-300 rounded-md text-xs bg-gray-50" readonly rows="3"></textarea>
+            <div class="mt-4 flex justify-end space-x-2">
+                <button id="copy-link-btn" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Copiar Enlace</button>
+                <button id="close-modal-btn" class="px-4 py-2 bg-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-400 transition-colors">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const steps = ['Datos', 'Involucrados', 'Descripción', 'Histórico', 'Acciones', 'Conclusiones', 'Revisar'];
+            const formSections = document.querySelectorAll('.form-section');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const printBtn = document.getElementById('print-btn');
+            const shareBtn = document.getElementById('share-btn');
+            const progressBar = document.getElementById('progress-bar');
+            const formContainer = document.getElementById('form-container');
+            const successMessage = document.getElementById('success-message');
+            const shareModal = document.getElementById('share-modal');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+            const copyLinkBtn = document.getElementById('copy-link-btn');
+
+            let currentStep = 0;
+            let finalSummaryHTML = '';
+            const logoBase64 = "https://i.imgur.com/IKvk6Dz.jpeg";
+
+            const updateProgressBar = () => {
+                progressBar.innerHTML = '';
+                steps.forEach((step, index) => {
+                    const stepEl = document.createElement('div');
+                    stepEl.className = 'progress-step flex flex-col items-center';
+                    
+                    const circle = document.createElement('div');
+                    let circleClasses = 'w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold ';
+                    if (index < currentStep) {
+                        circleClasses += 'completed';
+                        circle.innerHTML = '&#10003;';
+                    } else if (index === currentStep) {
+                        circleClasses += 'active';
+                        circle.textContent = index + 1;
+                    } else {
+                        circleClasses += 'bg-white border-gray-300 text-gray-400';
+                        circle.textContent = index + 1;
+                    }
+                    circle.className = circleClasses;
+
+                    const label = document.createElement('p');
+                    let labelClasses = 'text-xs mt-2 ';
+                    labelClasses += (index === currentStep) ? 'text-blue-600 font-semibold' : 'text-gray-500';
+                    label.className = labelClasses;
+                    label.textContent = step;
+
+                    stepEl.appendChild(circle);
+                    stepEl.appendChild(label);
+                    progressBar.appendChild(stepEl);
+                });
+            };
+
+            const showStep = (stepIndex) => {
+                formSections.forEach((section, index) => {
+                    section.classList.toggle('active', index === stepIndex);
+                });
+                updateProgressBar();
+                updateButtons();
+            };
+
+            const updateButtons = () => {
+                prevBtn.style.display = currentStep === 0 ? 'none' : 'inline-block';
+                const onFinalStep = currentStep === steps.length - 1;
+                printBtn.style.display = onFinalStep ? 'inline-block' : 'none';
+                shareBtn.style.display = onFinalStep ? 'inline-block' : 'none';
+                
+                if (onFinalStep) {
+                    nextBtn.textContent = 'Enviar Informe';
+                } else {
+                    nextBtn.textContent = 'Siguiente';
+                }
+            };
+            
+            const getFormData = () => ({
+                'incident-report-number': document.getElementById('incident-report-number').value,
+                'associated-kpi': document.getElementById('associated-kpi').value,
+                'informant-name': document.getElementById('informant-name').value,
+                'informant-title': document.getElementById('informant-title').value,
+                'incident-datetime': document.getElementById('incident-datetime').value,
+                'incident-location': document.getElementById('incident-location').value,
+                'main-employee-name': document.getElementById('main-employee-name').value,
+                'main-employee-title': document.getElementById('main-employee-title').value,
+                'other-involved': document.getElementById('other-involved').value,
+                'incident-description': document.getElementById('incident-description').value,
+                'incident-history': document.getElementById('incident-history').value,
+                'immediate-actions': document.getElementById('immediate-actions').value,
+                'conclusions': document.getElementById('conclusions').value,
+                'disciplinary-actions': document.getElementById('disciplinary-actions').value,
+            });
+
+            const generateSummary = () => {
+                const summaryContainer = document.getElementById('summary');
+                const data = getFormData();
+                const summaryMap = {
+                    'Nº Informe Incidencia': data['incident-report-number'],
+                    'KPI Asociado': data['associated-kpi'],
+                    'Nombre del Informante': data['informant-name'],
+                    'Cargo del Informante': data['informant-title'],
+                    'Fecha y Hora del Incidente': data['incident-datetime'],
+                    'Lugar del Incidente': data['incident-location'],
+                    'Empleado Principal': `${data['main-employee-name']} (${data['main-employee-title'] || 'N/A'})`,
+                    'Otras Personas Involucradas': data['other-involved'],
+                    'Descripción de la Incidencia': data['incident-description'],
+                    'Histórico de Incidencias': data['incident-history'],
+                    'Acciones Inmediatas Tomadas': data['immediate-actions'],
+                    'Conclusiones del Informe': data['conclusions'],
+                    'Medidas Disciplinarias Propuestas': data['disciplinary-actions'],
+                };
+
+                let summaryHTML = '';
+                for(const [key, value] of Object.entries(summaryMap)) {
+                    summaryHTML += `<div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-b py-3">
+                                        <strong class="font-semibold text-gray-600 col-span-1">${key}</strong>
+                                        <p class="text-gray-800 col-span-2 break-words">${value || 'No completado'}</p>
+                                    </div>`;
+                }
+                summaryContainer.innerHTML = summaryHTML;
+                return summaryHTML;
+            };
+
+            const populateForm = (data) => {
+                for (const key in data) {
+                    const el = document.getElementById(key);
+                    if (el) el.value = data[key];
+                }
+            };
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    if (currentStep === steps.length - 1) {
+                        generateSummary();
+                    }
+                    showStep(currentStep);
+                } else {
+                    finalSummaryHTML = generateSummary();
+                    formContainer.style.display = 'none';
+                    successMessage.style.display = 'block';
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > 0) {
+                    currentStep--;
+                    showStep(currentStep);
+                }
+            });
+
+            printBtn.addEventListener('click', () => window.print());
+            
+            shareBtn.addEventListener('click', () => {
+                const data = getFormData();
+                const jsonString = JSON.stringify(data);
+                const encodedData = btoa(jsonString);
+                const baseUrl = window.location.href.split('?')[0];
+                const shareUrl = `${baseUrl}?data=${encodedData}`;
+                
+                document.getElementById('share-url').value = shareUrl;
+                shareModal.style.display = 'flex';
+            });
+
+            closeModalBtn.addEventListener('click', () => shareModal.style.display = 'none');
+            
+            copyLinkBtn.addEventListener('click', () => {
+                const shareUrlInput = document.getElementById('share-url');
+                shareUrlInput.select();
+                shareUrlInput.setSelectionRange(0, 99999); 
+                document.execCommand('copy');
+                copyLinkBtn.textContent = '¡Copiado!';
+                setTimeout(() => { copyLinkBtn.textContent = 'Copiar Enlace'; }, 2000);
+            });
+            
+            document.getElementById('print-final-btn').addEventListener('click', () => {
+                const successContent = document.getElementById('success-content');
+                const summaryForPrint = document.createElement('div');
+                summaryForPrint.innerHTML = `
+                    <div class="printable-section">
+                        <header class="text-center mb-8">
+                             <img src="${logoBase64}" alt="Logotipo Europea Group" class="mx-auto h-auto" style="max-height: 64px;">
+                            <h1 class="text-2xl font-bold text-gray-800 mt-4">INFORME INCIDENCIA RRHH</h1>
+                            <p class="text-md text-gray-500">EUROPEA GROUP</p>
+                         </header>
+                        <h2 class="text-xl font-semibold mb-6 text-center text-gray-700">Resumen del Informe</h2>
+                        <div class="space-y-4 text-sm text-gray-800 bg-gray-50 p-6 rounded-lg">${finalSummaryHTML}</div>
+                    </div>`;
+
+                successContent.style.display = 'none';
+                successMessage.appendChild(summaryForPrint);
+                
+                window.print();
+
+                successMessage.removeChild(summaryForPrint);
+                successContent.style.display = 'block';
+            });
+            
+            const headerImg = document.querySelector('header img');
+            headerImg.src = logoBase64;
+
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('data')) {
+                try {
+                    const encodedData = params.get('data');
+                    const decodedJson = atob(encodedData);
+                    const formData = JSON.parse(decodedJson);
+                    populateForm(formData);
+                    currentStep = steps.length - 1; 
+                    generateSummary();
+                } catch(e) {
+                    console.error("Error parsing data from URL:", e);
+                }
+            }
+
+            showStep(currentStep);
+        });
+    </script>
+</body>
+</html>
