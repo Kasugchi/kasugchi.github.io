@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mapa de Arquitectura · HogwartsRP Chronos (Cytoscape)</title>
+
+<!-- Cytoscape.js + fcose (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.min.js"></script>
+<script>cytoscape.use(cytoscapeFcose);</script>
+
+<style>
+:root{
+  --bg:#0b0f17; --panel:#101826; --ink:#e6edf3; --muted:#8aa0b5; --accent:#8bd7ff;
+  --core:#a78bfa; --legacy:#ff6b6b; --lib:#64d2ff; --admin:#ffd166; --db:#94facc; --infra:#8bd7ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial}
+header{display:flex;gap:12px;align-items:center;padding:12px 16px;background:linear-gradient(180deg,#0e1422,transparent)}
+h1{font-size:18px;margin:0}
+.small{color:var(--muted);font-size:12px}
+input[type="search"]{flex:0 1 320px;max-width:55vw;background:#0f1726;color:var(--ink);border:1px solid #253247;border-radius:8px;padding:8px 10px}
+button{background:#18243a;color:var(--ink);border:1px solid #26354f;border-radius:8px;padding:8px 10px;cursor:pointer}
+button:hover{filter:brightness(1.07)}
+#app{display:flex;flex-direction:column;height:100vh}
+#cy{flex:1;min-height:60vh;border-top:1px solid #1f2a3a;border-right:1px solid #1f2a3a}
+aside{background:var(--panel);padding:16px;overflow:auto;border-top:1px solid #1f2a3a}
+@media (min-width: 900px){
+  #app{display:grid;grid-template-columns:1fr 360px;height:calc(100vh - 56px)}
+  #cy{min-height:auto}
+}
+aside h2{font-size:16px;margin:0 0 6px}
+.section{margin:14px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#152235;color:var(--accent);font-size:12px;border:1px solid #203248}
+ul{margin:6px 0 0 16px;padding:0}
+code{background:#0b1220;border:1px solid #1f2a3a;padding:2px 6px;border-radius:6px}
+.legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.legend .chip{display:flex;gap:6px;align-items:center}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+footer{position:fixed;bottom:12px;left:12px;background:#111826;padding:6px 10px;border:1px solid #293548;border-radius:8px;opacity:.9}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Arquitectura CC3 → Helix (HogwartsRP Chronos)</h1>
+    <input id="search" type="search" placeholder="Buscar nodo (ej. core_spells)"/>
+    <button id="fit">Ajustar vista</button>
+    <span class="small">Pincha para ficha, pellizca/rueda para zoom, arrastra para mover.</span>
+  </header>
+
+  <div id="app">
+    <div id="cy"></div>
+    <aside id="panel">
+      <h2>Selecciona un nodo</h2>
+      <p class="small">Pulsa sobre un sistema/addon para ver su ficha técnica.</p>
+      <div class="section legend">
+        <span class="chip"><span class="dot" style="background:var(--core)"></span> Núcleo: Helix</span>
+        <span class="chip"><span class="dot" style="background:var(--legacy)"></span> Legacy: DarkRP</span>
+        <span class="chip"><span class="dot" style="background:var(--lib)"></span> Librerías</span>
+        <span class="chip"><span class="dot" style="background:var(--infra)"></span> Addons/Infra</span>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="small">Datos generados de /CC/addons del dump CC3 · Octubre 2025</footer>
+
+<script>
+/* ====== Datos (nodos / aristas) ====== */
+const nodes = [
+  {id:"Helix", g:"core"}, {id:"DarkRP (Gamemode)", g:"legacy"},
+  {id:"ZetaLib (zclib)", g:"lib"}, {id:"HpwRewrite (Magic Base)", g:"lib"},
+  {id:"SAM (Admin)", g:"admin"}, {id:"ULX (Admin)", g:"admin"},
+  {id:"bLogs (Logging)", g:"infra"}, {id:"mysqloo", g:"db"}, {id:"MySQLite", g:"db"},
+  {id:"DrGBase", g:"lib"}, {id:"GMod net library", g:"lib"},
+
+  "core_spells","core_statistics","core_itemstore","core_bank","core_shops","core_store",
+  "core_herbology","core_magicpets","core_willow","core_owlpost","core_gangs_clubs",
+  "core_reports","core_scoreboard","core_f4",
+  "zeros_masterchef_1.3.0","zeros_misterybox","zeros_partypackage","zeros_pumpkinnight_3.2.4",
+  "zeros_quidditchsystem","zeros_secretstash_1.3.0","zeros_yeastbeast_1.1.7",
+  "util_drgbase","util_eprotect","util_sunflare","util_atags",
+  "ent_gamemasters","ent_daily_prophet","!!darkrp_config","!core_main","!util_core",
+  "blogs","blog_adminsuite_2.4.6","blog_whitelist"
+].map(n => typeof n==="string" ? {id:n, g:"addon"} : n);
+
+const deps = [
+  ["core_spells","DarkRP (Gamemode)"],["core_spells","GMod net library"],["core_spells","HpwRewrite (Magic Base)"],["core_spells","SAM (Admin)"],["core_spells","ZetaLib (zclib)"],["core_spells","bLogs (Logging)"],
+  ["core_statistics","DarkRP (Gamemode)"],["core_statistics","GMod net library"],["core_statistics","ZetaLib (zclib)"],["core_statistics","bLogs (Logging)"],
+  ["core_itemstore","GMod net library"],["core_itemstore","ZetaLib (zclib)"],["core_itemstore","bLogs (Logging)"],
+  ["core_bank","GMod net library"],["core_bank","ZetaLib (zclib)"],["core_bank","bLogs (Logging)"],
+  ["core_shops","DarkRP (Gamemode)"],["core_shops","ZetaLib (zclib)"],
+  ["core_store","DarkRP (Gamemode)"],["core_store","ZetaLib (zclib)"],["core_store","bLogs (Logging)"],
+  ["core_herbology","DarkRP (Gamemode)"],["core_herbology","GMod net library"],["core_herbology","SAM (Admin)"],["core_herbology","ULX (Admin)"],["core_herbology","ZetaLib (zclib)"],["core_herbology","bLogs (Logging)"],
+  ["core_magicpets","DarkRP (Gamemode)"],["core_magicpets","GMod net library"],["core_magicpets","ZetaLib (zclib)"],
+  ["core_willow","ZetaLib (zclib)"],
+  ["core_owlpost","GMod net library"],["core_owlpost","SAM (Admin)"],
+  ["core_gangs_clubs","GMod net library"],["core_gangs_clubs","ZetaLib (zclib)"],
+  ["core_reports","GMod net library"],["core_reports","ZetaLib (zclib)"],
+  ["core_scoreboard","GMod net library"],["core_f4","GMod net library"],
+  ["zeros_masterchef_1.3.0","DarkRP (Gamemode)"],["zeros_masterchef_1.3.0","GMod net library"],["zeros_masterchef_1.3.0","SAM (Admin)"],["zeros_masterchef_1.3.0","ZetaLib (zclib)"],
+  ["zeros_misterybox","GMod net library"],["zeros_partypackage","GMod net library"],
+  ["zeros_pumpkinnight_3.2.4","DarkRP (Gamemode)"],["zeros_pumpkinnight_3.2.4","GMod net library"],["zeros_pumpkinnight_3.2.4","HpwRewrite (Magic Base)"],["zeros_pumpkinnight_3.2.4","SAM (Admin)"],["zeros_pumpkinnight_3.2.4","ZetaLib (zclib)"],
+  ["zeros_quidditchsystem","DarkRP (Gamemode)"],["zeros_quidditchsystem","GMod net library"],["zeros_quidditchsystem","ZetaLib (zclib)"],
+  ["zeros_secretstash_1.3.0","DarkRP (Gamemode)"],["zeros_secretstash_1.3.0","GMod net library"],["zeros_secretstash_1.3.0","SAM (Admin)"],["zeros_secretstash_1.3.0","ZetaLib (zclib)"],["zeros_secretstash_1.3.0","bLogs (Logging)"],
+  ["zeros_yeastbeast_1.1.7","DarkRP (Gamemode)"],["zeros_yeastbeast_1.1.7","GMod net library"],
+  ["util_drgbase","DrGBase"],["util_drgbase","GMod net library"],["util_eprotect","GMod net library"],["util_sunflare","GMod net library"],["util_atags","GMod net library"],
+  ["ent_gamemasters","HpwRewrite (Magic Base)"],["ent_daily_prophet","GMod net library"],["ent_daily_prophet","SAM (Admin)"],
+  ["!!darkrp_config","DarkRP (Gamemode)"],["!!darkrp_config","ULX (Admin)"],["!!darkrp_config","ZetaLib (zclib)"],["!!darkrp_config","mysqloo"],
+  ["!core_main","AWarn3"],["!core_main","DarkRP (Gamemode)"],["!core_main","DrGBase"],["!core_main","GMod net library"],["!core_main","HpwRewrite (Magic Base)"],["!core_main","SAM (Admin)"],["!core_main","ULX (Admin)"],["!core_main","ZetaLib (zclib)"],["!core_main","bLogs (Logging)"],["!core_main","mysqloo"],
+  ["!util_core","DarkRP (Gamemode)"],["!util_core","GMod net library"],["!util_core","HpwRewrite (Magic Base)"],["!util_core","MySQLite"],["!util_core","SAM (Admin)"],["!util_core","ZetaLib (zclib)"],["!util_core","bLogs (Logging)"],
+  ["blogs","GMod net library"],["blog_adminsuite_2.4.6","GMod net library"],["blog_adminsuite_2.4.6","mysqloo"],["blog_whitelist","GMod net library"]
+];
+
+const migrateToHelix = [
+  "core_spells","core_statistics","core_itemstore","core_bank","core_shops","core_store",
+  "core_herbology","core_magicpets","core_willow","core_owlpost","core_gangs_clubs",
+  "core_reports","core_scoreboard","core_f4","zeros_masterchef_1.3.0","zeros_misterybox",
+  "zeros_partypackage","zeros_pumpkinnight_3.2.4","zeros_quidditchsystem",
+  "zeros_secretstash_1.3.0","zeros_yeastbeast_1.1.7","util_drgbase","util_eprotect",
+  "util_sunflare","util_atags","ent_gamemasters","ent_daily_prophet","!!darkrp_config",
+  "!core_main","!util_core","blogs","blog_adminsuite_2.4.6","blog_whitelist"
+];
+
+/* ====== Construcción Cytoscape ====== */
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  elements: [
+    ...nodes.map(n => ({ data:{ id:n.id, label:n.id, group:n.g } })),
+    ...deps.map(([from,to]) => ({ data:{ id:`${from}->${to}`, source:from, target:to, kind:'depends' } })),
+    { data:{ id:'Helix<-DarkRP', source:'Helix', target:'DarkRP (Gamemode)', kind:'migration' } },
+    ...migrateToHelix.map(id => ({ data:{ id:`${id}->Helix`, source:id, target:'Helix', kind:'tomigrate' } }))
+  ],
+  style: [
+    { selector:'node',
+      style:{
+        'background-color': ele => ({
+          core:'var(--core)', legacy:'var(--legacy)', lib:'var(--lib)',
+          admin:'var(--admin)', db:'var(--db)', infra:'var(--infra)', addon:'var(--infra)'
+        })[ele.data('group')] || 'var(--infra)',
+        'label':'data(label)',
+        'color':'#0b0f17','font-size':12,'text-valign':'center','text-halign':'center',
+        'text-outline-width':1,'text-outline-color':'#0b0f17',
+        'width': ele => ele.id()==='Helix'? 42 : (ele.data('group')==='legacy'? 30 : (['lib','admin','db'].includes(ele.data('group'))?26:22)),
+        'height': ele => ele.id()==='Helix'? 42 : (ele.data('group')==='legacy'? 30 : (['lib','admin','db'].includes(ele.data('group'))?26:22)),
+        'border-width':1,'border-color':'#0b0f17'
+      }
+    },
+    { selector:'edge',
+      style:{
+        'line-color':'#8aa0b5','width':1.2,'curve-style':'unbundled-bezier',
+        'target-arrow-shape':'triangle','target-arrow-color':'#8aa0b5'
+      }
+    },
+    { selector:'edge[kind="migration"]',
+      style:{ 'line-color':'var(--legacy)','width':2.2,'target-arrow-color':'var(--legacy)','line-style':'solid' }
+    },
+    { selector:'edge[kind="tomigrate"]',
+      style:{ 'line-color':'#8bd7ff55','target-arrow-color':'#8bd7ff55','line-style':'dashed' }
+    },
+    { selector:'node:selected', style:{ 'border-width':2, 'border-color':'#ffffff' } }
+  ],
+  layout: {
+    name: 'fcose',
+    quality: 'proof', // rápido; usa 'default' si quieres más precisión
+    animate: true,
+    randomize: true,
+    idealEdgeLength: 120,
+    nodeRepulsion: 4500,
+    gravity: 0.8,
+    gravityRange: 3.0,
+    fit: true,
+    padding: 40
+  },
+  wheelSensitivity: 0.25, // zoom cómodo en móvil
+});
+
+/* ====== Panel lateral ====== */
+const meta = {
+  "Helix": {name:"Helix (Target Gamemode)",desc:"Framework de rol modular objetivo de migración (HogwartsRP Chronos)."},
+  "DarkRP (Gamemode)": {name:"DarkRP (Legacy)",desc:"Gamemode actual de CC3 sobre el que corren los addons."},
+  "ZetaLib (zclib)": {name:"ZetaLib (zclib)",desc:"Librería común para la familia de addons de Zero."},
+  "HpwRewrite (Magic Base)": {name:"HpwRewrite",desc:"Base de hechizos/varitas."},
+  "GMod net library": {name:"GMod net library",desc:"API Net/Hooks/Timers de GMod."},
+  "!core_main": {name:"!core_main",desc:"Core principal del pack CC3.",files:["lua/zhousesystem/gamemode/sv_spells.lua"]},
+  "core_spells": {name:"core_spells",desc:"Sistema de hechizos y varitas.",files:["lua/entities/hrp_spells_base/init.lua"]}
+};
+const panel = document.getElementById('panel');
+
+function renderPanel(id){
+  const m = meta[id] || {name:id,desc:''};
+  const incoming = cy.edges(`[target = "${id}"][kind != "tomigrate"]`).map(e=>e.data('source'));
+  const outgoing = cy.edges(`[source = "${id}"][kind != "tomigrate"]`).map(e=>e.data('target'));
+  const g = cy.$id(id).data('group') || 'n/a';
+  panel.innerHTML = `
+    <h2>${m.name}</h2>
+    <div class="small section"><span class="badge">${g}</span></div>
+    <p>${m.desc||'Sin descripción'}</p>
+    <div class="section"><strong>Dependencias (entrantes)</strong><ul>${(incoming.length?incoming:['—']).map(n=>`<li>${n}</li>`).join('')}</ul></div>
+    <div class="section"><strong>Dependientes (salientes)</strong><ul>${(outgoing.length?outgoing:['—']).map(n=>`<li>${n}</li>`).join('')}</ul></div>
+    <div class="section"><strong>Archivos clave</strong><ul>${(m.files?.length?m.files:['—']).map(f=>`<li><code>${f}</code></li>`).join('')}</ul></div>
+  `;
+}
+
+cy.on('tap', 'node', evt => {
+  const id = evt.target.id();
+  cy.$('node').unselect();
+  evt.target.select();
+  renderPanel(id);
+});
+cy.on('tap', evt => { if(evt.target===cy){ panel.innerHTML = `<h2>Selecciona un nodo</h2><p class="small">Pulsa sobre un sistema/addon para ver su ficha técnica.</p>`; } });
+
+/* ====== Controles ====== */
+document.getElementById('fit').onclick = () => cy.fit(cy.elements(), 40);
+const search = document.getElementById('search');
+search.addEventListener('keydown', e => {
+  if(e.key==='Enter'){
+    const q = e.target.value.trim().toLowerCase();
+    if(!q) return;
+    const n = cy.nodes().filter(x => x.id().toLowerCase().includes(q)).first();
+    if(n.nonempty()){
+      cy.$('node').unselect(); n.select();
+      cy.animate({ center:{ eles:n }, zoom:1.1 }, { duration:350 });
+      renderPanel(n.id());
+    }
+  }
+});
+window.addEventListener('resize', () => cy.resize());
+</script>
+</body>
+</html>
