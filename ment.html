@@ -1,0 +1,154 @@
+<!DOCTYPE html><html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Mapa de Arquitectura · HogwartsRP Chronos</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/vis-network.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/vis-network.min.css"/><style>
+:root{
+  --bg:#0b0f17; --panel:#101826; --ink:#e6edf3; --muted:#8aa0b5; --accent:#8bd7ff;
+  --ok:#7ee787; --warn:#ffb86b; --bad:#ff7b72; --core:#a78bfa; --legacy:#ff6b6b; --lib:#64d2ff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji','Segoe UI Symbol'}
+header{display:flex;gap:12px;align-items:center;padding:12px 16px;background:linear-gradient(180deg,#0e1422,transparent)}
+h1{font-size:18px;margin:0}
+#app{display:grid;grid-template-columns:1fr 360px;height:calc(100vh - 56px)}
+#network{height:100%;border-top:1px solid #1f2a3a;border-right:1px solid #1f2a3a}
+aside{background:var(--panel);padding:16px;overflow:auto;border-top:1px solid #1f2a3a}
+aside h2{font-size:16px;margin:0 0 6px}
+.small{color:var(--muted);font-size:12px}
+.section{margin:14px 0}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;background:#152235;color:var(--accent);font-size:12px;border:1px solid #203248}
+ul{margin:6px 0 0 16px;padding:0}
+code{background:#0b1220;border:1px solid #1f2a3a;padding:2px 6px;border-radius:6px}
+input[type="search"]{width:320px;max-width:50vw;background:#0f1726;color:var(--ink);border:1px solid #253247;border-radius:8px;padding:8px 10px}
+button{background:#18243a;color:var(--ink);border:1px solid #26354f;border-radius:8px;padding:8px 10px;cursor:pointer}
+button:hover{filter:brightness(1.07)}
+footer{position:fixed;bottom:12px;left:12px;background:#111826;padding:6px 10px;border:1px solid #293548;border-radius:8px;opacity:.9}
+.legend{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.legend .chip{display:flex;gap:6px;align-items:center}
+.legend .dot{width:10px;height:10px;border-radius:50%}
+</style></head>
+<body>
+  <header>
+    <h1>Arquitectura CC3 → Helix (HogwartsRP Chronos)</h1>
+    <input id="search" type="search" placeholder="Buscar nodo (ej. core_spells)"/>
+    <button id="fit">Ajustar vista</button>
+    <span class="small">Arrastra nodos, usa rueda para zoom. Click para detalles.</span>
+  </header>
+  <div id="app">
+    <div id="network"></div>
+    <aside id="panel">
+      <h2>Selecciona un nodo</h2>
+      <p class="small">Pulsa sobre un sistema/addon para ver su ficha técnica.</p>
+      <div class="section legend">
+        <span class="chip"><span class="dot" style="background:var(--core)"></span> Núcleo: Helix</span>
+        <span class="chip"><span class="dot" style="background:var(--legacy)"></span> Legacy: DarkRP</span>
+        <span class="chip"><span class="dot" style="background:var(--lib)"></span> Librerías</span>
+        <span class="chip"><span class="dot" style="background:var(--accent)"></span> Addons</span>
+      </div>
+    </aside>
+  </div>
+  <footer class="small">Datos generados de /CC/addons del dump CC3 · Octubre 2025</footer><script>
+const graph = {"nodes": [{"id": "Helix", "label": "Helix (Target Gamemode)", "group": "core", "level": 0}, {"id": "DarkRP (Gamemode)", "label": "DarkRP (Legacy)", "group": "legacy", "level": 1}, {"id": "ZetaLib (zclib)", "label": "ZetaLib (zclib)", "group": "lib", "level": 2}, {"id": "HpwRewrite (Magic Base)", "label": "HpwRewrite", "group": "lib", "level": 2}, {"id": "SAM (Admin)", "label": "SAM (Admin)", "group": "admin", "level": 2}, {"id": "ULX (Admin)", "label": "ULX (Admin)", "group": "admin", "level": 2}, {"id": "bLogs (Logging)", "label": "bLogs (Logging)", "group": "infra", "level": 2}, {"id": "mysqloo", "label": "mysqloo", "group": "db", "level": 2}, {"id": "MySQLite", "label": "MySQLite", "group": "db", "level": 2}, {"id": "DrGBase", "label": "DrGBase", "group": "lib", "level": 2}, {"id": "core_spells", "label": "core spells", "group": "addon", "level": 3}, {"id": "core_statistics", "label": "core statistics", "group": "addon", "level": 3}, {"id": "core_itemstore", "label": "core itemstore", "group": "addon", "level": 3}, {"id": "core_bank", "label": "core bank", "group": "addon", "level": 3}, {"id": "core_shops", "label": "core shops", "group": "addon", "level": 3}, {"id": "core_store", "label": "core store", "group": "addon", "level": 3}, {"id": "core_herbology", "label": "core herbology", "group": "addon", "level": 3}, {"id": "core_magicpets", "label": "core magicpets", "group": "addon", "level": 3}, {"id": "core_willow", "label": "core willow", "group": "addon", "level": 3}, {"id": "core_owlpost", "label": "core owlpost", "group": "addon", "level": 3}, {"id": "core_gangs_clubs", "label": "core gangs clubs", "group": "addon", "level": 3}, {"id": "core_reports", "label": "core reports", "group": "addon", "level": 3}, {"id": "core_scoreboard", "label": "core scoreboard", "group": "addon", "level": 3}, {"id": "core_f4", "label": "core f4", "group": "addon", "level": 3}, {"id": "zeros_masterchef_1.3.0", "label": "zeros masterchef 1.3.0", "group": "addon", "level": 3}, {"id": "zeros_misterybox", "label": "zeros misterybox", "group": "addon", "level": 3}, {"id": "zeros_partypackage", "label": "zeros partypackage", "group": "addon", "level": 3}, {"id": "zeros_pumpkinnight_3.2.4", "label": "zeros pumpkinnight 3.2.4", "group": "addon", "level": 3}, {"id": "zeros_quidditchsystem", "label": "zeros quidditchsystem", "group": "addon", "level": 3}, {"id": "zeros_secretstash_1.3.0", "label": "zeros secretstash 1.3.0", "group": "addon", "level": 3}, {"id": "zeros_yeastbeast_1.1.7", "label": "zeros yeastbeast 1.1.7", "group": "addon", "level": 3}, {"id": "util_drgbase", "label": "util drgbase", "group": "addon", "level": 3}, {"id": "util_eprotect", "label": "util eprotect", "group": "addon", "level": 3}, {"id": "util_sunflare", "label": "util sunflare", "group": "addon", "level": 3}, {"id": "util_atags", "label": "util atags", "group": "addon", "level": 3}, {"id": "ent_gamemasters", "label": "ent gamemasters", "group": "addon", "level": 3}, {"id": "ent_daily_prophet", "label": "ent daily prophet", "group": "addon", "level": 3}, {"id": "!!darkrp_config", "label": "!!darkrp config", "group": "addon", "level": 3}, {"id": "!core_main", "label": "!core main", "group": "addon", "level": 3}, {"id": "!util_core", "label": "!util core", "group": "addon", "level": 3}, {"id": "blogs", "label": "blogs", "group": "addon", "level": 3}, {"id": "blog_adminsuite_2.4.6", "label": "blog adminsuite 2.4.6", "group": "addon", "level": 3}, {"id": "blog_whitelist", "label": "blog whitelist", "group": "addon", "level": 3}], "edges": [{"from": "core_spells", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_spells", "to": "GMod net library", "label": "depends"}, {"from": "core_spells", "to": "HpwRewrite (Magic Base)", "label": "depends"}, {"from": "core_spells", "to": "SAM (Admin)", "label": "depends"}, {"from": "core_spells", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_spells", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_statistics", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_statistics", "to": "GMod net library", "label": "depends"}, {"from": "core_statistics", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_statistics", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_itemstore", "to": "GMod net library", "label": "depends"}, {"from": "core_itemstore", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_itemstore", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_bank", "to": "GMod net library", "label": "depends"}, {"from": "core_bank", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_bank", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_shops", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_shops", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_store", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_store", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_store", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_herbology", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_herbology", "to": "GMod net library", "label": "depends"}, {"from": "core_herbology", "to": "SAM (Admin)", "label": "depends"}, {"from": "core_herbology", "to": "ULX (Admin)", "label": "depends"}, {"from": "core_herbology", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_herbology", "to": "bLogs (Logging)", "label": "depends"}, {"from": "core_magicpets", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "core_magicpets", "to": "GMod net library", "label": "depends"}, {"from": "core_magicpets", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_willow", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_owlpost", "to": "GMod net library", "label": "depends"}, {"from": "core_owlpost", "to": "SAM (Admin)", "label": "depends"}, {"from": "core_gangs_clubs", "to": "GMod net library", "label": "depends"}, {"from": "core_gangs_clubs", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_reports", "to": "GMod net library", "label": "depends"}, {"from": "core_reports", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "core_scoreboard", "to": "GMod net library", "label": "depends"}, {"from": "core_f4", "to": "GMod net library", "label": "depends"}, {"from": "zeros_masterchef_1.3.0", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "zeros_masterchef_1.3.0", "to": "GMod net library", "label": "depends"}, {"from": "zeros_masterchef_1.3.0", "to": "SAM (Admin)", "label": "depends"}, {"from": "zeros_masterchef_1.3.0", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "zeros_misterybox", "to": "GMod net library", "label": "depends"}, {"from": "zeros_partypackage", "to": "GMod net library", "label": "depends"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "GMod net library", "label": "depends"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "HpwRewrite (Magic Base)", "label": "depends"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "SAM (Admin)", "label": "depends"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "zeros_quidditchsystem", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "zeros_quidditchsystem", "to": "GMod net library", "label": "depends"}, {"from": "zeros_quidditchsystem", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "zeros_secretstash_1.3.0", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "zeros_secretstash_1.3.0", "to": "GMod net library", "label": "depends"}, {"from": "zeros_secretstash_1.3.0", "to": "SAM (Admin)", "label": "depends"}, {"from": "zeros_secretstash_1.3.0", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "zeros_secretstash_1.3.0", "to": "bLogs (Logging)", "label": "depends"}, {"from": "zeros_yeastbeast_1.1.7", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "zeros_yeastbeast_1.1.7", "to": "GMod net library", "label": "depends"}, {"from": "util_drgbase", "to": "DrGBase", "label": "depends"}, {"from": "util_drgbase", "to": "GMod net library", "label": "depends"}, {"from": "util_eprotect", "to": "GMod net library", "label": "depends"}, {"from": "util_sunflare", "to": "GMod net library", "label": "depends"}, {"from": "util_atags", "to": "GMod net library", "label": "depends"}, {"from": "ent_gamemasters", "to": "HpwRewrite (Magic Base)", "label": "depends"}, {"from": "ent_daily_prophet", "to": "GMod net library", "label": "depends"}, {"from": "ent_daily_prophet", "to": "SAM (Admin)", "label": "depends"}, {"from": "!!darkrp_config", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "!!darkrp_config", "to": "ULX (Admin)", "label": "depends"}, {"from": "!!darkrp_config", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "!!darkrp_config", "to": "mysqloo", "label": "depends"}, {"from": "!core_main", "to": "AWarn3", "label": "depends"}, {"from": "!core_main", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "!core_main", "to": "DrGBase", "label": "depends"}, {"from": "!core_main", "to": "GMod net library", "label": "depends"}, {"from": "!core_main", "to": "HpwRewrite (Magic Base)", "label": "depends"}, {"from": "!core_main", "to": "SAM (Admin)", "label": "depends"}, {"from": "!core_main", "to": "ULX (Admin)", "label": "depends"}, {"from": "!core_main", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "!core_main", "to": "bLogs (Logging)", "label": "depends"}, {"from": "!core_main", "to": "mysqloo", "label": "depends"}, {"from": "!util_core", "to": "DarkRP (Gamemode)", "label": "depends"}, {"from": "!util_core", "to": "GMod net library", "label": "depends"}, {"from": "!util_core", "to": "HpwRewrite (Magic Base)", "label": "depends"}, {"from": "!util_core", "to": "MySQLite", "label": "depends"}, {"from": "!util_core", "to": "SAM (Admin)", "label": "depends"}, {"from": "!util_core", "to": "ZetaLib (zclib)", "label": "depends"}, {"from": "!util_core", "to": "bLogs (Logging)", "label": "depends"}, {"from": "blogs", "to": "GMod net library", "label": "depends"}, {"from": "blog_adminsuite_2.4.6", "to": "GMod net library", "label": "depends"}, {"from": "blog_adminsuite_2.4.6", "to": "mysqloo", "label": "depends"}, {"from": "blog_whitelist", "to": "GMod net library", "label": "depends"}, {"from": "Helix", "to": "DarkRP (Gamemode)", "label": "migration from"}, {"from": "core_spells", "to": "Helix", "label": "to migrate"}, {"from": "core_statistics", "to": "Helix", "label": "to migrate"}, {"from": "core_itemstore", "to": "Helix", "label": "to migrate"}, {"from": "core_bank", "to": "Helix", "label": "to migrate"}, {"from": "core_shops", "to": "Helix", "label": "to migrate"}, {"from": "core_store", "to": "Helix", "label": "to migrate"}, {"from": "core_herbology", "to": "Helix", "label": "to migrate"}, {"from": "core_magicpets", "to": "Helix", "label": "to migrate"}, {"from": "core_willow", "to": "Helix", "label": "to migrate"}, {"from": "core_owlpost", "to": "Helix", "label": "to migrate"}, {"from": "core_gangs_clubs", "to": "Helix", "label": "to migrate"}, {"from": "core_reports", "to": "Helix", "label": "to migrate"}, {"from": "core_scoreboard", "to": "Helix", "label": "to migrate"}, {"from": "core_f4", "to": "Helix", "label": "to migrate"}, {"from": "zeros_masterchef_1.3.0", "to": "Helix", "label": "to migrate"}, {"from": "zeros_misterybox", "to": "Helix", "label": "to migrate"}, {"from": "zeros_partypackage", "to": "Helix", "label": "to migrate"}, {"from": "zeros_pumpkinnight_3.2.4", "to": "Helix", "label": "to migrate"}, {"from": "zeros_quidditchsystem", "to": "Helix", "label": "to migrate"}, {"from": "zeros_secretstash_1.3.0", "to": "Helix", "label": "to migrate"}, {"from": "zeros_yeastbeast_1.1.7", "to": "Helix", "label": "to migrate"}, {"from": "util_drgbase", "to": "Helix", "label": "to migrate"}, {"from": "util_eprotect", "to": "Helix", "label": "to migrate"}, {"from": "util_sunflare", "to": "Helix", "label": "to migrate"}, {"from": "util_atags", "to": "Helix", "label": "to migrate"}, {"from": "ent_gamemasters", "to": "Helix", "label": "to migrate"}, {"from": "ent_daily_prophet", "to": "Helix", "label": "to migrate"}, {"from": "!!darkrp_config", "to": "Helix", "label": "to migrate"}, {"from": "!core_main", "to": "Helix", "label": "to migrate"}, {"from": "!util_core", "to": "Helix", "label": "to migrate"}, {"from": "blogs", "to": "Helix", "label": "to migrate"}, {"from": "blog_adminsuite_2.4.6", "to": "Helix", "label": "to migrate"}, {"from": "blog_whitelist", "to": "Helix", "label": "to migrate"}], "info": {"Helix": {"name": "Helix (Target Gamemode)", "desc": "Framework de rol modular objetivo de migración (HogwartsRP Chronos).", "files": []}, "DarkRP (Gamemode)": {"name": "DarkRP (Legacy)", "desc": "Gamemode actual de CC3 sobre el que corren los addons.", "files": []}, "ZetaLib (zclib)": {"name": "ZetaLib (zclib)", "desc": "Librería común para la familia de addons de Zero (masterchef, quidditch, etc).", "files": []}, "HpwRewrite (Magic Base)": {"name": "HpwRewrite", "desc": "Base de hechizos/sistema mágico utilizado por Core Spells y otros módulos.", "files": []}, "SAM (Admin)": {"name": "SAM", "desc": "Sistema de administración y permisos.", "files": []}, "ULX (Admin)": {"name": "ULX", "desc": "Otro sistema de administración presente.", "files": []}, "bLogs (Logging)": {"name": "bLogs", "desc": "Sistema de auditoría/logs.", "files": []}, "mysqloo": {"name": "mysqloo", "desc": "Módulo de base de datos MySQL para GMod.", "files": []}, "MySQLite": {"name": "MySQLite", "desc": "Capa SQLite usada por algunos módulos heredados.", "files": []}, "DrGBase": {"name": "DrGBase", "desc": "Framework de NPCs/IA.", "files": []}, "core_spells": {"name": "core_spells", "desc": "Sistema de hechizos y varitas sobre HpwRewrite.", "deps": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)"], "files": ["lua/effects/effecthpwre\u2026.lua", "lua/hpwrewrite/misc/dimension.lua", "lua/hpwrewrite/misc/hellsrc.lua"]}, "core_statistics": {"name": "core_statistics", "desc": "Estadísticas y telemetría del servidor/jugadores.", "deps": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)", "bLogs (Logging)"], "files": []}, "core_itemstore": {"name": "core_itemstore", "desc": "Inventario y almacenamiento de ítems.", "deps": ["GMod net library", "ZetaLib (zclib)", "bLogs (Logging)"], "files": []}, "core_bank": {"name": "core_bank", "desc": "Banco/economía.", "deps": ["GMod net library", "ZetaLib (zclib)", "bLogs (Logging)"], "files": []}, "core_shops": {"name": "core_shops", "desc": "Core shops.", "deps": ["DarkRP (Gamemode)", "ZetaLib (zclib)"]}, "core_store": {"name": "core_store", "desc": "Core store.", "deps": ["DarkRP (Gamemode)", "ZetaLib (zclib)", "bLogs (Logging)"]}, "core_herbology": {"name": "core_herbology", "desc": "Sistema de herbología y plantas.", "deps": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ULX (Admin)", "ZetaLib (zclib)", "bLogs (Logging)"], "files": []}, "core_magicpets": {"name": "core_magicpets", "desc": "Core magicpets.", "deps": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)"]}, "core_willow": {"name": "core_willow", "desc": "Entidad/acción del Sauce Boxeador.", "deps": ["ZetaLib (zclib)"]}, "core_owlpost": {"name": "core_owlpost", "desc": "Correo/paquetería vía lechuzas.", "deps": ["GMod net library", "SAM (Admin)"]}, "core_gangs_clubs": {"name": "core_gangs_clubs", "desc": "Core gangs clubs.", "deps": ["GMod net library", "ZetaLib (zclib)"]}, "core_reports": {"name": "core_reports", "desc": "Sistema de reportes y soporte en-game.", "deps": ["GMod net library", "ZetaLib (zclib)"]}, "core_scoreboard": {"name": "core_scoreboard", "desc": "Marcador y panel de jugadores.", "deps": ["GMod net library"]}, "core_f4": {"name": "core_f4", "desc": "Menú F4 personalizado.", "deps": ["GMod net library"]}, "zeros_masterchef_1.3.0": {"name": "zeros_masterchef_1.3.0", "desc": "Addon de Zero: masterchef 1.3.0.", "deps": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ZetaLib (zclib)"]}, "zeros_misterybox": {"name": "zeros_misterybox", "desc": "Addon de Zero: misterybox.", "deps": ["GMod net library"]}, "zeros_partypackage": {"name": "zeros_partypackage", "desc": "Addon de Zero: partypackage.", "deps": ["GMod net library"]}, "zeros_pumpkinnight_3.2.4": {"name": "zeros_pumpkinnight_3.2.4", "desc": "Addon de Zero: pumpkinnight 3.2.4.", "deps": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ZetaLib (zclib)"]}, "zeros_quidditchsystem": {"name": "zeros_quidditchsystem", "desc": "Addon de Zero: quidditchsystem.", "deps": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)"]}, "zeros_secretstash_1.3.0": {"name": "zeros_secretstash_1.3.0", "desc": "Addon de Zero: secretstash 1.3.0.", "deps": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)"]}, "zeros_yeastbeast_1.1.7": {"name": "zeros_yeastbeast_1.1.7", "desc": "Addon de Zero: yeastbeast 1.1.7.", "deps": ["DarkRP (Gamemode)", "GMod net library"]}, "util_drgbase": {"name": "util_drgbase", "desc": "Framework de NPCs/IA.", "deps": ["DrGBase", "GMod net library"], "files": []}, "util_eprotect": {"name": "util_eprotect", "desc": "Util eprotect.", "deps": ["GMod net library"]}, "util_sunflare": {"name": "util_sunflare", "desc": "Util sunflare.", "deps": ["GMod net library"]}, "util_atags": {"name": "util_atags", "desc": "Util atags.", "deps": ["GMod net library"]}, "ent_gamemasters": {"name": "ent_gamemasters", "desc": "Herramientas/entidades para Game Masters.", "deps": ["HpwRewrite (Magic Base)"]}, "ent_daily_prophet": {"name": "ent_daily_prophet", "desc": "Ent daily prophet.", "deps": ["GMod net library", "SAM (Admin)"]}, "!!darkrp_config": {"name": "!!darkrp_config", "desc": "Configuración base de DarkRP + hooks.", "deps": ["DarkRP (Gamemode)", "ULX (Admin)", "ZetaLib (zclib)", "mysqloo"]}, "!core_main": {"name": "!core_main", "desc": "Core principal del pack CC3 (hechizos, HUD, zhousesystem...).", "deps": ["AWarn3", "DarkRP (Gamemode)", "DrGBase", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ULX (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "mysqloo"], "files": ["lua/entities/hrp_spells_base/init.lua", "lua/zhousesystem/achievement/sv_achievement.lua", "lua/zhousesystem/books/cl_books.lua", "lua/zhousesystem/books/sv_books.lua", "lua/zhousesystem/gamemode/sv_spells.lua"]}, "!util_core": {"name": "!util_core", "desc": "Utilidades comunes (debug, helpers).", "deps": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "MySQLite", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)"]}, "blogs": {"name": "blogs", "desc": "Logger de chat/acciones.", "deps": ["GMod net library"]}, "blog_adminsuite_2.4.6": {"name": "blog_adminsuite_2.4.6", "desc": "Panel admin para bLogs.", "deps": ["GMod net library", "mysqloo"]}, "blog_whitelist": {"name": "blog_whitelist", "desc": "Lista blanca integrada en bLogs.", "deps": ["GMod net library"]}}, "incoming": {"DarkRP (Gamemode)": ["core_spells", "core_statistics", "core_herbology", "core_magicpets", "core_shops", "core_store", "zeros_masterchef_1.3.0", "zeros_pumpkinnight_3.2.4", "zeros_quidditchsystem", "zeros_secretstash_1.3.0", "zeros_yeastbeast_1.1.7", "!!darkrp_config", "!core_main", "!util_core"], "GMod net library": ["core_spells", "core_statistics", "core_itemstore", "core_bank", "core_herbology", "core_magicpets", "core_owlpost", "core_gangs_clubs", "core_reports", "core_scoreboard", "core_f4", "zeros_masterchef_1.3.0", "zeros_misterybox", "zeros_partypackage", "zeros_pumpkinnight_3.2.4", "zeros_quidditchsystem", "zeros_secretstash_1.3.0", "zeros_yeastbeast_1.1.7", "util_drgbase", "util_eprotect", "util_sunflare", "util_atags", "ent_daily_prophet", "!core_main", "!util_core", "blogs", "blog_adminsuite_2.4.6", "blog_whitelist"]}, "outgoing": {"core_spells": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_statistics": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_itemstore": ["GMod net library", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_bank": ["GMod net library", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_shops": ["DarkRP (Gamemode)", "ZetaLib (zclib)", "Helix"], "core_store": ["DarkRP (Gamemode)", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_herbology": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ULX (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "core_magicpets": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)", "Helix"], "core_willow": ["ZetaLib (zclib)", "Helix"], "core_owlpost": ["GMod net library", "SAM (Admin)", "Helix"], "core_gangs_clubs": ["GMod net library", "ZetaLib (zclib)", "Helix"], "core_reports": ["GMod net library", "ZetaLib (zclib)", "Helix"], "core_scoreboard": ["GMod net library", "Helix"], "core_f4": ["GMod net library", "Helix"], "zeros_masterchef_1.3.0": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ZetaLib (zclib)", "Helix"], "zeros_misterybox": ["GMod net library", "Helix"], "zeros_partypackage": ["GMod net library", "Helix"], "zeros_pumpkinnight_3.2.4": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ZetaLib (zclib)", "Helix"], "zeros_quidditchsystem": ["DarkRP (Gamemode)", "GMod net library", "ZetaLib (zclib)", "Helix"], "zeros_secretstash_1.3.0": ["DarkRP (Gamemode)", "GMod net library", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "zeros_yeastbeast_1.1.7": ["DarkRP (Gamemode)", "GMod net library", "Helix"], "util_drgbase": ["DrGBase", "GMod net library", "Helix"], "util_eprotect": ["GMod net library", "Helix"], "util_sunflare": ["GMod net library", "Helix"], "util_atags": ["GMod net library", "Helix"], "ent_gamemasters": ["HpwRewrite (Magic Base)", "Helix"], "ent_daily_prophet": ["GMod net library", "SAM (Admin)", "Helix"], "!!darkrp_config": ["DarkRP (Gamemode)", "ULX (Admin)", "ZetaLib (zclib)", "mysqloo", "Helix"], "!core_main": ["AWarn3", "DarkRP (Gamemode)", "DrGBase", "GMod net library", "HpwRewrite (Magic Base)", "SAM (Admin)", "ULX (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "mysqloo", "Helix"], "!util_core": ["DarkRP (Gamemode)", "GMod net library", "HpwRewrite (Magic Base)", "MySQLite", "SAM (Admin)", "ZetaLib (zclib)", "bLogs (Logging)", "Helix"], "blogs": ["GMod net library", "Helix"], "blog_adminsuite_2.4.6": ["GMod net library", "mysqloo", "Helix"], "blog_whitelist": ["GMod net library", "Helix"], "Helix": ["DarkRP (Gamemode)"]}};
+
+function groupStyle(group){
+  if(group==='core') return '#a78bfa';
+  if(group==='legacy') return '#ff6b6b';
+  if(group==='lib') return '#64d2ff';
+  if(group==='admin') return '#ffd166';
+  if(group==='db') return '#94facc';
+  if(group==='infra') return '#8bd7ff';
+  return '#8bd7ff';
+}
+
+const nodes = new vis.DataSet(graph.nodes.map(n => ({
+  id: n.id, label: n.label,
+  group: n.group,
+  level: n.level,
+  shape: 'dot',
+  size: n.id==='Helix' ? 28 : (n.group==='legacy'? 18 : (n.group==='lib'||n.group==='admin'||n.group==='db')? 16 : 12),
+  color: { background: groupStyle(n.group), border: '#0b0f17', highlight: {background:groupStyle(n.group), border:'#ffffff'}, hover: {background:groupStyle(n.group), border:'#ffffff'} },
+  font: { color:'#0b0f17', face:'Inter, system-ui', size: n.id==='Helix'? 18: 12, strokeWidth: 1, strokeColor:'#0b0f17' }
+})));
+
+const edges = new vis.DataSet(graph.edges.map(e => ({
+  from:e.from, to:e.to,
+  arrows:'to',
+  color: e.label==='migration from' ? '#ff6b6b' : (e.label==='to migrate' ? '#8bd7ff55' : '#8aa0b5'),
+  dashes: e.label!=='depends',
+  width: e.label==='migration from' ? 2.2 : 1.2,
+  smooth: true
+})));
+
+const container = document.getElementById('network');
+const data = { nodes, edges };
+const options = {
+  layout: { improvedLayout: true, hierarchical: false },
+  physics: {
+    enabled: true,
+    solver: 'forceAtlas2Based',
+    stabilization: { iterations: 120 },
+    forceAtlas2Based: { gravitationalConstant: -52, springLength: 120, springConstant: 0.08, avoidOverlap: 0.4 }
+  },
+  interaction: { hover:true, tooltipDelay: 120, hideEdgesOnDrag:false, multiselect:false }
+};
+const network = new vis.Network(container, data, options);
+network.fit({ animation: true });
+
+const panel = document.getElementById('panel');
+
+function renderPanel(nodeId){
+  const meta = graph.info[nodeId] || {name:nodeId,desc:'',deps:[],files:[]};
+  const incoming = (graph.incoming[nodeId]||[]).filter(x=>x!=='Helix');
+  const outgoing = (graph.outgoing[nodeId]||[]).filter(x=>x!=='Helix');
+  panel.innerHTML = `
+    <h2>${meta.name||nodeId}</h2>
+    <div class="small section"><span class="badge">${nodes.get(nodeId).group||'n/a'}</span></div>
+    <p>${meta.desc||'Sin descripción'}</p>
+    <div class="section">
+      <strong>Dependencias (entrantes)</strong>
+      <ul>${ (incoming.length? incoming: ['—']).map(n=>`<li>${n}</li>`).join('') }</ul>
+    </div>
+    <div class="section">
+      <strong>Dependientes (salientes)</strong>
+      <ul>${ (outgoing.length? outgoing: ['—']).map(n=>`<li>${n}</li>`).join('') }</ul>
+    </div>
+    <div class="section">
+      <strong>Archivos clave</strong>
+      <ul>${ (meta.files && meta.files.length? meta.files: ['—']).map(f=>`<li><code>${f}</code></li>`).join('') }</ul>
+    </div>
+  `;
+}
+
+network.on('selectNode', params => {
+  const nodeId = params.nodes[0];
+  renderPanel(nodeId);
+});
+network.on('deselectNode', () => {
+  panel.innerHTML = `<h2>Selecciona un nodo</h2><p class="small">Pulsa sobre un sistema/addon para ver su ficha técnica.</p>`;
+});
+
+document.getElementById('fit').onclick = () => network.fit({animation:true});
+
+const search = document.getElementById('search');
+search.addEventListener('keydown', (e) => {
+  if(e.key==='Enter'){
+    const q = e.target.value.trim();
+    if(!q) return;
+    // find node id by exact or contains
+    const list = nodes.getIds().filter(id => id.toLowerCase().includes(q.toLowerCase()));
+    if(list.length){
+      const id = list[0];
+      network.selectNodes([id], false);
+      const pos = network.getPositions([id])[id];
+      network.moveTo({ position: pos, scale: 1.2, animation: true });
+      renderPanel(id);
+    }
+  }
+});
+</script></body>
+</html>
