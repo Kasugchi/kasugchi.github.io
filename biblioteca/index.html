@@ -248,7 +248,7 @@ footer a{color:inherit;font-weight:700}
       <label class="f" data-fis>Balda<input id="iBalda" type="number" min="1" max="12" inputmode="numeric"></label>
       <label class="f" data-fis>Páginas<input id="iPag" type="number" min="1" inputmode="numeric"></label>
       <label class="f full" data-dig>Ruta o enlace<input id="iRuta" placeholder="https://… o \\SERVIDOR\Biblioteca\libro.pdf"></label>
-      <label class="f full">Carátula (enlace a la imagen)<input id="iCover" placeholder="Opcional. Pulsa «Buscar» junto al ISBN para encontrarla"></label>
+      <label class="f full">Carátula (enlace a la imagen)<input id="iCover" placeholder="Se busca sola al guardar si la dejas vacía"></label>
       <div class="full cprev" id="cPrev" hidden></div>
       <label class="f full">Notas<textarea id="iNotas" rows="2"></textarea></label>
     </div>
@@ -1706,7 +1706,7 @@ async function lookupBook(b){
 }
 let coverRun = false, coverTimer = null;
 const RETRY = 30 * 24 * 3600 * 1000;
-const needsCover = b => !b.cover && (!b.coverChecked || Date.now() - b.coverChecked > RETRY);
+const needsCover = b => !b.cover && !b.coverChecked;  /* una sola búsqueda por libro */
 async function processCovers(){
   if (coverRun || !navigator.onLine) return; coverRun = true;
   const todo = state.books.filter(needsCover); let done = 0;
@@ -1892,7 +1892,7 @@ $('#formBook').addEventListener('submit', e => {
   if (editing && changedId && editing.coverAuto && editing.cover === v.cover) { v.cover = ''; extra.coverChecked = 0; }
   if (editing) { Object.assign(editing, v, extra); if (formato === 'digital') editing.prestamo = null; selectedId = editing.id; toast('Libro guardado'); }
   else { const b = Object.assign({id: uid(), prestamo: null}, v, extra); state.books.push(b); selectedId = b.id; toast('Libro añadido'); }
-  commit(); grab(selectedId);
+  commit(); grab(selectedId); processCovers();
 });
 $('#formBook').addEventListener('input', () => $('#bookErr').textContent = '');
 function showPrev(){ const u = $('#iCover').value.trim(); $('#cPrev').hidden = !u; $('#cPrev').innerHTML = u ? `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><span>Carátula</span>` : ''; }
@@ -1952,7 +1952,7 @@ $('#fileImport').onchange = e => {
 $('#dlgImport').addEventListener('close', () => {
   const v = $('#dlgImport').returnValue;
   if (v === 'replace') state.books = pending; else if (v === 'add') state.books = state.books.concat(pending); else return;
-  selectedId = null; commit(); viewAll(); toast(`${pending.length} libros importados`);
+  selectedId = null; commit(); viewAll(); toast(`${pending.length} libros importados`); processCovers();
 });
 
 /* ---------- controles ---------- */
@@ -1996,7 +1996,9 @@ schoolEl.textContent = state.school || 'CEIP Los Almendros';
 resize(); renderFilters(); renderStats(); rebuild(); renderCard(); renderRows();
 viewAll(); const g0 = camGoal; if (g0) { controls.target.copy(g0.target); camera.position.set(g0.target.x, g0.target.y, 20); camera.zoom = 1; camera.updateProjectionMatrix(); camGoal = null; }
 document.fonts && document.fonts.ready.then(() => { clearTex(); rebuild(); });
-/* Las carátulas ya no se buscan solas: solo con el botón «Buscar» al añadir o editar un libro */
+/* Carátulas: cada libro se busca una sola vez; las imágenes las guarda el service worker y no se vuelven a descargar */
+setTimeout(processCovers, 1500);
+window.addEventListener('online', processCovers);
 </script>
 </body>
 </html>
