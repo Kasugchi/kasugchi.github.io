@@ -88,6 +88,8 @@ header .btn:not(.primary){background:transparent;color:var(--board-ink);border-c
 .main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
 @media (max-width:980px){.main{grid-template-columns:1fr}}
 .stage{position:relative;background:var(--wall);border:3px solid var(--line);border-radius:24px;overflow:hidden;height:min(64vh,640px);min-height:420px}
+.stage{}
+@media (max-width:600px){.stage{height:auto;aspect-ratio:1/0.95;min-height:0}}
 .stage canvas{display:block;width:100%;height:100%;touch-action:none}
 .hint{position:absolute;left:14px;top:12px;max-width:calc(100% - 130px);font-family:var(--f-hand);font-size:17px;color:var(--muted);pointer-events:none}
 .stage-tools{position:absolute;right:12px;top:10px;display:flex;gap:6px}
@@ -204,7 +206,7 @@ footer a{color:inherit;font-weight:700}
     <div class="stage" id="stage">
       <div class="legend" id="legend" aria-label="Materias"></div>
       <div class="stage-tools"><button class="btn" id="btnCenter" type="button">Ver todo</button></div>
-      <div class="hint">Toca un libro para sacarlo de la estantería ✨</div>
+      <div class="hint">Toca un libro para sacarlo ✨ · pellizca o usa la rueda para acercar</div>
     </div>
     <aside class="card" aria-live="polite"><div class="card-in" id="card"></div></aside>
   </div>
@@ -1360,6 +1362,12 @@ const todayISO = () => new Date().toISOString().slice(0, 10);
 const fmtDate = d => d ? new Date(d + 'T12:00').toLocaleDateString('es-ES', {day:'numeric', month:'short', year:'numeric'}) : '';
 
 /* ---------- datos de ejemplo (un colegio de Primaria) ---------- */
+function testIsbn(i){
+  const body = '97884' + String(9000000 + i * 137 + 1021).slice(-7);
+  const sum = [...body].reduce((s, d, k) => s + (+d) * (k % 2 ? 3 : 1), 0);
+  const c = (10 - sum % 10) % 10;
+  return `${body.slice(0,3)}-${body.slice(3,5)}-${body.slice(5,9)}-${body.slice(9)}-${c}`;
+}
 const SAMPLE = (() => {
   const L = [];
   const add = (est, balda, materia, curso, list) => list.forEach(([titulo, autor, pag, extra]) =>
@@ -1381,6 +1389,8 @@ const SAMPLE = (() => {
     ['Cuaderno de problemas','Departamento de Matemáticas','Matemáticas','5º-6º Primaria','https://drive.google.com/'],
     ['Audiolibro: Fábulas de Esopo','Esopo','Literatura infantil','1º-2º Primaria','\\\\SERVIDOR\\Biblioteca\\Audio\\esopo\\']];
   dig.forEach(([titulo, autor, materia, curso, ruta]) => L.push({id: uid(), titulo, autor, materia, curso, formato:'digital', ruta, prestamo:null}));
+  /* ISBN de prueba: inventados, con prefijo español 978-84 y dígito de control válido */
+  L.forEach((b, i) => { b.isbn = testIsbn(i); });
   return L;
 })();
 
@@ -1388,7 +1398,7 @@ const SAMPLE = (() => {
 const KEY = 'biblioteca.v1';
 let state = load();
 function load(){
-  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.books)) return s; } catch(e) {}
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.books) && !s.sample) return s; if (s && s.sample) return {school: s.school, books: SAMPLE, sample: true}; } catch(e) {}
   return {school: 'CEIP Los Almendros', books: SAMPLE, sample: true};
 }
 function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) { toast('No se pudo guardar en este dispositivo'); } }
@@ -1416,7 +1426,7 @@ function matches(b){
   if (f.estado === 'digital' && b.formato !== 'digital') return false;
   if (f.estado === 'prestado' && !b.prestamo) return false;
   if (f.estado === 'disponible' && (b.prestamo || b.formato === 'digital')) return false;
-  if (f.q) { const t = norm([b.titulo,b.autor,b.materia,b.curso,b.isbn,b.editorial,b.notas,b.prestamo && b.prestamo.a, callNumber(b)].join(' ')); if (!t.includes(norm(f.q))) return false; }
+  if (f.q) { const t = norm([b.titulo,b.autor,b.materia,b.curso,b.isbn,String(b.isbn||'').replace(/[^0-9xX]/g,''),b.editorial,b.notas,b.prestamo && b.prestamo.a, callNumber(b)].join(' ')); const q = norm(f.q), qd = q.replace(/[\s-]/g,''); if (!t.includes(q) && !(/^[0-9x]{4,}$/.test(qd) && t.includes(qd))) return false; }
   return true;
 }
 const filtering = () => Object.values(filter).some(Boolean);
@@ -1428,11 +1438,15 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 stage.prepend(renderer.domElement);
 renderer.domElement.setAttribute('role','img'); renderer.domElement.setAttribute('aria-label','Sala de la biblioteca en 3D');
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
+const camera = new THREE.OrthographicCamera(-5, 5, 3, -3, 0.1, 100);
+let viewH = 6;  /* alto visible a zoom 1 */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; controls.maxPolarAngle = Math.PI * 0.49; controls.minDistance = 1.5; controls.maxDistance = 40;
+controls.enableDamping = true; controls.enableRotate = false; controls.screenSpacePanning = true;
+controls.minZoom = 0.6; controls.maxZoom = 6; controls.zoomSpeed = 1.2;
+controls.mouseButtons = {LEFT: THREE.MOUSE.PAN, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.PAN};
+controls.touches = {ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_PAN};
 scene.add(new THREE.HemisphereLight(0xffffff, 0x6d6152, 0.8));
-const key = new THREE.DirectionalLight(0xfff4e6, 0.65); key.position.set(-4, 9, 8); scene.add(key);
+const key = new THREE.DirectionalLight(0xfff4e6, 0.65); key.position.set(-2, 6, 10); scene.add(key);
 const world = new THREE.Group(); scene.add(world);
 let bookMeshes = [], bounds = new THREE.Box3();
 const SH = 1.0, DEPTH = 0.62, BOARD = 0.05, SIDE = 0.06;
@@ -1546,18 +1560,15 @@ function rebuild(){
     x += W + 0.7;
   }
   bounds.setFromObject(world);
-  /* la sala: suelo de tarima, pared y una alfombra redonda delante */
-  const pt = plankTex(); pt.wrapS = pt.wrapT = THREE.RepeatWrapping; pt.repeat.set((x + 8) / 2, 5);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 10), new THREE.MeshLambertMaterial({map: pt}));
-  floor.rotation.x = -Math.PI/2; floor.position.set(x/2 - 0.35, 0, 2.2); world.add(floor);
-  const wall = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 9), new THREE.MeshLambertMaterial({color: new THREE.Color(css('--wall'))}));
-  wall.position.set(x/2 - 0.35, 4.5, -DEPTH/2 - 0.05); world.add(wall);
-  const rugT = canvasTex(512, 512, (g, w, h) => { const cs = ['#F07C6C','#F6C445','#5DC39A','#5BB2E3','#A58BDA','#FFFDF8'];
-    for (let i = 0; i < 6; i++) { g.fillStyle = cs[i]; g.beginPath(); g.arc(w/2, h/2, w/2 - i * 40, 0, Math.PI * 2); g.fill(); } }, 'rug');
-  const rug = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.MeshLambertMaterial({map: rugT}));
-  rug.rotation.x = -Math.PI/2; rug.position.set(x/2 - 0.35, 0.005, 2.0); world.add(rug);
+  /* la sala vista de frente: pared y un zócalo de tarima */
+  const pt = plankTex(); pt.wrapS = pt.wrapT = THREE.RepeatWrapping; pt.repeat.set((x + 8) / 2, 6);
+  const base = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 8), new THREE.MeshLambertMaterial({map: pt}));
+  base.position.set(x/2 - 0.35, -4, DEPTH/2 + 0.05); world.add(base);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 12), new THREE.MeshLambertMaterial({color: new THREE.Color(css('--wall'))}));
+  wall.position.set(x/2 - 0.35, 4, -DEPTH/2 - 0.05); world.add(wall);
   world.position.x = -(x - 0.7) / 2;
   bounds.translate(new THREE.Vector3(world.position.x, 0, 0));
+  bounds.min.y = Math.min(bounds.min.y, -0.15);
   applyLook();
 }
 /* Apariencia: prestado = fantasma (sigue en el inventario, pero no está); no coincide con el filtro = apagado */
@@ -1582,7 +1593,7 @@ function grab(id){
   if (m) {
     const wp = new THREE.Vector3(); m.parent.getWorldPosition(wp);
     const y = Math.max(0.9, Math.min(m.userData.shelfY + 0.5, 2.6));
-    camGoal = {target: new THREE.Vector3(wp.x, y, 0.6), pos: new THREE.Vector3(wp.x + 0.4, y + 0.5, 4.4)};
+    camGoal = {target: new THREE.Vector3(wp.x, y + 0.2, 0), zoom: Math.max(camera.zoom, 1.8)};
   }
 }
 function stepBooks(dt){
@@ -1592,7 +1603,7 @@ function stepBooks(dt){
     u.t = u.target > u.t ? Math.min(u.target, u.t + dt * speed) : Math.max(u.target, u.t - dt * speed);
     const a = ease(Math.min(1, u.t / 0.35)), b = ease(Math.max(0, (u.t - 0.35) / 0.65));
     /* 1) sale de la balda hacia delante  2) sube, se acerca y gira para enseñar la portada */
-    const out = u.home.clone(); out.z += 0.55 * a;
+    const out = u.home.clone(); out.z += 0.55 * a; out.y += 0.08 * a;
     const show = new THREE.Vector3(0, Math.max(u.home.y, 0.75) + 0.12, u.home.z + 1.25);
     m.position.lerpVectors(out, show, b);
     m.position.x = THREE.MathUtils.lerp(out.x, 0 + (u.home.x * 0.15), b);
@@ -1602,19 +1613,23 @@ function stepBooks(dt){
     m.renderOrder = u.t > 0 ? 2 : 0;
   }
   if (camGoal) {
-    controls.target.lerp(camGoal.target, Math.min(1, dt * 3));
-    camera.position.lerp(camGoal.pos, Math.min(1, dt * 2.2));
-    if (camera.position.distanceTo(camGoal.pos) < 0.02) camGoal = null;
+    const k = Math.min(1, dt * 3);
+    controls.target.lerp(camGoal.target, k);
+    camera.position.set(controls.target.x, controls.target.y, 20);
+    camera.zoom += (camGoal.zoom - camera.zoom) * k; camera.updateProjectionMatrix();
+    if (controls.target.distanceTo(camGoal.target) < 0.01 && Math.abs(camera.zoom - camGoal.zoom) < 0.01) camGoal = null;
   }
 }
 function viewAll(){
   const size = new THREE.Vector3(), c = new THREE.Vector3(); bounds.getSize(size); bounds.getCenter(c);
-  const fit = Math.max(size.x / camera.aspect, size.y) / (2 * Math.tan(camera.fov * Math.PI / 360)) + 2.2;
-  camGoal = {target: new THREE.Vector3(c.x, c.y * 0.9, 0), pos: new THREE.Vector3(c.x + size.x * 0.12, c.y + 1.4, fit)};
+  const aspect = stage.clientWidth / stage.clientHeight || 1.5;
+  viewH = Math.max(size.y + 0.9, (size.x + 0.6) / aspect) * 1.04; setFrustum();
+  camGoal = {target: new THREE.Vector3(c.x, c.y + 0.1, 0), zoom: 1};
 }
 renderer.domElement.addEventListener('pointerdown', () => { camGoal = null; });
 controls.addEventListener('start', () => { camGoal = null; });
-function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
+function setFrustum(){ const a = stage.clientWidth / stage.clientHeight || 1.5; camera.top = viewH/2; camera.bottom = -viewH/2; camera.left = -viewH*a/2; camera.right = viewH*a/2; camera.updateProjectionMatrix(); }
+function resize(){ const w = stage.clientWidth, h = stage.clientHeight; renderer.setSize(w, h, false); setFrustum(); }
 new ResizeObserver(resize).observe(stage);
 let last = performance.now();
 (function loop(now){
@@ -1853,7 +1868,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 /* ---------- arranque ---------- */
 schoolEl.textContent = state.school || 'CEIP Los Almendros';
 resize(); renderFilters(); renderStats(); rebuild(); renderCard(); renderRows();
-viewAll(); const g0 = camGoal; if (g0) { camera.position.copy(g0.pos); controls.target.copy(g0.target); }
+viewAll(); const g0 = camGoal; if (g0) { controls.target.copy(g0.target); camera.position.set(g0.target.x, g0.target.y, 20); camera.zoom = 1; camera.updateProjectionMatrix(); camGoal = null; }
 document.fonts && document.fonts.ready.then(() => { texCache.clear(); rebuild(); });
 </script>
 </body>
