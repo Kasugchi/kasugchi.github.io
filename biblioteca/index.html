@@ -6,7 +6,7 @@
 <title>Biblioteca escolar</title>
 <meta name="description" content="Inventario visual de la biblioteca del colegio: dónde está cada libro, físicos y digitales, y préstamos a profesores.">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#1E3A34">
+<meta name="theme-color" content="#2F5544">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Biblioteca">
@@ -14,165 +14,203 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500;7..72,700&family=Atkinson+Hyperlegible:wght@400;700&family=Courier+Prime:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=Nunito:wght@400;600;700;800&family=Patrick+Hand&family=Courier+Prime:wght@400;700&display=swap">
 <style>
-/* Concepto: el fichero de la biblioteca. La sala en 3D arriba; la ficha del libro como tarjeta de catálogo, con sello de préstamo. */
+/* Concepto: la biblioteca de un cole. Pizarra arriba, contadores en notas adhesivas, materias como etiquetas de colores,
+   el catálogo como una fila de portadas y la ficha como la tarjeta de préstamo con su cinta adhesiva. */
 :root{
-  --bg:#EDF0EE; --panel:#FBFBF8; --card:#FFFDF6; --ink:#1C2826; --muted:#5E6B68; --line:#D4DAD6; --rule:#DCE6EF;
-  --accent:#1E6B57; --accent-ink:#FFFFFF; --stamp:#C0392B; --digital:#3D6FD1; --room:#E3E7E3; --margin:#E8A3A3; --floor:#C8BAA4;
-  --f-display:"Literata",Georgia,"Times New Roman",serif;
-  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --bg:#FFF6E8; --paper:#FFFDF8; --ink:#2B2A3A; --muted:#6E6A7C; --line:#EADFCB;
+  --board:#2F5544; --board-ink:#F4F1E6; --frame:#B7814F;
+  --sun:#F6C445; --coral:#F07C6C; --sky:#5BB2E3; --mint:#5DC39A; --lilac:#A58BDA;
+  --accent:#F07C6C; --accent-ink:#FFFFFF; --stamp:#D9473A; --digital:#4C7FE0; --rule:#D6E6F5; --margin:#F2A9A9;
+  --wall:#FBE9D2; --floor:#D9B48A;
+  --f-display:"Fredoka","Trebuchet MS",system-ui,sans-serif;
+  --f-body:"Nunito",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-hand:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;
   --f-mono:"Courier Prime","Courier New",ui-monospace,monospace;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --bg:#121816; --panel:#1A2220; --card:#202A27; --ink:#E7ECEA; --muted:#9DABA7; --line:#2E3A37; --rule:#2B3A44;
-  --accent:#4FB394; --accent-ink:#0B1A15; --stamp:#E8695B; --digital:#7EA6F2; --room:#161E1C; --margin:#7A3E3E; --floor:#3A322A; color-scheme:dark}}
+  --bg:#1D1B26; --paper:#272433; --ink:#F1EEF8; --muted:#ADA7BF; --line:#3A3648; --board:#22382E; --board-ink:#E9F2EA; --frame:#7A5434;
+  --accent:#F48B7C; --accent-ink:#2A0F0A; --stamp:#F26B5D; --digital:#7EA6F2; --rule:#34405A; --margin:#7A4048; --wall:#2B2636; --floor:#4A3828; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#121816; --panel:#1A2220; --card:#202A27; --ink:#E7ECEA; --muted:#9DABA7; --line:#2E3A37; --rule:#2B3A44;
-  --accent:#4FB394; --accent-ink:#0B1A15; --stamp:#E8695B; --digital:#7EA6F2; --room:#161E1C; --margin:#7A3E3E; --floor:#3A322A; color-scheme:dark}
+  --bg:#1D1B26; --paper:#272433; --ink:#F1EEF8; --muted:#ADA7BF; --line:#3A3648; --board:#22382E; --board-ink:#E9F2EA; --frame:#7A5434;
+  --accent:#F48B7C; --accent-ink:#2A0F0A; --stamp:#F26B5D; --digital:#7EA6F2; --rule:#34405A; --margin:#7A4048; --wall:#2B2636; --floor:#4A3828; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;
+  background-image:radial-gradient(circle,color-mix(in srgb,var(--sun) 22%,transparent) 1.5px,transparent 2px);background-size:26px 26px;
   padding-inline:max(16px,env(safe-area-inset-left));padding-block:max(16px,env(safe-area-inset-top)) max(32px,env(safe-area-inset-bottom))}
-.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
-.school{font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);cursor:text}
-h1{font-family:var(--f-display);font-weight:700;font-size:clamp(30px,5vw,44px);line-height:1;margin:4px 0 0;letter-spacing:-.01em;text-wrap:balance}
-.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
 button,select,input,textarea{font:inherit;color:var(--ink)}
-.btn{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:15px}
-.btn:hover{border-color:var(--muted)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
-.btn.danger{color:var(--stamp);border-color:color-mix(in srgb,var(--stamp) 40%,var(--line))}
-.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.book-row:focus-visible,.stat:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-@media (max-width:620px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px}
-.stat b{font-family:var(--f-display);font-size:28px;line-height:1.1;font-variant-numeric:tabular-nums}
-.stat span{font-size:13px;color:var(--muted)}
-.stat[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.stat.lent b{color:var(--stamp)} .stat.dig b{color:var(--digital)}
-.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.filters input[type=search]{flex:1 1 220px;min-width:0}
-.filters select,.filters input{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:15px}
-.main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
-@media (max-width:960px){.main{grid-template-columns:1fr}}
-.stage{position:relative;background:var(--room);border:1px solid var(--line);border-radius:12px;overflow:hidden;height:min(64vh,640px);min-height:420px}
+/* Pizarra */
+header.board{position:relative;background:var(--board);color:var(--board-ink);border:10px solid var(--frame);border-radius:18px;padding:18px 22px 20px;
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:14px;
+  background-image:radial-gradient(ellipse at 20% 30%,rgba(255,255,255,.06),transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(255,255,255,.05),transparent 55%);
+  box-shadow:inset 0 0 0 2px rgba(0,0,0,.15),0 10px 24px -16px rgba(0,0,0,.5)}
+header.board::after{content:"";position:absolute;left:12%;right:12%;bottom:-10px;height:6px;background:color-mix(in srgb,var(--frame) 80%,#000);border-radius:0 0 6px 6px}
+.school{font-family:var(--f-hand);font-size:19px;opacity:.85;cursor:text;display:inline-block;border-bottom:1px dashed rgba(255,255,255,.3)}
+h1{font-family:var(--f-hand);font-weight:400;font-size:clamp(40px,7vw,64px);line-height:.95;margin:2px 0 0;letter-spacing:.01em;text-shadow:0 0 1px rgba(255,255,255,.5)}
+h1 .chalk-u{display:block;height:4px;width:min(260px,60%);margin-top:6px;background:var(--sun);border-radius:4px;opacity:.85;transform:rotate(-1deg)}
+.tagline{font-family:var(--f-hand);font-size:20px;opacity:.8;margin-top:4px}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--paper);border:2px solid var(--line);border-radius:999px;padding:7px 14px;cursor:pointer;font-size:15px;font-weight:700;font-family:var(--f-display)}
+.btn:hover{transform:translateY(-1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.sun{background:var(--sun);border-color:var(--sun);color:#3A2A00}
+.btn.danger{color:var(--stamp);border-color:color-mix(in srgb,var(--stamp) 45%,var(--line))}
+header .btn:not(.primary){background:transparent;color:var(--board-ink);border-color:rgba(255,255,255,.35)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,.cover-card:focus-visible,.note:focus-visible,.chip:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.btn,.note,.cover-card{transition:transform .15s ease,box-shadow .15s ease}}
+/* Notas adhesivas */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding-top:4px}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.note{position:relative;border:0;border-radius:4px 4px 18px 4px;padding:16px 14px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;color:#2B2A3A;
+  box-shadow:0 8px 14px -10px rgba(0,0,0,.45);background:var(--c)}
+.note:nth-child(1){--c:#FFE07A;transform:rotate(-1.6deg)} .note:nth-child(2){--c:#A8E3C7;transform:rotate(1.2deg)}
+.note:nth-child(3){--c:#B9D6F8;transform:rotate(-.8deg)} .note:nth-child(4){--c:#FFC1B5;transform:rotate(1.8deg)}
+.note::before{content:"";position:absolute;top:-8px;left:50%;width:56px;height:18px;margin-left:-28px;background:rgba(255,255,255,.55);transform:rotate(-3deg);border-radius:2px}
+.note b{font-family:var(--f-display);font-weight:600;font-size:34px;line-height:1}
+.note span{font-family:var(--f-hand);font-size:18px;line-height:1.1}
+.note:hover{transform:rotate(0) scale(1.03)}
+.note[aria-pressed="true"]{box-shadow:0 0 0 3px var(--ink),0 8px 14px -10px rgba(0,0,0,.45);transform:rotate(0)}
+/* Filtros */
+.filters{display:flex;flex-direction:column;gap:10px;background:var(--paper);border:2px solid var(--line);border-radius:20px;padding:12px 14px}
+.frow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.search{flex:1 1 240px;position:relative;min-width:0}
+.search input{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:999px;padding:8px 14px 8px 40px;font-size:16px}
+.search::before{content:"🔎";position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px}
+.frow select{background:var(--bg);border:2px solid var(--line);border-radius:999px;padding:7px 12px;font-size:15px;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:2px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px;font-size:14px;font-weight:700;cursor:pointer}
+.chip i{width:10px;height:10px;border-radius:50%;flex:none}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* Sala 3D */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:18px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:1fr}}
+.stage{position:relative;background:var(--wall);border:3px solid var(--line);border-radius:24px;overflow:hidden;height:min(64vh,640px);min-height:420px}
 .stage canvas{display:block;width:100%;height:100%;touch-action:none}
-.hint{position:absolute;left:12px;top:12px;max-width:calc(100% - 120px);font-size:12px;color:var(--muted);pointer-events:none;background:color-mix(in srgb,var(--room) 80%,transparent);padding:2px 6px;border-radius:4px}
-.stage-tools{position:absolute;right:10px;top:10px;display:flex;gap:6px}
-.stage-tools .btn{background:color-mix(in srgb,var(--panel) 92%,transparent);font-size:13px;padding:5px 10px}
-.legend{position:absolute;left:10px;right:10px;bottom:10px;display:flex;flex-wrap:wrap;gap:3px 12px;background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px;max-height:30%;overflow:auto}
+.hint{position:absolute;left:14px;top:12px;max-width:calc(100% - 130px);font-family:var(--f-hand);font-size:17px;color:var(--muted);pointer-events:none}
+.stage-tools{position:absolute;right:12px;top:10px;display:flex;gap:6px}
+.legend{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-wrap:wrap;gap:4px 12px;background:color-mix(in srgb,var(--paper) 88%,transparent);border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;max-height:30%;overflow:auto}
 .legend span{display:flex;gap:6px;align-items:center}
-.legend i{width:10px;height:14px;border-radius:2px;flex:none}
-/* Ficha de catálogo */
-.card{background:var(--card);border:1px solid var(--line);border-radius:6px;position:relative;min-width:0;
-  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px);background-position:0 70px;
-  box-shadow:0 1px 0 var(--line),0 12px 24px -20px rgba(0,0,0,.4)}
-.card::before{content:"";position:absolute;top:0;bottom:0;left:38px;width:1px;background:var(--margin);opacity:.7}
-.card-in{padding:16px 18px 18px 52px;display:flex;flex-direction:column;gap:10px}
-.card .call{font-family:var(--f-mono);font-size:15px;font-weight:700;letter-spacing:.04em}
-.card h2{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.15;margin:0;text-wrap:balance}
-.card .author{font-family:var(--f-display);font-style:italic;color:var(--muted);margin-top:-6px}
-.card dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:15px}
-.card dt{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
-.card dd{margin:0;min-width:0;overflow-wrap:anywhere}
-.card .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.card .empty{color:var(--muted);font-family:var(--f-display);font-style:italic;padding:28px 0}
-.fmt{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;border-radius:999px;padding:1px 9px;border:1px solid currentColor}
-.fmt.dig{color:var(--digital)} .fmt.fis{color:var(--accent)}
-.path{font-family:var(--f-mono);font-size:13px;background:var(--bg);border:1px dashed var(--line);border-radius:6px;padding:6px 8px;display:block;overflow-wrap:anywhere}
-.stamp{position:absolute;right:14px;top:56px;transform:rotate(-9deg);border:3px double var(--stamp);color:var(--stamp);border-radius:6px;padding:4px 10px;
-  font-family:var(--f-mono);font-weight:700;text-align:center;line-height:1.15;background:color-mix(in srgb,var(--card) 70%,transparent);pointer-events:none}
+.legend i{width:10px;height:14px;border-radius:3px;flex:none}
+/* Ficha de préstamo */
+.card{background:var(--paper);border-radius:10px;position:relative;min-width:0;margin-top:10px;
+  background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px);background-position:0 74px;
+  box-shadow:0 2px 0 var(--line),0 16px 28px -20px rgba(0,0,0,.45);transform:rotate(.4deg)}
+.card::before{content:"";position:absolute;top:0;bottom:0;left:40px;width:2px;background:var(--margin);opacity:.8}
+.card::after{content:"";position:absolute;top:-12px;left:50%;width:120px;height:26px;margin-left:-60px;transform:rotate(-2deg);
+  background:repeating-linear-gradient(45deg,color-mix(in srgb,var(--sky) 55%,transparent) 0 8px,color-mix(in srgb,var(--sky) 35%,transparent) 8px 16px);border-radius:3px}
+.card-in{padding:20px 18px 18px 56px;display:flex;flex-direction:column;gap:10px}
+.card .call{font-family:var(--f-mono);font-size:15px;font-weight:700;letter-spacing:.04em;color:var(--muted)}
+.card h2{font-family:var(--f-display);font-weight:600;font-size:26px;line-height:1.1;margin:0;text-wrap:balance}
+.card .author{font-family:var(--f-hand);font-size:20px;color:var(--muted);margin-top:-6px}
+.card dl{display:grid;grid-template-columns:auto 1fr;gap:5px 12px;margin:0;font-size:15px}
+.card dt{font-family:var(--f-hand);font-size:17px;color:var(--muted);padding-top:1px}
+.card dd{margin:0;min-width:0;overflow-wrap:anywhere;font-weight:600}
+.card .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.card .empty{color:var(--muted);font-family:var(--f-hand);font-size:22px;line-height:1.35;padding:20px 0}
+.fmt{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:800;border-radius:999px;padding:1px 10px;border:2px solid currentColor}
+.fmt.dig{color:var(--digital)} .fmt.fis{color:#2E9B6E}
+.path{font-family:var(--f-mono);font-size:13px;background:var(--bg);border:2px dashed var(--line);border-radius:10px;padding:8px 10px;display:block;overflow-wrap:anywhere}
+.stamp{position:absolute;right:14px;top:62px;transform:rotate(-10deg);border:3px double var(--stamp);color:var(--stamp);border-radius:8px;padding:4px 10px;
+  font-family:var(--f-mono);font-weight:700;text-align:center;line-height:1.15;background:color-mix(in srgb,var(--paper) 70%,transparent);pointer-events:none}
 .stamp b{display:block;font-size:20px;letter-spacing:.12em}
 .stamp small{font-size:11px;display:block}
 @media (prefers-reduced-motion:no-preference){.stamp.new{animation:stampin .35s cubic-bezier(.2,1.6,.4,1)}}
-@keyframes stampin{from{transform:rotate(-9deg) scale(1.8);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:1}}
-/* Listado */
-.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+@keyframes stampin{from{transform:rotate(-10deg) scale(1.8);opacity:0}to{transform:rotate(-10deg) scale(1);opacity:1}}
+/* Catálogo de portadas */
+.list{background:var(--paper);border:2px solid var(--line);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
 .list-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
-.list-head h3{font-family:var(--f-display);margin:0;font-size:20px}
-.list-head small{color:var(--muted)}
-.rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:8px}
-.book-row{display:flex;gap:10px;align-items:stretch;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:8px;cursor:pointer;text-align:left;min-width:0}
-.book-row:hover{border-color:var(--muted)}
-.book-row.sel{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
-.spine{width:12px;border-radius:2px;flex:none}
-.book-row .t{font-family:var(--f-display);font-weight:700;font-size:15px;line-height:1.2}
-.book-row .a{font-size:13px;color:var(--muted)}
-.book-row .meta{font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:2px}
-.book-row .info{min-width:0;display:flex;flex-direction:column}
-.book-row.lent .spine,.book-row.lent .t{filter:blur(1.2px);opacity:.55}
-.book-row .tag{font-size:11px;font-weight:700;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:1px}
-.tag.lent{color:var(--stamp);border:1px solid var(--stamp)} .tag.dig{color:var(--digital);border:1px solid var(--digital)}
-.noresult{color:var(--muted);font-style:italic;padding:12px}
+.list-head h3{font-family:var(--f-display);font-weight:600;margin:0;font-size:24px}
+.list-head small{font-family:var(--f-hand);font-size:18px;color:var(--muted)}
+.rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:16px 14px}
+.cover-card{display:flex;flex-direction:column;gap:6px;background:none;border:0;padding:0;cursor:pointer;text-align:left;min-width:0}
+.cover{position:relative;aspect-ratio:3/4;max-width:100%;border-radius:4px 10px 10px 4px;background:radial-gradient(circle at var(--x1) var(--y1),rgba(255,255,255,.22) 0 18%,transparent 19%),radial-gradient(circle at var(--x2) var(--y2),rgba(255,255,255,.16) 0 12%,transparent 13%),var(--c);color:#fff;padding:12px 10px 10px 16px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;
+  box-shadow:inset 6px 0 0 rgba(0,0,0,.18),0 10px 16px -12px rgba(0,0,0,.6)}
+.cover .ce{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%) rotate(var(--r,0deg));font-size:42px;opacity:.9;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2));pointer-events:none}
+.cover::after{content:"";position:absolute;inset:8px 8px 8px 14px;border:1.5px solid rgba(255,255,255,.45);border-radius:4px;pointer-events:none}
+.cover .ct{font-family:var(--f-display);font-weight:600;font-size:16px;line-height:1.12;text-shadow:0 1px 2px rgba(0,0,0,.25);overflow-wrap:anywhere}
+.cover .ca{font-family:var(--f-hand);font-size:15px;opacity:.95}
+.cover .cbadge{position:absolute;top:10px;right:-28px;transform:rotate(35deg);background:var(--stamp);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;padding:2px 30px}
+.cover .cbadge.dig{background:#fff;color:var(--digital)}
+.cover-card .cm{font-size:13px;color:var(--muted);line-height:1.3;padding:0 2px}
+.cover-card .cm b{color:var(--ink);font-weight:700}
+.cover-card:hover .cover{transform:translateY(-4px) rotate(-1deg)}
+.cover-card.sel .cover{box-shadow:0 0 0 3px var(--ink),inset 6px 0 0 rgba(0,0,0,.18)}
+.cover-card.lent .cover{filter:blur(1.4px) saturate(.6);opacity:.6}
+.noresult{font-family:var(--f-hand);font-size:20px;color:var(--muted);padding:12px}
 /* Diálogos */
-dialog{border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--ink);padding:0;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px)}
-dialog::backdrop{background:rgba(10,20,18,.5)}
-dialog form{padding:18px;display:flex;flex-direction:column;gap:12px}
-dialog h3{font-family:var(--f-display);margin:0;font-size:22px}
+dialog{border:0;border-radius:22px;background:var(--paper);color:var(--ink);padding:0;width:min(560px,calc(100vw - 32px));max-height:calc(100dvh - 32px);box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
+dialog::backdrop{background:rgba(30,24,40,.5)}
+dialog form{padding:20px;display:flex;flex-direction:column;gap:12px}
+dialog h3{font-family:var(--f-display);font-weight:600;margin:0;font-size:24px}
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:520px){.fgrid{grid-template-columns:1fr}}
 .fgrid .full{grid-column:1/-1}
-label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);min-width:0}
-label.f input,label.f select,label.f textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:16px;color:var(--ink);width:100%}
-.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg label{flex:1;text-align:center;padding:8px;cursor:pointer;font-size:15px;color:var(--ink)}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700;color:var(--muted);min-width:0}
+label.f input,label.f select,label.f textarea{background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:8px 10px;font-size:16px;font-weight:400;color:var(--ink);width:100%}
+.seg{display:flex;border:2px solid var(--line);border-radius:999px;overflow:hidden}
+.seg label{flex:1;text-align:center;padding:8px;cursor:pointer;font-size:15px;font-weight:700;color:var(--ink)}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink);font-weight:700}
-.seg label:has(input:focus-visible){outline:3px solid var(--accent);outline-offset:-3px}
+.seg label:has(input:checked){background:var(--mint);color:#0E3324}
+.seg label:has(input:focus-visible){outline:3px solid var(--sky);outline-offset:-3px}
 .dacts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .dacts .r{display:flex;gap:8px;margin-left:auto}
-.err{color:var(--stamp);font-size:13px;min-height:1em}
-.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:999px;font-size:15px;z-index:10;pointer-events:none}
-footer{color:var(--muted);font-size:13px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;border-top:1px dashed var(--line);padding-top:12px}
-footer a{color:inherit}
+.err{color:var(--stamp);font-size:14px;font-weight:700;min-height:1em;margin:0}
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:999px;font-size:15px;font-weight:700;z-index:10;pointer-events:none}
+footer{color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:4px}
+footer a{color:inherit;font-weight:700}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
+  <header class="board">
     <div>
       <div class="school" id="school" title="Toca para cambiar el nombre del centro" role="button" tabindex="0">CEIP Los Almendros</div>
-      <h1>Biblioteca escolar</h1>
+      <h1>Nuestra biblioteca<span class="chalk-u" aria-hidden="true"></span></h1>
+      <div class="tagline" id="tagline">¿Qué leemos hoy?</div>
     </div>
     <div class="hbtns">
       <button class="btn primary" id="btnNew" type="button">+ Nuevo libro</button>
       <button class="btn" id="btnExport" type="button">Exportar Excel</button>
       <button class="btn" id="btnImport" type="button">Importar Excel</button>
       <input type="file" id="fileImport" accept=".xlsx,.xls,.csv" hidden>
-      <button class="btn" id="btnInstall" type="button" hidden>Instalar app</button>
+      <button class="btn sun" id="btnInstall" type="button" hidden>Instalar app</button>
     </div>
   </header>
 
   <div class="stats" role="group" aria-label="Resumen">
-    <button class="stat" data-filter="" type="button" aria-pressed="false"><b id="sTotal">0</b><span>Libros en total</span></button>
-    <button class="stat" data-filter="fisico" type="button" aria-pressed="false"><b id="sFis">0</b><span>Físicos en estantería</span></button>
-    <button class="stat dig" data-filter="digital" type="button" aria-pressed="false"><b id="sDig">0</b><span>Digitales</span></button>
-    <button class="stat lent" data-filter="prestado" type="button" aria-pressed="false"><b id="sLent">0</b><span>Prestados a profesores</span></button>
+    <button class="note stat" data-filter="" type="button" aria-pressed="false"><b id="sTotal">0</b><span>libros en total</span></button>
+    <button class="note stat" data-filter="fisico" type="button" aria-pressed="false"><b id="sFis">0</b><span>en las estanterías</span></button>
+    <button class="note stat" data-filter="digital" type="button" aria-pressed="false"><b id="sDig">0</b><span>digitales</span></button>
+    <button class="note stat" data-filter="prestado" type="button" aria-pressed="false"><b id="sLent">0</b><span>prestados a profes</span></button>
   </div>
 
   <div class="filters">
-    <input type="search" id="q" placeholder="Buscar título, autor, ISBN, profesor…" aria-label="Buscar">
-    <select id="fMateria" aria-label="Materia"><option value="">Todas las materias</option></select>
-    <select id="fCurso" aria-label="Curso"><option value="">Todos los cursos</option></select>
-    <select id="fEstado" aria-label="Estado">
-      <option value="">Todos</option><option value="fisico">Físicos</option><option value="digital">Digitales</option>
-      <option value="disponible">Disponibles</option><option value="prestado">Prestados</option>
-    </select>
+    <div class="frow">
+      <div class="search"><input type="search" id="q" placeholder="Busca un libro, autor o profe…" aria-label="Buscar"></div>
+      <select id="fCurso" aria-label="Curso"><option value="">Todos los cursos</option></select>
+      <select id="fEstado" aria-label="Estado">
+        <option value="">Todos</option><option value="fisico">Físicos</option><option value="digital">Digitales</option>
+        <option value="disponible">Disponibles</option><option value="prestado">Prestados</option>
+      </select>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Materias"></div>
+    <select id="fMateria" aria-label="Materia" hidden><option value="">Todas las materias</option></select>
   </div>
 
   <div class="main">
     <div class="stage" id="stage">
       <div class="legend" id="legend" aria-label="Materias"></div>
       <div class="stage-tools"><button class="btn" id="btnCenter" type="button">Ver todo</button></div>
-      <div class="hint">Toca un libro para sacarlo · arrastra para girar · pellizca para acercar</div>
+      <div class="hint">Toca un libro para sacarlo de la estantería ✨</div>
     </div>
     <aside class="card" aria-live="polite"><div class="card-in" id="card"></div></aside>
   </div>
 
   <section class="list" aria-labelledby="lt">
-    <div class="list-head"><h3 id="lt">Catálogo</h3><small id="lcount"></small></div>
+    <div class="list-head"><h3 id="lt">📚 Todos los libros</h3><small id="lcount"></small></div>
     <div class="rows" id="rows"></div>
   </section>
 
@@ -1357,12 +1395,15 @@ function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch
 let selectedId = null, filter = {q:'', materia:'', curso:'', estado:''};
 
 /* ---------- colores por materia ---------- */
-const PALETTE = ['#2F6B9A','#B8462E','#2E7D5B','#C58B1E','#6C4FA3','#A3415F','#1F8A8A','#7A5A2E','#4D6A2B','#8E3B8E','#3A5378','#B5652D'];
+const PALETTE = ['#E2574C','#3F8FD6','#F2A93B','#43B28A','#8C6BD1','#E86FA0','#2BA6B5','#F07F3C','#6BAF3F','#5868C9','#C9563A','#2E9C7A'];
 function materiaColor(m){
   const ms = [...new Set(state.books.map(b => b.materia || 'Sin materia'))].sort((a,b) => a.localeCompare(b,'es'));
   const i = ms.indexOf(m || 'Sin materia'); return PALETTE[(i < 0 ? 0 : i) % PALETTE.length];
 }
 /* signatura tipo tejuelo: 3 letras de materia + 3 del autor */
+const EMOJI = {literaturainfantil:'🧸', literaturajuvenil:'🐉', ciencias:'🔬', historiaygeografia:'🌍', matematicas:'🧮', consulta:'📖', ingles:'💬', arteymusica:'🎨', lengua:'✏️'};
+const emojiFor = b => b.formato === 'digital' ? '💾' : (EMOJI[norm(b.materia).replace(/[^a-z]/g,'')] || '📘');
+function shade(hex, k){ const c = new THREE.Color(hex); c.offsetHSL(0, 0, (k - 0.5) * 0.14); return '#' + c.getHexString(); }
 const callNumber = b => (norm(b.materia || 'gen').replace(/[^a-z]/g,'').slice(0,3) + ' ' + norm((b.autor || 'anon').split(/\s+/).pop()).replace(/[^a-z]/g,'').slice(0,3)).toUpperCase();
 const hash = s => { let h = 2166136261; for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return (h >>> 0) / 4294967295; };
 
@@ -1413,8 +1454,8 @@ function spineTex(b, color){
     g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 40, w, 6); g.fillRect(0, h-46, w, 6);
     g.save(); g.translate(w/2, h/2); g.rotate(-Math.PI/2);
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    let size = 40; g.font = `700 ${size}px Literata, Georgia, serif`;
-    let t = b.titulo; while (g.measureText(t).width > h - 130 && size > 22) { size -= 2; g.font = `700 ${size}px Literata, Georgia, serif`; }
+    let size = 42; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`;
+    let t = b.titulo; while (g.measureText(t).width > h - 130 && size > 22) { size -= 2; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`; }
     while (g.measureText(t).width > h - 130 && t.length > 4) t = t.slice(0, -2) + '…';
     g.fillText(t, 0, 0); g.restore();
     g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px "Courier Prime", monospace'; g.textAlign = 'center';
@@ -1425,12 +1466,13 @@ function coverTex(b, color){
   return canvasTex(400, 560, (g, w, h) => {
     g.fillStyle = color; g.fillRect(0,0,w,h);
     g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0,0,18,h);
+    g.fillStyle = 'rgba(255,255,255,.18)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(60 + hash(b.id + i) * (w - 120), 70 + hash(b.id + 'y' + i) * (h - 140), 10 + hash(b.id + 'r' + i) * 26, 0, Math.PI * 2); g.fill(); }
     g.strokeStyle = 'rgba(255,255,255,.55)'; g.lineWidth = 3; g.strokeRect(40, 40, w-80, h-80);
     g.fillStyle = '#fff'; g.textAlign = 'center';
-    g.font = '700 40px Literata, Georgia, serif';
+    g.font = '600 44px Fredoka, "Trebuchet MS", sans-serif';
     const lines = wrapText(g, b.titulo, w - 120).slice(0, 5);
-    lines.forEach((l, i) => g.fillText(l, w/2, 150 + i*48));
-    g.font = 'italic 26px Literata, Georgia, serif'; g.fillStyle = 'rgba(255,255,255,.9)';
+    lines.forEach((l, i) => g.fillText(l, w/2, 150 + i*52));
+    g.font = '30px "Patrick Hand", "Comic Sans MS", cursive'; g.fillStyle = 'rgba(255,255,255,.9)';
     g.fillText(b.autor || '', w/2, h - 110);
     g.font = '700 20px "Courier Prime", monospace'; g.fillText((b.materia || '').toUpperCase(), w/2, h - 70);
   }, 'cv' + b.id + color + b.titulo + b.autor);
@@ -1441,7 +1483,15 @@ function bookMaterials(b){
   const plain = new THREE.MeshLambertMaterial({color: new THREE.Color(color)});
   return [new THREE.MeshLambertMaterial({map: coverTex(b, color)}), plain, pagesMat.clone(), pagesMat.clone(), new THREE.MeshLambertMaterial({map: spineTex(b, color)}), pagesMat.clone()];
 }
-function woodMat(){ return new THREE.MeshLambertMaterial({color: new THREE.Color(document.documentElement.matches('[data-theme="dark"]') || matchMedia('(prefers-color-scheme: dark)').matches && !document.documentElement.matches('[data-theme="light"]') ? 0x6B4A2E : 0x9C6B43)}); }
+const PAINT = ['#F2C14E','#7BC6E8','#8FD4A8','#F59E8B','#B9A2E6'];
+function paintMat(i){ return new THREE.MeshLambertMaterial({color: new THREE.Color(PAINT[i % PAINT.length])}); }
+function plankTex(){
+  return canvasTex(512, 512, (g, w, h) => {
+    const base = new THREE.Color(css('--floor')); g.fillStyle = '#' + base.getHexString(); g.fillRect(0,0,w,h);
+    for (let r = 0; r < 8; r++) { const y = r * 64; g.fillStyle = `rgba(0,0,0,${0.03 + hash('p' + r) * 0.06})`; g.fillRect(0, y, w, 64);
+      g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, y, w, 2); const off = hash('o' + r) * w; g.fillRect(off, y, 2, 64); g.fillRect((off + w/2) % w, y, 2, 64); }
+  }, 'planks' + css('--floor'));
+}
 
 function layout(){
   const fis = state.books.filter(b => b.formato !== 'digital');
@@ -1463,7 +1513,6 @@ const tall = b => b.formato === 'digital' ? 0.78 : 0.66 + hash(b.id) * 0.24 * (b
 function rebuild(){
   world.clear(); bookMeshes = [];
   const cases = layout();
-  const wood = woodMat();
   const glass = new THREE.MeshLambertMaterial({color: new THREE.Color(css('--digital')), transparent:true, opacity:.18});
   let x = 0;
   for (const c of cases) {
@@ -1471,13 +1520,17 @@ function rebuild(){
     const rowW = Math.max(...[...c.shelves.values()].map(bs => bs.reduce((s,b) => s + thick(b) + 0.006, 0)), 0);
     const W = Math.max(1.6, rowW + 0.25), H = nShelves * SH + BOARD;
     const g = new THREE.Group(); g.position.x = x + W/2; world.add(g);
-    const mat = c.digital ? glass : wood;
-    const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.03), c.digital ? glass : wood); back.position.set(0, H/2, -DEPTH/2); g.add(back);
+    const ci = cases.indexOf(c), paint = paintMat(ci), inner = new THREE.MeshLambertMaterial({color: new THREE.Color(PAINT[ci % PAINT.length]).lerp(new THREE.Color('#ffffff'), 0.55)});
+    const mat = c.digital ? glass : paint;
+    const back = new THREE.Mesh(new THREE.BoxGeometry(W, H, 0.03), c.digital ? glass : inner); back.position.set(0, H/2, -DEPTH/2); g.add(back);
     for (const sx of [-W/2 - SIDE/2, W/2 + SIDE/2]) { const s = new THREE.Mesh(new THREE.BoxGeometry(SIDE, H + 0.08, DEPTH + 0.04), mat); s.position.set(sx, (H+0.08)/2, 0); g.add(s); }
     for (let i = 0; i <= nShelves; i++) { const s = new THREE.Mesh(new THREE.BoxGeometry(W + SIDE*2, BOARD, DEPTH + 0.04), mat); s.position.set(0, i*SH + BOARD/2, 0); g.add(s); }
-    const label = canvasTex(512, 128, (gg, w, h) => { gg.fillStyle = c.digital ? css('--digital') : '#F3EBD9'; gg.fillRect(0,0,w,h); gg.fillStyle = c.digital ? '#fff' : '#3A2A1C';
-      gg.font = '700 64px "Courier Prime", monospace'; gg.textAlign = 'center'; gg.textBaseline = 'middle'; gg.fillText(c.digital ? '💾 DIGITAL' : 'ESTANTERÍA ' + c.name, w/2, h/2 + 4); });
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.27), new THREE.MeshBasicMaterial({map: label})); plate.position.set(0, H + 0.26, DEPTH/2 - 0.05); g.add(plate);
+    const label = canvasTex(512, 160, (gg, w, h) => {
+      gg.fillStyle = c.digital ? css('--digital') : '#FFFDF8'; gg.beginPath(); gg.roundRect ? gg.roundRect(6, 6, w-12, h-12, 40) : gg.rect(6, 6, w-12, h-12); gg.fill();
+      gg.lineWidth = 8; gg.strokeStyle = c.digital ? '#fff' : PAINT[ci % PAINT.length]; gg.stroke();
+      gg.fillStyle = c.digital ? '#fff' : '#2B2A3A'; gg.font = '600 70px Fredoka, "Trebuchet MS", sans-serif'; gg.textAlign = 'center'; gg.textBaseline = 'middle';
+      gg.fillText(c.digital ? 'Rincón digital' : 'Estantería ' + c.name, w/2, h/2 + 4); }, 'lbl' + c.name + ci);
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(1.25, 0.39), new THREE.MeshBasicMaterial({map: label, transparent: true})); plate.position.set(0, H + 0.3, DEPTH/2 - 0.05); g.add(plate);
     for (const [l, bs] of c.shelves) {
       const sorted = c.digital ? bs : [...bs].sort((a,b) => (parseInt(a.posicion)||999) - (parseInt(b.posicion)||999) || a.titulo.localeCompare(b.titulo, 'es'));
       let bx = -W/2 + 0.1;
@@ -1493,8 +1546,16 @@ function rebuild(){
     x += W + 0.7;
   }
   bounds.setFromObject(world);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(x + 6, 8), new THREE.MeshLambertMaterial({color: new THREE.Color(css('--floor'))}));
-  floor.rotation.x = -Math.PI/2; floor.position.set(x/2 - 0.35, 0, 1.2); world.add(floor);
+  /* la sala: suelo de tarima, pared y una alfombra redonda delante */
+  const pt = plankTex(); pt.wrapS = pt.wrapT = THREE.RepeatWrapping; pt.repeat.set((x + 8) / 2, 5);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 10), new THREE.MeshLambertMaterial({map: pt}));
+  floor.rotation.x = -Math.PI/2; floor.position.set(x/2 - 0.35, 0, 2.2); world.add(floor);
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(x + 8, 9), new THREE.MeshLambertMaterial({color: new THREE.Color(css('--wall'))}));
+  wall.position.set(x/2 - 0.35, 4.5, -DEPTH/2 - 0.05); world.add(wall);
+  const rugT = canvasTex(512, 512, (g, w, h) => { const cs = ['#F07C6C','#F6C445','#5DC39A','#5BB2E3','#A58BDA','#FFFDF8'];
+    for (let i = 0; i < 6; i++) { g.fillStyle = cs[i]; g.beginPath(); g.arc(w/2, h/2, w/2 - i * 40, 0, Math.PI * 2); g.fill(); } }, 'rug');
+  const rug = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48), new THREE.MeshLambertMaterial({map: rugT}));
+  rug.rotation.x = -Math.PI/2; rug.position.set(x/2 - 0.35, 0.005, 2.0); world.add(rug);
   world.position.x = -(x - 0.7) / 2;
   bounds.translate(new THREE.Vector3(world.position.x, 0, 0));
   applyLook();
@@ -1582,7 +1643,7 @@ function select(id, fromList){
 function renderCard(newStamp){
   const el = $('#card'), b = state.books.find(x => x.id === selectedId);
   if (!b) {
-    el.innerHTML = `<div class="call">FICHA</div><p class="empty">Toca un libro de la estantería o del catálogo para ver su ficha.</p>`;
+    el.innerHTML = `<div class="call">FICHA DE LECTURA</div><p class="empty">Toca un libro de la estantería o de la lista para ver su ficha 📖</p>`;
     el.parentElement.querySelector('.stamp')?.remove(); return;
   }
   const dig = b.formato === 'digital', isUrl = /^https?:\/\//i.test(b.ruta || '');
@@ -1623,16 +1684,15 @@ function renderCard(newStamp){
 function renderRows(){
   const list = state.books.filter(matches).sort((a,b) => (a.formato === 'digital') - (b.formato === 'digital')
     || String(a.estanteria||'').localeCompare(String(b.estanteria||''), 'es', {numeric:true}) || (parseInt(a.balda)||0) - (parseInt(b.balda)||0) || a.titulo.localeCompare(b.titulo, 'es'));
-  $('#lcount').textContent = `${list.length} de ${state.books.length} libros`;
+  $('#lcount').textContent = `${list.length} de ${state.books.length}`;
   $('#rows').innerHTML = list.map(b => {
     const dig = b.formato === 'digital';
-    const where = dig ? 'Digital' : `Est. ${esc(String(b.estanteria || '?').toUpperCase())} · balda ${esc(b.balda || '?')}`;
-    return `<button type="button" class="book-row ${b.prestamo ? 'lent' : ''} ${b.id === selectedId ? 'sel' : ''}" data-id="${b.id}">
-      <span class="spine" style="background:${dig ? 'var(--digital)' : materiaColor(b.materia)}"></span>
-      <span class="info"><span class="t">${esc(b.titulo)}${dig ? '<span class="tag dig">DIGITAL</span>' : ''}${b.prestamo ? '<span class="tag lent">PRESTADO</span>' : ''}</span>
-      <span class="a">${esc(b.autor || '')}</span>
-      <span class="meta">${esc(callNumber(b))} · ${where}${b.prestamo ? ' · ' + esc(b.prestamo.a) : ''}</span></span></button>`;
-  }).join('') || `<p class="noresult">Ningún libro coincide con el filtro.</p>`;
+    const where = dig ? 'Rincón digital' : `Estantería <b>${esc(String(b.estanteria || '?').toUpperCase())}</b> · balda <b>${esc(b.balda || '?')}</b>`;
+    return `<button type="button" class="cover-card ${b.prestamo ? 'lent' : ''} ${b.id === selectedId ? 'sel' : ''}" data-id="${b.id}" aria-label="${esc(b.titulo)}">
+      <span class="cover" style="--c:${dig ? 'var(--digital)' : shade(materiaColor(b.materia), hash(b.id))};--x1:${Math.round(hash(b.id+'a')*80+10)}%;--y1:${Math.round(hash(b.id+'b')*60+25)}%;--x2:${Math.round(hash(b.id+'c')*80+10)}%;--y2:${Math.round(hash(b.id+'d')*60+25)}%;--r:${Math.round((hash(b.id+'e')-.5)*24)}deg"><span class="ct">${esc(b.titulo)}</span><span class="ce" aria-hidden="true">${emojiFor(b)}</span><span class="ca">${esc(b.autor || '')}</span>
+      ${dig ? '<span class="cbadge dig">DIGITAL</span>' : ''}</span>
+      <span class="cm">${where}${b.prestamo ? `<br><span style="color:var(--stamp);font-weight:800">Prestado</span> · ${esc(b.prestamo.a)}` : ''}</span></button>`;
+  }).join('') || `<p class="noresult">Ningún libro coincide. ¡Prueba con otra búsqueda!</p>`;
 }
 $('#rows').addEventListener('click', e => { const r = e.target.closest('[data-id]'); if (r) select(r.dataset.id, true); });
 
@@ -1648,6 +1708,8 @@ function renderFilters(){
   const uniq = k => [...new Set(state.books.map(b => b[k]).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'es', {numeric:true}));
   const fill = (sel, vals, first) => { const v = sel.value; sel.innerHTML = `<option value="">${first}</option>` + vals.map(x => `<option>${esc(x)}</option>`).join(''); sel.value = vals.includes(v) ? v : ''; };
   fill($('#fMateria'), uniq('materia'), 'Todas las materias'); fill($('#fCurso'), uniq('curso'), 'Todos los cursos');
+  $('#chips').innerHTML = `<button type="button" class="chip" data-m="" aria-pressed="${!$('#fMateria').value}">Todas</button>`
+    + uniq('materia').map(m => `<button type="button" class="chip" data-m="${esc(m)}" aria-pressed="${$('#fMateria').value === m}"><i style="background:${materiaColor(m)}"></i>${esc(m)}</button>`).join('');
   filter.materia = $('#fMateria').value; filter.curso = $('#fCurso').value;
   const dl = (id, vals) => $(id).innerHTML = vals.map(x => `<option value="${esc(x)}">`).join('');
   dl('#lMateria', uniq('materia')); dl('#lCurso', uniq('curso')); dl('#lEst', uniq('estanteria').map(x => String(x).toUpperCase()));
@@ -1755,7 +1817,12 @@ $('#dlgImport').addEventListener('close', () => {
 /* ---------- controles ---------- */
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => b.closest('dialog').close());
 $('#q').addEventListener('input', e => { filter.q = e.target.value; applyLook(); renderRows(); });
-$('#fMateria').onchange = e => { filter.materia = e.target.value; applyLook(); renderRows(); };
+$('#chips').addEventListener('click', e => {
+  const c = e.target.closest('[data-m]'); if (!c) return;
+  filter.materia = c.dataset.m; $('#fMateria').value = c.dataset.m;
+  document.querySelectorAll('#chips .chip').forEach(x => x.setAttribute('aria-pressed', x === c));
+  applyLook(); renderRows();
+});
 $('#fCurso').onchange = e => { filter.curso = e.target.value; applyLook(); renderRows(); };
 $('#fEstado').onchange = e => { filter.estado = e.target.value; applyLook(); renderRows(); renderStats(); };
 document.querySelectorAll('.stat').forEach(s => s.onclick = () => {
