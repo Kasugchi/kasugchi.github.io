@@ -170,6 +170,8 @@ label.f input,label.f select,label.f textarea{background:var(--bg);border:2px so
 .dacts{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .dacts .r{display:flex;gap:8px;margin-left:auto}
 .err{color:var(--stamp);font-size:14px;font-weight:700;min-height:1em;margin:0}
+.readonly #btnNew,.readonly #btnImport,.readonly #bLoan,.readonly #bReturn,.readonly #bEdit{display:none!important}
+.hist{font-size:13px;color:var(--muted);margin:0;padding-left:18px}
 .toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 18px;border-radius:999px;font-size:15px;font-weight:700;z-index:10;pointer-events:none}
 footer{color:var(--muted);font-size:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding-top:4px}
 footer a{color:inherit;font-weight:700}
@@ -188,6 +190,7 @@ footer a{color:inherit;font-weight:700}
       <button class="btn" id="btnExport" type="button">Exportar Excel</button>
       <button class="btn" id="btnImport" type="button">Importar Excel</button>
       <input type="file" id="fileImport" accept=".xlsx,.xls,.csv" hidden>
+      <button class="btn" id="btnConn" type="button">⚙️ Conexión</button>
       <button class="btn sun" id="btnInstall" type="button" hidden>Instalar app</button>
     </div>
   </header>
@@ -226,7 +229,7 @@ footer a{color:inherit;font-weight:700}
     <div class="rows" id="rows"></div>
   </section>
 
-  <footer><span>Los libros se guardan en este dispositivo. Usa «Exportar Excel» para hacer copia o pasarlos a otro.</span><a href="../">← Más apps</a></footer>
+  <footer><span id="syncInfo"></span><a href="../">← Más apps</a></footer>
 </div>
 
 <dialog id="dlgBook">
@@ -285,6 +288,20 @@ footer a{color:inherit;font-weight:700}
   </form>
 </dialog>
 
+<dialog id="dlgConn">
+  <form method="dialog" novalidate onsubmit="return false">
+    <h3>Conexión con la hoja de Google</h3>
+    <p style="margin:0" id="connState"></p>
+    <label class="f">Dirección del script (termina en /exec)<input id="iApi" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
+    <label class="f">PIN<input id="iApiPin" inputmode="numeric" autocomplete="off" placeholder="El de la pestaña Config de la hoja"></label>
+    <p class="err" id="connErr" aria-live="polite"></p>
+    <div class="dacts">
+      <button class="btn danger" type="button" id="btnDisconnect" hidden>Desconectar</button>
+      <button class="btn" type="button" id="btnUpload" hidden title="Sustituye los libros de la hoja por los de este dispositivo">Enviar libros de este dispositivo</button>
+      <div class="r"><button class="btn" type="button" data-close>Cerrar</button><button class="btn primary" type="button" id="btnConnect">Conectar</button></div>
+    </div>
+  </form>
+</dialog>
 <datalist id="lMateria"></datalist><datalist id="lCurso"></datalist><datalist id="lEst"></datalist><datalist id="lProfes"></datalist>
 <div class="toast" id="toast" hidden></div>
 
@@ -1709,7 +1726,7 @@ let coverRun = false, coverTimer = null;
 const RETRY = 30 * 24 * 3600 * 1000;
 const needsCover = b => !b.cover && !b.coverChecked;  /* una sola búsqueda por libro */
 async function processCovers(){
-  if (coverRun || !navigator.onLine) return; coverRun = true;
+  if (coverRun || !navigator.onLine || (isRemote() && !canWrite)) return; coverRun = true;
   const todo = state.books.filter(needsCover); let done = 0;
   const status = () => { $('#coverStatus').hidden = done >= todo.length; $('#coverStatus').textContent = `Buscando carátulas… ${done}/${todo.length}`; };
   status();
@@ -1726,7 +1743,7 @@ async function processCovers(){
         if (!b.anio && res.anio) b.anio = res.anio;
       }
       done++; status(); refreshBook(b);
-      clearTimeout(coverTimer); coverTimer = setTimeout(save, 800);
+      clearTimeout(coverTimer); coverTimer = setTimeout(save, 800); queuePatch(b);
       await new Promise(r => setTimeout(r, 180));
     }
   };
@@ -1755,6 +1772,95 @@ function applyCoverTexture(m, url){
 }
 
 
+/* ---------- hoja de Google (opcional): si hay conexión, la hoja manda ---------- */
+const RKEY = 'biblioteca.remote';
+let remote = (() => { try { return JSON.parse(localStorage.getItem(RKEY)) || null; } catch(e) { return null; } })();   /* {api, pin} */
+let canWrite = true, lastSync = 0, syncing = false, syncError = '', lastHash = '';
+const isRemote = () => !!(remote && remote.api);
+function saveRemote(){ try { remote ? localStorage.setItem(RKEY, JSON.stringify(remote)) : localStorage.removeItem(RKEY); } catch(e) {} }
+async function apiGet(r = remote){
+  const u = new URL(r.api); if (r.pin) u.searchParams.set('pin', r.pin); u.searchParams.set('_', Date.now());
+  const res = await fetch(u, {cache: 'no-store', redirect: 'follow'});
+  const j = await res.json(); if (!j.ok) throw new Error(j.error || 'error'); return j;
+}
+async function apiPost(body){
+  /* text/plain evita la petición previa de CORS, que Apps Script no admite */
+  const res = await fetch(remote.api, {method: 'POST', redirect: 'follow', headers: {'Content-Type': 'text/plain;charset=utf-8'}, body: JSON.stringify(Object.assign({pin: remote.pin}, body))});
+  const j = await res.json(); if (!j.ok) throw new Error(j.error || 'error'); return j;
+}
+const forSheet = b => { const o = Object.assign({}, b); delete o.prestamo; delete o._busy; delete o.coverAuto; return o; };
+function applyServer(j){
+  canWrite = !!j.canWrite; lastSync = Date.now(); syncError = '';
+  document.body.classList.toggle('readonly', !canWrite);
+  const hash = JSON.stringify([j.school, j.books, j.loans]);
+  if (hash !== lastHash) {
+    lastHash = hash;
+    state.books = j.books.map(b => Object.assign({}, b, {isbnTest: !!b.isbnTest, prestamo: b.prestamo || null}));
+    state.loans = j.loans || []; state.school = j.school || state.school; state.sample = false; state.v = SAMPLE_V;
+    state.profes = [...new Set([...(state.profes || []), ...state.loans.map(l => l.profe).filter(Boolean)])];
+    save(); schoolEl.textContent = state.school;
+    if (selectedId && !state.books.some(b => b.id === selectedId)) selectedId = null;
+    renderAll();
+  }
+  renderSync();
+}
+async function pull(silent){
+  if (!isRemote() || syncing) return; syncing = true;
+  try { applyServer(await apiGet()); }
+  catch(e) { syncError = e.message === 'pin' ? 'PIN incorrecto' : 'Sin conexión con la hoja'; if (!silent) toast(syncError); renderSync(); }
+  finally { syncing = false; }
+}
+async function push(body, okMsg){
+  if (!isRemote()) return;
+  try { applyServer(await apiPost(body)); if (okMsg) toast(okMsg); }
+  catch(e) { toast(e.message === 'pin' ? 'Hace falta el PIN de escritura' : 'No se guardó en la hoja. Inténtalo de nuevo.'); lastHash = ''; pull(true); }
+}
+/* las carátulas encontradas se mandan a la hoja en grupos, sin redibujar */
+let patchQueue = [], patchTimer = null;
+function queuePatch(b){
+  if (!isRemote() || !canWrite) return;
+  patchQueue.push({id: b.id, cover: b.cover || '', coverChecked: b.coverChecked || 0, isbn: b.isbn || '', isbnTest: !!b.isbnTest, editorial: b.editorial || '', anio: b.anio || ''});
+  clearTimeout(patchTimer); patchTimer = setTimeout(flushPatches, 3000);
+}
+async function flushPatches(){
+  if (!patchQueue.length) return; const batch = patchQueue.splice(0);
+  try { await apiPost({action: 'patchBooks', patches: batch}); } catch(e) { patchQueue.unshift(...batch); }
+}
+function renderSync(){
+  const el = $('#syncInfo');
+  if (!isRemote()) { el.textContent = 'Los libros se guardan en este dispositivo. Usa «Exportar Excel» para hacer copia, o conecta una hoja de Google en ⚙️.'; $('#btnConn').textContent = '⚙️ Conexión'; return; }
+  $('#btnConn').textContent = syncError ? '⚠️ Conexión' : '☁️ Conectado';
+  el.textContent = syncError ? `Hoja de Google: ${syncError}. Se muestran los últimos datos guardados.`
+    : `Conectado a la hoja de Google${canWrite ? '' : ' (solo consulta)'} · actualizado a las ${new Date(lastSync).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}`;
+}
+function openConn(){
+  $('#iApi').value = remote ? remote.api : ''; $('#iApiPin').value = remote ? (remote.pin || '') : '';
+  $('#connErr').textContent = ''; $('#connState').textContent = isRemote() ? (syncError || (canWrite ? 'Conectado. Puedes consultar y modificar.' : 'Conectado en modo consulta (sin PIN de escritura).')) : 'Ahora los libros se guardan solo en este dispositivo.';
+  $('#btnDisconnect').hidden = !isRemote(); $('#btnUpload').hidden = !isRemote() || !canWrite;
+  $('#dlgConn').showModal();
+}
+$('#btnConn').onclick = openConn;
+$('#btnConnect').onclick = async () => {
+  const api = $('#iApi').value.trim(), pin = $('#iApiPin').value.trim();
+  if (!/^https:\/\/script\.google\.com\/.+\/exec/.test(api)) { $('#connErr').textContent = 'Pega la dirección del script: empieza por https://script.google.com/ y termina en /exec'; return; }
+  $('#btnConnect').disabled = true; $('#connErr').textContent = 'Conectando…';
+  try {
+    const j = await apiGet({api, pin}); remote = {api, pin}; saveRemote(); lastHash = ''; applyServer(j);
+    $('#dlgConn').close(); toast(j.canWrite ? 'Conectado a la hoja' : 'Conectado en modo consulta');
+    if (!j.books.length) setTimeout(openConn, 300);
+  } catch(e) { $('#connErr').textContent = e.message === 'pin' ? 'El PIN no es correcto.' : 'No responde. Revisa la dirección y que el script esté publicado para «Cualquier usuario».'; }
+  finally { $('#btnConnect').disabled = false; }
+};
+$('#btnDisconnect').onclick = () => { remote = null; saveRemote(); canWrite = true; document.body.classList.remove('readonly'); $('#dlgConn').close(); renderSync(); toast('Desconectado: ahora se guarda en este dispositivo'); };
+$('#btnUpload').onclick = async () => {
+  $('#connErr').textContent = 'Enviando…';
+  const books = state.books.map(b => Object.assign(forSheet(b), b.prestamo ? {prestamo: b.prestamo} : {}));
+  await push({action: 'importBooks', books, mode: 'replace'}, `${books.length} libros enviados a la hoja`);
+  $('#dlgConn').close();
+};
+setInterval(() => { if (document.visibilityState === 'visible') pull(true); }, 60000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pull(true); });
+
 /* ---------- ficha de catálogo ---------- */
 function select(id, fromList){
   selectedId = id; grab(id); applyLook(); renderCard(); renderRows();
@@ -1780,6 +1886,8 @@ function renderCard(newStamp){
     ${b.notas ? `<dt>Notas</dt><dd>${esc(b.notas)}</dd>` : ''}
   </dl>`;
   if (dig) h += `<div><span class="path" id="ruta">${esc(b.ruta || 'Sin ruta indicada')}</span></div>`;
+  const hist = (state.loans || []).filter(l => l.libro === b.id && l.devuelto).slice(-4).reverse();
+  if (hist.length) h += `<div><dt style="font-family:var(--f-hand);font-size:17px;color:var(--muted)">Préstamos anteriores</dt><ul class="hist">${hist.map(l => `<li>${esc(l.profe)} · ${fmtDate(l.fecha)} → ${fmtDate(l.devuelto)}</li>`).join('')}</ul></div>`;
   h += `<div class="acts">`;
   if (dig) {
     if (isUrl) h += `<a class="btn primary" href="${esc(b.ruta)}" target="_blank" rel="noopener">Abrir ↗</a>`;
@@ -1791,7 +1899,7 @@ function renderCard(newStamp){
   const card = el.parentElement; card.querySelector('.stamp')?.remove();
   if (b.prestamo) { const s = document.createElement('div'); s.className = 'stamp' + (newStamp ? ' new' : ''); s.innerHTML = `<b>PRESTADO</b><small>${esc(fmtDate(b.prestamo.fecha))}</small>`; card.appendChild(s); }
   $('#bLoan')?.addEventListener('click', () => openLoan(b));
-  $('#bReturn')?.addEventListener('click', () => { b.prestamo = null; commit(); toast('Devuelto a la estantería'); });
+  $('#bReturn')?.addEventListener('click', () => { b.prestamo = null; commit(); toast('Devuelto a la estantería'); push({action: 'returnBook', id: b.id}); });
   $('#bEdit').addEventListener('click', () => openBook(b));
   $('#bCopy')?.addEventListener('click', async () => {
     try { await navigator.clipboard.writeText(b.ruta); toast('Ruta copiada'); }
@@ -1840,7 +1948,9 @@ function renderFilters(){
     + `<span><i style="background:var(--digital)"></i>Digital</span><span><i style="background:transparent;border:1px dashed var(--muted)"></i>Prestado</span>`;
 }
 function commit(newStamp){
-  state.sample = false; save();
+  state.sample = false; save(); renderAll(newStamp);
+}
+function renderAll(newStamp){
   clearTex(); renderFilters(); renderStats(); rebuild(); renderCard(newStamp); renderRows();
   if (selectedId) { for (const m of bookMeshes) if (m.userData.book.id === selectedId) { m.userData.t = 1; m.userData.target = 1; dressCover(m); } }
 }
@@ -1859,6 +1969,7 @@ $('#formLoan').addEventListener('submit', e => {
   loanBook.prestamo = {a, fecha: $('#iFecha').value || todayISO()};
   state.profes = [...new Set([...(state.profes || []), a])];
   commit(true); toast('Marcado como prestado');
+  push({action: 'lend', id: loanBook.id, profe: a, fecha: loanBook.prestamo.fecha});
 });
 $('#iProfe').addEventListener('input', () => $('#loanErr').textContent = '');
 
@@ -1893,7 +2004,9 @@ $('#formBook').addEventListener('submit', e => {
   if (editing && changedId && editing.coverAuto && editing.cover === v.cover) { v.cover = ''; extra.coverChecked = 0; }
   if (editing) { Object.assign(editing, v, extra); if (formato === 'digital') editing.prestamo = null; selectedId = editing.id; toast('Libro guardado'); }
   else { const b = Object.assign({id: uid(), prestamo: null}, v, extra); state.books.push(b); selectedId = b.id; toast('Libro añadido'); }
-  commit(); grab(selectedId); processCovers();
+  commit(); grab(selectedId);
+  const saved = state.books.find(x => x.id === selectedId); if (saved) push({action: 'upsertBook', book: forSheet(saved)});
+  processCovers();
 });
 $('#formBook').addEventListener('input', () => $('#bookErr').textContent = '');
 function showPrev(){ const u = $('#iCover').value.trim(); $('#cPrev').hidden = !u; $('#cPrev').innerHTML = u ? `<img src="${esc(u)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><span>Carátula</span>` : ''; }
@@ -1913,7 +2026,7 @@ $('#btnLookup').onclick = async () => {
 };
 $('#btnDelete').onclick = () => { $('#delConfirm').hidden = false; $('#delYes').focus(); };
 $('#delNo').onclick = () => { $('#delConfirm').hidden = true; };
-$('#delYes').onclick = () => { state.books = state.books.filter(b => b !== editing); selectedId = null; $('#dlgBook').close(); commit(); toast('Libro eliminado'); };
+$('#delYes').onclick = () => { const id = editing.id; state.books = state.books.filter(b => b !== editing); selectedId = null; $('#dlgBook').close(); commit(); toast('Libro eliminado'); push({action: 'deleteBook', id}); };
 $('#btnNew').onclick = () => openBook(null);
 
 /* ---------- Excel ---------- */
@@ -1953,7 +2066,9 @@ $('#fileImport').onchange = e => {
 $('#dlgImport').addEventListener('close', () => {
   const v = $('#dlgImport').returnValue;
   if (v === 'replace') state.books = pending; else if (v === 'add') state.books = state.books.concat(pending); else return;
-  selectedId = null; commit(); viewAll(); toast(`${pending.length} libros importados`); processCovers();
+  selectedId = null; commit(); viewAll(); toast(`${pending.length} libros importados`);
+  push({action: 'importBooks', mode: v, books: pending.map(b => Object.assign(forSheet(b), b.prestamo ? {prestamo: b.prestamo} : {}))});
+  processCovers();
 });
 
 /* ---------- controles ---------- */
@@ -1977,7 +2092,7 @@ function editSchool(){
   const inp = document.createElement('input'); inp.value = state.school || ''; inp.setAttribute('aria-label', 'Nombre del centro');
   inp.style.cssText = 'font:inherit;letter-spacing:inherit;text-transform:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 6px';
   schoolEl.replaceChildren(inp); inp.focus(); inp.select();
-  const done = () => { state.school = inp.value.trim() || 'Mi colegio'; save(); schoolEl.textContent = state.school; };
+  const done = () => { const prev = state.school; state.school = inp.value.trim() || 'Mi colegio'; save(); schoolEl.textContent = state.school; if (state.school !== prev) push({action: 'setSchool', school: state.school}); };
   inp.addEventListener('blur', done); inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
 }
 schoolEl.addEventListener('click', () => { if (!schoolEl.querySelector('input')) editSchool(); });
@@ -1997,6 +2112,9 @@ schoolEl.textContent = state.school || 'Virgen del Mar';
 resize(); renderFilters(); renderStats(); rebuild(); renderCard(); renderRows();
 viewAll(); const g0 = camGoal; if (g0) { controls.target.copy(g0.target); camera.position.set(g0.target.x, g0.target.y, 20); camera.zoom = 1; camera.updateProjectionMatrix(); camGoal = null; }
 document.fonts && document.fonts.ready.then(() => { clearTex(); rebuild(); });
+{ const qs = new URLSearchParams(location.search);
+  if (qs.get('api')) { remote = {api: qs.get('api'), pin: qs.get('pin') || ''}; saveRemote(); history.replaceState(null, '', location.pathname); } }
+renderSync(); if (isRemote()) pull();
 /* Carátulas: cada libro se busca una sola vez; las imágenes las guarda el service worker y no se vuelven a descargar */
 setTimeout(processCovers, 1500);
 window.addEventListener('online', processCovers);
