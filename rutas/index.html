@@ -280,6 +280,7 @@
       }
     }
 
+      [hidden] { display: none !important; }
   </style>
 </head>
 <body>
@@ -290,6 +291,8 @@
         <p class="subtitle">Guarda gastos, kilómetros y ubicación. Funciona localmente y permite importar/exportar viajes.</p>
       </div>
       <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+        <button type="button" id="installBtn" hidden>📲 Instalar app</button>
+        <button type="button" id="iosInstallBtn" class="secondary" hidden>📲 Instalar app</button>
         <button type="button" id="themeToggleBtn" class="secondary theme-toggle">🌙 Modo oscuro</button>
         <div class="health">
           <div id="gpsStatus" class="chip warn">🟡 GPS</div>
@@ -298,6 +301,7 @@
         </div>
       </div>
     </header>
+    <p id="iosInstallHint" class="subtitle" hidden>En iPhone: pulsa el botón Compartir de Safari y elige «Añadir a pantalla de inicio».</p>
 
     <main class="grid">
       <section class="card entry-card">
@@ -1194,6 +1198,21 @@
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(console.warn));
     }
+
+    // Instalar como app: Chrome/Android avisa con beforeinstallprompt; en iPhone solo se puede desde Safari
+    let installEvent = null;
+    const isStandalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvent = e; $('installBtn').hidden = false; });
+    window.addEventListener('appinstalled', () => { $('installBtn').hidden = true; });
+    $('installBtn').addEventListener('click', async () => {
+      if (!installEvent) return;
+      installEvent.prompt();
+      await installEvent.userChoice;
+      installEvent = null;
+      $('installBtn').hidden = true;
+    });
+    if (!isStandalone && /iphone|ipad|ipod/i.test(navigator.userAgent)) $('iosInstallBtn').hidden = false;
+    $('iosInstallBtn').addEventListener('click', () => { $('iosInstallHint').hidden = !$('iosInstallHint').hidden; });
     applyTheme(localStorage.getItem(THEME_KEY) || 'light');
     loadApp();
   </script>
