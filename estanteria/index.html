@@ -1477,8 +1477,25 @@ async function readSheet(){
     const tries = gid ? [`gid=${gid}`] : [...CONFIG.sheetNames.map(n => 'sheet=' + encodeURIComponent(n)), ''];
     for (const t of tries) {
       try {
-        const aoa = await gvizJsonp(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?headers=0${t ? '&' + t : ''}`);
-        const data = objectsFromRows(aoa);
+        const base = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?${t ? t + '&' : ''}headers=`;
+        /* 1ª lectura en bruto, solo para localizar la fila de cabecera */
+        const raw = await gvizJsonp(base + '0');
+        const h = raw.body.findIndex(r => r.some(v => ['etiqueta','descripcion','balda'].includes(norm(v))));
+        if (h < 0) continue;
+        const nxt = (raw.body[h+1] || []).filter(filled);
+        const n = h + 1 + (nxt.length && nxt.every(v => ['caja','tapa'].includes(norm(v))) ? 1 : 0);
+        /* 2ª lectura: Google trata esas filas como títulos, así no borra los de las columnas numéricas */
+        const res = await gvizJsonp(base + n);
+        let head = res.head, body = res.body, first = n;
+        /* Si una fila en blanco al principio descuadra la cuenta, la fila CAJA/TAPA llega como dato: se une a los títulos */
+        const sub0 = (body[0] || []).filter(filled);
+        if (sub0.length && sub0.every(v => ['caja','tapa'].includes(norm(v)))) {
+          let lastTop = '';
+          head = head.map((t, c) => { if (/color/i.test(t)) lastTop = t; const v = body[0][c]; return filled(v) ? `${t || lastTop} ${v}` : t; });
+          body = body.slice(1); first++;
+        }
+        head = cleanLabels(head);
+        const data = objectsFromRows([head, ...body], first);
         if (data.length) { done(data); return; }
       } catch(e) { /* siguiente opción */ }
     }
@@ -1502,6 +1519,16 @@ async function readSheet(){
 const hhmm = t => new Date(t).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
 function cached(){ try { return JSON.parse(localStorage.getItem('estiba.cache')); } catch(e) { return null; } }
 /* JSONP: Google devuelve la hoja envuelta en una función; al cargarla como <script> no hay bloqueo CORS */
+/* Google une las filas de cabecera en un título: «X Balda», «COLOR CAJA», «TAPA»… Se limpian. */
+function cleanLabels(labels){
+  let lastColor = '';
+  return labels.map(l => {
+    let t = String(l || '').split(/\s+/).filter(w => w && w.toUpperCase() !== 'X').join(' ');
+    if (/color/i.test(t)) lastColor = t.replace(/\s*(caja|tapa)\s*$/i, '');
+    if (['caja','tapa'].includes(norm(t)) && lastColor) t = lastColor + ' ' + t;
+    return t;
+  });
+}
 function gvizJsonp(base){
   return new Promise((resolve, reject) => {
     const cb = '__estiba' + Date.now() + Math.floor(Math.random()*1000);
@@ -1513,7 +1540,7 @@ function gvizJsonp(base){
       if (!resp || resp.status === 'error' || !resp.table) return reject(new Error('gviz'));
       const head = resp.table.cols.map(c => (c.label || '').trim());
       const body = resp.table.rows.map(r => (r.c || []).map(c => c == null ? '' : (c.v ?? c.f ?? '')));
-      resolve(head.some(Boolean) ? [head, ...body] : body);
+      resolve({head, body});
     };
     s.onerror = () => { clean(); reject(new Error('script')); };
     s.src = base + `&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;
