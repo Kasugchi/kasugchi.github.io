@@ -179,7 +179,7 @@ footer a{color:inherit;font-weight:700}
 <div class="wrap">
   <header class="board">
     <div>
-      <div class="school" id="school" title="Toca para cambiar el nombre del centro" role="button" tabindex="0">CEIP Los Almendros</div>
+      <div class="school" id="school" title="Toca para cambiar el nombre del centro" role="button" tabindex="0">Virgen del Mar</div>
       <h1>Nuestra biblioteca<span class="chalk-u" aria-hidden="true"></span></h1>
       <div class="tagline" id="tagline">¿Qué leemos hoy?</div>
     </div>
@@ -1388,7 +1388,8 @@ const KEY = 'biblioteca.v1';
 let state = load();
 function load(){
   let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
-  if (!s || !Array.isArray(s.books)) return {school: 'CEIP Los Almendros', books: SAMPLE, sample: true, v: SAMPLE_V};
+  if (s && (!s.school || s.school === 'CEIP Los Almendros')) s.school = 'Virgen del Mar';
+  if (!s || !Array.isArray(s.books)) return {school: 'Virgen del Mar', books: SAMPLE, sample: true, v: SAMPLE_V};
   if (s.sample && s.v === SAMPLE_V) return s;
   if (s.sample) return {school: s.school, books: SAMPLE, sample: true, v: SAMPLE_V, profes: s.profes};
   if ((s.v || 1) < SAMPLE_V) {
@@ -1992,7 +1993,7 @@ $('#btnInstall').onclick = async () => { if (!installEvt) return; installEvt.pro
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 
 /* ---------- arranque ---------- */
-schoolEl.textContent = state.school || 'CEIP Los Almendros';
+schoolEl.textContent = state.school || 'Virgen del Mar';
 resize(); renderFilters(); renderStats(); rebuild(); renderCard(); renderRows();
 viewAll(); const g0 = camGoal; if (g0) { controls.target.copy(g0.target); camera.position.set(g0.target.x, g0.target.y, 20); camera.zoom = 1; camera.updateProjectionMatrix(); camGoal = null; }
 document.fonts && document.fonts.ready.then(() => { clearTex(); rebuild(); });
