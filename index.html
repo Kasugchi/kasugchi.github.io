@@ -55,14 +55,6 @@ h2 small{font-family:var(--f-mono);font-size:12px;font-weight:400;color:var(--mu
 .btn:hover{border-color:var(--muted)}
 .btn.primary:hover{filter:brightness(1.06)}
 .btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.lab{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.lab a{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 18px;text-decoration:none;color:var(--ink);border-top:1px solid var(--line)}
-.lab a:first-child{border-top:0}
-.lab a:hover{background:var(--chip)}
-.lab a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
-.lab .name{font-weight:600}
-.lab .file{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap}
-.lab .sub{display:block;font-size:14px;color:var(--muted);font-weight:400}
 footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px;color:var(--muted);font-size:14px;border-top:1px dashed var(--line);padding-top:18px}
 footer a{color:inherit}
 @media (prefers-reduced-motion:reduce){.app{transition:none}.app:hover{transform:none}}
@@ -79,11 +71,6 @@ footer a{color:inherit}
   <section aria-labelledby="t-apps">
     <h2 id="t-apps">Aplicaciones <small id="count"></small></h2>
     <div class="apps" id="apps"></div>
-  </section>
-
-  <section aria-labelledby="t-lab">
-    <h2 id="t-lab">Laboratorio <small>pruebas y versiones anteriores</small></h2>
-    <nav class="lab" id="lab" aria-label="Laboratorio"></nav>
   </section>
 
   <footer>
@@ -112,12 +99,6 @@ const APPS = [
   }
 ];
 
-const LAB = [
-  { name: 'Registro de Paradas v2 con IA', file: 'paradas2.html', sub: 'Versión experimental de Rutas' },
-  { name: 'Mapa de arquitectura · HogwartsRP Chronos', file: 'map.html', sub: 'Versión con Cytoscape' },
-  { name: 'Mapa de arquitectura · HogwartsRP Chronos', file: 'mapa.html', sub: 'Versión original' }
-];
-
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('count').textContent = APPS.length + (APPS.length === 1 ? ' app' : ' apps');
 document.getElementById('apps').innerHTML = APPS.map(a => `
@@ -130,12 +111,8 @@ document.getElementById('apps').innerHTML = APPS.map(a => `
     <ul class="chips">${(a.chips || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul>
     <div class="actions">
       <a class="btn primary" href="${esc(a.url)}">Abrir</a>
-      ${(a.extra || []).map(x => `<a class="btn" href="${esc(x.url)}">${esc(x.label)}</a>`).join('')}
-    </div>
+      ${(a.extra || []).map(x => `<a class="btn" href="${esc(x.url)}">${esc(x    </div>
   </article>`).join('');
-const lab = document.getElementById('lab');
-lab.innerHTML = LAB.map(l => `<a href="${esc(l.file)}"><span class="name">${esc(l.name)}<span class="sub">${esc(l.sub)}</span></span><span class="file">${esc(l.file)}</span></a>`).join('');
-lab.closest('section').hidden = !LAB.length;
 </script>
 </body>
 </html>
