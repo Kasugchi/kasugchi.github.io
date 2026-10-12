@@ -98,6 +98,16 @@ tbody tr.sel{background:color-mix(in srgb,var(--accent) 24%,transparent)}
 .zone span{font-family:var(--f-mono);font-size:12px;opacity:.8}
 .sw{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid var(--line);vertical-align:-1px;margin-right:5px}
 td.wrap{white-space:normal;min-width:10em}
+.contents-h{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.04em;text-transform:uppercase;margin:16px 0 6px;color:var(--muted)}
+.contents-h span{font-family:var(--f-mono);font-size:12px}
+.contents{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;max-height:300px;overflow:auto;border-top:1px solid var(--line)}
+.contents li{display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;padding:6px 2px;border-bottom:1px solid var(--line);font-size:14px}
+.contents li small{flex-basis:100%;color:var(--muted);font-size:12px}
+.contents li .alt{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.contents li.hit{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.contents li.on{background:color-mix(in srgb,var(--accent) 30%,transparent)}
+.zonepill{display:inline-block;font-family:var(--f-body);font-size:12px;border:1px solid var(--line);border-radius:999px;padding:0 8px}
+.altinfo{margin:0;font-size:14px;background:color-mix(in srgb,var(--accent) 14%,transparent);border-radius:6px;padding:8px 10px}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 
@@ -107,7 +117,7 @@ td.wrap{white-space:normal;min-width:10em}
   <header>
     <div>
       <h1>Estantería 3D</h1>
-      <div class="sub">Lee un Excel o Google Sheets con la Balda, Fila, Fondo y Altura de cada caja y la dibuja en su sitio.</div>
+      <div class="sub">Cada objeto, en qué caja está y dónde está esa caja. Lee el Excel o la hoja de Google.</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn primary" id="btnInstall" type="button" hidden>Instalar app</button>
@@ -124,8 +134,8 @@ td.wrap{white-space:normal;min-width:10em}
       <button class="btn" id="btnSample" type="button">Ejemplo</button>
     </div>
     <!--SHEET_UI-->
-    <span class="sep" aria-hidden="true" data-sheet></span>
-    <div class="grp" data-sheet style="flex:1;min-width:0">
+    
+    <div class="grp" data-sheet style="flex:1 1 100%;min-width:0;order:-1">
       <label class="lbl" for="sheetUrl">Google Sheets</label>
       <input type="url" id="sheetUrl" placeholder="Pega aquí el enlace de la hoja" style="flex:1;min-width:10em;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:14px">
       <button class="btn primary" id="btnSheet" type="button">Leer hoja</button>
@@ -144,7 +154,12 @@ td.wrap{white-space:normal;min-width:10em}
     <span class="sep" aria-hidden="true"></span>
     <div class="grp">
       <label class="lbl" for="colorBy">Ver por</label>
-      <select id="colorBy"><option value="real">Color caja y tapa</option><option value="Categoria">Categoría</option><option value="Estado">Estado</option><option value="Descripcion">Descripción</option><option value="none">Sin color</option></select>
+      <select id="colorBy"><option value="real">Color caja y tapa</option><option value="CajaAlt">Caja alternativa</option><option value="Categoria">Categoría</option><option value="none">Sin color</option></select>
+    </div>
+    <span class="sep" aria-hidden="true"></span>
+    <div class="grp" id="altGrp">
+      <label class="lbl" for="alt">Llevar en</label>
+      <select id="alt"><option value="">Todas</option></select>
     </div>
     <span class="sep" aria-hidden="true"></span>
     <div class="grp" aria-label="Vistas">
@@ -159,10 +174,7 @@ td.wrap{white-space:normal;min-width:10em}
 
   <div class="main">
     <div class="stagewrap">
-    <div class="zones" role="tablist" aria-label="Estanterías">
-      <button class="zone" role="tab" id="zMain" aria-selected="true" type="button">Estantería principal <span id="nMain"></span></button>
-      <button class="zone" role="tab" id="zExtra" aria-selected="false" type="button">Sin ubicación <span id="nExtra"></span></button>
-    </div>
+    <div class="zones" id="zones" role="tablist" aria-label="Dónde están"></div>
     <div class="stage" id="stage">
       <div class="legend" id="legend" aria-label="Leyenda"></div>
       <div class="hint">Arrastra para girar · rueda o pellizco para zoom · toca una caja para ver su ficha</div>
@@ -187,9 +199,10 @@ td.wrap{white-space:normal;min-width:10em}
   <section class="card listcard">
     <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
       <h2 style="margin:0">Listado</h2>
-      <input type="search" id="q" placeholder="Buscar etiqueta, descripción, categoría, color…" aria-label="Buscar" style="min-width:0;flex:1;max-width:320px">
+      <input type="search" id="q" placeholder="Buscar un objeto, etiqueta, lugar, color…" aria-label="Buscar" style="min-width:0;flex:1;max-width:320px">
     </div>
-    <div class="tablewrap"><table><thead><tr><th>Balda</th><th>Fila</th><th>Fondo</th><th>Altura</th><th>Etiqueta</th><th>Descripción</th><th>Categoría</th><th>Color caja</th><th>Color tapa</th><th>Estado</th><th>Notas</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <p class="altinfo" id="altInfo" hidden></p>
+    <div class="tablewrap"><table><thead><tr><th>Ubicación</th><th>Balda</th><th>Fila</th><th>Fondo</th><th>Altura</th><th>Etiqueta</th><th>Descripción</th><th>Color caja</th><th>Color tapa</th><th>Lugar</th><th>Caja alternativa</th><th>Notas</th></tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </div>
 
@@ -1270,92 +1283,173 @@ var o=((a=s[17])==null?void 0:a[0])?Ob(e,e[_b(s[17][0].data)][0]):[];var l=vb(s[
 var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.s.r;c<=n.e.r;++c){i=Ta(c);for(f=n.s.c;f<=n.e.c;++f){r=s[f]+i;t=l?(e[c]||[])[f]:e[r];a="";if(t===undefined)continue;else if(t.F!=null){r=t.F;if(!t.f)continue;a=t.f;if(r.indexOf(":")==-1)r=r+":"+r}if(t.f!=null)a=t.f;else if(t.t=="z")continue;else if(t.t=="n"&&t.v!=null)a=""+t.v;else if(t.t=="b")a=t.v?"TRUE":"FALSE";else if(t.w!==undefined)a="'"+t.w;else if(t.v===undefined)continue;else if(t.t=="s")a="'"+t.v;else a=""+t.v;o[o.length]=r+"="+a}}return o}function xw(e,r,t){var a=t||{};var n=+!a.skipHeader;var i=e||{};var s=0,f=0;if(i&&a.origin!=null){if(typeof a.origin=="number")s=a.origin;else{var o=typeof a.origin=="string"?Oa(a.origin):a.origin;s=o.r;f=o.c}}var l;var c={s:{c:0,r:0},e:{c:f,r:s+r.length-1+n}};if(i["!ref"]){var h=Da(i["!ref"]);c.e.c=Math.max(c.e.c,h.e.c);c.e.r=Math.max(c.e.r,h.e.r);if(s==-1){s=h.e.r+1;c.e.r=s+r.length-1+n}}else{if(s==-1){s=0;c.e.r=r.length-1+n}}var u=a.header||[],d=0;r.forEach(function(e,r){rr(e).forEach(function(t){if((d=u.indexOf(t))==-1)u[d=u.length]=t;var o=e[t];var c="z";var h="";var v=Ra({c:f+d,r:s+r+n});l=Rw(i,v);if(o&&typeof o==="object"&&!(o instanceof Date)){i[v]=o}else{if(typeof o=="number")c="n";else if(typeof o=="boolean")c="b";else if(typeof o=="string")c="s";else if(o instanceof Date){c="d";if(!a.cellDates){c="n";o=fr(o)}h=a.dateNF||X[14]}else if(o===null&&a.nullError){c="e";o=0}if(!l)i[v]=l={t:c,v:o};else{l.t=c;l.v=o;delete l.w;delete l.R;if(h)l.z=h}if(h)l.z=h}})});c.e.c=Math.max(c.e.c,f+u.length-1);var v=Ta(s);if(n)for(d=0;d<u.length;++d)i[ya(d+f)+v]={t:"s",v:u[d]};i["!ref"]=Na(c);return i}function Ow(e,r){return xw(null,e,r)}function Rw(e,r,t){if(typeof r=="string"){if(Array.isArray(e)){var a=Oa(r);if(!e[a.r])e[a.r]=[];return e[a.r][a.c]||(e[a.r][a.c]={t:"z"})}return e[r]||(e[r]={t:"z"})}if(typeof r!="number")return Rw(e,Ra(r));return Rw(e,Ra({r:r,c:t||0}))}function Iw(e,r){if(typeof r=="number"){if(r>=0&&e.SheetNames.length>r)return r;throw new Error("Cannot find sheet # "+r)}else if(typeof r=="string"){var t=e.SheetNames.indexOf(r);if(t>-1)return t;throw new Error("Cannot find sheet name |"+r+"|")}else throw new Error("Cannot find sheet |"+r+"|")}function Nw(){return{SheetNames:[],Sheets:{}}}function Dw(e,r,t,a){var n=1;if(!t)for(;n<=65535;++n,t=undefined)if(e.SheetNames.indexOf(t="Sheet"+n)==-1)break;if(!t||e.SheetNames.length>=65535)throw new Error("Too many worksheets");if(a&&e.SheetNames.indexOf(t)>=0){var i=t.match(/(^.*?)(\d+)$/);n=i&&+i[2]||0;var s=i&&i[1]||t;for(++n;n<=65535;++n)if(e.SheetNames.indexOf(t=s+n)==-1)break}Jp(t);if(e.SheetNames.indexOf(t)>=0)throw new Error("Worksheet with name |"+t+"| already exists!");e.SheetNames.push(t);e.Sheets[t]=r;return t}function Fw(e,r,t){if(!e.Workbook)e.Workbook={};if(!e.Workbook.Sheets)e.Workbook.Sheets=[];var a=Iw(e,r);if(!e.Workbook.Sheets[a])e.Workbook.Sheets[a]={};switch(t){case 0:;case 1:;case 2:break;default:throw new Error("Bad sheet visibility setting "+t);}e.Workbook.Sheets[a].Hidden=t}function Pw(e,r){e.z=r;return e}function Lw(e,r,t){if(!r){delete e.l}else{e.l={Target:r};if(t)e.l.Tooltip=t}return e}function Mw(e,r,t){return Lw(e,"#"+r,t)}function Uw(e,r,t){if(!e.c)e.c=[];e.c.push({t:r,a:t||"SheetJS"})}function Bw(e,r,t,a){var n=typeof r!="string"?r:Da(r);var i=typeof r=="string"?r:Na(r);for(var s=n.s.r;s<=n.e.r;++s)for(var f=n.s.c;f<=n.e.c;++f){var o=Rw(e,s,f);o.t="n";o.F=i;delete o.v;if(s==n.s.r&&f==n.s.c){o.f=t;if(a)o.D=true}}return e}var Ww={encode_col:ya,encode_row:Ta,encode_cell:Ra,encode_range:Na,decode_col:Ca,decode_row:ka,split_cell:xa,decode_cell:Oa,decode_range:Ia,format_cell:Pa,sheet_add_aoa:Ma,sheet_add_json:xw,sheet_add_dom:Gm,aoa_to_sheet:Ua,json_to_sheet:Ow,table_to_sheet:jm,table_to_book:Xm,sheet_to_csv:yw,sheet_to_txt:Sw,sheet_to_json:Aw,sheet_to_html:Vm,sheet_to_formulae:_w,sheet_to_row_object_array:Aw,sheet_get_cell:Rw,book_new:Nw,book_append_sheet:Dw,book_set_sheet_visibility:Fw,cell_set_number_format:Pw,cell_set_hyperlink:Lw,cell_set_internal_link:Mw,cell_add_comment:Uw,sheet_set_array_formula:Bw,consts:{SHEET_VISIBLE:0,SHEET_HIDDEN:1,SHEET_VERY_HIDDEN:2}};var Hw;function zw(e){Hw=e}function Vw(e,r){var t=Hw();var a=r==null?{}:r;if(e==null||e["!ref"]==null){t.push(null);return t}var n=Da(e["!ref"]);var i=a.FS!==undefined?a.FS:",",s=i.charCodeAt(0);var f=a.RS!==undefined?a.RS:"\n",o=f.charCodeAt(0);var l=new RegExp((i=="|"?"\\|":i)+"+$");var c="",h=[];a.dense=Array.isArray(e);var u=a.skipHidden&&e["!cols"]||[];var d=a.skipHidden&&e["!rows"]||[];for(var v=n.s.c;v<=n.e.c;++v)if(!(u[v]||{}).hidden)h[v]=ya(v);var p=n.s.r;var g=false,m=0;t._read=function(){if(!g){g=true;return t.push("\ufeff")}while(p<=n.e.r){++p;if((d[p-1]||{}).hidden)continue;c=Cw(e,n,p-1,h,s,o,i,a);if(c!=null){if(a.strip)c=c.replace(l,"");if(c||a.blankrows!==false)return t.push((m++?f:"")+c)}}return t.push(null)};return t}function Gw(e,r){var t=Hw();var a=r||{};var n=a.header!=null?a.header:Bm;var i=a.footer!=null?a.footer:Wm;t.push(n);var s=Ia(e["!ref"]);a.dense=Array.isArray(e);t.push(zm(e,s,a));var f=s.s.r;var o=false;t._read=function(){if(f>s.e.r){if(!o){o=true;t.push("</table>"+i)}return t.push(null)}while(f<=s.e.r){t.push(Um(e,s,f,a));++f;break}};return t}function jw(e,r){var t=Hw({objectMode:true});if(e==null||e["!ref"]==null){t.push(null);return t}var a={t:"n",v:0},n=0,i=1,s=[],f=0,o="";var l={s:{r:0,c:0},e:{r:0,c:0}};var c=r||{};var h=c.range!=null?c.range:e["!ref"];if(c.header===1)n=1;else if(c.header==="A")n=2;else if(Array.isArray(c.header))n=3;switch(typeof h){case"string":l=Da(h);break;case"number":l=Da(e["!ref"]);l.s.r=h;break;default:l=h;}if(n>0)i=0;var u=Ta(l.s.r);var d=[];var v=0;var p=Array.isArray(e);var g=l.s.r,m=0;var b={};if(p&&!e[g])e[g]=[];var w=c.skipHidden&&e["!cols"]||[];var k=c.skipHidden&&e["!rows"]||[];for(m=l.s.c;m<=l.e.c;++m){if((w[m]||{}).hidden)continue;d[m]=ya(m);a=p?e[g][m]:e[d[m]+u];switch(n){case 1:s[m]=m-l.s.c;break;case 2:s[m]=d[m];break;case 3:s[m]=c.header[m-l.s.c];break;default:if(a==null)a={w:"__EMPTY",t:"s"};o=f=Pa(a,null,c);v=b[f]||0;if(!v)b[f]=1;else{do{o=f+"_"+v++}while(b[o]);b[f]=v;b[o]=1}s[m]=o;}}g=l.s.r+i;t._read=function(){while(g<=l.e.r){if((k[g-1]||{}).hidden)continue;var r=Tw(e,l,g,d,n,s,p,c);++g;if(r.isempty===false||(n===1?c.blankrows!==false:!!c.blankrows)){t.push(r.row);return}}return t.push(null)};return t}var Xw={to_json:jw,to_html:Gw,to_csv:Vw,set_readable:zw};if(typeof vm!=="undefined")e.parse_xlscfb=vm;e.parse_zip=Xb;e.read=iw;e.readFile=sw;e.readFileSync=sw;e.write=gw;e.writeFile=bw;e.writeFileSync=bw;e.writeFileAsync=kw;e.utils=Ww;e.writeXLSX=pw;e.writeFileXLSX=ww;e.SSF=Ve;if(typeof Xw!=="undefined")e.stream=Xw;if(typeof Ke!=="undefined")e.CFB=Ke;if(typeof require!=="undefined"){var $w=undefined;if(($w||{}).Readable)zw($w.Readable)}}if(typeof exports!=="undefined")make_xlsx_lib(exports);else if(typeof module!=="undefined"&&module.exports)make_xlsx_lib(module.exports);else if(typeof define==="function"&&define.amd)define("xlsx",function(){if(!XLSX.version)make_xlsx_lib(XLSX);return XLSX});else make_xlsx_lib(XLSX);if(typeof window!=="undefined"&&!window.XLSX)try{window.XLSX=XLSX}catch(e){}
 </script>
 <script>
-const SAMPLE = [{"Balda": 1, "Fila": 1, "Fondo": 1, "Altura": 1, "Etiqueta": "C-01", "Descripción": "Juegos de mesa", "Categoría": "Varios", "Color caja": "Transparente", "Color tapa": "Negro", "Estado": "Vacío", "Notas": ""}, {"Balda": 1, "Fila": 1, "Fondo": 1, "Altura": 2, "Etiqueta": "C-02", "Descripción": "Herramienta manual", "Categoría": "Herramientas", "Color caja": "Gris", "Color tapa": "Gris", "Estado": "Lleno", "Notas": ""}, {"Balda": 1, "Fila": 1, "Fondo": 1, "Altura": 3, "Etiqueta": "C-03", "Descripción": "Belén", "Categoría": "Navidad", "Color caja": "Rojo", "Color tapa": "Verde", "Estado": "Lleno", "Notas": ""}, {"Balda": 1, "Fila": 2, "Fondo": 1, "Altura": 1, "Etiqueta": "C-04", "Descripción": "Cables y cargadores", "Categoría": "Varios", "Color caja": "Naranja", "Color tapa": "Gris", "Estado": "Lleno", "Notas": ""}, {"Balda": 1, "Fila": 2, "Fondo": 1, "Altura": 2, "Etiqueta": "C-05", "Descripción": "Facturas antiguas", "Categoría": "Papeles", "Color caja": "Cartón", "Color tapa": "Cartón", "Estado": "Vacío", "Notas": ""}, {"Balda": 1, "Fila": 4, "Fondo": 2, "Altura": 1, "Etiqueta": "C-06", "Descripción": "Árbol pequeño", "Categoría": "Navidad", "Color caja": "Rojo", "Color tapa": "Verde", "Estado": "Lleno", "Notas": ""}, {"Balda": 1, "Fila": 4, "Fondo": 2, "Altura": 2, "Etiqueta": "C-07", "Descripción": "Linternas y frontales", "Categoría": "Camping", "Color caja": "Verde", "Color tapa": "Negro", "Estado": "Vacío", "Notas": ""}, {"Balda": 1, "Fila": 4, "Fondo": 2, "Altura": 3, "Etiqueta": "C-08", "Descripción": "Tornillería", "Categoría": "Herramientas", "Color caja": "Negro", "Color tapa": "Amarillo", "Estado": "A medias", "Notas": ""}, {"Balda": 1, "Fila": 6, "Fondo": 1, "Altura": 1, "Etiqueta": "C-09", "Descripción": "Sillas plegables", "Categoría": "Camping", "Color caja": "Transparente", "Color tapa": "Azul", "Estado": "Lleno", "Notas": ""}, {"Balda": 2, "Fila": 1, "Fondo": 2, "Altura": 1, "Etiqueta": "C-10", "Descripción": "Esterillas", "Categoría": "Camping", "Color caja": "Verde", "Color tapa": "Negro", "Estado": "Lleno", "Notas": ""}, {"Balda": 2, "Fila": 1, "Fondo": 2, "Altura": 2, "Etiqueta": "C-11", "Descripción": "Repuestos bici", "Categoría": "Varios", "Color caja": "Transparente", "Color tapa": "Negro", "Estado": "Lleno", "Notas": ""}, {"Balda": 2, "Fila": 3, "Fondo": 1, "Altura": 1, "Etiqueta": "C-12", "Descripción": "Menaje de camping", "Categoría": "Camping", "Color caja": "Verde", "Color tapa": "Negro", "Estado": "Vacío", "Notas": ""}, {"Balda": 2, "Fila": 3, "Fondo": 1, "Altura": 2, "Etiqueta": "C-13", "Descripción": "Ropa de invierno", "Categoría": "Ropa", "Color caja": "Azul", "Color tapa": "Azul", "Estado": "Lleno", "Notas": ""}, {"Balda": 2, "Fila": 3, "Fondo": 1, "Altura": 3, "Etiqueta": "C-14", "Descripción": "Hornillo y bombona", "Categoría": "Camping", "Color caja": "Transparente", "Color tapa": "Azul", "Estado": "Lleno", "Notas": "Comprobar la bombona antes de salir"}, {"Balda": 2, "Fila": 5, "Fondo": 2, "Altura": 1, "Etiqueta": "C-15", "Descripción": "Ropa de esquí", "Categoría": "Ropa", "Color caja": "Transparente", "Color tapa": "Blanco", "Estado": "Lleno", "Notas": ""}, {"Balda": 3, "Fila": 2, "Fondo": 1, "Altura": 1, "Etiqueta": "C-16", "Descripción": "Sacos de dormir", "Categoría": "Camping", "Color caja": "Transparente", "Color tapa": "Azul", "Estado": "Lleno", "Notas": ""}, {"Balda": 3, "Fila": 2, "Fondo": 1, "Altura": 2, "Etiqueta": "C-17", "Descripción": "Luces de Navidad", "Categoría": "Navidad", "Color caja": "Rojo", "Color tapa": "Verde", "Estado": "Lleno", "Notas": "Probar antes de colgar"}, {"Balda": 3, "Fila": 3, "Fondo": 2, "Altura": 1, "Etiqueta": "C-18", "Descripción": "Material de pintura", "Categoría": "Herramientas", "Color caja": "Gris", "Color tapa": "Gris", "Estado": "Lleno", "Notas": ""}, {"Balda": 3, "Fila": 6, "Fondo": 1, "Altura": 1, "Etiqueta": "C-19", "Descripción": "Tienda de campaña", "Categoría": "Camping", "Color caja": "Transparente", "Color tapa": "Azul", "Estado": "A medias", "Notas": "Revisar que no falten piquetas"}, {"Balda": 3, "Fila": 6, "Fondo": 1, "Altura": 2, "Etiqueta": "C-20", "Descripción": "Mantas", "Categoría": "Ropa", "Color caja": "Azul", "Color tapa": "Azul", "Estado": "A medias", "Notas": ""}, {"Balda": 3, "Fila": 6, "Fondo": 1, "Altura": 3, "Etiqueta": "C-21", "Descripción": "Taladro y brocas", "Categoría": "Herramientas", "Color caja": "Negro", "Color tapa": "Amarillo", "Estado": "Lleno", "Notas": "Pesa mucho, no subir arriba"}, {"Balda": 1, "Fila": 3, "Fondo": 1, "Altura": 1, "Etiqueta": "C-22", "Descripción": "Bolas y adornos", "Categoría": "Navidad", "Color caja": "Rojo", "Color tapa": "Verde", "Estado": "Lleno", "Notas": ""}, {"Balda": 1, "Fila": 3, "Fondo": 1, "Altura": 2, "Etiqueta": "C-23", "Descripción": "Manuales de electrodomésticos", "Categoría": "Papeles", "Color caja": "Cartón", "Color tapa": "Cartón", "Estado": "Vacío", "Notas": ""}, {"Balda": 2, "Fila": 6, "Fondo": 1, "Altura": 1, "Etiqueta": "C-24", "Descripción": "Juegos de mesa", "Categoría": "Varios", "Color caja": "Naranja", "Color tapa": "Gris", "Estado": "A medias", "Notas": ""}, {"Balda": 2, "Fila": 6, "Fondo": 1, "Altura": 2, "Etiqueta": "C-25", "Descripción": "Herramienta manual", "Categoría": "Herramientas", "Color caja": "Negro", "Color tapa": "Amarillo", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-26", "Descripción": "Belén", "Categoría": "Navidad", "Color caja": "Transparente", "Color tapa": "Rojo", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-27", "Descripción": "Cables y cargadores", "Categoría": "Varios", "Color caja": "Naranja", "Color tapa": "Gris", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-28", "Descripción": "Facturas antiguas", "Categoría": "Papeles", "Color caja": "Cartón", "Color tapa": "Cartón", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-29", "Descripción": "Árbol pequeño", "Categoría": "Navidad", "Color caja": "Rojo", "Color tapa": "Verde", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-30", "Descripción": "Linternas y frontales", "Categoría": "Camping", "Color caja": "Transparente", "Color tapa": "Azul", "Estado": "Lleno", "Notas": ""}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-31", "Descripción": "Tornillería", "Categoría": "Herramientas", "Color caja": "Negro", "Color tapa": "Amarillo", "Estado": "Lleno", "Notas": "En el trastero, detrás de la bici"}, {"Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Etiqueta": "C-32", "Descripción": "Sillas plegables", "Categoría": "Camping", "Color caja": "Verde", "Color tapa": "Negro", "Estado": "Lleno", "Notas": "En el maletero del coche"}];
+const SAMPLE = [{"ETIQUETA": "NAV1", "DESCRIPCIÓN": "Luces del árbol", "COLOR CAJA": "ROJA", "COLOR TAPA": "BLANCA", "LUGAR": "Trastero", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": "Probar antes de colgar"}, {"ETIQUETA": "NAV1", "DESCRIPCIÓN": "Bolas de cristal", "COLOR CAJA": "ROJA", "COLOR TAPA": "BLANCA", "LUGAR": "Trastero", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "NAV1", "DESCRIPCIÓN": "Figuras del Belén", "COLOR CAJA": "ROJA", "COLOR TAPA": "BLANCA", "LUGAR": "Trastero", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "NAV2", "DESCRIPCIÓN": "Mantel de Navidad", "COLOR CAJA": "BLANCA", "COLOR TAPA": "ROJA", "LUGAR": "Trastero", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "NAV2", "DESCRIPCIÓN": "Guirnaldas", "COLOR CAJA": "BLANCA", "COLOR TAPA": "ROJA", "LUGAR": "Trastero", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R1", "DESCRIPCIÓN": "Juegos de mesa", "COLOR CAJA": "AZUL", "COLOR TAPA": "MARRÓN", "LUGAR": "", "Balda": 1, "Fila": 1, "Fondo": 2, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R1", "DESCRIPCIÓN": "Puzzles", "COLOR CAJA": "AZUL", "COLOR TAPA": "MARRÓN", "LUGAR": "", "Balda": 1, "Fila": 1, "Fondo": 2, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R2", "DESCRIPCIÓN": "Libros de cocina", "COLOR CAJA": "ROSA", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": 1, "Fila": 1, "Fondo": 2, "Altura": 2, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R3", "DESCRIPCIÓN": "Fotos antiguas", "COLOR CAJA": "VERDE", "COLOR TAPA": "BEIGE", "LUGAR": "", "Balda": 1, "Fila": 2, "Fondo": 2, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R3", "DESCRIPCIÓN": "Álbumes", "COLOR CAJA": "VERDE", "COLOR TAPA": "BEIGE", "LUGAR": "", "Balda": 1, "Fila": 2, "Fondo": 2, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R4", "DESCRIPCIÓN": "Material eléctrico", "COLOR CAJA": "BEIGE", "COLOR TAPA": "ROSA", "LUGAR": "", "Balda": 1, "Fila": 2, "Fondo": 1, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R4", "DESCRIPCIÓN": "Cables y regletas", "COLOR CAJA": "BEIGE", "COLOR TAPA": "ROSA", "LUGAR": "", "Balda": 1, "Fila": 2, "Fondo": 1, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R5", "DESCRIPCIÓN": "Herramientas", "COLOR CAJA": "VERDOSA", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": 1, "Fila": 1, "Fondo": 1, "Altura": 1, "Caja Alternativa": "", "NOTAS": "Pesa mucho"}, {"ETIQUETA": "R6", "DESCRIPCIÓN": "Papeles y facturas", "COLOR CAJA": "GRIS", "COLOR TAPA": "VERDE", "LUGAR": "", "Balda": 1, "Fila": 3, "Fondo": 2, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "R7", "DESCRIPCIÓN": "Revistas antiguas", "COLOR CAJA": "AZUL", "COLOR TAPA": "VERDOSA", "LUGAR": "", "Balda": 2, "Fila": 1, "Fondo": 1, "Altura": 1, "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "CAMP 1", "DESCRIPCIÓN": "Avance y toldo", "COLOR CAJA": "AZUL", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 1", "DESCRIPCIÓN": "Suelo", "COLOR CAJA": "AZUL", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 1", "DESCRIPCIÓN": "Picas de acero", "COLOR CAJA": "AZUL", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 1", "DESCRIPCIÓN": "Vientos", "COLOR CAJA": "AZUL", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 1", "DESCRIPCIÓN": "Cuerda", "COLOR CAJA": "AZUL", "COLOR TAPA": "AZUL", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 2", "DESCRIPCIÓN": "Ladrón 3 vías", "COLOR CAJA": "CELESTE", "COLOR TAPA": "CELESTE", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 2", "NOTAS": ""}, {"ETIQUETA": "CAMP 2", "DESCRIPCIÓN": "Farolillo", "COLOR CAJA": "CELESTE", "COLOR TAPA": "CELESTE", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 2", "NOTAS": ""}, {"ETIQUETA": "CAMP 2", "DESCRIPCIÓN": "Vajilla picnic", "COLOR CAJA": "CELESTE", "COLOR TAPA": "CELESTE", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 2", "DESCRIPCIÓN": "Cubo plegable", "COLOR CAJA": "CELESTE", "COLOR TAPA": "CELESTE", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 2", "DESCRIPCIÓN": "Bolsas zip", "COLOR CAJA": "CELESTE", "COLOR TAPA": "CELESTE", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 1", "NOTAS": ""}, {"ETIQUETA": "CAMP 3", "DESCRIPCIÓN": "Mesa plegable", "COLOR CAJA": "MARRÓN", "COLOR TAPA": "MARRÓN", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "CAMP 3", "DESCRIPCIÓN": "Neceser", "COLOR CAJA": "MARRÓN", "COLOR TAPA": "MARRÓN", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "", "NOTAS": ""}, {"ETIQUETA": "EN USO", "DESCRIPCIÓN": "Martillo", "COLOR CAJA": "", "COLOR TAPA": "", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "GRANDE 1", "NOTAS": ""}, {"ETIQUETA": "EN USO", "DESCRIPCIÓN": "Linterna frontal", "COLOR CAJA": "", "COLOR TAPA": "", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "Fragoneta", "NOTAS": ""}, {"ETIQUETA": "EN USO", "DESCRIPCIÓN": "Cafetera", "COLOR CAJA": "", "COLOR TAPA": "", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "PEQUEÑA 1", "NOTAS": ""}, {"ETIQUETA": "Fragoneta", "DESCRIPCIÓN": "Poncho de lluvia", "COLOR CAJA": "", "COLOR TAPA": "", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "Fragoneta", "NOTAS": ""}, {"ETIQUETA": "Fragoneta", "DESCRIPCIÓN": "Bolso de viaje plegable", "COLOR CAJA": "", "COLOR TAPA": "", "LUGAR": "", "Balda": "", "Fila": "", "Fondo": "", "Altura": "", "Caja Alternativa": "Fragoneta", "NOTAS": ""}];
 const $ = s => document.querySelector(s);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const norm = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 const CAT = ['#2F7DBF','#D98E04','#3A9D6E','#C2483D','#7A5DC7','#B5651D','#1F9AA8','#8A9A2B','#C04F8E','#5B7083'];
-const KNOWN = {fondo:'Fondo',nivel:'Nivel',balda:'Estante',estante:'Estante',altura:'Altura',fila:'Posicion',posicion:'Posicion',pos:'Posicion',etiqueta:'Referencia',referencia:'Referencia',ref:'Referencia',descripcion:'Descripcion',categoria:'Categoria',colorcaja:'ColorCaja',colortapa:'ColorTapa',estado:'Estado',notas:'Notas',observaciones:'Notas'};
+const KNOWN = {fondo:'Fondo',nivel:'Nivel',balda:'Estante',estante:'Estante',altura:'Altura',fila:'Posicion',posicion:'Posicion',pos:'Posicion',
+  etiqueta:'Referencia',referencia:'Referencia',ref:'Referencia',descripcion:'Descripcion',contenido:'Descripcion',categoria:'Categoria',
+  colorcaja:'ColorCaja',colortapa:'ColorTapa',estado:'Estado',notas:'Notas',observaciones:'Notas',lugar:'Lugar',
+  cajaalternativa:'CajaAlt',cajajysk:'CajaAlt'};
+const SHELF = 'Estantería';
+let items = [], boxes = [], rows = [], mainDims = {W:6,H:9,D:2,P:3}, dims = mainDims, zone = SHELF, zoneNames = [SHELF],
+    selected = null, selItem = null, showLabels = true, query = '', altFilter = '', lastWarn = [];
+const filled = v => v !== '' && v != null && String(v).trim() !== '';
 
-let rows = [], rowsMain = [], rowsExtra = [], mainDims = {W:6,H:9,D:2,P:3}, dims = mainDims, zone = 'main', selected = null, showLabels = true, query = '';
-
-/* ---------- datos ---------- */
+/* ---------- datos ----------
+   Cada fila del Excel es un OBJETO. La Etiqueta dice en qué caja está guardado.
+   Las cajas se forman agrupando objetos por Etiqueta. */
 function ingest(raw, source){
-  const main = [], extra = [], warn = [], seen = new Map();
-  const filled = v => v !== '' && v != null;
+  const warn = [];
+  items = [];
   raw.forEach((r,i) => {
     const o = {extra:{}};
     for (const [k,v] of Object.entries(r)) {
+      if (k === '__line') continue;
       const key = KNOWN[norm(k)];
-      if (key) o[key] = v; else if (filled(v)) o.extra[k] = v;
+      if (key) o[key] = typeof v === 'string' ? v.trim() : v; else if (filled(v) && norm(k)) o.extra[k] = v;
     }
-    const line = i + 2; o.line = line;
-    if (![o.Referencia,o.Descripcion,o.Categoria,o.ColorCaja,o.ColorTapa,o.Notas,o.Fondo,o.Estante,o.Altura,o.Posicion,o.Nivel].some(filled)) return;  /* fila vacía */
+    o.line = r.__line || i + 2;
+    if (![o.Referencia,o.Descripcion,o.Lugar,o.CajaAlt,o.Estante,o.Posicion,o.Fondo,o.Altura,o.Nivel].some(filled)) return;
     const anyLoc = [o.Fondo,o.Estante,o.Altura,o.Posicion,o.Nivel].some(filled);
     o.Fondo = parseInt(o.Fondo); o.Posicion = parseInt(o.Posicion);
     const per = mainDims.P, E = parseInt(o.Estante), A = parseInt(o.Altura), N = parseInt(o.Nivel);
-    if (Number.isInteger(E) && Number.isInteger(A)) o.Nivel = (E-1)*per + A;
-    else if (Number.isInteger(E) && Number.isInteger(N)) o.Nivel = (E-1)*per + N;
-    else o.Nivel = N;
-    if (![o.Fondo,o.Nivel,o.Posicion].every(n => Number.isInteger(n) && n > 0)) {
-      if (anyLoc) warn.push(`Línea ${line}: ubicación incompleta (hacen falta Balda, Fila, Fondo y Altura). Va a «Sin ubicación».`);
-      extra.push(o); return;
-    }
-    const k = key3(o);
-    if (seen.has(k)) { warn.push(`Línea ${line}: ubicación ${loc(o)} repetida (ya en la línea ${seen.get(k)}). Va a «Sin ubicación».`); extra.push(o); return; }
-    seen.set(k, line); main.push(o);
+    o.Nivel = Number.isInteger(E) && Number.isInteger(A) ? (E-1)*per + A : Number.isInteger(E) && Number.isInteger(N) ? (E-1)*per + N : N;
+    o.hasLoc = [o.Fondo,o.Nivel,o.Posicion].every(n => Number.isInteger(n) && n > 0);
+    o.partialLoc = !o.hasLoc && anyLoc;
+    items.push(o);
   });
-  const prevSel = selected ? selected.line : null;
-  rowsMain = main; rowsExtra = extra;
-  const mx = a => Math.max(0, ...main.map(r => r[a]));
+  /* agrupar por etiqueta */
+  const map = new Map();
+  for (const it of items) {
+    const k = filled(it.Referencia) ? 'e:' + norm(it.Referencia) : 'l:' + it.line;
+    if (!map.has(k)) map.set(k, {line: it.line, Referencia: it.Referencia || '', items: [], extra: {}});
+    const b = map.get(k); b.items.push(it); it.box = b;
+    for (const f of ['ColorCaja','ColorTapa','Lugar','Categoria']) if (!filled(b[f]) && filled(it[f])) b[f] = it[f];
+    if (it.hasLoc) {
+      if (!b.hasLoc) { b.hasLoc = true; b.Fondo = it.Fondo; b.Nivel = it.Nivel; b.Posicion = it.Posicion; }
+      else if (key3(b) !== key3(it)) warn.push(`Línea ${it.line}: «${it.Descripcion || it.Referencia}» tiene otra ubicación que el resto de ${b.Referencia}.`);
+    }
+    if (it.partialLoc) warn.push(`Línea ${it.line}: ubicación incompleta (hacen falta Balda, Fila, Fondo y Altura).`);
+  }
+  boxes = [...map.values()];
+  /* zona de cada caja: estantería, un lugar, en uso o sin ubicación */
+  const seen = new Map();
+  for (const b of boxes) {
+    b.virtual = false;
+    if (b.hasLoc) {
+      const k = key3(b);
+      if (seen.has(k)) { warn.push(`${b.Referencia} y ${seen.get(k).Referencia} tienen la misma ubicación (${loc(b)}). ${b.Referencia} se muestra en «Sin ubicación».`); b.hasLoc = false; }
+      else { seen.set(k, b); b.zone = SHELF; continue; }
+    }
+    const tag = norm(b.Referencia);
+    b.zone = filled(b.Lugar) ? String(b.Lugar).trim()
+      : tag === 'enuso' ? 'En uso'
+      : b.Referencia && !/\d/.test(b.Referencia) ? b.Referencia   /* una etiqueta sin número, como «Fragoneta», es un sitio */
+      : 'Sin ubicación';
+  }
+  const shelfBoxes = boxes.filter(b => b.zone === SHELF);
+  const mx = a => Math.max(0, ...shelfBoxes.map(r => r[a]));
   mainDims.W = Math.max(+$('#dimW').value || 1, mx('Posicion'));
   mainDims.H = Math.max(+$('#dimH').value || 1, mx('Nivel'));
   mainDims.D = Math.max(+$('#dimD').value || 1, mx('Fondo'));
   $('#dimW').value = mainDims.W; $('#dimH').value = mainDims.H; $('#dimD').value = mainDims.D;
+  const others = [...new Set(boxes.map(b => b.zone).filter(z => z !== SHELF))]
+    .sort((a,b) => (a === 'Sin ubicación') - (b === 'Sin ubicación') || (a === 'En uso') - (b === 'En uso') || a.localeCompare(b, 'es'));
+  zoneNames = [SHELF, ...others];
+  if (!zoneNames.includes(zone)) zone = SHELF;
+  const alts = [...new Set(items.map(i => i.CajaAlt).filter(filled).map(String))].sort((a,b) => a.localeCompare(b, 'es', {numeric:true}));
+  $('#alt').innerHTML = '<option value="">Todas</option>' + alts.map(a => `<option ${a === altFilter ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  if (!alts.includes(altFilter)) altFilter = '';
+  $('#altGrp').hidden = !alts.length;
+  const hasCat = items.some(i => filled(i.Categoria));
+  $('#colorBy').querySelector('[value="Categoria"]').hidden = !hasCat;
+  if (!hasCat && $('#colorBy').value === 'Categoria') $('#colorBy').value = 'real';
+  const prevSel = selected ? selected.Referencia + '|' + selected.line : null;
   lastWarn = warn;
   applyZone();
-  selected = prevSel ? rows.find(r => r.line === prevSel) || null : null;
+  selected = prevSel ? rows.find(r => r.Referencia + '|' + r.line === prevSel) || null : null;
+  if (selItem) selItem = items.find(i => i.line === selItem.line) || null;
   $('#srcBadge').textContent = source === 'sample' ? 'Datos de ejemplo' : source.startsWith('Google') ? 'Google Sheets' : 'Excel cargado';
   $('#srcInfo').textContent = source === 'sample' ? 'Mostrando datos de ejemplo. Abre tu Excel o arrástralo sobre el visor.' : `Origen: ${source}`;
   renderAll();
 }
-let lastWarn = [];
-/* La segunda estantería: coloca automáticamente lo que no tiene ubicación, de abajo arriba */
+/* Coloca las cajas de la zona elegida. Las que no están en la estantería se colocan solas, de abajo arriba. */
 function applyZone(){
-  if (zone === 'main') { rows = rowsMain; dims = mainDims; }
+  const list = boxes.filter(b => b.zone === zone);
+  if (zone === SHELF) { rows = list; dims = mainDims; }
   else {
     const W = mainDims.W, P = mainDims.P;
-    rowsExtra.forEach((r,i) => { r.virtual = true; r.Fondo = 1; r.Posicion = i % W + 1; r.Nivel = Math.floor(i / W) + 1; });
-    const H = Math.max(P, Math.ceil(Math.ceil(rowsExtra.length / W) / P) * P);
-    rows = rowsExtra; dims = {W, H, D:1, P};
+    list.forEach((r,i) => { r.virtual = true; r.Fondo = 1; r.Posicion = i % W + 1; r.Nivel = Math.floor(i / W) + 1; });
+    rows = list; dims = {W, H: Math.max(P, Math.ceil(Math.ceil(list.length / W) / P) * P), D:1, P};
   }
-  $('#nMain').textContent = rowsMain.length; $('#nExtra').textContent = rowsExtra.length;
-  $('#zMain').setAttribute('aria-selected', zone === 'main'); $('#zExtra').setAttribute('aria-selected', zone === 'extra');
+  renderZones();
+}
+function renderZones(){
+  $('#zones').innerHTML = zoneNames.map(z => {
+    const n = boxes.filter(b => b.zone === z).length;
+    return `<button class="zone" role="tab" type="button" data-zone="${esc(z)}" aria-selected="${z === zone}">${esc(z)} <span>${n}</span></button>`;
+  }).join('');
 }
 function renderAll(){ renderWarnings(lastWarn); rebuild(); renderTable(); renderDetail(); renderStats(); }
 const key3 = o => `${o.Fondo}-${o.Nivel}-${o.Posicion}`;
 const est = o => Math.floor((o.Nivel-1)/dims.P) + 1, alt = o => (o.Nivel-1) % dims.P + 1;
-const loc = o => o.virtual ? 'Sin ubicación' : `${est(o)}-${o.Posicion}-${o.Fondo}-${alt(o)}`;
-const hay = r => norm([r.Referencia,r.Descripcion,r.Categoria,r.ColorCaja,r.ColorTapa,r.Estado,r.Notas,...Object.values(r.extra)].join(' '));
+const loc = o => o.virtual ? o.zone : `${est(o)}-${o.Posicion}-${o.Fondo}-${alt(o)}`;
+const itemText = i => norm([i.Referencia,i.Descripcion,i.Categoria,i.ColorCaja,i.ColorTapa,i.Lugar,i.CajaAlt,i.Notas,...Object.values(i.extra)].join(' '));
+const itemMatch = i => (!query || itemText(i).includes(norm(query))) && (!altFilter || String(i.CajaAlt ?? '') === altFilter);
+const boxMatches = b => (!query && !altFilter) || b.items.some(itemMatch);
+const hay = b => b.items.map(itemText).join(' ');
 
+/* Lee una hoja como filas sueltas: encuentra la cabecera (aunque haya filas antes)
+   y une cabeceras de dos pisos, como COLOR con CAJA y TAPA debajo. */
+function objectsFromRows(aoa, firstLine = 1){
+  const isHead = row => (row || []).some(v => ['etiqueta','balda','descripcion','referencia','contenido'].includes(norm(v)));
+  const h = aoa.findIndex(isHead);
+  if (h < 0) return [];
+  const top = aoa[h], sub = aoa[h+1] || [];
+  const subVals = sub.filter(filled);
+  const isSub = subVals.length > 0 && subVals.every(v => ['caja','tapa'].includes(norm(v)));
+  const width = Math.max(top.length, sub.length);
+  const names = []; let last = '';
+  for (let c = 0; c < width; c++) {
+    let t = String(top[c] ?? '').replace(/\s+/g, ' ').trim();
+    if (t) last = t;
+    if (isSub && filled(sub[c])) names[c] = `${t || last} ${String(sub[c]).trim()}`;
+    else names[c] = t;
+  }
+  const out = [];
+  for (let r = h + (isSub ? 2 : 1); r < aoa.length; r++) {
+    const row = aoa[r] || []; if (!row.some(filled)) continue;
+    const o = {__line: firstLine + r};
+    names.forEach((n,c) => { if (n && norm(n) !== 'x') o[n] = row[c] ?? ''; });
+    out.push(o);
+  }
+  return out;
+}
+function pickSheet(wb){
+  const want = ['objetosnuevo','cajas','objetos'];
+  for (const w of want) { const n = wb.SheetNames.find(s => norm(s) === w); if (n) return n; }
+  return wb.SheetNames[0];
+}
 function readFile(f){
   const rd = new FileReader();
   rd.onload = e => {
     try {
       const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-      const name = wb.SheetNames.find(n => norm(n) === 'cajas') || wb.SheetNames[0];
-      const data = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:''});
-      if (!data.length) { renderWarnings([`La hoja «${name}» está vacía.`]); return; }
+      const name = pickSheet(wb);
+      const data = objectsFromRows(XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:'', raw:true, blankrows:true}));
+      if (!data.length) { renderWarnings([`No encuentro la cabecera en la hoja «${name}». Debe tener una fila con ETIQUETA y DESCRIPCIÓN.`]); return; }
       ingest(data, `${f.name} · hoja «${name}» · ${data.length} filas`);
-    } catch(err) { renderWarnings([`No se pudo leer «${f.name}». Comprueba que es un Excel (.xlsx) o CSV.`]); }
+    } catch(err) { renderWarnings([`No se pudo leer «${f.name}». Comprueba que es un Excel (.xls o .xlsx) o CSV.`]); }
   };
   rd.readAsArrayBuffer(f);
 }
 
 /* ---------- Google Sheets ---------- */
-const CONFIG = { sheetUrl: '', sheetName: 'Cajas', refreshMinutes: 2 };  /* puedes dejar fijo aquí el enlace */
+const CONFIG = { sheetUrl: '', sheetNames: ['OBJETOS nuevo', 'Cajas'], refreshMinutes: 2 };  /* puedes dejar fijo aquí el enlace */
 let sheetTimer = null;
-function csvUrl(link, sheetName){
+function csvUrl_unused(link, sheetName){
   const u = link.trim();
   const pub = u.match(/\/spreadsheets\/d\/e\/([\w-]+)/);
   if (pub) { const gid = (u.match(/[?&#]gid=(\d+)/) || [])[1]; return `https://docs.google.com/spreadsheets/d/e/${pub[1]}/pub?output=csv${gid ? '&gid=' + gid : ''}`; }
@@ -1367,8 +1461,9 @@ function csvUrl(link, sheetName){
 async function readSheet(){
   const link = $('#sheetUrl').value || CONFIG.sheetUrl;
   const st = $('#sheetStatus');
-  const url = link && csvUrl(link, CONFIG.sheetName);
-  if (!url) { st.textContent = 'El enlace no parece de Google Sheets.'; return; }
+  const id = (link.match(/\/spreadsheets\/d\/([\w-]+)/) || [])[1];
+  const pub = /\/spreadsheets\/d\/e\//.test(link);
+  if (!id) { st.textContent = 'El enlace no parece de Google Sheets.'; return; }
   try { localStorage.setItem('estiba.sheetUrl', link); } catch(e) {}
   st.textContent = 'Leyendo…';
   const done = data => {
@@ -1376,43 +1471,53 @@ async function readSheet(){
     st.textContent = 'Leída a las ' + hhmm(Date.now());
     try { localStorage.setItem('estiba.cache', JSON.stringify({t: Date.now(), data})); } catch(e) {}
   };
-  if (url.includes('/gviz/')) {
-    try { done(await gvizJsonp(url)); return; }
-    catch(e) { /* si falla, se intenta con fetch */ }
+  const gid = (link.match(/[?&#]gid=(\d+)/) || [])[1];
+  if (!pub) {
+    /* Se prueba la pestaña del enlace; si no, OBJETOS nuevo, Cajas y la primera */
+    const tries = gid ? [`gid=${gid}`] : [...CONFIG.sheetNames.map(n => 'sheet=' + encodeURIComponent(n)), ''];
+    for (const t of tries) {
+      try {
+        const aoa = await gvizJsonp(`https://docs.google.com/spreadsheets/d/${id}/gviz/tq?headers=0${t ? '&' + t : ''}`);
+        const data = objectsFromRows(aoa);
+        if (data.length) { done(data); return; }
+      } catch(e) { /* siguiente opción */ }
+    }
   }
   try {
-    const res = await fetch(url + '&_=' + Date.now(), {cache:'no-store'});
+    const url = pub ? `https://docs.google.com/spreadsheets/d/e/${link.match(/\/d\/e\/([\w-]+)/)[1]}/pub?output=csv${gid ? '&gid=' + gid : ''}`
+                    : `https://docs.google.com/spreadsheets/d/${id}/export?format=csv${gid ? '&gid=' + gid : ''}`;
+    const res = await fetch(url, {cache:'no-store'});
     const text = await res.text();
     if (!res.ok || /^\s*</.test(text)) throw new Error('acceso');
     const wb = XLSX.read(text, {type:'string', raw:true});
-    done(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:''}));
+    const data = objectsFromRows(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:'', blankrows:true}));
+    if (!data.length) throw new Error('vacía');
+    done(data);
   } catch(e) {
     const c = cached();
     if (!navigator.onLine && c) st.textContent = `Sin conexión. Mostrando los datos de las ${hhmm(c.t)}.`;
-    else st.textContent = 'No se pudo leer la hoja. Revisa que esté compartida como «Cualquier persona con el enlace: Lector» y que la pestaña se llame Cajas.';
+    else st.textContent = 'No se pudo leer la hoja. Revisa que esté compartida como «Cualquier persona con el enlace: Lector» y que tenga una fila de cabecera con ETIQUETA.';
   }
 }
 const hhmm = t => new Date(t).toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
 function cached(){ try { return JSON.parse(localStorage.getItem('estiba.cache')); } catch(e) { return null; } }
 /* JSONP: Google devuelve la hoja envuelta en una función; al cargarla como <script> no hay bloqueo CORS */
-function gvizJsonp(csvLink){
+function gvizJsonp(base){
   return new Promise((resolve, reject) => {
-    const cb = '__estiba' + Date.now();
-    const src = csvLink.replace('tqx=out:csv', `tqx=out:json;responseHandler:${cb}`) + '&headers=1&_=' + Date.now();
+    const cb = '__estiba' + Date.now() + Math.floor(Math.random()*1000);
     const s = document.createElement('script');
     const clean = () => { delete window[cb]; s.remove(); clearTimeout(t); };
     const t = setTimeout(() => { clean(); reject(new Error('timeout')); }, 15000);
     window[cb] = resp => {
       clean();
       if (!resp || resp.status === 'error' || !resp.table) return reject(new Error('gviz'));
-      const cols = resp.table.cols.map(c => (c.label || '').trim());
-      let body = resp.table.rows.map(r => (r.c || []).map(c => c == null ? '' : (c.v ?? c.f ?? '')));
-      let heads = cols;
-      if (!cols.some(Boolean) && body.length) { heads = body[0].map(String); body = body.slice(1); }
-      resolve(body.map(vals => Object.fromEntries(heads.map((h, i) => [h || `Col${i+1}`, vals[i] ?? '']))));
+      const head = resp.table.cols.map(c => (c.label || '').trim());
+      const body = resp.table.rows.map(r => (r.c || []).map(c => c == null ? '' : (c.v ?? c.f ?? '')));
+      resolve(head.some(Boolean) ? [head, ...body] : body);
     };
     s.onerror = () => { clean(); reject(new Error('script')); };
-    s.src = src; document.head.appendChild(s);
+    s.src = base + `&tqx=out:json;responseHandler:${cb}&_=${Date.now()}`;
+    document.head.appendChild(s);
   });
 }
 function scheduleSheet(){
@@ -1435,7 +1540,8 @@ function stateColor(s){
   return CAT[h % CAT.length];
 }
 /* Colores por nombre (o código #rrggbb) para pintar caja y tapa */
-const NAMED = {rojo:'#C62828',granate:'#7B1F2A',azul:'#1E5BB8',azulclaro:'#6AAAE6',celeste:'#7CC4EA',azuloscuro:'#1B2F5C',marino:'#1B2F5C',azulmarino:'#1B2F5C',
+const NAMED = {roja:'#C62828',blanca:'#F4F4F2',negra:'#26292B',amarilla:'#F2C230',morada:'#7B4BB7',dorada:'#C9A13B',plateada:'#B8BEC4',verdosa:'#7FA88A',azulada:'#5A86C5',rojiza:'#B5452F',
+  rojo:'#C62828',granate:'#7B1F2A',azul:'#1E5BB8',azulclaro:'#6AAAE6',celeste:'#7CC4EA',azuloscuro:'#1B2F5C',marino:'#1B2F5C',azulmarino:'#1B2F5C',
   verde:'#2E8B3A',verdeclaro:'#8BC34A',verdeoscuro:'#1E5A2A',amarillo:'#F2C230',naranja:'#EF7D22',rosa:'#E88AB0',morado:'#7B4BB7',lila:'#B49AD8',violeta:'#7B4BB7',
   marron:'#7A4E2D',beige:'#D9C3A0',carton:'#C8A271',kraft:'#C8A271',negro:'#26292B',blanco:'#F4F4F2',gris:'#8A8F93',grisclaro:'#C9CCCF',grisoscuro:'#4A4F54',
   transparente:'#DCE6EC',plata:'#B8BEC4',plateado:'#B8BEC4',dorado:'#C9A13B',turquesa:'#1FA3A3'};
@@ -1451,21 +1557,19 @@ function namedColor(v){
 }
 function colorMap(){
   const by = $('#colorBy').value;
+  if (by === 'none') return {fn:()=> '#D9C3A0', legend:[]};
   if (by === 'real') {
     const seen = new Map();
     rows.forEach(r => { for (const v of [r.ColorCaja, r.ColorTapa]) { const c = namedColor(v); if (c && !seen.has(norm(v))) seen.set(norm(v), [String(v).trim(), c]); } });
     return {fn: r => namedColor(r.ColorCaja) || DEFAULT_BOX, lid: r => namedColor(r.ColorTapa) || namedColor(r.ColorCaja) || DEFAULT_BOX, legend:[...seen.values()]};
   }
-  if (by === 'none') return {fn:()=> '#D9C3A0', legend:[]};
-  if (by === 'Estado') {
-    const vals = [...new Set(rows.map(r => r.Estado || '—'))];
-    return {fn:r => stateColor(r.Estado), legend: vals.map(v => [v, stateColor(v)])};
-  }
-  const vals = [...new Set(rows.map(r => r[by] || '—'))];
-  const m = new Map(vals.map((v,i) => [v, CAT[i % CAT.length]]));
-  return {fn:r => m.get(r[by] || '—'), legend:[...m]};
+  const keyOf = by === 'CajaAlt'
+    ? r => [...new Set(r.items.map(i => i.CajaAlt).filter(filled).map(String))].join(' + ') || '—'
+    : r => r[by] || '—';
+  const vals = [...new Set(rows.map(keyOf))];
+  const m = new Map(vals.map((v,i) => [v, v === '—' ? '#B9B4AA' : CAT[i % CAT.length]]));
+  return {fn: r => m.get(keyOf(r)), legend:[...m]};
 }
-
 /* ---------- escena 3D ---------- */
 const stage = $('#stage');
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -1515,7 +1619,7 @@ function rebuild(){
   rows.forEach(r => {
     if (r.Fondo > dims.D || r.Nivel > dims.H || r.Posicion > dims.W) return;
     const col = cm.fn(r);
-    const match = !q || hay(r).includes(q);
+    const match = boxMatches(r);
     const mat = new THREE.MeshLambertMaterial({map: texFor(col, r.Referencia), transparent: !match, opacity: match ? 1 : 0.14});
     const m = new THREE.Mesh(geo, mat); m.position.copy(pos(r)); m.userData.row = r;
     const e = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({color: lineCol, transparent:true, opacity: match ? .55 : .12}));
@@ -1549,7 +1653,7 @@ function rebuild(){
   const fw = dims.W*BW + 1.6, fd = dims.D*BD + 1.6;
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(fw, fd), new THREE.MeshBasicMaterial({color:new THREE.Color(css('--stage-grid')), transparent:true, opacity:.45}));
   floor.rotation.x = -Math.PI/2; floor.position.y = -0.002; world.add(floor);
-  const front = makeSprite(zone === 'main' ? 'FRENTE' : 'SIN UBICACIÓN'); front.position.set(0, 0.02, dims.D*BD/2 + 0.55); world.add(front);
+  const front = makeSprite(zone === SHELF ? 'FRENTE' : zone.toUpperCase()); front.position.set(0, 0.02, dims.D*BD/2 + 0.55); world.add(front);
   renderLegend(cm.legend); highlight();
 }
 function makeSprite(txt){
@@ -1598,77 +1702,107 @@ renderer.domElement.addEventListener('pointerup', e => {
 });
 
 /* ---------- paneles ---------- */
-function select(r){ selected = r; highlight(); renderDetail(); renderTable(); }
+function select(r, item = null){ selected = r; selItem = item; highlight(); renderDetail(); renderTable(); }
 function esc(s){ return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function swatch(v){ const c = namedColor(v); return v ? `<span class="sw" style="background:${c}"></span>${esc(v)}` : '—'; }
+function swatch(v){ const c = namedColor(v); return filled(v) ? `<span class="sw" style="background:${c}"></span>${esc(v)}` : '—'; }
+const where = b => b.zone === SHELF ? `Balda ${est(b)} · Fila ${b.Posicion} · Fondo ${b.Fondo} · Altura ${alt(b)}` : b.zone;
+function shelfCode(b){
+  if (b.zone !== SHELF) return '';
+  const P = mainDims.P, e = Math.floor((b.Nivel-1)/P) + 1, a = (b.Nivel-1) % P + 1;
+  return `${e}-${b.Posicion}-${b.Fondo}-${a}`;
+}
 function renderDetail(){
   const el = $('#detail');
   if (!selected) { el.innerHTML = '<p class="empty-note">Toca una caja en el 3D o una fila del listado.</p>'; return; }
   const r = selected;
-  const sub = r.virtual ? 'Está en el Excel pero no tiene ubicación en la estantería principal'
-    : `Balda ${est(r)} · Fila ${r.Posicion} · Fondo ${r.Fondo} (${r.Fondo === 1 ? 'delante' : r.Fondo === mainDims.D ? 'detrás' : 'medio'}) · Altura ${alt(r)}`;
-  let html = `<div class="loc">${esc(r.Referencia || loc(r))}<small>${sub}</small></div><dl>`;
-  if (!r.virtual) html += `<dt>Ubicación</dt><dd class="m" style="font-family:var(--f-mono)">${esc(loc(r))}</dd>`;
-  if (r.Descripcion) html += `<dt>Descripción</dt><dd>${esc(r.Descripcion)}</dd>`;
-  if (r.Categoria) html += `<dt>Categoría</dt><dd>${esc(r.Categoria)}</dd>`;
+  const code = r.zone === SHELF ? loc(r) : r.zone;
+  const sub = r.zone === SHELF ? `Balda ${est(r)} · Fila ${r.Posicion} · Fondo ${r.Fondo} (${r.Fondo === 1 ? 'delante' : r.Fondo === mainDims.D ? 'detrás' : 'medio'}) · Altura ${alt(r)}`
+    : r.zone === 'Sin ubicación' ? 'Todavía no tiene sitio asignado' : 'Fuera de la estantería';
+  let html = `<div class="loc">${esc(code)}<small>${sub}</small></div><dl>`;
+  html += `<dt>Etiqueta</dt><dd style="font-family:var(--f-mono)">${esc(r.Referencia || '—')}</dd>`;
   html += `<dt>Color caja</dt><dd>${swatch(r.ColorCaja)}</dd><dt>Color tapa</dt><dd>${swatch(r.ColorTapa)}</dd>`;
-  if (r.Estado) html += `<dt>Estado</dt><dd><span class="pill" style="background:${stateColor(r.Estado)}">${esc(r.Estado)}</span></dd>`;
-  if (r.Notas) html += `<dt>Notas</dt><dd>${esc(r.Notas)}</dd>`;
-  for (const [k,v] of Object.entries(r.extra)) html += `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`;
-  html += `<dt>Línea Excel</dt><dd style="font-family:var(--f-mono)">${r.line}</dd></dl>`;
+  if (filled(r.Lugar)) html += `<dt>Lugar</dt><dd>${esc(r.Lugar)}</dd>`;
+  if (filled(r.Categoria)) html += `<dt>Categoría</dt><dd>${esc(r.Categoria)}</dd>`;
+  html += `</dl><h3 class="contents-h">Contenido <span>${r.items.length}</span></h3><ul class="contents">`;
+  html += r.items.map(i => `<li class="${i === selItem ? 'on' : ''} ${itemMatch(i) && (query || altFilter) ? 'hit' : ''}">`
+    + `<span>${esc(i.Descripcion || '(sin descripción)')}</span>`
+    + (filled(i.CajaAlt) ? `<span class="alt">→ ${esc(i.CajaAlt)}</span>` : '')
+    + (filled(i.Notas) ? `<small>${esc(i.Notas)}</small>` : '')
+    + Object.entries(i.extra).map(([k,v]) => `<small>${esc(k)}: ${esc(v)}</small>`).join('')
+    + `</li>`).join('');
+  html += `</ul>`;
   el.innerHTML = html;
 }
-const cats = list => new Set(list.map(r => norm(r.Categoria)).filter(Boolean)).size;
 function renderStats(){
-  if (zone === 'extra') {
-    $('#stats').innerHTML = [[rows.length,'Sin ubicar'],[rowsMain.length,'En principal'],[cats(rows),'Categorías'],[rowsMain.length+rows.length,'Total']]
+  const objs = items.length, out = boxes.filter(b => b.zone !== SHELF).length;
+  if (zone !== SHELF) {
+    const here = rows.reduce((n,b) => n + b.items.length, 0);
+    $('#stats').innerHTML = [[rows.length,'Cajas aquí'],[here,'Objetos aquí'],[boxes.length - out,'En estantería'],[objs,'Objetos total']]
       .map(([v,l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
     return;
   }
   const total = dims.W*dims.H*dims.D, occ = rows.filter(r => r.Fondo<=dims.D && r.Nivel<=dims.H && r.Posicion<=dims.W).length;
-  $('#stats').innerHTML = [[occ+'/'+total,'Ocupadas'],[total-occ,'Huecos'],[rowsExtra.length,'Sin ubicar'],[cats(rows),'Categorías']]
+  $('#stats').innerHTML = [[occ+'/'+total,'Ocupadas'],[total-occ,'Huecos'],[out,'Cajas fuera'],[objs,'Objetos']]
     .map(([v,l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
 }
 function renderWarnings(w){
-  const out = rowsMain.filter(r => r.Fondo>mainDims.D || r.Nivel>mainDims.H || r.Posicion>mainDims.W).map(r => `Línea ${r.line}: ${loc(r)} queda fuera de la estantería principal`);
-  const all = [...(w||[]), ...out];
+  const outside = boxes.filter(r => r.zone === SHELF && (r.Fondo>mainDims.D || r.Nivel>mainDims.H || r.Posicion>mainDims.W)).map(r => `${r.Referencia}: ${shelfCode(r)} queda fuera de la estantería`);
+  const all = [...(w||[]), ...outside];
   $('#warnings').innerHTML = all.length ? `<div class="warnbox"><b>${all.length} aviso(s)</b><ul>${all.slice(0,8).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
 }
 function renderLegend(items){
   const el = $('#legend'); el.hidden = !items.length;
-  el.innerHTML = items.map(([k,c]) => `<span><i style="background:${c}"></i>${esc(k)}</span>`).join('') + (zone === 'main' ? `<span><i style="border:1px dashed var(--empty)"></i>Hueco libre</span>` : '');
+  el.innerHTML = items.map(([k,c]) => `<span><i style="background:${c}"></i>${esc(k)}</span>`).join('') + (zone === SHELF ? `<span><i style="border:1px dashed var(--empty)"></i>Hueco libre</span>` : '');
 }
+/* El listado enseña OBJETOS. Con «Llevar en» elegido, enseña los de todas las zonas. */
 function renderTable(){
-  const q = norm(query), d = v => v ? esc(v) : '';
-  const list = [...rows].sort((a,b) => a.virtual || b.virtual ? a.line - b.line : est(a)-est(b) || a.Posicion-b.Posicion || a.Fondo-b.Fondo || alt(a)-alt(b))
-    .filter(r => !q || hay(r).includes(q));
-  $('#tbody').innerHTML = list.map(r => `<tr data-k="${r.line}" class="${r===selected?'sel':''}" tabindex="0">`
-    + (r.virtual ? '<td class="m">—</td><td class="m">—</td><td class="m">—</td><td class="m">—</td>'
-                 : `<td class="m">${est(r)}</td><td class="m">${r.Posicion}</td><td class="m">${r.Fondo}</td><td class="m">${alt(r)}</td>`)
-    + `<td class="m">${d(r.Referencia)}</td><td class="wrap">${d(r.Descripcion)}</td><td>${d(r.Categoria)}</td>`
-    + `<td>${r.ColorCaja ? swatch(r.ColorCaja) : ''}</td><td>${r.ColorTapa ? swatch(r.ColorTapa) : ''}</td>`
-    + `<td>${r.Estado?`<span class="pill" style="background:${stateColor(r.Estado)}">${esc(r.Estado)}</span>`:''}</td><td class="wrap">${d(r.Notas)}</td></tr>`).join('')
-    || `<tr><td colspan="11" class="empty-note">${rows.length ? `Ninguna caja coincide con «${esc(query)}».` : zone === 'extra' ? 'Todas las cajas tienen ubicación.' : 'No hay cajas en la estantería principal.'}</td></tr>`;
+  const d = v => filled(v) ? esc(v) : '';
+  const pool = altFilter || query ? items : items.filter(i => i.box.zone === zone);  /* al buscar, se busca en todas partes */
+  const list = pool.filter(itemMatch).sort((a,b) => {
+    const A = a.box, B = b.box, sa = A.zone === SHELF, sb = B.zone === SHELF;
+    if (sa !== sb) return sa ? -1 : 1;
+    if (sa) { const [ea,eb] = [Math.floor((A.Nivel-1)/mainDims.P), Math.floor((B.Nivel-1)/mainDims.P)];
+      const r = ea-eb || A.Posicion-B.Posicion || A.Fondo-B.Fondo || (A.Nivel-1)%mainDims.P - (B.Nivel-1)%mainDims.P; if (r) return r; }
+    else { const r = A.zone.localeCompare(B.zone, 'es'); if (r) return r; }
+    return String(A.Referencia).localeCompare(String(B.Referencia), 'es', {numeric:true}) || a.line - b.line;
+  });
+  $('#altInfo').hidden = !altFilter;
+  if (altFilter) $('#altInfo').innerHTML = `<b>${list.length}</b> cosas van en <b>${esc(altFilter)}</b>. Al volver, cada una se guarda en la caja de su <b>Etiqueta</b> (columna Ubicación).`;
+  $('#tbody').innerHTML = list.map(i => {
+    const b = i.box, sh = b.zone === SHELF, P = mainDims.P;
+    const cells = sh ? [Math.floor((b.Nivel-1)/P)+1, b.Posicion, b.Fondo, (b.Nivel-1)%P+1] : ['','','',''];
+    return `<tr data-k="${i.line}" class="${i === selItem || (!selItem && b === selected) ? 'sel' : ''}" tabindex="0">`
+      + `<td class="m">${sh ? shelfCode(b) : `<span class="zonepill">${esc(b.zone)}</span>`}</td>`
+      + cells.map(c => `<td class="m">${c}</td>`).join('')
+      + `<td class="m">${d(i.Referencia)}</td><td class="wrap">${d(i.Descripcion)}</td>`
+      + `<td>${filled(i.ColorCaja) ? swatch(i.ColorCaja) : ''}</td><td>${filled(i.ColorTapa) ? swatch(i.ColorTapa) : ''}</td>`
+      + `<td>${d(i.Lugar)}</td><td>${d(i.CajaAlt)}</td><td class="wrap">${d(i.Notas)}</td></tr>`;
+  }).join('') || `<tr><td colspan="12" class="empty-note">${query || altFilter ? 'No hay objetos que coincidan.' : 'No hay objetos en esta zona.'}</td></tr>`;
 }
-$('#tbody').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) select(rows.find(r => r.line === +tr.dataset.k)); });
-$('#tbody').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-k]'); if (tr) select(rows.find(r => r.line === +tr.dataset.k)); } });
+function pickItem(line){
+  const it = items.find(i => i.line === line); if (!it) return;
+  if (it.box.zone !== zone) { zone = it.box.zone; applyZone(); rebuild(); renderStats(); setView('persp'); }
+  select(it.box, it);
+}
+$('#tbody').addEventListener('click', e => { const tr = e.target.closest('tr[data-k]'); if (tr) pickItem(+tr.dataset.k); });
+$('#tbody').addEventListener('keydown', e => { if (e.key === 'Enter') { const tr = e.target.closest('tr[data-k]'); if (tr) pickItem(+tr.dataset.k); } });
 
 /* ---------- controles ---------- */
 $('#btnLoad').onclick = () => $('#file').click();
 $('#file').onchange = e => { if (e.target.files[0]) readFile(e.target.files[0]); e.target.value = ''; };
 $('#btnSample').onclick = () => { $('#dimW').value = 6; $('#dimH').value = 9; $('#dimD').value = 2; $('#dimP').value = 3; mainDims.P = 3; ingest(SAMPLE, 'sample'); setView('persp'); };
+$('#alt').onchange = e => { altFilter = e.target.value; rebuild(); renderTable(); renderDetail(); };
 ['dimW','dimH','dimD','dimP'].forEach(id => $('#'+id).addEventListener('change', () => {
   Object.assign(mainDims, {W: Math.max(1, +$('#dimW').value||1), H: Math.max(1, +$('#dimH').value||1), D: Math.max(1, +$('#dimD').value||1), P: Math.max(1, +$('#dimP').value||1)});
   applyZone(); renderAll(); setView('persp');
 }));
 $('#colorBy').onchange = rebuild;
-function setZone(z){ if (zone === z) return; zone = z; selected = null; applyZone(); renderAll(); setView('persp'); }
-$('#zMain').onclick = () => setZone('main');
-$('#zExtra').onclick = () => setZone('extra');
+function setZone(z){ if (zone === z) return; zone = z; selected = null; selItem = null; applyZone(); renderAll(); setView('persp'); }
+$('#zones').addEventListener('click', e => { const b = e.target.closest('[data-zone]'); if (b) setZone(b.dataset.zone); });
 $('#btnRack').onclick = e => { rack = !rack; e.currentTarget.setAttribute('aria-pressed', rack); rebuild(); setView('persp'); };
 document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
 $('#btnLabels').onclick = e => { showLabels = !showLabels; e.currentTarget.setAttribute('aria-pressed', showLabels); rebuild(); };
-let qt; $('#q').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { query = e.target.value; rebuild(); renderTable(); }, 120); });
+let qt; $('#q').addEventListener('input', e => { clearTimeout(qt); qt = setTimeout(() => { query = e.target.value; rebuild(); renderTable(); renderDetail(); }, 120); });
 let dragDepth = 0;
 stage.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('#drop').hidden = false; });
 stage.addEventListener('dragover', e => e.preventDefault());
