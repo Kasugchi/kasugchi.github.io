@@ -131,6 +131,7 @@ td.wrap{white-space:normal;min-width:10em}
     <div class="grp">
       <button class="btn primary" id="btnLoad" type="button">Abrir Excel…</button>
       <input type="file" id="file" accept=".xlsx,.xls,.xlsm,.csv" hidden>
+      <button class="btn primary" id="btnReload" type="button" hidden>↻ Actualizar</button>
       <button class="btn" id="btnSample" type="button">Ejemplo</button>
     </div>
     <!--SHEET_UI-->
@@ -1889,6 +1890,10 @@ if ($('#sheetUrl')) {
     $('#sheetStatus').textContent = `Datos guardados de las ${hhmm(c.t)}. Actualizando…`;
   }
   if ($('#sheetUrl').value) { readSheet(); scheduleSheet(); }
+  /* Botón visible para volver a leer la hoja (la casilla del enlace está oculta) */
+  const syncReload = () => { $('#btnReload').hidden = !($('#sheetUrl').value || CONFIG.sheetUrl); };
+  syncReload(); $('#sheetUrl').addEventListener('input', syncReload);
+  $('#btnReload').onclick = () => { readSheet(); scheduleSheet(); };
   window.addEventListener('online', () => { if ($('#sheetUrl').value) readSheet(); });
 }
 
