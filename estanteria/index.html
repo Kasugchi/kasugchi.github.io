@@ -135,13 +135,12 @@ td.wrap{white-space:normal;min-width:10em}
     </div>
     <!--SHEET_UI-->
     
-    <div class="grp" data-sheet style="flex:1 1 100%;min-width:0;order:-1">
+    <div class="grp" data-sheet id="sheetGrp" hidden style="flex:1 1 100%;min-width:0;order:-1">
       <label class="lbl" for="sheetUrl">Google Sheets</label>
       <input type="url" id="sheetUrl" placeholder="Pega aquí el enlace de la hoja" style="flex:1;min-width:10em;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:14px">
       <button class="btn primary" id="btnSheet" type="button">Leer hoja</button>
       <label class="lbl" for="refresh">Cada</label>
       <select id="refresh"><option value="0">Manual</option><option value="1">1 min</option><option value="2" selected>2 min</option><option value="5">5 min</option><option value="15">15 min</option></select>
-      <span class="src" id="sheetStatus" aria-live="polite"></span>
     </div>
     <!--/SHEET_UI-->
     <span class="sep" aria-hidden="true"></span>
@@ -192,6 +191,7 @@ td.wrap{white-space:normal;min-width:10em}
         <div class="stats" id="stats"></div>
         <div id="warnings"></div>
         <p class="src" id="srcInfo"></p>
+        <p class="src" id="sheetStatus" aria-live="polite"></p>
       </section>
     </div>
   </div>
@@ -1459,7 +1459,7 @@ function readFile(f){
 }
 
 /* ---------- Google Sheets ---------- */
-const CONFIG = { sheetUrl: 'https://docs.google.com/spreadsheets/d/1Bu1tI53Jf0TLuhmZStP5qwJvZ1bV44sny0t9v6fuwFs/edit', sheetNames: ['OBJETOS nuevo', 'Cajas'], refreshMinutes: 2 };  /* puedes dejar fijo aquí el enlace */
+const CONFIG = { sheetUrl: '', sheetNames: ['OBJETOS nuevo', 'Cajas'], refreshMinutes: 2 };  /* puedes dejar fijo aquí el enlace */
 let sheetTimer = null;
 function csvUrl_unused(link, sheetName){
   const u = link.trim();
@@ -1866,9 +1866,19 @@ new MutationObserver(retheme).observe(document.documentElement, {attributes:true
 
 resize(); ingest(SAMPLE, 'sample'); setView('persp');
 if ($('#sheetUrl')) {
+  /* El enlace de la hoja no está en el código: llega una vez como ?sheet=… y se guarda en este dispositivo */
   const qs = new URLSearchParams(location.search).get('sheet');
   let saved = ''; try { saved = localStorage.getItem('estiba.sheetUrl') || ''; } catch(e) {}
+  if (qs) { try { localStorage.setItem('estiba.sheetUrl', qs); } catch(e) {} history.replaceState(null, '', location.pathname + location.hash); }
   $('#sheetUrl').value = qs || CONFIG.sheetUrl || saved;
+  /* Acceso discreto para cambiar el enlace: mantener pulsado el título (o doble clic) */
+  let pressT = null;
+  const toggleSheet = () => { $('#sheetGrp').hidden = !$('#sheetGrp').hidden; if (!$('#sheetGrp').hidden) $('#sheetUrl').focus(); };
+  const h1 = $('header h1');
+  h1.addEventListener('pointerdown', () => { pressT = setTimeout(toggleSheet, 700); });
+  ['pointerup','pointerleave','pointercancel'].forEach(ev => h1.addEventListener(ev, () => clearTimeout(pressT)));
+  h1.addEventListener('dblclick', toggleSheet);
+  h1.style.userSelect = 'none'; h1.style.webkitUserSelect = 'none';
   $('#refresh').value = String(CONFIG.refreshMinutes);
   $('#btnSheet').onclick = () => { readSheet(); scheduleSheet(); };
   $('#refresh').onchange = scheduleSheet;
