@@ -111,7 +111,8 @@ document.getElementById('apps').innerHTML = APPS.map(a => `
     <ul class="chips">${(a.chips || []).map(c => `<li>${esc(c)}</li>`).join('')}</ul>
     <div class="actions">
       <a class="btn primary" href="${esc(a.url)}">Abrir</a>
-      ${(a.extra || []).map(x => `<a class="btn" href="${esc(x.url)}">${esc(x    </div>
+      ${(a.extra || []).map(x => `<a class="btn" href="${esc(x.url)}">${esc(x.label)}</a>`).join('')}
+    </div>
   </article>`).join('');
 </script>
 </body>
