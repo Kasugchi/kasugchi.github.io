@@ -1389,6 +1389,7 @@ let state = load();
 function load(){
   let s = null; try { s = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
   if (!s || !Array.isArray(s.books)) return {school: 'CEIP Los Almendros', books: SAMPLE, sample: true, v: SAMPLE_V};
+  if (s.sample && s.v === SAMPLE_V) return s;
   if (s.sample) return {school: s.school, books: SAMPLE, sample: true, v: SAMPLE_V, profes: s.profes};
   if ((s.v || 1) < SAMPLE_V) {
     /* Datos ya tocados: se respetan y se añaden los libros de ejemplo nuevos; a los de ejemplo antiguos se les pone su ISBN */
@@ -1436,7 +1437,7 @@ const filtering = () => Object.values(filter).some(Boolean);
 /* ---------- escena 3D ---------- */
 const stage = $('#stage');
 const renderer = new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 stage.prepend(renderer.domElement);
 renderer.domElement.setAttribute('role','img'); renderer.domElement.setAttribute('aria-label','Sala de la biblioteca en 3D');
 const scene = new THREE.Scene();
@@ -1465,17 +1466,17 @@ function wrapText(g, text, maxW){
   if (cur) lines.push(cur); return lines;
 }
 function spineTex(b, color){
-  return canvasTex(96, 640, (g, w, h) => {
+  return canvasTex(64, 400, (g, w, h) => {
     g.fillStyle = color; g.fillRect(0,0,w,h);
-    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 40, w, 6); g.fillRect(0, h-46, w, 6);
+    g.fillStyle = 'rgba(255,255,255,.18)'; g.fillRect(0, 26, w, 4); g.fillRect(0, h-30, w, 4);
     g.save(); g.translate(w/2, h/2); g.rotate(-Math.PI/2);
     g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    let size = 42; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`;
-    let t = b.titulo; while (g.measureText(t).width > h - 130 && size > 22) { size -= 2; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`; }
-    while (g.measureText(t).width > h - 130 && t.length > 4) t = t.slice(0, -2) + '…';
+    let size = 28; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`;
+    let t = b.titulo; while (g.measureText(t).width > h - 80 && size > 15) { size -= 1; g.font = `600 ${size}px Fredoka, 'Trebuchet MS', sans-serif`; }
+    while (g.measureText(t).width > h - 80 && t.length > 4) t = t.slice(0, -2) + '…';
     g.fillText(t, 0, 0); g.restore();
-    g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 22px "Courier Prime", monospace'; g.textAlign = 'center';
-    g.fillText(callNumber(b).split(' ')[0], w/2, h-16);
+    g.fillStyle = 'rgba(255,255,255,.85)'; g.font = '700 14px "Courier Prime", monospace'; g.textAlign = 'center';
+    g.fillText(callNumber(b).split(' ')[0], w/2, h-10);
   }, 'sp' + b.id + color + b.titulo);
 }
 function coverTex(b, color){
@@ -1497,7 +1498,7 @@ const pagesMat = new THREE.MeshLambertMaterial({color: 0xF3EBD9});
 function bookMaterials(b){
   const color = b.formato === 'digital' ? css('--digital') : materiaColor(b.materia);
   const plain = new THREE.MeshLambertMaterial({color: new THREE.Color(color)});
-  return [new THREE.MeshLambertMaterial({map: coverTex(b, color)}), plain, pagesMat.clone(), pagesMat.clone(), new THREE.MeshLambertMaterial({map: spineTex(b, color)}), pagesMat.clone()];
+  return [new THREE.MeshLambertMaterial({color: new THREE.Color(color)}), plain, pagesMat.clone(), pagesMat.clone(), new THREE.MeshLambertMaterial({map: spineTex(b, color)}), pagesMat.clone()];
 }
 const PAINT = ['#F2C14E','#7BC6E8','#8FD4A8','#F59E8B','#B9A2E6'];
 function paintMat(i){ return new THREE.MeshLambertMaterial({color: new THREE.Color(PAINT[i % PAINT.length])}); }
@@ -1526,8 +1527,16 @@ function chunk(a, n){ const out = []; for (let i = 0; i < a.length; i += n) out.
 const thick = b => b.formato === 'digital' ? 0.13 : Math.min(0.2, Math.max(0.045, 0.035 + (parseInt(b.paginas) || 150) / 2600));
 const tall = b => b.formato === 'digital' ? 0.78 : 0.66 + hash(b.id) * 0.24 * (b.materia === 'Consulta' ? 0.4 : 1) + (b.materia === 'Consulta' ? 0.18 : 0);
 
+function disposeWorld(){
+  world.traverse(o => {
+    if (o.geometry) o.geometry.dispose();
+    const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+    ms.forEach(m => { if (m.map && m.map.userData && m.map.userData.own) m.map.dispose(); m.dispose(); });
+  });
+}
+function clearTex(){ texCache.forEach(t => t.dispose()); texCache.clear(); }
 function rebuild(){
-  world.clear(); bookMeshes = [];
+  disposeWorld(); world.clear(); bookMeshes = [];
   const cases = layout();
   const glass = new THREE.MeshLambertMaterial({color: new THREE.Color(css('--digital')), transparent:true, opacity:.18});
   let x = 0;
@@ -1555,7 +1564,7 @@ function rebuild(){
         const m = new THREE.Mesh(new THREE.BoxGeometry(t, h, d), bookMaterials(b));
         const home = new THREE.Vector3(bx + t/2, (l-1)*SH + BOARD + h/2 + 0.002, DEPTH/2 - d/2 - 0.02);
         m.position.copy(home); m.userData = {book: b, home, homeRot: 0, t: 0, target: 0, caseX: g.position.x, shelfY: (l-1)*SH + BOARD};
-        g.add(m); bookMeshes.push(m); if (b.cover) applyCoverTexture(m, b.cover);
+        g.add(m); bookMeshes.push(m);
         bx += t + 0.006;
       }
     }
@@ -1592,6 +1601,7 @@ let camGoal = null;
 function grab(id){
   for (const m of bookMeshes) m.userData.target = m.userData.book.id === id ? 1 : 0;
   const m = bookMeshes.find(m => m.userData.book.id === id);
+  if (m) dressCover(m);
   if (m) {
     const wp = new THREE.Vector3(); m.parent.getWorldPosition(wp);
     const y = Math.max(0.9, Math.min(m.userData.shelfY + 0.5, 2.6));
@@ -1727,13 +1737,20 @@ function refreshBook(b){
   const el = document.querySelector(`.cover-card[data-id="${b.id}"]`);
   if (el) { const tmp = document.createElement('div'); tmp.innerHTML = coverCardHTML(b); el.replaceWith(tmp.firstElementChild); }
   if (b.id === selectedId) renderCard();
-  const m = bookMeshes.find(m => m.userData.book === b); if (m && b.cover) applyCoverTexture(m, b.cover);
+  const m = bookMeshes.find(m => m.userData.book === b); if (m && b.cover && m.userData.dressed) applyCoverTexture(m, b.cover);
+}
+function dressCover(m){
+  const b = m.userData.book, mat = m.material[0];
+  if (m.userData.dressed) return; m.userData.dressed = true;
+  const color = b.formato === 'digital' ? css('--digital') : materiaColor(b.materia);
+  mat.map = coverTex(b, color); mat.color.set(0xffffff); if (mat.userData) mat.userData.base = mat.color.clone(); mat.needsUpdate = true;
+  if (b.cover) applyCoverTexture(m, b.cover);
 }
 const imgTexCache = new Map(), texLoader = new THREE.TextureLoader(); texLoader.setCrossOrigin('anonymous');
 function applyCoverTexture(m, url){
-  const set = t => { m.material[0].map = t; m.material[0].needsUpdate = true; };
+  const set = t => { if (!m.parent) return; m.material[0].map = t; m.material[0].color.set(0xffffff); m.material[0].needsUpdate = true; };
   if (imgTexCache.has(url)) { const t = imgTexCache.get(url); if (t) set(t); return; }
-  texLoader.load(url, t => { t.anisotropy = 4; imgTexCache.set(url, t); set(t); }, undefined, () => imgTexCache.set(url, null));
+  texLoader.load(url, t => { t.anisotropy = 4; if (imgTexCache.size > 24) { const [k, old] = imgTexCache.entries().next().value; if (old) old.dispose(); imgTexCache.delete(k); } imgTexCache.set(url, t); set(t); }, undefined, () => imgTexCache.set(url, null));
 }
 window.addEventListener('online', processCovers);
 
@@ -1823,8 +1840,8 @@ function renderFilters(){
 }
 function commit(newStamp){
   state.sample = false; save();
-  texCache.clear(); renderFilters(); renderStats(); rebuild(); renderCard(newStamp); renderRows();
-  if (selectedId) { for (const m of bookMeshes) if (m.userData.book.id === selectedId) { m.userData.t = 1; m.userData.target = 1; } }
+  clearTex(); renderFilters(); renderStats(); rebuild(); renderCard(newStamp); renderRows();
+  if (selectedId) { for (const m of bookMeshes) if (m.userData.book.id === selectedId) { m.userData.t = 1; m.userData.target = 1; dressCover(m); } }
 }
 
 /* ---------- préstamo ---------- */
@@ -1965,7 +1982,7 @@ function editSchool(){
 schoolEl.addEventListener('click', () => { if (!schoolEl.querySelector('input')) editSchool(); });
 schoolEl.addEventListener('keydown', e => { if (e.key === 'Enter' && !schoolEl.querySelector('input')) editSchool(); });
 let toastT; function toast(msg){ const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2200); }
-const retheme = () => { texCache.clear(); rebuild(); };
+const retheme = () => { clearTex(); rebuild(); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
 
 /* ---------- instalar como app ---------- */
@@ -1978,7 +1995,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 schoolEl.textContent = state.school || 'CEIP Los Almendros';
 resize(); renderFilters(); renderStats(); rebuild(); renderCard(); renderRows();
 viewAll(); const g0 = camGoal; if (g0) { controls.target.copy(g0.target); camera.position.set(g0.target.x, g0.target.y, 20); camera.zoom = 1; camera.updateProjectionMatrix(); camGoal = null; }
-document.fonts && document.fonts.ready.then(() => { texCache.clear(); rebuild(); });
+document.fonts && document.fonts.ready.then(() => { clearTex(); rebuild(); });
 setTimeout(processCovers, 1200);
 </script>
 </body>
