@@ -1294,7 +1294,7 @@ const KNOWN = {fondo:'Fondo',nivel:'Nivel',balda:'Estante',estante:'Estante',alt
   cajaalternativa:'CajaAlt',cajajysk:'CajaAlt'};
 const SHELF = 'Estantería';
 let items = [], boxes = [], rows = [], mainDims = {W:6,H:9,D:2,P:3}, dims = mainDims, zone = SHELF, zoneNames = [SHELF],
-    selected = null, selItem = null, showLabels = true, query = '', altFilter = '', lastWarn = [];
+    selected = null, selItem = null, showLabels = true, query = '', altFilter = '', lastWarn = [], visitors = {};
 const filled = v => v !== '' && v != null && String(v).trim() !== '';
 
 /* ---------- datos ----------
@@ -1358,6 +1358,18 @@ function ingest(raw, source){
   const others = [...new Set(boxes.map(b => b.zone).filter(z => z !== SHELF))]
     .sort((a,b) => (a === 'Sin ubicación') - (b === 'Sin ubicación') || (a === 'En uso') - (b === 'En uso') || a.localeCompare(b, 'es'));
   zoneNames = [SHELF, ...others];
+  /* Si la Caja alternativa de un objeto es un sitio (p. ej. Fragoneta), el objeto aparece también en ese sitio,
+     agrupado por la caja de donde sale, para saber luego dónde devolverlo. */
+  visitors = {};
+  for (const z of others) {
+    const byBox = new Map();
+    for (const it of items) if (norm(it.CajaAlt) === norm(z) && it.box.zone !== z) {
+      if (!byBox.has(it.box)) byBox.set(it.box, {visitor:true, home: it.box, zone: z, line: 'v' + it.box.line, Referencia: it.box.Referencia,
+        ColorCaja: it.box.ColorCaja, ColorTapa: it.box.ColorTapa, Lugar: it.box.Lugar, Categoria: it.box.Categoria, items: [], extra: {}});
+      byBox.get(it.box).items.push(it);
+    }
+    visitors[z] = [...byBox.values()];
+  }
   if (!zoneNames.includes(zone)) zone = SHELF;
   const alts = [...new Set(items.map(i => i.CajaAlt).filter(filled).map(String))].sort((a,b) => a.localeCompare(b, 'es', {numeric:true}));
   $('#alt').innerHTML = '<option value="">Todas</option>' + alts.map(a => `<option ${a === altFilter ? 'selected' : ''}>${esc(a)}</option>`).join('');
@@ -1377,7 +1389,7 @@ function ingest(raw, source){
 }
 /* Coloca las cajas de la zona elegida. Las que no están en la estantería se colocan solas, de abajo arriba. */
 function applyZone(){
-  const list = boxes.filter(b => b.zone === zone);
+  const list = [...boxes.filter(b => b.zone === zone), ...(zone === SHELF ? [] : visitors[zone] || [])];
   if (zone === SHELF) { rows = list; dims = mainDims; }
   else {
     const W = mainDims.W, P = mainDims.P;
@@ -1388,7 +1400,7 @@ function applyZone(){
 }
 function renderZones(){
   $('#zones').innerHTML = zoneNames.map(z => {
-    const n = boxes.filter(b => b.zone === z).length;
+    const n = boxes.filter(b => b.zone === z).length + (z === SHELF ? 0 : (visitors[z] || []).length);
     return `<button class="zone" role="tab" type="button" data-zone="${esc(z)}" aria-selected="${z === zone}">${esc(z)} <span>${n}</span></button>`;
   }).join('');
 }
@@ -1742,6 +1754,15 @@ function renderDetail(){
   const el = $('#detail');
   if (!selected) { el.innerHTML = '<p class="empty-note">Toca una caja en el 3D o una fila del listado.</p>'; return; }
   const r = selected;
+  if (r.visitor) {
+    const home = r.home.zone === SHELF ? `estantería ${shelfCode(r.home)}` : r.home.zone;
+    let h = `<div class="loc">${esc(r.Referencia || '—')}<small>Cosas de ${esc(r.Referencia)} que van en ${esc(r.zone)}. Al volver, a su caja: ${esc(home)}</small></div><dl>`;
+    h += `<dt>Etiqueta</dt><dd style="font-family:var(--f-mono)">${esc(r.Referencia)}</dd><dt>Su sitio</dt><dd>${esc(home)}</dd>`;
+    h += `<dt>Color caja</dt><dd>${swatch(r.ColorCaja)}</dd><dt>Color tapa</dt><dd>${swatch(r.ColorTapa)}</dd></dl>`;
+    h += `<h3 class="contents-h">Van en ${esc(r.zone)} <span>${r.items.length}</span></h3><ul class="contents">`
+      + r.items.map(i => `<li class="${i === selItem ? 'on' : ''}"><span>${esc(i.Descripcion || '(sin descripción)')}</span>${filled(i.Notas) ? `<small>${esc(i.Notas)}</small>` : ''}</li>`).join('') + '</ul>';
+    el.innerHTML = h; return;
+  }
   const code = r.zone === SHELF ? loc(r) : r.zone;
   const sub = r.zone === SHELF ? `Balda ${est(r)} · Fila ${r.Posicion} · Fondo ${r.Fondo} (${r.Fondo === 1 ? 'delante' : r.Fondo === mainDims.D ? 'detrás' : 'medio'}) · Altura ${alt(r)}`
     : r.zone === 'Sin ubicación' ? 'Todavía no tiene sitio asignado' : 'Fuera de la estantería';
@@ -1763,7 +1784,7 @@ function renderDetail(){
 function renderStats(){
   const objs = items.length, out = boxes.filter(b => b.zone !== SHELF).length;
   if (zone !== SHELF) {
-    const here = rows.reduce((n,b) => n + b.items.length, 0);
+    const here = rows.reduce((n,b) => n + b.items.length, 0);  /* incluye lo que viene de otras cajas */
     $('#stats').innerHTML = [[rows.length,'Cajas aquí'],[here,'Objetos aquí'],[boxes.length - out,'En estantería'],[objs,'Objetos total']]
       .map(([v,l]) => `<div class="stat"><b>${v}</b><span>${l}</span></div>`).join('');
     return;
@@ -1784,7 +1805,7 @@ function renderLegend(items){
 /* El listado enseña OBJETOS. Con «Llevar en» elegido, enseña los de todas las zonas. */
 function renderTable(){
   const d = v => filled(v) ? esc(v) : '';
-  const pool = altFilter || query ? items : items.filter(i => i.box.zone === zone);  /* al buscar, se busca en todas partes */
+  const pool = altFilter || query ? items : items.filter(i => i.box.zone === zone || (zone !== SHELF && norm(i.CajaAlt) === norm(zone)));  /* al buscar, se busca en todas partes */
   const list = pool.filter(itemMatch).sort((a,b) => {
     const A = a.box, B = b.box, sa = A.zone === SHELF, sb = B.zone === SHELF;
     if (sa !== sb) return sa ? -1 : 1;
@@ -1798,7 +1819,7 @@ function renderTable(){
   $('#tbody').innerHTML = list.map(i => {
     const b = i.box, sh = b.zone === SHELF, P = mainDims.P;
     const cells = sh ? [Math.floor((b.Nivel-1)/P)+1, b.Posicion, b.Fondo, (b.Nivel-1)%P+1] : ['','','',''];
-    return `<tr data-k="${i.line}" class="${i === selItem || (!selItem && b === selected) ? 'sel' : ''}" tabindex="0">`
+    return `<tr data-k="${i.line}" class="${i === selItem || (!selItem && (b === selected || (selected && selected.visitor && selected.home === b))) ? 'sel' : ''}" tabindex="0">`
       + `<td class="m">${sh ? shelfCode(b) : `<span class="zonepill">${esc(b.zone)}</span>`}</td>`
       + cells.map(c => `<td class="m">${c}</td>`).join('')
       + `<td class="m">${d(i.Referencia)}</td><td class="wrap">${d(i.Descripcion)}</td>`
@@ -1808,6 +1829,9 @@ function renderTable(){
 }
 function pickItem(line){
   const it = items.find(i => i.line === line); if (!it) return;
+  if (zone !== SHELF && it.box.zone !== zone && norm(it.CajaAlt) === norm(zone)) {
+    const v = rows.find(r => r.visitor && r.home === it.box); if (v) { select(v, it); return; }
+  }
   if (it.box.zone !== zone) { zone = it.box.zone; applyZone(); rebuild(); renderStats(); setView('persp'); }
   select(it.box, it);
 }
