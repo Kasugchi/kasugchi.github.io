@@ -372,7 +372,7 @@ function mensajeDelAnfitrion(msg) {
     app.sala = msg.sala;
     if (!app.estado) { pintarSala(); mostrar('sala'); }
   } else if (msg.t === 'estado') recibirEstado(msg.estado);
-  else if (msg.t === 'error') toast(msg.texto, 'peligro');
+  else if (msg.t === 'error') { toast(msg.texto, 'peligro'); cerrarDadosManual(); }
 }
 
 // =============================================================
@@ -388,8 +388,58 @@ function enviar(accion) {
   if (app.reproduciendo) return;
   if (app.modo === 'invitado') return app.red.enviar({ t: 'accion', accion });
   const err = M.aplicar(app.estadoReal, accion, miId, (m) => app.misiones[m]);
-  if (err) toast(err, 'peligro');
+  if (err) { toast(err, 'peligro'); cerrarDadosManual(); }
   else publicar(app.estadoReal);
+}
+
+// =============================================================
+//  DADOS A MANO: se agitan hasta que tocas, y entonces se tira.
+//  La tirada la sigue haciendo el anfitrión al recibir la acción.
+// =============================================================
+app.dadosManual = leer('criptas_dados_manual') !== 'no';
+let agitado = null, tiempoDados = null;
+
+function conDados(tipo, h, accion) {
+  if (!app.dadosManual || app.reproduciendo) return enviar(accion);
+  const e = app.estado;
+  let titulo, dados;
+  if (tipo === 'mover') {
+    titulo = esc(h.nombre) + ' se mueve';
+    dados = Array.from({ length: M.dadosMovimiento(h) }, () => 'rojo');
+  } else {
+    const m = e.monstruos.find((x) => x.id === accion.objetivo);
+    const n = M.ataqueHeroe(h) + (h.efectos.coraje || 0) + (h.efectos.fuerza || 0);
+    titulo = esc(h.nombre) + ' ataca a ' + esc(m?.nombre || '');
+    dados = Array.from({ length: n }, () => 'combate');
+  }
+  $('#mesa-dados').innerHTML = `<h3>${titulo}</h3><p class="sub">Toca para tirar</p>
+    <div class="tira" id="tira-agita">${dados.map((t) => (t === 'rojo' ? dadoRojo(1) : dadoHTML('calavera', false)).replace('rueda', 'agita')).join('')}</div>
+    <button class="btn claro" id="b-cancelar-dados" style="margin-top:8px;color:#e8d8b0;box-shadow:inset 0 0 0 2px #e8d8b0">Cancelar</button>`;
+  $('#dados').hidden = false;
+  sonar('dados');
+  clearInterval(agitado);
+  // Mientras se agitan, las caras cambian al azar (solo es decoración).
+  agitado = setInterval(() => {
+    const tira = $('#tira-agita');
+    if (!tira) return clearInterval(agitado);
+    tira.innerHTML = dados.map((t) => (t === 'rojo' ? dadoRojo(1 + Math.floor(Math.random() * 6)) : dadoHTML(D.CARAS[Math.floor(Math.random() * 6)], false)).replace('rueda', 'agita')).join('');
+  }, 140);
+  app.preTirada = () => {
+    app.preTirada = null;
+    $('#mesa-dados .sub').textContent = '¡Rodando!';
+    $('#b-cancelar-dados')?.remove();
+    // Si no llega respuesta (sin conexión), se cierra sola.
+    clearTimeout(tiempoDados);
+    tiempoDados = setTimeout(() => { if (!app.reproduciendo) cerrarDadosManual(); }, 8000);
+    enviar(accion);
+  };
+  $('#b-cancelar-dados').addEventListener('click', (ev) => { ev.stopPropagation(); app.preTirada = null; cerrarDadosManual(); });
+}
+
+function cerrarDadosManual() {
+  clearInterval(agitado); clearTimeout(tiempoDados);
+  app.preTirada = null;
+  if (!app.reproduciendo) $('#dados').hidden = true;
 }
 
 function recibirEstado(e, real) {
@@ -482,8 +532,12 @@ $('#b-vertodo').addEventListener('click', () => {
 });
 $('#b-registro').addEventListener('click', () => { pintarDiario(); $('#registro').hidden = false; });
 $('#b-cerrar-registro').addEventListener('click', () => ($('#registro').hidden = true));
-$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); });
+$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
+$('#interruptor-dados').checked = app.dadosManual;
+$('#interruptor-dados').addEventListener('change', (e) => { app.dadosManual = e.target.checked; guardar('criptas_dados_manual', app.dadosManual ? 'si' : 'no'); }); });
 $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
+$('#interruptor-dados').checked = app.dadosManual;
+$('#interruptor-dados').addEventListener('change', (e) => { app.dadosManual = e.target.checked; guardar('criptas_dados_manual', app.dadosManual ? 'si' : 'no'); });
 $('#b-abandonar').addEventListener('click', async () => {
   const i = await modal('<h2>¿Abandonar?</h2><p>La partida queda guardada en este dispositivo y podrás continuarla desde la portada.</p>', [{ texto: 'Seguir jugando', clase: 'claro' }, { texto: 'Abandonar' }]);
   if (i === 1) salirAPortada();
@@ -575,9 +629,9 @@ const dadosTxt = (h) => (M.dadosMovimiento(h) === 1 ? '1 dado' : '2 dados');
 async function accionBoton(acc, h, d) {
   const base = { heroe: h.id };
   switch (acc) {
-    case 'tirar': return enviar({ ...base, tipo: 'tirar' });
+    case 'tirar': return conDados('mover', h, { ...base, tipo: 'tirar' });
     case 'atacar':
-      if (d.atacables.length === 1) return enviar({ ...base, tipo: 'atacar', objetivo: d.atacables[0] });
+      if (d.atacables.length === 1) return conDados('ataque', h, { ...base, tipo: 'atacar', objetivo: d.atacables[0] });
       app.seleccion = { tipo: 'atacar' }; return pintarAcciones();
     case 'hechizo': return elegirHechizo(h, d);
     case 'tesoro': return enviar({ ...base, tipo: 'buscarTesoro' });
@@ -647,7 +701,7 @@ function alTocar(x, y) {
       if (f && app.seleccion.objetivos.includes(f.id)) return enviar({ heroe: h.id, tipo: 'hechizo', hechizo: app.seleccion.hechizo, objetivo: f.id });
       app.seleccion = null; return pintarAcciones();
     }
-    if (f && d.atacables.includes(f.id)) { app.seleccion = null; return enviar({ heroe: h.id, tipo: 'atacar', objetivo: f.id }); }
+    if (f && d.atacables.includes(f.id)) { app.seleccion = null; return conDados('ataque', h, { heroe: h.id, tipo: 'atacar', objetivo: f.id }); }
     if (app.seleccion) { app.seleccion = null; pintarAcciones(); }
     if (d.destinos[k]) return enviar({ heroe: h.id, tipo: 'mover', x, y });
     const tr = e.trampas.find((t) => t.x === x && t.y === y && d.desarmables.includes(t.id));
@@ -712,7 +766,7 @@ function esperaSaltable(ms) {
     app.saltar = fin;
   });
 }
-$('#dados').addEventListener('click', () => app.saltar?.());
+$('#dados').addEventListener('click', () => { if (app.preTirada) return app.preTirada(); app.saltar?.(); });
 
 function dadoHTML(cara, cuenta) {
   const n = cara === 'calavera' ? 'calavera' : 'escudo';
@@ -724,6 +778,7 @@ const dadoRojo = (v) => `<div class="dado rojo rueda"><div class="pips">${Array.
 
 async function animar(ev) {
   const e = app.estado;
+  if (ev.tipo === 'tirada' || ev.tipo === 'dados') { clearInterval(agitado); clearTimeout(tiempoDados); app.preTirada = null; }
   switch (ev.tipo) {
     case 'turno': {
       const h = e.heroes[ev.heroe];
