@@ -1,0 +1,64 @@
+{
+  "id": "01-tuneles-de-ceniza",
+  "numero": 1,
+  "titulo": "Los Túneles de Ceniza",
+  "intro": "Bajo las ruinas del viejo molino, una banda de orcos ha excavado una madriguera. Su caudillo, Grumak, asalta las caravanas del camino real y guarda el botín en su sala del trono. La Hermandad os envía a acabar con él. Bajad por la escalera, limpiad los túneles y volved con vida.",
+  "objetivo": { "tipo": "escalera", "requiere": ["jefe"], "texto": "Derrota a Grumak y vuelve a la escalera para salir." },
+  "recompensa": 50,
+  "errante": "orco",
+  "escalera": [7, 14],
+  "rocas": [[0, 11], [6, 8], [19, 11], [25, 11]],
+  "puertas": [
+    { "id": "d1", "a": [8, 13], "b": [8, 12] },
+    { "id": "d2", "a": [9, 16], "b": [10, 16] },
+    { "id": "d3", "a": [5, 15], "b": [6, 15] },
+    { "id": "d4", "a": [12, 13], "b": [12, 12] },
+    { "id": "d5", "a": [18, 13], "b": [18, 12] },
+    { "id": "d6", "a": [22, 15], "b": [21, 15] },
+    { "id": "d7", "a": [9, 11], "b": [9, 12] },
+    { "id": "s1", "a": [7, 9], "b": [6, 9], "secreta": true }
+  ],
+  "muebles": [
+    { "tipo": "mesa", "x": 2, "y": 15, "w": 3, "h": 2 },
+    { "tipo": "armero", "x": 12, "y": 17, "w": 3, "h": 1 },
+    { "tipo": "cofre", "x": 20, "y": 17, "w": 1, "h": 1 },
+    { "tipo": "chimenea", "x": 22, "y": 13, "w": 3, "h": 1 },
+    { "tipo": "trono", "x": 12, "y": 6, "w": 1, "h": 1 },
+    { "tipo": "mesa", "x": 14, "y": 8, "w": 3, "h": 2 },
+    { "tipo": "cofre", "x": 17, "y": 6, "w": 1, "h": 1 }
+  ],
+  "monstruos": [
+    { "id": "t1", "tipo": "trasgo", "x": 2, "y": 13, "ia": "agresivo" },
+    { "id": "t2", "tipo": "trasgo", "x": 4, "y": 17, "ia": "agresivo" },
+    { "id": "t3", "tipo": "trasgo", "x": 3, "y": 12, "ia": "agresivo" },
+    { "id": "o1", "tipo": "orco", "x": 11, "y": 15, "ia": "guardian" },
+    { "id": "o2", "tipo": "orco", "x": 14, "y": 14, "ia": "guardian" },
+    { "id": "o3", "tipo": "orco", "x": 17, "y": 15, "ia": "agresivo" },
+    { "id": "t4", "tipo": "trasgo", "x": 23, "y": 16, "ia": "agresivo" },
+    { "id": "t5", "tipo": "trasgo", "x": 24, "y": 14, "ia": "agresivo" },
+    { "id": "grumak", "tipo": "orco", "nombre": "Grumak", "x": 12, "y": 7, "ia": "guardian", "jefe": true, "cuerpo": 3, "ataque": 4, "defensa": 3 },
+    { "id": "o4", "tipo": "orco", "x": 10, "y": 8, "ia": "guardian" },
+    { "id": "o5", "tipo": "orco", "x": 15, "y": 10, "ia": "guardian" },
+    { "id": "t6", "tipo": "trasgo", "x": 8, "y": 10, "ia": "agresivo" }
+  ],
+  "trampas": [
+    { "id": "tr1", "tipo": "foso", "x": 21, "y": 13 },
+    { "id": "tr2", "tipo": "lanza", "x": 10, "y": 14 },
+    { "id": "tr3", "tipo": "bloque", "x": 6, "y": 10 }
+  ],
+  "tesoros": {
+    "K": { "texto": "Entre las armas oxidadas del armero hay una espada larga bien conservada.", "arma": "espadaLarga" },
+    "L": { "texto": "El cofre guarda 80 monedas de oro.", "oro": 80, "trampaCofre": true },
+    "M": { "texto": "Junto a la chimenea, olvidado, un frasco curativo.", "objeto": "pocionCurar" },
+    "G": { "texto": "En el cofre de Grumak brillan 150 monedas robadas a las caravanas.", "oro": 150 }
+  },
+  "disparadores": [
+    { "cuando": "region_revelada", "region": "G", "acciones": [
+      { "tipo": "historia", "texto": "Al fondo de la sala, un orco enorme se levanta de un trono de huesos y desenvaina un hacha mellada. «¡Más carne para la olla!», ruge Grumak." }
+    ] },
+    { "cuando": "monstruo_muerto", "id": "grumak", "acciones": [
+      { "tipo": "flag", "nombre": "jefe" },
+      { "tipo": "historia", "texto": "Grumak se desploma con estrépito. Sin su caudillo, la madriguera ya no es una amenaza. Volved a la escalera para salir." }
+    ] }
+  ]
+}
