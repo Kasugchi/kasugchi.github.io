@@ -7,7 +7,12 @@
 import * as D from './datos.js';
 import * as M from './motor.js';
 import * as T from './tablero.js';
-import * as Red from './red.js';
+// La red se carga solo al crear o unirse a una sala: así el modo local funciona sin conexión.
+let moduloRed = null;
+const Red = async () => {
+  try { return (moduloRed ||= await import('./red.js')); }
+  catch { throw new Error('No se pudo cargar la conexión de partidas. Revisa tu conexión a internet.'); }
+};
 import { Tablero } from './render.js';
 import { ICONOS } from './iconos.js';
 
@@ -121,7 +126,7 @@ $('#b-crear').addEventListener('click', async () => {
   try {
     app.modo = 'anfitrion';
     app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0 };
-    app.red = await Red.crearSala(eventosAnfitrion());
+    app.red = await (await Red()).crearSala(miId, eventosAnfitrion());
     app.sala.codigo = app.red.codigo;
     avisoPortada('');
     pintarSala(); mostrar('sala');
@@ -134,11 +139,12 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
   avisoPortada('Buscando la sala ' + codigo + '…');
   try {
     app.modo = 'invitado';
-    app.red = await Red.unirseSala(codigo, miId, miNombre(), {
+    app.red = await (await Red()).unirseSala(codigo, miId, miNombre(), {
       alMensaje: mensajeDelAnfitrion,
-      alCerrar: () => { app.red = null; app.modo = null; mostrar('portada'); avisoPortada('Se ha perdido la conexión con el anfitrión.'); }
+      alAnfitrion: (online) => anfitrionCambia(online)
     });
     avisoPortada('');
+    if (!app.red.anfitrionOnline) anfitrionCambia(false);
   } catch (e) { app.modo = null; avisoPortada(e.message); }
 });
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
@@ -146,19 +152,53 @@ $('#b-continuar').addEventListener('click', async () => {
   const g = guardado();
   if (!g) return;
   await listas;
-  if (g.modo === 'anfitrion') {
-    try {
-      app.modo = 'anfitrion';
-      app.red = await Red.crearSala(eventosAnfitrion());
-      g.estado.anfitrion = miId;
-      for (const [id, j] of Object.entries(g.estado.jugadores || {})) if (id !== miId) j.desconectado = true;
-      app.sala = { codigo: app.red.codigo, jugadores: g.estado.jugadores, eleccion: {}, misionIdx: g.estado.misionIdx };
-      toast('Sala abierta con el código ' + app.red.codigo + '. Tus compañeros deben volver a unirse.');
-    } catch (e) { return avisoPortada(e.message); }
-  } else app.modo = 'local';
+  if (g.modo === 'anfitrion' && g.codigo) {
+    avisoPortada('Reabriendo la sala ' + g.codigo + '…');
+    try { await retomarComoAnfitrion(g.codigo, g.estado); avisoPortada(''); }
+    catch (e) { avisoPortada(e.message); }
+    return;
+  }
+  app.modo = 'local';
   app.visto = 0; app.estado = null; app.cola = [];
   publicar(g.estado);
 });
+
+// Seguir una partida como anfitrión (tras recargar, o si el anfitrión se fue).
+async function retomarComoAnfitrion(codigo, estado) {
+  app.red?.cerrar();
+  app.red = null;
+  app.modo = 'anfitrion';
+  estado.anfitrion = miId;
+  estado.jugadores ||= {};
+  for (const [id, j] of Object.entries(estado.jugadores)) if (id !== miId) j.desconectado = true;
+  estado.jugadores[miId] = { nombre: miNombre() };
+  app.sala = { codigo, jugadores: estado.jugadores, eleccion: {}, misionIdx: estado.misionIdx };
+  app.visto = 0; app.estado = null; app.cola = [];
+  app.estadoReal = estado; // antes de abrir la sala, para que los que se reconectan se apunten bien
+  app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo, retomar: true });
+  toast('Sala ' + codigo + ' abierta. Los demás pueden volver a entrar con el mismo código.', 'bueno');
+  publicar(estado);
+}
+
+// El invitado se entera de que el anfitrión se ha ido (o ha vuelto).
+let avisoCaida = null;
+function anfitrionCambia(online) {
+  if (app.modo !== 'invitado') return;
+  clearTimeout(avisoCaida);
+  if (online) return;
+  // Margen por si solo ha recargado la página.
+  avisoCaida = setTimeout(async () => {
+    if (app.modo !== 'invitado') return;
+    const estado = await app.red.estadoGuardado();
+    if (!estado) { salirAPortada(); return avisoPortada('El anfitrión ha cerrado la sala.'); }
+    app.cerrarModalFuera = null;
+    const i = await modal('<h2>El anfitrión se ha ido</h2><p>La partida está guardada. Puedes seguir tú como anfitrión con el mismo código, o esperar a que vuelva.</p>',
+      [{ texto: 'Esperar', clase: 'claro' }, { texto: 'Seguir como anfitrión' }]);
+    if (i === 1) {
+      try { await retomarComoAnfitrion(app.red.codigo, estado); } catch (e) { toast(e.message, 'peligro'); }
+    }
+  }, 6000);
+}
 $('#b-reglas').addEventListener('click', () => mostrarReglas());
 function avisoPortada(t) { $('#aviso-portada').textContent = t; }
 
@@ -265,7 +305,7 @@ function alternarHeroe(jugador, t) {
 }
 function difundirSala() {
   pintarSala();
-  if (app.modo === 'anfitrion') app.red.difundir({ t: 'sala', sala: app.sala });
+  if (app.modo === 'anfitrion') app.red?.difundir({ t: 'sala', sala: app.sala });
 }
 $('#sel-mision').addEventListener('change', (e) => { app.sala.misionIdx = +e.target.value; difundirSala(); });
 $('#b-salir-sala').addEventListener('click', () => salirAPortada());
@@ -298,7 +338,7 @@ function eventosAnfitrion() {
       const s = app.sala;
       s.jugadores[id] = { nombre };
       const real = app.estadoReal;
-      if (app.estado && real) {
+      if (real) {
         real.jugadores[id] = { nombre };
         toast(nombre + ' se ha unido.', 'bueno');
         publicar(real);
@@ -339,8 +379,8 @@ function mensajeDelAnfitrion(msg) {
 //  ESTADO Y ACCIONES
 // =============================================================
 function publicar(estado) {
-  guardar('criptas_partida', { modo: app.modo, estado });
-  if (app.modo === 'anfitrion') app.red.difundir({ t: 'estado', estado });
+  guardar('criptas_partida', { modo: app.modo, codigo: app.red?.codigo || null, estado });
+  if (app.modo === 'anfitrion') app.red?.difundir({ t: 'estado', estado });
   recibirEstado(JSON.parse(JSON.stringify(estado)), estado);
 }
 
@@ -451,6 +491,8 @@ $('#b-abandonar').addEventListener('click', async () => {
 
 function pintarDiario() {
   const e = app.estado;
+  $('#diario-sala').hidden = !app.red;
+  $('#diario-sala').innerHTML = app.red ? 'Código de la sala: <b>' + esc(app.red.codigo) + '</b>' : '';
   $('#diario').innerHTML = (e?.log || []).slice().reverse().map((l) => `<li class="${l.tono}">${esc(l.texto)}</li>`).join('');
 }
 
