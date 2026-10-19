@@ -204,6 +204,8 @@ export function disparar(estado, cuando, datos = {}) {
     if (d.puerta && d.puerta !== datos.puerta) return;
     if (d.nombre && d.nombre !== datos.nombre) return;
     if (d.casilla && !(d.casilla[0] === datos.x && d.casilla[1] === datos.y)) return;
+    // requiere: varias flags a la vez (p. ej. reunir tres sellos).
+    if (d.requiere && !d.requiere.every((f) => estado.flags[f])) return;
     estado.disparados[i] = 1;
     for (const a of d.acciones || []) ejecutarAccionGuion(estado, a);
   });

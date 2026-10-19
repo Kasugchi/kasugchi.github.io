@@ -197,4 +197,4 @@ export const MUEBLES = {
 };
 
 // Orden de las misiones de la campaña (archivos de /misiones).
-export const CAMPANA = ['01-tuneles-de-ceniza', '02-biblioteca-del-alquimista', '03-trono-de-velmor'];
+export const CAMPANA = ['01-tuneles-de-ceniza', '02-biblioteca-del-alquimista', '03-celdas-de-hierro', '04-los-tres-sellos', '03-trono-de-velmor'];

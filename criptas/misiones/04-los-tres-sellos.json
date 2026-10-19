@@ -1,0 +1,96 @@
+{
+  "id": "04-los-tres-sellos",
+  "numero": 4,
+  "titulo": "Los Tres Sellos",
+  "intro": "Aldren lo ha visto con sus propios ojos: Velmor saca fuerzas del Osario, una cámara sellada donde duerme el Rey Momia, el primero de sus muertos. La puerta del Osario solo se abre con tres sellos, el de Hueso, el de Ceniza y el de Sangre, escondidos en las criptas del ala oeste. Reunidlos, abrid el Osario y acabad con el Rey Momia antes de que Velmor lo despierte del todo.",
+  "objetivo": { "tipo": "matar", "id": "rey", "texto": "Reúne los tres sellos, abre el Osario y destruye al Rey Momia." },
+  "recompensa": 120,
+  "errante": "zombi",
+  "escalera": [2, 6],
+  "rocas": [[15, 0], [15, 5], [15, 12], [15, 18]],
+  "puertas": [
+    { "id": "d1", "a": [5, 7], "b": [6, 7] },
+    { "id": "d2", "a": [1, 6], "b": [1, 5] },
+    { "id": "d3", "a": [4, 9], "b": [4, 8] },
+    { "id": "d4", "a": [2, 4], "b": [2, 5] },
+    { "id": "d5", "a": [7, 4], "b": [7, 5] },
+    { "id": "d6", "a": [5, 2], "b": [4, 2] },
+    { "id": "d7", "a": [12, 4], "b": [12, 5] },
+    { "id": "d8", "a": [2, 13], "b": [2, 12] },
+    { "id": "d9", "a": [8, 13], "b": [8, 12] },
+    { "id": "d10", "a": [7, 15], "b": [6, 15] },
+    { "id": "d11", "a": [12, 13], "b": [12, 12] },
+    { "id": "osario", "a": [7, 8], "b": [6, 8], "bloqueada": true },
+    { "id": "s1", "a": [1, 10], "b": [0, 10], "secreta": true }
+  ],
+  "muebles": [
+    { "tipo": "altar", "x": 1, "y": 1, "w": 2, "h": 2 },
+    { "tipo": "mesa", "x": 6, "y": 2, "w": 3, "h": 2 },
+    { "tipo": "sarcofago", "x": 12, "y": 1, "w": 2, "h": 2 },
+    { "tipo": "sarcofago", "x": 2, "y": 10, "w": 2, "h": 2 },
+    { "tipo": "altar", "x": 3, "y": 15, "w": 2, "h": 2 },
+    { "tipo": "estanteria", "x": 7, "y": 17, "w": 3, "h": 1 },
+    { "tipo": "caldero", "x": 13, "y": 16, "w": 1, "h": 1 },
+    { "tipo": "mesa", "x": 11, "y": 14, "w": 2, "h": 2 },
+    { "tipo": "trono", "x": 12, "y": 6, "w": 1, "h": 1 },
+    { "tipo": "sarcofago", "x": 15, "y": 9, "w": 3, "h": 2 },
+    { "tipo": "altar", "x": 9, "y": 6, "w": 2, "h": 1 },
+    { "tipo": "estanteria", "x": 16, "y": 6, "w": 3, "h": 1 }
+  ],
+  "monstruos": [
+    { "id": "m1", "tipo": "momia", "x": 3, "y": 1, "ia": "guardian" },
+    { "id": "e1", "tipo": "esqueleto", "x": 1, "y": 3, "ia": "guardian" },
+    { "id": "o1", "tipo": "orco", "x": 9, "y": 1, "ia": "agresivo" },
+    { "id": "o2", "tipo": "orco", "x": 5, "y": 4, "ia": "agresivo" },
+    { "id": "t1", "tipo": "trasgo", "x": 9, "y": 4, "ia": "agresivo" },
+    { "id": "centinela", "tipo": "gargola", "nombre": "Centinela del sello", "x": 14, "y": 3, "ia": "guardian" },
+    { "id": "z1", "tipo": "zombi", "x": 11, "y": 2, "ia": "guardian" },
+    { "id": "z2", "tipo": "zombi", "x": 1, "y": 9, "ia": "guardian" },
+    { "id": "z3", "tipo": "zombi", "x": 5, "y": 11, "ia": "guardian" },
+    { "id": "m2", "tipo": "momia", "x": 1, "y": 17, "ia": "guardian" },
+    { "id": "e2", "tipo": "esqueleto", "x": 5, "y": 14, "ia": "guardian" },
+    { "id": "t2", "tipo": "trasgo", "x": 9, "y": 14, "ia": "agresivo" },
+    { "id": "t3", "tipo": "trasgo", "x": 7, "y": 16, "ia": "agresivo" },
+    { "id": "g1", "tipo": "guerrero", "x": 14, "y": 14, "ia": "guardian" },
+    { "id": "o3", "tipo": "orco", "x": 11, "y": 17, "ia": "agresivo" },
+    { "id": "e3", "tipo": "esqueleto", "x": 6, "y": 10, "ia": "agresivo" },
+    { "id": "t4", "tipo": "trasgo", "x": 10, "y": 12, "ia": "agresivo" },
+    { "id": "e4", "tipo": "esqueleto", "x": 0, "y": 14, "ia": "agresivo" },
+    { "id": "rey", "tipo": "momia", "nombre": "El Rey Momia", "x": 12, "y": 7, "ia": "guardian", "jefe": true, "cuerpo": 5, "ataque": 4, "defensa": 5 },
+    { "id": "m3", "tipo": "momia", "x": 10, "y": 9, "ia": "guardian" },
+    { "id": "m4", "tipo": "momia", "x": 14, "y": 9, "ia": "guardian" },
+    { "id": "e5", "tipo": "esqueleto", "x": 8, "y": 7, "ia": "agresivo" },
+    { "id": "e6", "tipo": "esqueleto", "x": 8, "y": 10, "ia": "agresivo" }
+  ],
+  "trampas": [
+    { "id": "tr1", "tipo": "foso", "x": 6, "y": 5 },
+    { "id": "tr2", "tipo": "lanza", "x": 4, "y": 3 },
+    { "id": "tr3", "tipo": "bloque", "x": 10, "y": 13 },
+    { "id": "tr4", "tipo": "foso", "x": 0, "y": 8 },
+    { "id": "tr5", "tipo": "lanza", "x": 9, "y": 8 }
+  ],
+  "tesoros": {
+    "A": { "texto": "Sobre el altar, envuelto en un paño gris, reposa el Sello de Hueso.", "flag": "selloHueso" },
+    "C": { "texto": "En el sarcófago abierto, entre cenizas aún tibias, encontráis el Sello de Ceniza.", "flag": "selloCeniza" },
+    "I": { "texto": "El altar está manchado de rojo. En su centro brilla el Sello de Sangre.", "flag": "selloSangre" },
+    "B": { "texto": "En la mesa de los orcos, 80 monedas a medio repartir.", "oro": 80 },
+    "O": { "texto": "Entre las tumbas, ofrendas olvidadas: 120 monedas.", "oro": 120 },
+    "J": { "texto": "Detrás de los libros, un frasco curativo.", "objeto": "pocionCurar" },
+    "K": { "texto": "Colgada de la pared, una ballesta con su carcaj.", "arma": "ballesta" }
+  },
+  "disparadores": [
+    { "cuando": "flag", "nombre": "selloHueso", "acciones": [{ "tipo": "mensaje", "texto": "Tenéis el Sello de Hueso." }] },
+    { "cuando": "flag", "nombre": "selloCeniza", "acciones": [{ "tipo": "mensaje", "texto": "Tenéis el Sello de Ceniza." }] },
+    { "cuando": "flag", "nombre": "selloSangre", "acciones": [{ "tipo": "mensaje", "texto": "Tenéis el Sello de Sangre." }] },
+    { "cuando": "flag", "requiere": ["selloHueso", "selloCeniza", "selloSangre"], "acciones": [
+      { "tipo": "desbloquear", "puerta": "osario" },
+      { "tipo": "historia", "texto": "Los tres sellos vibran a la vez en vuestras manos. A lo lejos, la puerta del Osario cruje: ya no está cerrada." }
+    ] },
+    { "cuando": "region_revelada", "region": "G", "acciones": [
+      { "tipo": "historia", "texto": "El Osario huele a polvo y especias antiguas. Sobre un trono de piedra, una figura vendada con corona de oro gira la cabeza hacia vosotros. El Rey Momia se levanta." }
+    ] },
+    { "cuando": "monstruo_muerto", "id": "centinela", "acciones": [
+      { "tipo": "mensaje", "texto": "El Centinela se parte en dos. El sarcófago que guardaba queda a vuestro alcance." }
+    ] }
+  ]
+}
