@@ -32,12 +32,25 @@ export const TABLERO = [
 ];
 export const ANCHO = 26, ALTO = 19;
 
-// Tono del suelo de cada sala (para que cada una se reconozca).
+// Suelo de cada sala: color y dibujo de baldosa, para que cada una se reconozca.
+// dibujos: losas | damero | rombos | ladrillo | grietas | tablas
 export const SUELOS = {
-  '.': [92, 88, 82],
-  A: [112, 72, 58], B: [96, 84, 70], C: [70, 82, 96], D: [84, 78, 92], E: [72, 96, 80],
-  F: [110, 86, 62], G: [104, 64, 56], H: [78, 92, 74], N: [92, 74, 96], O: [88, 92, 70],
-  I: [100, 90, 64], J: [80, 76, 86], K: [108, 78, 66], L: [70, 88, 92], M: [98, 70, 80]
+  '.': { c: [196, 186, 168], p: 'pasillo' },
+  A: { c: [150, 96, 58],  p: 'tablas' },
+  B: { c: [176, 70, 58],  p: 'losas' },
+  C: { c: [104, 158, 160], p: 'grietas' },
+  D: { c: [176, 74, 52],  p: 'grietas' },
+  E: { c: [196, 140, 60], p: 'ladrillo' },
+  F: { c: [118, 124, 132], p: 'losas' },
+  O: { c: [150, 170, 60], p: 'grietas' },
+  G: { c: [92, 82, 74],   p: 'losas' },
+  H: { c: [176, 180, 196], p: 'damero' },
+  N: { c: [150, 168, 64], p: 'grietas' },
+  I: { c: [188, 160, 52], p: 'losas' },
+  J: { c: [110, 160, 168], p: 'rombos' },
+  K: { c: [176, 84, 66],  p: 'ladrillo' },
+  L: { c: [170, 120, 104], p: 'losas' },
+  M: { c: [78, 140, 64],  p: 'grietas' }
 };
 
 // ---------- Dado de combate ----------
@@ -47,22 +60,22 @@ export const CARAS = ['calavera', 'calavera', 'calavera', 'escudo', 'escudo', 'e
 // ---------- Héroes ----------
 export const HEROES = {
   barbaro: {
-    nombre: 'Bárbaro', icono: 'barbaro', color: '#a8322a',
+    nombre: 'Bárbaro', icono: 'barbaro', color: '#a8322a', fem: { nombre: 'Bárbara', icono: 'barbaro' },
     defensa: 2, cuerpo: 8, mente: 2, arma: 'espadaAncha', elementos: [],
     lema: 'El guerrero más fuerte. Mucho cuerpo, poca mente.'
   },
   enano: {
-    nombre: 'Enano', icono: 'enano', color: '#b07a2a',
+    nombre: 'Enano', icono: 'enano', color: '#b07a2a', fem: { nombre: 'Enana', icono: 'enano' },
     defensa: 2, cuerpo: 7, mente: 3, arma: 'espadaCorta', elementos: [],
     lema: 'Duro como la roca. Desarma trampas sin riesgo.', desarmaSiempre: true
   },
   elfo: {
-    nombre: 'Elfo', icono: 'elfo', color: '#2f7d4f',
+    nombre: 'Elfo', icono: 'elfo', color: '#2f7d4f', fem: { nombre: 'Elfa', icono: 'elfa' },
     defensa: 2, cuerpo: 6, mente: 4, arma: 'espadaCorta', elementos: ['tierra'],
     lema: 'Espada y magia de la tierra.'
   },
   mago: {
-    nombre: 'Mago', icono: 'mago', color: '#3a5aa8',
+    nombre: 'Mago', icono: 'mago', color: '#3a5aa8', fem: { nombre: 'Maga', icono: 'mago' },
     defensa: 2, cuerpo: 4, mente: 6, arma: 'daga', elementos: ['fuego', 'aire', 'agua'],
     lema: 'Frágil, pero domina tres elementos.', sinArmadura: true
   }

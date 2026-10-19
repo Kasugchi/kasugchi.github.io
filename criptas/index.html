@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Criptas de Velmor</title>
+<meta name="description" content="Juego de mazmorras por turnos para 1 a 4 jugadores en el navegador. Crea una sala, comparte el código y bajad juntos a las criptas.">
+<meta name="theme-color" content="#1f1611">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Grenze+Gotisch:wght@600;700;900&display=swap">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+<!-- ============ PORTADA ============ -->
+<section id="portada" class="pantalla">
+  <div class="centro">
+    <div class="titulo">
+      <h1>Criptas<small>de Velmor</small></h1>
+      <p>Cuatro héroes, una mazmorra y un nigromante que espera al fondo.</p>
+    </div>
+    <div class="pergamino menu">
+      <label class="campo">Tu nombre
+        <input id="nombre" class="nombre" maxlength="20" autocomplete="nickname" placeholder="Aventurero" style="height:48px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta);font:600 18px var(--f-texto);padding:0 12px">
+      </label>
+      <button class="btn" id="b-continuar" hidden>Continuar la partida guardada</button>
+      <button class="btn" id="b-local">Jugar en este dispositivo</button>
+      <button class="btn madera" id="b-crear">Crear sala para jugar con amigos</button>
+      <form class="unirse" id="f-unirse">
+        <input id="codigo" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CÓDIGO" aria-label="Código de sala">
+        <button class="btn madera" id="b-unirse" type="submit">Unirse</button>
+      </form>
+      <button class="btn claro" id="b-reglas" type="button">Cómo se juega</button>
+      <p class="nota" id="aviso-portada" role="status"></p>
+    </div>
+    <p class="creditos">Iconos de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (CC BY 3.0): Lorc, Delapouite, Skoll, Sbed, Carl Olsen, Kier Heyl, Willdabeast, Zeromancer, DarkZaitzev y otros autores.</p>
+  </div>
+</section>
+
+<!-- ============ SALA ============ -->
+<section id="sala" class="pantalla" hidden>
+  <div class="centro">
+    <div class="pergamino">
+      <div class="codigo" id="sala-codigo">
+        <span>Código de la sala</span>
+        <b id="codigo-grande">····</b>
+        <p class="nota">Compártelo: los demás lo escriben en «Unirse».</p>
+      </div>
+      <h2 id="sala-titulo">Elige tus héroes</h2>
+      <p class="nota" id="sala-ayuda">Toca un héroe para llevarlo. Puedes llevar varios.</p>
+      <div class="heroes-sel" id="heroes-sel"></div>
+      <h2 style="font-size:24px;margin-top:20px">Aventureros</h2>
+      <ul class="jugadores" id="lista-jugadores"></ul>
+      <label class="campo" style="margin-top:18px" id="campo-mision">Empezar por
+        <select class="mision" id="sel-mision"></select>
+      </label>
+      <div class="fila" style="margin-top:18px">
+        <button class="btn claro" id="b-salir-sala">Salir</button>
+        <button class="btn" id="b-empezar">Empezar la campaña</button>
+      </div>
+      <p class="nota" id="sala-espera" hidden>Esperando a que el anfitrión empiece…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BRIEFING ============ -->
+<section id="briefing" class="pantalla" hidden>
+  <div class="centro">
+    <div class="pergamino">
+      <div class="mapa-num" id="br-num"></div>
+      <h2 id="br-titulo"></h2>
+      <p id="br-intro" style="font-size:18px"></p>
+      <canvas class="mapa-mision" id="br-mapa" aria-label="Mapa de la misión"></canvas>
+      <p class="objetivo" id="br-objetivo"></p>
+      <div class="fila" style="margin-top:16px">
+        <button class="btn" id="b-entrar">Entrar en la mazmorra</button>
+      </div>
+      <p class="nota" id="br-espera" hidden>Esperando a que el anfitrión abra la mazmorra…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ JUEGO ============ -->
+<section id="juego" class="pantalla" hidden>
+  <header class="barra">
+    <h1 id="j-titulo"></h1>
+    <button class="icono-btn" id="b-vertodo" aria-label="Ver todo el tablero"></button>
+    <button class="icono-btn" id="b-registro" aria-label="Diario y menú"></button>
+  </header>
+  <div class="hojas" id="hojas"></div>
+  <div class="zona-tablero">
+    <canvas id="lienzo" aria-label="Tablero de juego"></canvas>
+    <div class="cartel" id="cartel" style="opacity:0"></div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+  </div>
+  <div class="acciones" id="acciones">
+    <div class="estado-turno" id="estado-turno"></div>
+    <div class="botonera" id="botonera"></div>
+  </div>
+</section>
+
+<!-- ============ ARMERÍA ============ -->
+<section id="armeria" class="pantalla" hidden>
+  <div class="centro" style="max-width:640px">
+    <div class="pergamino">
+      <h2>La armería de la Hermandad</h2>
+      <p class="nota" id="arm-sub"></p>
+      <div class="pestanas" id="arm-pestanas"></div>
+      <div id="arm-cuerpo" style="margin-top:14px"></div>
+      <div class="fila" style="margin-top:18px">
+        <button class="btn" id="b-siguiente">Bajar a la siguiente misión</button>
+      </div>
+      <p class="nota" id="arm-espera" hidden>El anfitrión decidirá cuándo bajar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL ============ -->
+<section id="final" class="pantalla" hidden>
+  <div class="centro">
+    <div class="titulo"><h1>Victoria<small>Las criptas duermen</small></h1></div>
+    <div class="pergamino">
+      <p style="font-size:19px">Velmor el Pálido ha caído y sus huesos no volverán a levantarse. La Hermandad grabará vuestros nombres en la piedra.</p>
+      <div id="final-heroes"></div>
+      <div class="fila"><button class="btn" id="b-nueva">Nueva campaña</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SUPERPOSICIONES ============ -->
+<div class="velo" id="dados" hidden><div class="mesa-dados" id="mesa-dados"></div></div>
+<div class="velo" id="modal" hidden><div class="pergamino" id="modal-cuerpo"></div></div>
+
+<aside class="registro" id="registro" hidden aria-label="Diario">
+  <header><h2>Diario</h2><button class="icono-btn" id="b-cerrar-registro" aria-label="Cerrar"></button></header>
+  <div class="ficha-detalle fila">
+    <button class="btn madera" id="b-sonido" style="flex:1 1 120px;min-height:40px;font-size:15px">Sonido: sí</button>
+    <button class="btn claro" id="b-abandonar" style="flex:1 1 120px;min-height:40px;font-size:15px">Abandonar</button>
+  </div>
+  <ol id="diario"></ol>
+</aside>
+
+<script type="module" src="js/ui.js"></script>
+</body>
+</html>

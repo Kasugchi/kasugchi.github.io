@@ -51,8 +51,10 @@ export function crearPartida(elegidos, jugadores = {}) {
     const e = elegidos.find((x) => x.tipo === tipo);
     if (!e) continue;
     const base = D.HEROES[tipo];
+    const fem = e.variante === 'f';
     heroes[tipo] = {
-      id: tipo, tipo, nombre: base.nombre, jugador: e.jugador,
+      id: tipo, tipo, jugador: e.jugador, fem,
+      nombre: fem ? base.fem.nombre : base.nombre, icono: fem ? base.fem.icono : base.icono,
       arma: base.arma, armaduras: [], objetos: {}, kit: false, oro: 0,
       cuerpoMax: base.cuerpo, mente: base.mente, cuerpo: base.cuerpo,
       x: 0, y: 0, vivo: true, fuera: false, efectos: {}, hechizos: []
