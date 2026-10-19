@@ -558,10 +558,17 @@ function pintarAcciones() {
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
   if (d.salir) boton('salir', 'escalera', 'Salir', { clase: 'principal' });
+  else if (enLaEscalera(e, h)) boton('salir', 'escalera', 'Salir', { off: true, n: 'Aún no', titulo: motivoNoSalir(e) });
   boton('fin', 'reloj', 'Fin del turno');
   bot.innerHTML = b.join('');
   bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
   if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
+}
+const enLaEscalera = (e, h) => e.escalera.some(([x, y]) => x === h.x && y === h.y);
+function motivoNoSalir(e) {
+  const o = e.mision.objetivo;
+  if (o.tipo === 'matar') return 'En esta misión no se sale por la escalera: ' + o.texto.charAt(0).toLowerCase() + o.texto.slice(1);
+  return 'Aún no podéis salir. Objetivo: ' + o.texto;
 }
 const dadosTxt = (h) => (M.dadosMovimiento(h) === 1 ? '1 dado' : '2 dados');
 
@@ -755,6 +762,12 @@ async function animar(ev) {
       tablero.vista.pos[ev.id] = ev.ruta[ev.ruta.length - 1];
       const [fx, fy] = ev.ruta[ev.ruta.length - 1];
       if (tablero.cam.z > tablero.min * 1.3) tablero.centrarEn(fx, fy, false);
+      // Aviso si un héroe tuyo llega a la escalera sin poder salir todavía.
+      const quien = e.heroes[ev.id];
+      const [ix, iy] = ev.ruta[0];
+      if (quien && M.puedeControlar(e, miId, ev.id) && enLaEscalera(e, { x: fx, y: fy }) && !enLaEscalera(e, { x: ix, y: iy }) && !M.disponibles(e, ev.id).salir) {
+        toast(motivoNoSalir(e), 'peligro');
+      }
       break;
     }
     case 'puerta': sonar('puerta'); await espera(180); break;
