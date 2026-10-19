@@ -927,3 +927,61 @@ window.criptas = { app, enviar, M, D };
 
 // Acceso desde la consola del navegador, útil para depurar.
 window.criptas = { app, enviar, M, D };
+
+// =============================================================
+//  TRUCOS (consola del navegador, F12)
+//  Solo funcionan en tu dispositivo o si eres el anfitrión,
+//  porque son quienes ejecutan las reglas.
+// =============================================================
+function conTruco(nombreTruco, fn) {
+  return (...args) => {
+    const e = app.estadoReal;
+    if (app.modo === 'invitado') return 'Los trucos solo funcionan en el dispositivo del anfitrión.';
+    if (!e) return 'Empieza una partida primero.';
+    const msg = fn(e, ...args);
+    if (typeof msg === 'string' && msg.startsWith('No')) return msg;
+    e.log.push({ n: e.seq, texto: 'Truco: ' + nombreTruco, tono: 'magia' });
+    publicar(e);
+    return msg || 'Hecho.';
+  };
+}
+window.trucos = {
+  ayuda: () => console.log([
+    'trucos.mover(50)    → el héroe en turno tiene 50 casillas de movimiento',
+    'trucos.accion()     → recupera la acción del turno',
+    'trucos.curar()      → todos los héroes al máximo de cuerpo',
+    'trucos.oro(500)     → oro para todos los héroes',
+    'trucos.revelar()    → descubre todo el tablero',
+    'trucos.hechizos()   → recupera los hechizos gastados'
+  ].join('\n')),
+  mover: conTruco('movimiento', (e, n = 50) => {
+    const t = e.turno;
+    if (e.fase !== 'mision' || !t) return 'No hay ningún turno en curso.';
+    t.movTirada = t.movTirada || n;
+    t.movRestante = n;
+    return e.heroes[t.heroe].nombre + ' puede moverse ' + n + ' casillas.';
+  }),
+  accion: conTruco('acción extra', (e) => {
+    if (!e.turno) return 'No hay ningún turno en curso.';
+    e.turno.accion = false;
+    return 'Acción recuperada.';
+  }),
+  curar: conTruco('curación', (e) => {
+    for (const h of Object.values(e.heroes)) if (h.vivo) h.cuerpo = h.cuerpoMax;
+    return 'Héroes curados.';
+  }),
+  oro: conTruco('oro', (e, n = 500) => {
+    for (const h of Object.values(e.heroes)) h.oro += n;
+    return '+' + n + ' monedas para cada héroe.';
+  }),
+  revelar: conTruco('revelar mapa', (e) => {
+    if (!e.mision) return 'No hay misión en curso.';
+    for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) e.revelado[T.clave(x, y)] = 1;
+    for (const m of e.monstruos) if (m.vivo) m.visto = true;
+    return 'Mapa descubierto.';
+  }),
+  hechizos: conTruco('hechizos', (e) => {
+    for (const h of Object.values(e.heroes)) h.hechizos = D.HEROES[h.tipo].elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
+    return 'Hechizos recuperados.';
+  })
+};
