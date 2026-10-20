@@ -498,17 +498,26 @@ function pintarSala() {
     const duenio = s.eleccion[t];
     const fem = s.variante[t] === 'f';
     const clase = duenio === miId ? 'mio' : duenio ? 'otro' : '';
-    const quien = duenio ? (duenio === miId ? 'Lo llevas tú' : 'Lo lleva ' + (s.jugadores[duenio]?.nombre || '…')) : 'Llevar';
+    const esIA = !!s.ia?.[t];
+    const quien = esIA ? 'Compañero IA' : duenio ? (duenio === miId ? 'Lo llevas tú' : 'Lo lleva ' + (s.jugadores[duenio]?.nombre || '…')) : 'Llevar';
     const puedoCambiar = !duenio || duenio === miId;
     const otro = fem ? D.HEROES[t].nombre : D.HEROES[t].fem.nombre;
     return `<div class="hsel ${clase}">${tarjetaHTML(t, fem)}
       <div class="hsel-pie">
         <button class="btn ${duenio === miId ? '' : 'madera'}" data-heroe="${t}" ${duenio && duenio !== miId ? 'disabled' : ''}>${esc(quien)}</button>
         <button class="btn claro" data-variante="${t}" ${puedoCambiar ? '' : 'disabled'} title="Cambiar a ${esc(otro)}">${esc(otro)}</button>
+        ${manda && (!duenio || duenio === miId) ? `<button class="btn claro" data-ia="${t}" title="Que lo lleve la IA">${esIA ? 'Quitar IA' : '+ IA'}</button>` : ''}
       </div></div>`;
   }).join('');
   $('#heroes-sel').querySelectorAll('[data-variante]').forEach((b) => b.addEventListener('click', () => cambiarVariante(b.dataset.variante)));
-  $('#heroes-sel').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => elegirHeroe(b.dataset.heroe)));
+  $('#heroes-sel').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => { if (s.ia?.[b.dataset.heroe]) delete s.ia[b.dataset.heroe]; elegirHeroe(b.dataset.heroe); }));
+  $('#heroes-sel').querySelectorAll('[data-ia]').forEach((b) => b.addEventListener('click', () => {
+    const t = b.dataset.ia;
+    s.ia ||= {};
+    if (s.ia[t]) { delete s.ia[t]; delete s.eleccion[t]; }
+    else { s.ia[t] = true; s.eleccion[t] = miId; }
+    difundirSala();
+  }));
   $('#lista-jugadores').innerHTML = Object.entries(s.jugadores).map(([id, j]) => `<li class="${j.desconectado ? 'fuera' : ''}">${esc(j.nombre)}${id === miId ? ' (tú)' : ''}</li>`).join('');
   const sel = $('#sel-mision');
   sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
@@ -565,8 +574,9 @@ $('#b-salir-sala').addEventListener('click', () => salirAPortada());
 $('#b-empezar').addEventListener('click', async () => {
   await listas;
   const s = app.sala;
-  const elegidos = Object.entries(s.eleccion).map(([tipo, jugador]) => ({ tipo, jugador, variante: s.variante?.[tipo] }));
+  const elegidos = Object.entries(s.eleccion).map(([tipo, jugador]) => ({ tipo, jugador, variante: s.variante?.[tipo], ia: !!s.ia?.[tipo] }));
   if (!elegidos.length) return;
+  if (elegidos.every((x) => x.ia)) return toast('Tiene que haber al menos un héroe que lleve una persona.', 'peligro');
   const e = M.crearPartida(elegidos, s.jugadores);
   e.anfitrion = miId;
   app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
@@ -885,7 +895,7 @@ function pintarJuego() {
     const clase = [e.turno?.heroe === t && e.fase === 'mision' ? 'activa' : '', h.vivo ? '' : 'muerto', h.fuera ? 'fuera' : ''].join(' ');
     return `<button class="hoja ${clase}" data-heroe="${t}"><span class="ret" style="background:${def.color}">${svg(h.icono)}</span>
       <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span>
-      ${app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
+      ${h.ia ? '<span class="jug">Compañero IA</span>' : app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
   }).join('');
   const c = e.cargador;
   if (c) {

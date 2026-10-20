@@ -94,7 +94,7 @@ export function crearPartida(elegidos, jugadores = {}) {
     const base = D.HEROES[tipo];
     const fem = e.variante === 'f';
     heroes[tipo] = {
-      id: tipo, tipo, jugador: e.jugador, fem,
+      id: tipo, tipo, jugador: e.jugador, fem, ia: !!e.ia,
       nombre: fem ? base.fem.nombre : base.nombre, icono: fem ? base.fem.icono : base.icono,
       arma: base.arma, armaduras: [], objetos: {}, kit: false, oro: 0,
       cuerpoMax: base.cuerpo, mente: base.mente, cuerpo: base.cuerpo,
@@ -1276,6 +1276,74 @@ function usarReliquia(estado, h, t, a, usarAccion) {
   return 'Esa reliquia no se usa así.';
 }
 
+// =============================================================
+//  COMPAÑEROS IA: juegan solos su turno (el motor del anfitrión).
+//  Siguen al grupo, pelean y se curan; no abren puertas ni buscan tesoro.
+// =============================================================
+function turnoIA(estado, h) {
+  // Sin ningún jugador de carne y hueso no hay a quién seguir: lo mueve el anfitrión.
+  if (!Object.values(estado.heroes).some((o) => !o.ia)) return;
+  const t = estado.turno;
+  const usarAccion = () => { t.accion = true; if (t.movido) t.movRestante = 0; };
+  const hacer = (a) => { estado._autor = h.id; try { return accionHeroe(estado, a, h, t, disponibles(estado, h.id), usarAccion); } finally { delete estado._autor; } };
+  const vivos = () => estado.monstruos.filter((m) => m.vivo && m.visto && !m.efectos.poseido);
+  const distancia = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+  const actuar = () => {
+    if (t.accion || !h.vivo) return;
+    const d = disponibles(estado, h.id);
+    // Curar a quien esté peor (incluido él mismo).
+    const cura = d.hechizos.find((x) => ['sanar', 'balsamo'].includes(x.id));
+    if (cura) {
+      const herido = cura.objetivos.map((id) => estado.heroes[id]).filter((o) => o && o.cuerpo <= o.cuerpoMax - 3).sort((a, b) => a.cuerpo - b.cuerpo)[0];
+      if (herido) return hacer({ tipo: 'hechizo', hechizo: cura.id, objetivo: herido.id });
+    }
+    if (d.atacables.length) {
+      const m = d.atacables.map((id) => estado.monstruos.find((x) => x.id === id)).sort((a, b) => (b.jefe - a.jefe) || (a.cuerpo - b.cuerpo))[0];
+      return hacer({ tipo: 'atacar', objetivo: m.id });
+    }
+    // Hechizo de daño a distancia contra lo más peligroso a la vista.
+    const ataque = d.hechizos.find((x) => ['bolaFuego', 'espiritu', 'llamarada', 'raices', 'vendaval', 'sueno'].includes(x.id));
+    if (ataque && ataque.objetivos.length) {
+      const m = ataque.objetivos.map((id) => estado.monstruos.find((x) => x.id === id)).sort((a, b) => b.ataque - a.ataque)[0];
+      return hacer({ tipo: 'hechizo', hechizo: ataque.id, objetivo: m.id });
+    }
+  };
+  // 1) Poción si está a punto de caer.
+  if (h.cuerpo <= 2 && h.objetos.pocionCurar > 0) hacer({ tipo: 'pocion', objeto: 'pocionCurar' });
+  // 2) Si ya puede pelear, pelea antes de moverse.
+  actuar();
+  // 3) Moverse: hacia el monstruo más cercano a la vista o, si no hay, detrás del jugador más cercano.
+  if (!t.plantado && disponibles(estado, h.id).puedeTirar) {
+    hacer({ tipo: 'tirar' });
+    const { mapa, out } = destinos(estado, h);
+    const sinPuertas = (k) => {
+      const ruta = T.reconstruir(mapa, k);
+      for (let i = 1; i < ruta.length; i++) if (T.borde(estado, ruta[i - 1], ruta[i]) !== 'libre') return false;
+      return true;
+    };
+    const objetivos = vivos().filter((m) => T.lineaVision(estado, h.x, h.y, m.x, m.y));
+    const lider = Object.values(estado.heroes).filter((o) => !o.ia && o.vivo && !o.fuera).sort((a, b) => distancia(a, h) - distancia(b, h))[0];
+    let mejor = null, nota = Infinity;
+    for (const k of Object.keys(out)) {
+      if (!sinPuertas(k)) continue;
+      const [x, y] = k.split(',').map(Number);
+      const c = { x, y };
+      let v;
+      if (objetivos.length) v = Math.min(...objetivos.map((m) => distancia(c, m)));
+      else if (lider) { const dl = distancia(c, lider); v = dl <= 1 ? 1 : dl; }
+      else continue;
+      v += out[k] * 0.01; // a igualdad, andar menos
+      if (v < nota) { nota = v; mejor = c; }
+    }
+    const ahora = objetivos.length ? Math.min(...objetivos.map((m) => distancia(h, m))) : (lider ? distancia(h, lider) : 0);
+    if (mejor && nota < ahora) hacer({ tipo: 'mover', x: mejor.x, y: mejor.y });
+  }
+  // 4) Y si ha llegado a algo, actúa.
+  actuar();
+  comprobarFin(estado);
+  if (!estado.resultado && estado.turno?.heroe === h.id) siguienteTurno(estado);
+}
+
 function aparecerErrante(estado, h) {
   const tipo = estado.mision.errante || 'orco';
   const cerca = T.DIRS.map(([dx, dy]) => [h.x + dx, h.y + dy])
@@ -1552,6 +1620,7 @@ function empezarTurno(estado, id) {
   delete h.efectos.furia;
   if (h.efectos.aturdidoAlma) { delete h.efectos.aturdidoAlma; estado.turno.accion = true; estado.turno.plantado = true; avisar(estado, h.nombre + ' sigue mareado por el regreso brusco de su alma: pierde el turno.', 'peligro'); }
   if (h.efectos.dominado) turnoDominado(estado, h);
+  if (h.ia && !estado.resultado) turnoIA(estado, h);
   const pos = estado.monstruos.find((m) => m.vivo && m.efectos.poseido?.por === id);
   if (pos) estado.turno.poseido = { id: pos.id, restante: pos.mov, ataco: false };
   ev(estado, { tipo: 'turno', heroe: id });
@@ -1611,7 +1680,15 @@ function comprobarFin(estado) {
     const m = estado.monstruos.find((x) => x.id === o.id);
     if (m && !m.vivo) res = 'victoria';
   }
-  if (!res && !dentro.length) res = vivos.length && requisitosSalida(estado) ? 'victoria' : 'derrota';
+  // Compañeros IA: no siguen sin jugadores. Si salen todos los jugadores, salen con ellos;
+  // si han caído todos, la partida se pierde aunque quede algún compañero en pie.
+  const humanos = heroes.filter((h) => !h.ia);
+  if (!res && humanos.length && heroes.some((h) => h.ia)) {
+    if (!humanos.some((h) => h.vivo || h.alma)) res = 'derrota';
+    else if (!humanos.some((h) => h.vivo && !h.fuera)) for (const h of dentro) if (h.ia) { h.fuera = true; log(estado, h.nombre + ' sale con el grupo.', 'bueno'); }
+  }
+  const dentro2 = vivos.filter((h) => !h.fuera);
+  if (!res && !dentro2.length) res = vivos.length && requisitosSalida(estado) ? 'victoria' : 'derrota';
   if (!res) return;
   estado.resultado = res;
   estado.fase = 'resultado';
