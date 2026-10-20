@@ -44,6 +44,44 @@ function log(estado, texto, tono = '') {
 function avisar(estado, texto, tono = '') { ev(estado, { tipo: 'mensaje', texto, tono }); log(estado, texto, tono); }
 
 // =============================================================
+//  CRÓNICA: lo que pasa en cada misión, para el resumen final
+//  estado.cronica = { actual, ultima, campana }
+// =============================================================
+function cronicaNueva(estado) {
+  const heroes = {};
+  for (const t of estado.orden) heroes[t] = { muertes: {}, danoHecho: 0, danoRecibido: 0, oro: 0, tesoros: 0, hechizos: 0, pociones: 0, caidas: 0, trampas: 0, casillas: 0, busquedas: 0, secretas: 0, puertas: 0, jefes: 0, turnosVacios: 0 };
+  return {
+    numero: estado.mision.numero, titulo: estado.mision.titulo, resultado: null, rondas: 0,
+    monstruos: {}, jefes: [], heroes, oro: 0, tesoros: 0, busquedas: 0,
+    trampasActivadas: 0, trampasHalladas: 0, desarmadas: 0, secretas: 0, puertas: 0,
+    cargador: estado.cargador ? 'vivo' : null
+  };
+}
+const cron = (estado) => estado.cronica?.actual || null;
+const cronH = (estado, id) => cron(estado)?.heroes[id] || null;
+const sumar = (obj, k, n = 1) => { if (obj) obj[k] = (obj[k] || 0) + n; };
+
+function cerrarCronica(estado, res) {
+  const c = cron(estado);
+  if (!c) return;
+  c.resultado = res;
+  c.rondas = (estado.ronda || 0) + 1;
+  c.recompensa = res === 'victoria' ? estado.mision.recompensa || 0 : 0;
+  const k = (estado.cronica.campana ||= { misiones: 0, victorias: 0, derrotas: 0, rondas: 0, monstruos: {}, jefes: [], oro: 0, tesoros: 0, trampas: 0, secretas: 0, heroes: {} });
+  k.misiones++; k[res === 'victoria' ? 'victorias' : 'derrotas']++;
+  k.rondas += c.rondas; k.oro += c.oro; k.tesoros += c.tesoros; k.trampas += c.trampasActivadas; k.secretas += c.secretas;
+  for (const [t, n] of Object.entries(c.monstruos)) sumar(k.monstruos, t, n);
+  k.jefes.push(...c.jefes);
+  for (const [id, h] of Object.entries(c.heroes)) {
+    const kh = (k.heroes[id] ||= { muertes: 0, danoHecho: 0, danoRecibido: 0, oro: 0, caidas: 0 });
+    kh.muertes += Object.values(h.muertes).reduce((s, n) => s + n, 0);
+    kh.danoHecho += h.danoHecho; kh.danoRecibido += h.danoRecibido; kh.oro += h.oro; kh.caidas += h.caidas;
+  }
+  estado.cronica.ultima = c;
+  estado.cronica.actual = null;
+}
+
+// =============================================================
 //  CAMPAÑA
 // =============================================================
 // elegidos: [{ tipo: 'barbaro', jugador: 'id' }, ...]
@@ -138,6 +176,8 @@ export function iniciarMision(estado, def) {
     }
   }
   estado.contrato = null;
+  estado.cronica ||= {};
+  estado.cronica.actual = cronicaNueva(estado);
   log(estado, 'Misión ' + m.numero + ': ' + m.titulo, 'titulo');
   return estado;
 }
@@ -272,7 +312,9 @@ export function danarHeroe(estado, h, n) {
     }
     h.cuerpo = 0; h.vivo = false;
     ev(estado, { tipo: 'muerte', id: h.id });
+    sumar(cronH(estado, h.id), 'caidas');
     if (h.id === 'cargador') {
+      if (cron(estado)) cron(estado).cargador = 'muerto';
       const perdido = Object.values(h.carga || {}).reduce((n, b) => n + contenido(b).length, 0);
       h.carga = {};
       avisar(estado, 'El cargador ha caído' + (perdido ? ' y todo lo que llevaba se pierde con él.' : '.'), 'peligro');
@@ -291,6 +333,10 @@ export function danarMonstruo(estado, m, n) {
   if (m.cuerpo <= 0) {
     m.cuerpo = 0; m.vivo = false;
     ev(estado, { tipo: 'muerte', id: m.id });
+    sumar(cron(estado)?.monstruos, m.tipo);
+    if (m.jefe) cron(estado)?.jefes.push(m.nombre);
+    const autor = cronH(estado, estado._autor);
+    if (autor) { sumar(autor.muertes, m.tipo); if (m.jefe) sumar(autor, 'jefes'); }
     log(estado, m.nombre + ' muere.', 'bueno');
     disparar(estado, 'monstruo_muerto', { id: m.id });
   }
@@ -304,6 +350,7 @@ function golpearMonstruo(estado, h, m, dados, etiqueta) {
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
   ev(estado, { tipo: 'dados', atacante: h.id, defensor: m.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta });
   log(estado, h.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + m.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
+  sumar(cronH(estado, h.id), 'danoHecho', Math.min(dano, m.cuerpo));
   danarMonstruo(estado, m, dano);
 }
 
@@ -315,6 +362,7 @@ export function golpearHeroe(estado, m, h, dados, etiqueta) {
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
   log(estado, m.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + h.nombre + ': ' + dano + ' de daño.', dano ? 'peligro' : '');
+  sumar(cronH(estado, h.id), 'danoRecibido', dano);
   danarHeroe(estado, h, dano);
 }
 
@@ -325,6 +373,8 @@ function trampaEn(estado, x, y) { return estado.trampas.find((t) => t.activa && 
 
 function activarTrampa(estado, h, t, previa) {
   t.descubierta = true;
+  sumar(cron(estado), 'trampasActivadas');
+  sumar(cronH(estado, h.id), 'trampas');
   const nombre = D.TRAMPAS[t.tipo].nombre;
   if (t.tipo === 'foso') {
     ev(estado, { tipo: 'trampa', trampa: t.id, heroe: h.id, texto: '¡' + h.nombre + ' cae en un foso! Pierde 1 de cuerpo.' });
@@ -403,6 +453,8 @@ function moverHeroe(estado, h, x, y) {
       const p = T.puertaEntre(estado, prev, n);
       volcar();
       p.abierta = true;
+      sumar(cron(estado), 'puertas');
+      sumar(cronH(estado, h.id), 'puertas');
       ev(estado, { tipo: 'puerta', puerta: p.id });
       log(estado, h.nombre + ' abre una puerta.');
       disparar(estado, 'puerta_abierta', { puerta: p.id });
@@ -412,6 +464,7 @@ function moverHeroe(estado, h, x, y) {
     }
     h.x = n[0]; h.y = n[1];
     t.movRestante--;
+    sumar(cronH(estado, h.id), 'casillas');
     tramo.push([h.x, h.y]);
     const tr = trampaEn(estado, h.x, h.y);
     if (tr && !tr.descubierta) {
@@ -751,9 +804,19 @@ function robarCarta(estado) {
   return estado.mazo.pop();
 }
 
+// Apunta en la crónica un hallazgo (oro u objeto).
+function apuntarTesoro(estado, h, oro, objeto) {
+  if (!oro && !objeto) return;
+  const c = cron(estado), ch = cronH(estado, h.id);
+  sumar(c, 'tesoros'); sumar(ch, 'tesoros');
+  sumar(c, 'oro', oro || 0); sumar(ch, 'oro', oro || 0);
+}
+
 function buscarTesoro(estado, h) {
   const sala = T.region(h.x, h.y);
   estado.buscado[h.id + ':' + sala] = 1;
+  sumar(cron(estado), 'busquedas');
+  sumar(cronH(estado, h.id), 'busquedas');
   const fijo = estado.mision.tesoros?.[sala];
   if (fijo && !estado.tesoroTomado[sala]) {
     estado.tesoroTomado[sala] = 1;
@@ -767,6 +830,7 @@ function buscarTesoro(estado, h) {
     if (fijo.objeto) h.objetos[fijo.objeto] = (h.objetos[fijo.objeto] || 0) + 1;
     if (fijo.arma) texto += ' ' + darArma(estado, h, fijo.arma);
     ev(estado, { tipo: 'tesoro', heroe: h.id, texto, oro: fijo.oro || 0, objeto: fijo.objeto || fijo.arma || null, especial: !!fijo.flag });
+    apuntarTesoro(estado, h, fijo.oro, fijo.objeto || fijo.arma || fijo.flag);
     log(estado, h.nombre + ': ' + texto, 'tesoro');
     if (fijo.flag) ponerFlag(estado, fijo.flag);
     disparar(estado, 'tesoro', { region: sala });
@@ -776,6 +840,7 @@ function buscarTesoro(estado, h) {
   if (c.peligro) estado.mazo.splice(rnd(estado.mazo.length + 1), 0, c);
   ev(estado, { tipo: 'tesoro', heroe: h.id, texto: c.texto, oro: c.oro || 0, objeto: c.objeto || null, carta: c.tipo });
   log(estado, h.nombre + ' busca tesoro: ' + c.texto, c.peligro ? 'peligro' : 'tesoro');
+  if (c.tipo === 'oro' || c.tipo === 'pocion') apuntarTesoro(estado, h, c.oro, c.objeto);
   if (c.tipo === 'oro') h.oro += c.oro;
   else if (c.tipo === 'pocion') h.objetos[c.objeto] = (h.objetos[c.objeto] || 0) + 1;
   else if (c.tipo === 'flecha' || c.tipo === 'derrumbe') danarHeroe(estado, h, 1);
@@ -812,6 +877,10 @@ function buscarTrampas(estado, h) {
   if (trampas) partes.push(trampas === 1 ? 'una trampa' : trampas + ' trampas');
   if (secretas) partes.push(secretas === 1 ? '¡una puerta secreta!' : secretas + ' puertas secretas');
   if (cofre) partes.push('una aguja envenenada en un cofre, que inutilizas');
+  sumar(cron(estado), 'trampasHalladas', trampas);
+  sumar(cron(estado), 'secretas', secretas);
+  sumar(cronH(estado, h.id), 'busquedas');
+  sumar(cronH(estado, h.id), 'secretas', secretas);
   const texto = partes.length ? h.nombre + ' encuentra ' + partes.join(' y ') : h.nombre + ' no encuentra trampas ni pasadizos.';
   ev(estado, { tipo: 'busqueda', heroe: h.id, texto, secretas, trampas });
   log(estado, texto, secretas ? 'tesoro' : '');
@@ -822,6 +891,7 @@ function desarmar(estado, h, id) {
   const t = estado.trampas.find((x) => x.id === id);
   if (D.HEROES[h.tipo].desarmaSiempre) {
     t.activa = false;
+    sumar(cron(estado), 'desarmadas');
     avisar(estado, h.nombre + ' desarma la trampa con mano experta.', 'bueno');
     return;
   }
@@ -832,6 +902,7 @@ function desarmar(estado, h, id) {
     if (t.tipo !== 'bloque') t.activa = false;
   } else {
     t.activa = false;
+    sumar(cron(estado), 'desarmadas');
     avisar(estado, h.nombre + ' desarma la trampa con sus herramientas.', 'bueno');
   }
 }
@@ -841,6 +912,7 @@ function desarmar(estado, h, id) {
 // =============================================================
 function lanzar(estado, h, id, objetivo) {
   const hz = D.HECHIZOS[id];
+  sumar(cronH(estado, h.id), 'hechizos');
   h.hechizos.splice(h.hechizos.indexOf(id), 1);
   const m = estado.monstruos.find((x) => x.id === objetivo);
   const o = estado.heroes[objetivo];
@@ -934,6 +1006,7 @@ function comprobarFin(estado) {
   if (!res) return;
   estado.resultado = res;
   estado.fase = 'resultado';
+  cerrarCronica(estado, res);
   if (res === 'victoria') {
     for (const h of vivos) h.oro += estado.mision.recompensa || 0;
     estado.completadas = Math.max(estado.completadas || 0, estado.misionIdx + 1);
@@ -1082,6 +1155,12 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (t.heroe !== h.id) return 'No es tu turno.';
   const disp = disponibles(estado, h.id);
   const usarAccion = () => { t.accion = true; if (t.movido) t.movRestante = 0; };
+  // Quién hace la acción, para apuntar en la crónica quién mata a cada monstruo.
+  estado._autor = h.id;
+  try { return accionHeroe(estado, a, h, t, disp, usarAccion); } finally { delete estado._autor; }
+}
+
+function accionHeroe(estado, a, h, t, disp, usarAccion) {
 
   switch (a.tipo) {
     case 'tirar': {
@@ -1126,6 +1205,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
     case 'pocion': {
       if (!(h.objetos[a.objeto] > 0)) return 'No tienes esa poción.';
       h.objetos[a.objeto]--;
+      sumar(cronH(estado, h.id), 'pociones');
       const n = D.POCIONES[a.objeto].nombre;
       if (a.objeto === 'pocionCurar') { const c = d6(); h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + c); avisar(estado, h.nombre + ' bebe ' + n + ' (+' + c + ' de cuerpo).', 'bueno'); }
       else if (a.objeto === 'pocionFuerza') { h.efectos.fuerza = 2; avisar(estado, h.nombre + ' bebe ' + n + ': +2 dados en su próximo ataque.', 'bueno'); }
@@ -1170,6 +1250,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       if (!estado.resultado) siguienteTurno(estado);
       return null;
     case 'finTurno':
+      if (!t.movido && !t.accion) sumar(cronH(estado, h.id), 'turnosVacios');
       siguienteTurno(estado);
       return null;
     default:

@@ -845,6 +845,39 @@ function pintarMochila() {
   $('#modal-cuerpo').querySelectorAll('[data-guardar]').forEach((b) => b.addEventListener('click', () => enviar({ heroe: h.id, tipo: 'mochila', op: 'guardar', item: b.dataset.guardar })));
 }
 
+// Carta del monstruo, como las de los héroes pero en negro y rojo.
+const IA_TEXTO = {
+  agresivo: 'Te persigue en cuanto te ve.',
+  guardian: 'Guarda su sala: no sale de ella.',
+  centinela: 'Inmóvil… hasta que algo lo despierte.',
+  lanzador: 'Ataca con magia a distancia y llama a los muertos.'
+};
+function fichaMonstruo(m) {
+  const base = D.MONSTRUOS[m.tipo];
+  const vida = Array.from({ length: m.cuerpoMax }, (_, i) => `<i class="${i < m.cuerpo ? '' : 'vacio'}"></i>`).join('');
+  const ef = m.efectos || {};
+  const estados = [ef.dormido && 'Dormido', ef.aturdido && 'Aturdido', ef.raices > 0 && 'Atrapado por raíces'].filter(Boolean);
+  app.cerrarModalFuera = () => {};
+  modal(`<div class="tarjeta monstruo">
+      <div class="estandarte">${esc(m.nombre)}</div>
+      ${m.jefe ? '<div class="sello-jefe">Jefe</div>' : ''}
+      <div class="retrato" style="--c:${base.color}">${svg(base.icono)}</div>
+      <div class="vida-m" aria-label="Cuerpo ${m.cuerpo} de ${m.cuerpoMax}">${vida}<span>${m.cuerpo} / ${m.cuerpoMax}</span></div>
+      <div class="stats4">
+        <div><span>Movimiento</span><b>${m.mov}</b></div>
+        <div><span>Dados de ataque</span><b>${m.ataque}</b></div>
+        <div><span>Dados de defensa</span><b>${m.defensa}</b></div>
+        <div><span>Puntos mentales</span><b>${m.mente}</b></div>
+      </div>
+      <dl class="lineas">
+        <dt>Conducta</dt><dd>${esc(IA_TEXTO[m.ia] || '')}</dd>
+        ${m.nomuerto ? '<dt>No muerto</dt><dd>Inmune al sueño</dd>' : ''}
+        ${estados.length ? `<dt>Estado</dt><dd>${esc(estados.join(', '))}</dd>` : ''}
+        ${m.hechizos?.length ? `<dt>Hechizos</dt><dd>${m.hechizos.length} por lanzar</dd>` : ''}
+      </dl>
+    </div>`, [{ texto: 'Cerrar' }]);
+}
+
 function fichaHeroe(t) {
   const e = app.estado, h = e.heroes[t], def = D.HEROES[t];
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
@@ -881,10 +914,7 @@ function alTocar(x, y) {
   if (!e.revelado[k]) return toast('Aún no habéis visto esta zona.');
   if (f && e.heroes[f.id]) return fichaHeroe(f.id);
   if (f?.id === 'cargador') return toast(`Cargador: cuerpo ${f.cuerpo}/${f.cuerpoMax}, defensa ${D.CARGADOR.defensa}. Lleva el almacén del grupo.`);
-  if (f) {
-    const extra = f.efectos.dormido ? ' Duerme.' : '';
-    return toast(`${f.nombre}: ataque ${f.ataque}, defensa ${f.defensa}, cuerpo ${f.cuerpo}/${f.cuerpoMax}, movimiento ${f.mov}.${extra}`);
-  }
+  if (f) return fichaMonstruo(f);
   const u = T.muebleEn(e, x, y);
   if (u) return toast(D.MUEBLES[u.tipo].nombre + '.');
   const tr = e.trampas.find((t) => t.x === x && t.y === y && t.descubierta);
@@ -1097,14 +1127,123 @@ async function mostrarResultado(res) {
   const victoria = res === 'victoria';
   const html = `<h2>${victoria ? 'Misión cumplida' : 'Derrota'}</h2>
     <p>${victoria ? 'Los héroes salen a la luz con sus bolsas más pesadas. Cada superviviente recibe ' + (e.mision.recompensa || 0) + ' monedas de la Hermandad.' : 'La mazmorra se ha cobrado a todos los héroes. La Hermandad los arrastrará de vuelta y podréis intentarlo de nuevo.'}</p>
-    <p class="nota">${e.orden.map((t) => esc(e.heroes[t].nombre) + ': ' + e.heroes[t].oro + ' monedas').join(' · ')}</p>
-    ${manda ? '' : '<p class="nota">El anfitrión os llevará a la armería.</p>'}`;
+    ${htmlCronica(e.cronica?.ultima, e)}
+    ${manda ? '' : '<p class="nota">El anfitrión os llevará al campamento.</p>'}`;
   sonar(victoria ? 'tesoro' : 'muerte');
   app.cerrarModalFuera = null;
   if (manda) {
-    await modal(html, [{ texto: victoria ? (e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir a la armería') : 'Ir a la armería y reintentar' }]);
+    await modal(html, [{ texto: victoria ? (e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir al campamento') : 'Ir al campamento y reintentar' }]);
     app.trasCola = { tipo: 'continuar' };
   } else await modal(html, [{ texto: 'De acuerdo' }]);
+}
+
+// =============================================================
+//  CRÓNICA: resumen de la misión y de la campaña
+// =============================================================
+const nombreMonstruo = (tipo, n) => {
+  const base = D.MONSTRUOS[tipo]?.nombre || tipo;
+  if (n === 1) return base;
+  return base === 'Guerrero oscuro' ? 'Guerreros oscuros' : /[aeiouáéíóú]$/i.test(base) ? base + 's' : base + 'es';
+};
+function chipsMonstruos(obj) {
+  const lista = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+  if (!lista.length) return '<p class="nota">Ninguno.</p>';
+  return '<div class="chips-cronica">' + lista.map(([t, n]) => `<span class="chip-m" style="--c:${D.MONSTRUOS[t]?.color || '#555'}">${svg(D.MONSTRUOS[t]?.icono || 'calavera')}<b>${n}</b> ${esc(nombreMonstruo(t, n))}</span>`).join('') + '</div>';
+}
+// =============================================================
+//  TÍTULOS: un mote para cada héroe según cómo ha jugado la misión
+//  Cada título se da a un solo héroe y cada héroe recibe como mucho dos.
+// =============================================================
+const bajas = (h) => Object.values(h.muertes).reduce((s, n) => s + n, 0);
+const TITULOS = [
+  { id: 'mvp', icono: 'corona', nombre: 'MVP', texto: (h) => `${bajas(h)} ${bajas(h) === 1 ? 'enemigo abatido' : 'enemigos abatidos'}. El terror de la mazmorra.`, valor: (h) => bajas(h) * 100 + h.danoHecho, min: 100 },
+  { id: 'matagigantes', icono: 'espadaAltar', nombre: 'Matagigantes', texto: () => 'Dio el golpe de gracia al jefe.', valor: (h) => h.jefes, min: 1 },
+  { id: 'gallina', icono: 'correr', nombre: 'La Gallina', texto: (h) => `Recorrió ${h.casillas} casillas y no le hizo ni un rasguño a nadie.`, valor: (h) => (h.danoHecho === 0 && h.hechizos === 0 ? h.casillas + 1 : 0), min: 1 },
+  { id: 'saco', icono: 'escudo', nombre: 'Saco de Boxeo', texto: (h) => `Se comió ${h.danoRecibido} golpes. Los monstruos le tienen cariño.`, valor: (h) => h.danoRecibido, min: 4 },
+  { id: 'iman', icono: 'trampa', nombre: 'Imán de Trampas', texto: (h) => h.trampas === 1 ? 'Si hay una trampa, la pisa.' : `Pisó ${h.trampas} trampas. Ni mirando al suelo.`, valor: (h) => h.trampas, min: 1 },
+  { id: 'resucitado', icono: 'calavera', nombre: 'Volvió en Camilla', texto: () => 'Cayó en combate. La Hermandad lo recogió con pala.', valor: (h) => h.caidas, min: 1 },
+  { id: 'avaro', icono: 'oro', nombre: 'El Avaro', texto: (h) => `Se embolsó ${h.oro} monedas. Nadie sabe cuántas declaró.`, valor: (h) => h.oro, min: 60 },
+  { id: 'intocable', icono: 'reflejo', nombre: 'Intocable', texto: () => 'Ni una herida en toda la misión.', valor: (h) => (h.danoRecibido === 0 && h.casillas > 0 ? 1 + h.danoHecho : 0), min: 1 },
+  { id: 'sabueso', icono: 'buscar', nombre: 'Sabueso', texto: (h) => h.secretas ? `Encontró ${h.secretas === 1 ? 'una puerta secreta' : h.secretas + ' puertas secretas'}.` : `Registró ${h.busquedas} veces cada rincón.`, valor: (h) => h.secretas * 10 + h.busquedas, min: 3 },
+  { id: 'cosquillas', icono: 'hechizo', nombre: 'Hace Cosquillas', texto: (h) => `${h.danoHecho} de daño y ni una baja. Los monstruos se ríen.`, valor: (h) => (bajas(h) === 0 ? h.danoHecho : 0), min: 2 },
+  { id: 'turista', icono: 'mover', nombre: 'El Turista', texto: (h) => `${h.casillas} casillas recorridas. Se conoce la mazmorra mejor que el que la construyó.`, valor: (h) => h.casillas, min: 25 },
+  { id: 'abrepuertas', icono: 'puerta', nombre: 'Abrepuertas', texto: (h) => `Abrió ${h.puertas} puertas sin preguntar qué había detrás.`, valor: (h) => h.puertas, min: 3 },
+  { id: 'alquimista', icono: 'pocion', nombre: 'Bebedor Profesional', texto: (h) => `Se bebió ${h.pociones} pociones.`, valor: (h) => h.pociones, min: 2 },
+  { id: 'dormilon', icono: 'sueno', nombre: 'El Dormilón', texto: (h) => `Pasó ${h.turnosVacios} turnos sin hacer nada.`, valor: (h) => h.turnosVacios, min: 2 }
+];
+function asignarTitulos(c) {
+  if (!c) return [];
+  const heroes = Object.entries(c.heroes);
+  const cuenta = {};
+  const dados = [];
+  for (const t of TITULOS) {
+    const cand = heroes.map(([id, h]) => ({ id, h, v: t.valor(h) || 0 })).filter((x) => x.v >= t.min && (cuenta[x.id] || 0) < 2);
+    if (!cand.length) continue;
+    cand.sort((a, b) => b.v - a.v);
+    if (cand[1] && cand[1].v === cand[0].v && t.id !== 'resucitado') continue; // empate: nadie se lo lleva
+    const g = cand[0];
+    cuenta[g.id] = (cuenta[g.id] || 0) + 1;
+    dados.push({ ...t, heroe: g.id, frase: t.texto(g.h) });
+  }
+  return dados;
+}
+function htmlTitulos(c, e) {
+  const t = asignarTitulos(c);
+  if (!t.length) return '';
+  return '<h4>Títulos</h4><div class="titulos">' + t.map((x) => `<div class="titulo-h ${x.id === 'mvp' ? 'oro' : ''}">${svg(x.icono)}<div><b>${esc(x.nombre)}</b> · ${esc(e.heroes[x.heroe]?.nombre || x.heroe)}<span>${esc(x.frase)}</span></div></div>`).join('') + '</div>';
+}
+
+function htmlCronica(c, e) {
+  if (!c) return '';
+  const filas = Object.entries(c.heroes).map(([id, h]) => {
+    const muertes = Object.values(h.muertes).reduce((s, n) => s + n, 0);
+    return { id, h, muertes };
+  });
+  const nombreH = (id) => e.heroes[id]?.nombre || id;
+  const datos = [
+    ['Rondas', c.rondas], ['Puertas abiertas', c.puertas], ['Tesoros encontrados', c.tesoros], ['Oro encontrado', c.oro],
+    ['Trampas activadas', c.trampasActivadas], ['Trampas descubiertas', c.trampasHalladas], ['Trampas desarmadas', c.desarmadas], ['Puertas secretas', c.secretas]
+  ];
+  if (c.recompensa) datos.push(['Recompensa por héroe', c.recompensa]);
+  if (c.cargador) datos.push(['Cargador', c.cargador === 'vivo' ? 'Volvió con la carga' : 'Cayó con la carga']);
+  return `<div class="cronica">
+    <h3 class="sec">Crónica · Misión ${c.numero}${c.resultado ? ' · ' + (c.resultado === 'victoria' ? 'victoria' : 'derrota') + ' en ' + c.rondas + (c.rondas === 1 ? ' ronda' : ' rondas') : ''}</h3>
+    ${htmlTitulos(c, e)}
+    <h4>Enemigos abatidos</h4>${chipsMonstruos(c.monstruos)}
+    ${c.jefes.length ? `<p><b>Jefes derrotados:</b> ${esc(c.jefes.join(', '))}</p>` : ''}
+    <h4>Héroes</h4>
+    <div class="tabla-cronica" role="table">
+      <div class="fila-c cab" role="row"><span>Héroe</span><span title="Enemigos abatidos">Bajas</span><span title="Daño hecho">Daño</span><span title="Daño recibido">Heridas</span><span>Oro</span></div>
+      ${filas.map(({ id, h, muertes }) => `<div class="fila-c" role="row"><span>${esc(nombreH(id))}${h.caidas ? ' †' : ''}</span><span>${muertes}</span><span>${h.danoHecho}</span><span>${h.danoRecibido}</span><span>${h.oro}</span></div>`).join('')}
+    </div>
+    <div class="datos-cronica">${datos.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>
+  </div>`;
+}
+function htmlCampana(e) {
+  const k = e.cronica?.campana;
+  if (!k) return '<p class="nota">Aún no habéis terminado ninguna misión.</p>';
+  const filas = Object.entries(k.heroes);
+  return `<div class="cronica">
+    <h3 class="sec">La campaña hasta ahora</h3>
+    <div class="datos-cronica">
+      <div><span>Misiones jugadas</span><b>${k.misiones}</b></div><div><span>Victorias</span><b>${k.victorias}</b></div>
+      <div><span>Derrotas</span><b>${k.derrotas}</b></div><div><span>Rondas</span><b>${k.rondas}</b></div>
+      <div><span>Oro encontrado</span><b>${k.oro}</b></div><div><span>Tesoros</span><b>${k.tesoros}</b></div>
+      <div><span>Trampas sufridas</span><b>${k.trampas}</b></div><div><span>Puertas secretas</span><b>${k.secretas}</b></div>
+    </div>
+    <h4>Enemigos abatidos</h4>${chipsMonstruos(k.monstruos)}
+    ${k.jefes.length ? `<p><b>Jefes derrotados:</b> ${esc(k.jefes.join(', '))}</p>` : ''}
+    <h4>Héroes</h4>
+    <div class="tabla-cronica">
+      <div class="fila-c cab"><span>Héroe</span><span>Bajas</span><span>Daño</span><span>Heridas</span><span>Oro</span></div>
+      ${filas.map(([id, h]) => `<div class="fila-c"><span>${esc(e.heroes[id]?.nombre || id)}${h.caidas ? ' †' + (h.caidas > 1 ? h.caidas : '') : ''}</span><span>${h.muertes}</span><span>${h.danoHecho}</span><span>${h.danoRecibido}</span><span>${h.oro}</span></div>`).join('')}
+    </div>
+  </div>`;
+}
+function verCronica() {
+  const e = app.estado;
+  app.cerrarModalFuera = () => {};
+  modal(htmlCronica(e.cronica?.ultima, e) + htmlCampana(e), [{ texto: 'Cerrar' }]);
 }
 
 // =============================================================
@@ -1137,7 +1276,9 @@ function pintarArmeria() {
   if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
   app.sub ||= 'heroe';
   const siguiente = app.misiones[e.campana[e.misionIdx]];
-  $('#arm-sub').textContent = 'Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || '');
+  $('#arm-sub').innerHTML = esc('Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || ''))
+    + (e.cronica?.campana ? ' · <button class="enlace" id="b-cronica">Ver la crónica</button>' : '');
+  $('#b-cronica')?.addEventListener('click', verCronica);
   $('#arm-pestanas').innerHTML = e.orden.map((t) => `<button aria-pressed="${t === app.pestana}" data-t="${t}">${esc(e.heroes[t].nombre)}</button>`).join('');
   $('#arm-pestanas').querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', () => { app.pestana = b.dataset.t; pintarArmeria(); }));
   const h = e.heroes[app.pestana];
@@ -1254,7 +1395,7 @@ $('#b-siguiente').addEventListener('click', () => enviar({ tipo: 'siguienteMisio
 
 function pintarFinal() {
   const e = app.estado;
-  $('#final-heroes').innerHTML = `<p class="nota">${e.orden.map((t) => esc(e.heroes[t].nombre) + ' · ' + e.heroes[t].oro + ' monedas').join('<br>')}</p>`;
+  $('#final-heroes').innerHTML = htmlCampana(e);
 }
 $('#b-nueva').addEventListener('click', () => salirAPortada());
 
@@ -1262,10 +1403,7 @@ $('#b-nueva').addEventListener('click', () => salirAPortada());
 window.addEventListener('beforeunload', (e) => { if (app.modo === 'anfitrion' && app.estado) { e.preventDefault(); e.returnValue = ''; } });
 
 // Acceso desde la consola del navegador, útil para depurar.
-window.criptas = { app, enviar, publicar, M, D };
-
-// Acceso desde la consola del navegador, útil para depurar.
-window.criptas = { app, enviar, publicar, M, D };
+window.criptas = { app, enviar, publicar, fichaMonstruo, M, D, T };
 
 // =============================================================
 //  TRUCOS (consola del navegador, F12)
