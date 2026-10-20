@@ -16,10 +16,11 @@ Las coordenadas son `[x, y]`: `x` va de 0 a 25 (columnas, de izquierda a derecha
 | `escalera` | Esquina superior izquierda de la escalera (ocupa 2×2 y debe ir dentro de una sala). |
 | `rocas` | Casillas bloqueadas, para cerrar pasillos. |
 | `puertas` | `{ "id", "a": [x,y], "b": [x,y] }` entre dos casillas vecinas con pared. Opcional: `"secreta": true` o `"bloqueada": true` (se abre con un disparador). |
+| `muros` | Muros frágiles: `{ "id", "a": [x,y], "b": [x,y] }` entre dos casillas vecinas con pared y sin puerta. Brillan cuando el mago saca la Trompa de Jericó y se pueden derribar con ella (queda un hueco abierto). Disparador: `muro_roto` + `muro`. |
 | `muebles` | `{ "tipo", "x", "y", "w", "h" }`. Tipos: mesa, cofre, estanteria, trono, sarcofago, chimenea, armero, alquimista, potro, caldero, altar. |
 | `monstruos` | `{ "id", "tipo", "x", "y", "ia" }`. Tipos: trasgo, orco, esqueleto, zombi, momia, guerrero, gargola, hechicero. Opcional: `nombre`, `jefe`, `cuerpo`, `ataque`, `defensa`, `hechizos` (solo el hechicero: `rayo`, `invocar`). |
 | `trampas` | `{ "id", "tipo", "x", "y" }`. Tipos: foso, lanza, bloque. |
-| `tesoros` | Por letra de sala: lo que se encuentra la primera vez que alguien busca tesoro en ella. Campos: `texto`, `oro`, `objeto` (una poción), `arma`, `flag`, `trampaCofre`. Las salas sin tesoro fijo usan el mazo de cartas. |
+| `tesoros` | Por letra de sala: lo que se encuentra la primera vez que alguien busca tesoro en ella. Campos: `texto`, `oro`, `objeto` (una poción), `arma`, `flag`, `trampaCofre`, `reliquia` (`escritos` o `trompeta`: al tener las dos, el grupo consigue la Trompa de Jericó). Las salas sin tesoro fijo usan el mazo de cartas. |
 | `disparadores` | El guion de la misión (ver abajo). |
 
 ## IA de los monstruos

@@ -121,6 +121,14 @@ export const OBJETOS_TIENDA = {
 };
 export const MAGO_ARMAS = ['daga', 'baston'];
 
+// ---------- Reliquias (del grupo, se guardan toda la campaña) ----------
+// Se encuentran como tesoro fijo de una misión ("reliquia": "escritos").
+export const RELIQUIAS = {
+  escritos: { nombre: 'Escritos Antiguos', icono: 'pergamino' },
+  trompeta: { nombre: 'Trompeta Ancestral', icono: 'viento' },
+  jerico:   { nombre: 'Trompa de Jericó', icono: 'viento', desc: 'Solo el mago. Una vez por misión, con alguien pegado delante que la sujete: deja tontos a los enemigos de esa línea o derriba un muro frágil.' }
+};
+
 // ---------- Cargador ----------
 // Se contrata en la armería para una misión. Lleva el almacén del grupo.
 export const CARGADOR = { precio: 100, cuerpo: 2, defensa: 2, dados: 2, color: '#7a5a34', icono: 'cargador' };

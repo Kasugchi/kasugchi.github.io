@@ -82,7 +82,7 @@ function intentarHechizo(estado, m, ctx) {
 export function turnoMonstruo(estado, m, ctx) {
   const ef = m.efectos;
   if (ef.dormido) return;
-  if (ef.aturdido) { delete ef.aturdido; ctx.avisar(estado, m.nombre + ' sigue aturdido por el vendaval.'); return; }
+  if (ef.aturdido) { delete ef.aturdido; ctx.avisar(estado, m.nombre + ' sigue aturdido y pierde el turno.'); return; }
   const inmovil = ef.raices > 0;
   if (inmovil) ef.raices--;
 

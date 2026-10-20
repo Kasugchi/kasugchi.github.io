@@ -27,6 +27,12 @@ export function claveBorde(a, b) {
   return ka < kb ? ka + '|' + kb : kb + '|' + ka;
 }
 
+// Muros frágiles: se pueden derribar con la Trompa de Jericó.
+export function muroEntre(estado, a, b) {
+  const i = estado.murosPorBorde?.[claveBorde(a, b)];
+  return i === undefined ? null : estado.muros[i];
+}
+
 export function puertaEntre(estado, a, b) {
   const i = estado.puertasPorBorde[claveBorde(a, b)];
   return i === undefined ? null : estado.puertas[i];
@@ -40,6 +46,7 @@ export function hayPared(a, b) {
 // Estado de un borde: 'libre' | 'puerta' (cerrada, se puede abrir) | 'bloqueado'
 export function borde(estado, a, b) {
   if (!hayPared(a, b)) return 'libre';
+  if (muroEntre(estado, a, b)?.roto) return 'libre';
   const p = puertaEntre(estado, a, b);
   if (!p) return 'bloqueado';
   if (p.secreta && !p.descubierta) return 'bloqueado';

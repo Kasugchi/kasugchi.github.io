@@ -243,6 +243,7 @@ export class Escena3D {
     const huecos = new Set();
     // Solo se abre hueco para las puertas que ya se han visto: si no, la pared delataría dónde están.
     for (const p of e.puertas) if ((!p.secreta || p.descubierta) && (vis(...p.a) || vis(...p.b))) huecos.add(T.claveBorde(p.a, p.b));
+    for (const w of e.muros || []) if (w.roto) huecos.add(T.claveBorde(w.a, w.b));
     const tramos = [];
     for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) {
       if (x + 1 < D.ANCHO && T.region(x, y) !== T.region(x + 1, y) && !huecos.has(T.claveBorde([x, y], [x + 1, y]))) tramos.push({ x: x + 1, z: y + 0.5, vert: true, vis: vis(x, y) || vis(x + 1, y) });
@@ -382,6 +383,28 @@ export class Escena3D {
     }
   }
 
+  // Muros frágiles que brillan mientras el mago tiene la trompa en la mano.
+  actualizarBrillo(e, t) {
+    const ids = this.tab.resaltes.muros || [];
+    const clave = ids.join(',');
+    if (clave !== this.claves.brillo) {
+      this.claves.brillo = clave;
+      if (this.gBrillo) this.escena.remove(this.gBrillo);
+      this.gBrillo = new THREE.Group();
+      this.matBrillo ||= new THREE.MeshBasicMaterial({ color: 0xffd36a, transparent: true, depthWrite: false });
+      for (const id of ids) {
+        const w = (e.muros || []).find((x) => x.id === id);
+        if (!w) continue;
+        const vert = w.a[0] !== w.b[0];
+        const caja = new THREE.Mesh(new THREE.BoxGeometry(vert ? GROSOR + 0.06 : 1.02, ALTO_PARED + 0.06, vert ? 1.02 : GROSOR + 0.06), this.matBrillo);
+        caja.position.set(vert ? Math.max(w.a[0], w.b[0]) : w.a[0] + 0.5, ALTO_PARED / 2, vert ? w.a[1] + 0.5 : Math.max(w.a[1], w.b[1]));
+        this.gBrillo.add(caja);
+      }
+      this.escena.add(this.gBrillo);
+    }
+    if (this.matBrillo) this.matBrillo.opacity = 0.45 + Math.sin(t / 220) * 0.25;
+  }
+
   // Ilustración de pie sobre la peana, como una figura de cartón recortada.
   figuraSprite(img, jefe) {
     this.texSprites ||= new Map();
@@ -424,7 +447,7 @@ export class Escena3D {
     if (!e?.mision) return;
     // Rehacer lo estático solo cuando cambia.
     const revelados = Object.keys(e.revelado).length;
-    const kPuertas = e.mision.id + '|' + revelados + '|' + e.puertas.map((p) => (p.abierta ? 1 : 0) + (p.descubierta ? 2 : 0) + (p.bloqueada ? 4 : 0)).join('');
+    const kPuertas = e.mision.id + '|' + revelados + '|' + e.puertas.map((p) => (p.abierta ? 1 : 0) + (p.descubierta ? 2 : 0) + (p.bloqueada ? 4 : 0)).join('') + '|' + (e.muros || []).map((w) => (w.roto ? 1 : 0)).join('');
     if (kPuertas !== this.claves.puertas) { this.claves.puertas = kPuertas; this.construirParedes(e); this.construirPuertas(e); }
     const kMuebles = e.mision.id + '|' + revelados + '|' + Object.keys(e.rocas).length;
     if (kMuebles !== this.claves.muebles) { this.claves.muebles = kMuebles; this.construirMuebles(e); }
@@ -437,6 +460,7 @@ export class Escena3D {
       this.tab.dibujarMundo(g, t, true);
       this.texSuelo.needsUpdate = true;
     }
+    this.actualizarBrillo(e, t);
     this.colocarCamara(t);
     this.actualizarFichas(t);
     if (this.tab.textos.length || this.gTextos.children.length) this.actualizarTextos();

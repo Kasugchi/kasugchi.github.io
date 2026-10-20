@@ -692,6 +692,12 @@ $('#b-abandonar').addEventListener('click', async () => {
 });
 
 // Lo que hay que hacer en la misión, con lo ya cumplido tachado.
+function htmlReliquias(e) {
+  const r = e.reliquias || {};
+  if (!Object.keys(r).length) return '';
+  const lista = r.jerico ? [D.RELIQUIAS.jerico.nombre + ' (la toca el mago)'] : ['escritos', 'trompeta'].filter((k) => r[k]).map((k) => D.RELIQUIAS[k].nombre);
+  return `<p class="obj"><b>Reliquias:</b> ${esc(lista.join(', '))}${r.jerico ? '' : ' · falta la otra pieza'}</p>`;
+}
 function htmlTareas(e) {
   const m = e?.mision;
   if (!m) return '';
@@ -700,6 +706,7 @@ function htmlTareas(e) {
   const quedan = M.rondasRestantes(e);
   return `<h3>${esc(m.titulo)}</h3><p class="obj">${esc(m.objetivo.texto)}</p>`
     + (m.tareas?.length ? '<ul class="tareas">' + m.tareas.map((t) => `<li class="${hecha(t) ? 'hecha' : ''}">${esc(t.texto)}</li>`).join('') + '</ul>' : '')
+    + htmlReliquias(e)
     + (quedan !== null ? `<p class="obj">Quedan <b>${quedan}</b> ${quedan === 1 ? 'ronda' : 'rondas'} antes del derrumbe.</p>` : '')
     + '<button class="enlace" id="b-ver-historia">Releer la historia</button>';
 }
@@ -756,7 +763,7 @@ function pintarJuego() {
 function pintarAcciones() {
   const e = app.estado;
   const et = $('#estado-turno'), bot = $('#botonera');
-  tablero.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {} };
+  tablero.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {}, muros: [] };
   if (e.fase !== 'mision' || !e.turno) { et.innerHTML = ''; bot.innerHTML = ''; return; }
   const h = e.heroes[e.turno.heroe];
   const mio = miHeroeEnTurno();
@@ -775,6 +782,8 @@ function pintarAcciones() {
   if (app.seleccion?.tipo === 'atacar') info = 'Toca el monstruo al que quieres atacar.';
   if (app.moverCargador && !d.cargador) app.moverCargador = false;
   if (app.moverCargador) info = d.cargador.restante > 0 ? `Cargador: ${d.cargador.restante} casillas. Toca dónde llevarlo.` : 'El cargador ya no puede moverse este turno.';
+  if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
+  if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
   et.innerHTML = `<b>${esc(h.nombre)}</b><span>${esc(info)}</span>`;
 
   if (!app.reproduciendo) {
@@ -795,6 +804,7 @@ function pintarAcciones() {
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
+  if (d.trompa) boton('trompa', 'viento', 'Trompa de Jericó', { n: 'una vez por misión' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
   if (d.cargador) {
@@ -807,6 +817,29 @@ function pintarAcciones() {
   boton('fin', 'reloj', 'Fin del turno');
   bot.innerHTML = b.join('');
   bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
+  if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
+}
+// Trompa de Jericó: al sacarla brillan los muros frágiles a la vista y se elige qué hacer.
+const FLECHAS = { '1,0': '→', '-1,0': '←', '0,1': '↓', '0,-1': '↑' };
+function pintarTrompa(e, h, d, et, bot) {
+  const vis = (c) => !!e.revelado[T.clave(c[0], c[1])];
+  tablero.resaltes.muros = (e.muros || []).filter((w) => !w.roto && (vis(w.a) || vis(w.b))).map((w) => w.id);
+  const nombreDe = (id) => (id === 'cargador' ? 'el cargador' : e.heroes[id].nombre);
+  const hayMuros = tablero.resaltes.muros.length;
+  et.innerHTML = `<b>Trompa de Jericó</b><span>${esc(d.trompa.motivo || ((hayMuros ? 'Los muros que brillan se pueden derribar. ' : 'No veis ningún muro frágil. ') + 'Suena hacia donde está quien la sujeta.'))}</span>`;
+  const b = [];
+  for (const ap of d.trompa.apoyos) {
+    const f = FLECHAS[ap.dir.join(',')];
+    b.push(`<button class="acc principal" data-trompa="${esc(ap.id)}" data-modo="aturdir">${svg('viento')}<span>${f} Dejar tontos</span><span class="n">sujeta ${esc(nombreDe(ap.id))} · ${ap.enemigos} ${ap.enemigos === 1 ? 'enemigo' : 'enemigos'}</span></button>`);
+    if (ap.muro) b.push(`<button class="acc principal" data-trompa="${esc(ap.id)}" data-modo="muro">${svg('derrumbe')}<span>${f} Romper el muro</span><span class="n">sujeta ${esc(nombreDe(ap.id))}</span></button>`);
+  }
+  b.push(`<button class="acc" data-trompa="">${svg('reloj')}<span>Guardarla</span></button>`);
+  bot.innerHTML = b.join('');
+  bot.querySelectorAll('[data-trompa]').forEach((x) => x.addEventListener('click', () => {
+    app.seleccion = null;
+    if (!x.dataset.trompa) return pintarAcciones();
+    enviar({ heroe: h.id, tipo: 'trompa', apoyo: x.dataset.trompa, modo: x.dataset.modo });
+  }));
   if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
 }
 const enLaEscalera = (e, h) => e.escalera.some(([x, y]) => x === h.x && y === h.y);
@@ -830,6 +863,7 @@ async function accionBoton(acc, h, d) {
     case 'desarmar': return enviar({ ...base, tipo: 'desarmar', trampa: d.desarmables[0] });
     case 'pocion': return elegirPocion(h, d);
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
+    case 'trompa': app.seleccion = { tipo: 'trompa' }; return pintarAcciones();
     case 'caldero': return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
     case 'salir': return enviar({ ...base, tipo: 'salir' });
     case 'cargador':
@@ -973,7 +1007,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1218,6 +1252,11 @@ async function animar(ev) {
       break;
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
+    case 'trompa': {
+      sonar('trampa');
+      for (const [x, y] of ev.celdas || []) tablero.destello(x, y, 'rgba(255,220,140,A)');
+      toast(ev.texto, ev.tono); await espera(1200); break;
+    }
     case 'caldero': toast('🎲 ' + ev.dado + ' · ' + ev.texto, ev.tono); await espera(900); break;
     case 'historia':
       app.cerrarModalFuera = null;

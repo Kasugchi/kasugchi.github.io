@@ -2,7 +2,7 @@
  "id": "pruebas",
  "numero": 0,
  "titulo": "Zona de pruebas",
- "intro": "Una mazmorra de entrenamiento para probar el equipo nuevo. Cada héroe empieza con 5000 monedas y pociones: pasad por la tienda, comprad lo que queráis y bajad. Hay calderos para beber, puertas para abrir, derrumbes y monstruos quietos a distancia para probar la ballesta pesada.",
+ "intro": "Una mazmorra de entrenamiento para probar el equipo nuevo. Cada héroe empieza con 5000 monedas y pociones: pasad por la tienda, comprad lo que queráis y bajad. Hay calderos para beber, puertas para abrir, derrumbes, monstruos quietos para probar la ballesta pesada y las dos piezas de la Trompa de Jericó (el mago la usa con alguien pegado delante que la sujete).",
  "objetivo": {
   "tipo": "escalera",
   "requiere": [],
@@ -140,6 +140,13 @@
    "y": 11,
    "w": 1,
    "h": 1
+  },
+  {
+   "tipo": "cofre",
+   "x": 18,
+   "y": 15,
+   "w": 1,
+   "h": 1
   }
  ],
  "monstruos": [
@@ -189,8 +196,9 @@
  ],
  "tesoros": {
   "K": {
-   "texto": "El cofre guarda una ballesta pesada envuelta en lona.",
-   "arma": "ballestaPesada"
+   "texto": "El cofre guarda una ballesta pesada envuelta en lona y un legajo de Escritos Antiguos.",
+   "arma": "ballestaPesada",
+   "reliquia": "escritos"
   },
   "H": {
    "texto": "En el armero hay 100 monedas escondidas.",
@@ -199,6 +207,14 @@
   "N": {
    "texto": "Tras la puerta atrancada, un cofre con 300 monedas.",
    "oro": 300
+  },
+  "G": {
+   "texto": "Bajo la mesa, envuelta en trapos, la Trompeta Ancestral.",
+   "reliquia": "trompeta"
+  },
+  "L": {
+   "texto": "¡Una sala tapiada! Dentro, un cofre con 500 monedas que nadie tocaba desde hace siglos.",
+   "oro": 500
   }
  },
  "disparadores": [
@@ -239,6 +255,16 @@
      "nombre": "orco"
     }
    ]
+  },
+  {
+   "cuando": "muro_roto",
+   "muro": "m2",
+   "acciones": [
+    {
+     "tipo": "flag",
+     "nombre": "tapiada"
+    }
+   ]
   }
  ],
  "tareas": [
@@ -251,11 +277,39 @@
    "texto": "Encontrar la puerta secreta de la sala grande"
   },
   {
+   "flag": "tapiada",
+   "texto": "Entrar en la sala tapiada con la Trompa de Jericó"
+  },
+  {
    "texto": "Beber de los calderos (hay dos)"
   },
   {
    "salir": true,
    "texto": "Volver a la escalera y salir"
+  }
+ ],
+ "muros": [
+  {
+   "id": "m1",
+   "a": [
+    15,
+    11
+   ],
+   "b": [
+    15,
+    12
+   ]
+  },
+  {
+   "id": "m2",
+   "a": [
+    17,
+    12
+   ],
+   "b": [
+    17,
+    13
+   ]
   }
  ]
 }

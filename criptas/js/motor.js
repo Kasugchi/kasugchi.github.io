@@ -107,7 +107,7 @@ export function crearPartida(elegidos, jugadores = {}) {
     fase: 'cargando', misionIdx: 0, campana: D.CAMPANA.slice(),
     heroes, orden: D.ORDEN_HEROES.filter((t) => heroes[t]),
     mision: null, resultado: null,
-    contrato: null, cargador: null
+    contrato: null, cargador: null, reliquias: {}
   };
 }
 
@@ -132,6 +132,10 @@ export function iniciarMision(estado, def) {
     id: p.id, a: p.a, b: p.b, abierta: false,
     secreta: !!p.secreta, descubierta: !p.secreta, bloqueada: !!p.bloqueada
   }));
+  estado.muros = (m.muros || []).map((w, i) => ({ id: w.id || 'm' + (i + 1), a: w.a, b: w.b, roto: false }));
+  estado.murosPorBorde = {};
+  estado.muros.forEach((w, i) => { estado.murosPorBorde[T.claveBorde(w.a, w.b)] = i; });
+  estado.trompaUsada = {};
   estado.puertasPorBorde = {};
   estado.puertas.forEach((p, i) => { estado.puertasPorBorde[T.claveBorde(p.a, p.b)] = i; });
 
@@ -267,6 +271,7 @@ export function disparar(estado, cuando, datos = {}) {
     if (d.region && d.region !== datos.region) return;
     if (d.id && d.id !== datos.id) return;
     if (d.puerta && d.puerta !== datos.puerta) return;
+    if (d.muro && d.muro !== datos.muro) return;
     if (d.nombre && d.nombre !== datos.nombre) return;
     if (d.casilla && !(d.casilla[0] === datos.x && d.casilla[1] === datos.y)) return;
     // requiere: varias flags a la vez (p. ej. reunir tres sellos).
@@ -359,8 +364,8 @@ function golpearMonstruo(estado, h, m, dados, etiqueta) {
 // Ataque de monstruo a héroe.
 export function golpearHeroe(estado, m, h, dados, etiqueta) {
   const ataque = tirarCombate(dados);
-  const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0);
-  delete h.efectos.calderoDef;
+  const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0);
+  delete h.efectos.calderoDef; delete h.efectos.sordo;
   const defensa = tirarCombate(Math.max(0, defensaHeroe(h) + extra));
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
@@ -580,6 +585,10 @@ export function disponibles(estado, id) {
       && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h;
   }) : [];
   r.puertas = puertasAlLado(estado, h);
+  if (estado.reliquias?.jerico && D.HEROES[h.tipo].sinArmadura && !(estado.trompaUsada || {})[h.id]) {
+    const apoyos = libre ? apoyosTrompa(estado, h) : [];
+    r.trompa = { apoyos, motivo: !libre ? 'Ya has hecho tu acción este turno.' : !apoyos.length ? 'Necesitas a alguien pegado delante de ti (no en diagonal) que la sujete: sola se te caería.' : '' };
+  }
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
   // Cargador: lo mueve el héroe que lo contrató, en su turno.
@@ -857,6 +866,89 @@ function apuntarTesoro(estado, h, oro, objeto) {
   sumar(c, 'oro', oro || 0); sumar(ch, 'oro', oro || 0);
 }
 
+// =============================================================
+//  TROMPA DE JERICÓ
+//  El mago la sopla apoyada en un aliado pegado a él; suena en la
+//  dirección del aliado hasta la primera pared.
+// =============================================================
+// Las dos piezas se juntan solas en cuanto el grupo tiene ambas.
+function ganarReliquia(estado, id) {
+  const r = (estado.reliquias ||= {});
+  if (r[id]) return '';
+  r[id] = true;
+  let texto = '(Reliquia: ' + D.RELIQUIAS[id].nombre + '.)';
+  if (r.escritos && r.trompeta && !r.jerico) {
+    r.jerico = true;
+    texto += ' Al leer los Escritos Antiguos junto a la Trompeta Ancestral, sus runas se encienden: es la Trompa de Jericó. Solo un mago sabrá despertarla.';
+  } else if (id === 'escritos') texto += ' Hablan de una trompeta capaz de derribar murallas…';
+  else if (id === 'trompeta') texto += ' Está cubierta de runas que nadie sabe leer.';
+  return texto;
+}
+
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+function lineaTrompa(estado, desde, dir) {
+  const celdas = [];
+  let cur = desde;
+  for (let i = 0; i < 40; i++) {
+    const n = [cur[0] + dir[0], cur[1] + dir[1]];
+    if (!T.dentro(n[0], n[1])) break;
+    if (T.borde(estado, cur, n) !== 'libre') {
+      const mu = T.muroEntre(estado, cur, n);
+      return { celdas, muro: mu && !mu.roto ? mu : null };
+    }
+    celdas.push(n); cur = n;
+  }
+  return { celdas, muro: null };
+}
+export function apoyosTrompa(estado, h) {
+  const out = [];
+  for (const d of DIRS) {
+    const x = h.x + d[0], y = h.y + d[1];
+    const f = T.figuraEn(estado, x, y);
+    if (!f || f.id === h.id || !T.esAliado(estado, f)) continue;
+    if (T.borde(estado, [h.x, h.y], [x, y]) !== 'libre') continue;
+    const l = lineaTrompa(estado, [x, y], d);
+    const enemigos = l.celdas.filter(([cx, cy]) => estado.monstruos.some((m) => m.vivo && m.visto && m.x === cx && m.y === cy)).length;
+    out.push({ id: f.id, dir: d, muro: l.muro?.id || null, enemigos });
+  }
+  return out;
+}
+function tocarTrompa(estado, h, ap, modo) {
+  (estado.trompaUsada ||= {})[h.id] = 1;
+  const apoyo = estado.heroes[ap.id] || estado.cargador;
+  const quien = ap.id === 'cargador' ? 'el cargador' : apoyo.nombre;
+  const { celdas, muro } = lineaTrompa(estado, [apoyo.x, apoyo.y], ap.dir);
+  if (estado.heroes[ap.id]) apoyo.efectos.sordo = true;
+  const sordo = estado.heroes[ap.id] ? ` ${apoyo.nombre} se queda medio sordo (−1 dado de defensa en el próximo golpe).` : '';
+  if (modo === 'muro') {
+    muro.roto = true;
+    const texto = `${h.nombre} invoca la Trompa de Jericó, que crece hasta medir tres varas; ${quien} la sujeta y… ¡el muro se viene abajo! La trompa vuelve a encogerse en su mano.` + sordo;
+    ev(estado, { tipo: 'trompa', heroe: h.id, celdas, muro: muro.id, texto, tono: 'bueno' });
+    ev(estado, { tipo: 'temblor' });
+    log(estado, texto, 'bueno');
+    revelar(estado);
+    disparar(estado, 'muro_roto', { muro: muro.id });
+    return;
+  }
+  ev(estado, { tipo: 'trompa', heroe: h.id, celdas, texto: `${h.nombre} invoca la Trompa de Jericó, que crece hasta medir tres varas; ${quien} la sujeta y… ¡BWOOOOOM!`, tono: 'bueno' });
+  ev(estado, { tipo: 'temblor' });
+  let tontos = 0, piedras = 0;
+  for (const [x, y] of celdas) {
+    if (estado.rocas[clave(x, y)]) { delete estado.rocas[clave(x, y)]; piedras++; }
+    const m = estado.monstruos.find((o) => o.vivo && o.x === x && o.y === y);
+    if (!m) continue;
+    m.efectos.aturdido = true;
+    if (cuenta(tirarCombate(1), 'calavera')) danarMonstruo(estado, m, 1);
+    if (m.vivo) tontos++;
+  }
+  const partes = [];
+  if (tontos) partes.push(tontos === 1 ? 'un enemigo se queda tonto y pierde su próximo turno' : tontos + ' enemigos se quedan tontos y pierden su próximo turno');
+  if (piedras) partes.push(piedras === 1 ? 'un derrumbe salta en pedazos' : piedras + ' derrumbes saltan en pedazos');
+  avisar(estado, (partes.length ? partes.join(' y ').replace(/^./, (c) => c.toUpperCase()) + '.' : 'El estruendo retumba por el pasillo, pero no había nadie.') + sordo, 'bueno');
+  log(estado, 'La trompa vuelve a encogerse hasta caber en la mano.');
+  if (piedras) revelar(estado);
+}
+
 // El caldero: un trago y que sea lo que el dado quiera.
 function beberCaldero(estado, h, i) {
   (estado.bebido ||= {})[h.id + ':' + i] = 1;
@@ -893,7 +985,8 @@ function buscarTesoro(estado, h) {
     if (fijo.oro) h.oro += fijo.oro;
     if (fijo.objeto) h.objetos[fijo.objeto] = (h.objetos[fijo.objeto] || 0) + 1;
     if (fijo.arma) texto += ' ' + darArma(estado, h, fijo.arma);
-    ev(estado, { tipo: 'tesoro', heroe: h.id, texto, oro: fijo.oro || 0, objeto: fijo.objeto || fijo.arma || null, especial: !!fijo.flag });
+    if (fijo.reliquia) texto += ' ' + ganarReliquia(estado, fijo.reliquia);
+    ev(estado, { tipo: 'tesoro', heroe: h.id, texto, oro: fijo.oro || 0, objeto: fijo.objeto || fijo.arma || null, especial: !!(fijo.flag || fijo.reliquia) });
     apuntarTesoro(estado, h, fijo.oro, fijo.objeto || fijo.arma || fijo.flag);
     log(estado, h.nombre + ': ' + texto, 'tesoro');
     if (fijo.flag) ponerFlag(estado, fijo.flag);
@@ -1281,6 +1374,12 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       if (q.bloqueada) { avisar(estado, 'La puerta está cerrada a cal y canto. Habrá que encontrar la forma de abrirla.', 'peligro'); break; }
       abrirPuerta(estado, h, estado.puertas.find((x) => x.id === q.id));
       break;
+    }
+    case 'trompa': {
+      const ap = disp.trompa?.apoyos.find((x) => x.id === a.apoyo);
+      if (!ap) return disp.trompa?.motivo || 'No puedes tocar la trompa ahora.';
+      if (a.modo === 'muro' && !ap.muro) return 'No hay ningún muro frágil en esa dirección.';
+      usarAccion(); tocarTrompa(estado, h, ap, a.modo); break;
     }
     case 'caldero': {
       if (!disp.calderos.includes(a.caldero)) return 'No puedes beber de ese caldero.';

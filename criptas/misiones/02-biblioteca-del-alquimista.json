@@ -341,8 +341,9 @@
       "objeto": "pocionPiedra"
     },
     "C": {
-      "texto": "Entre los libros hay una nota y 30 monedas: «El grimorio duerme al este de la cripta, tras un muro hueco del corredor».",
-      "oro": 30
+      "texto": "Entre los libros hay una nota y 30 monedas: «El grimorio duerme al este de la cripta, tras un muro hueco del corredor». Junto a la nota, atado con un cordel, un legajo de Escritos Antiguos.",
+      "oro": 30,
+      "reliquia": "escritos"
     },
     "D": {
       "texto": "Dentro del sarcófago, entre vendas podridas, 120 monedas.",

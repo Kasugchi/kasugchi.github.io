@@ -278,6 +278,29 @@ export function dibujarRoca(g, x, y) {
   }
 }
 
+// Lado de casilla (en píxeles) que ocupa un muro entre dos casillas vecinas.
+function ladoMuro(w) {
+  const [a, b] = [w.a, w.b];
+  if (a[0] !== b[0]) { const x = Math.max(a[0], b[0]) * TS; return [x, a[1] * TS + 4, x, (a[1] + 1) * TS - 4]; }
+  const y = Math.max(a[1], b[1]) * TS; return [a[0] * TS + 4, y, (a[0] + 1) * TS - 4, y];
+}
+// Muro derribado: un boquete con cascotes donde antes había pared.
+function dibujarMuroRoto(g, w) {
+  const [x1, y1, x2, y2] = ladoMuro(w);
+  const vert = x1 === x2;
+  const r = semilla(x1 * 7 + y1 * 13);
+  g.fillStyle = '#6e665a';
+  if (vert) g.fillRect(x1 - 7, y1 - 2, 14, y2 - y1 + 4); else g.fillRect(x1 - 2, y1 - 7, x2 - x1 + 4, 14);
+  for (let i = 0; i < 7; i++) {
+    const t = r();
+    const cx = vert ? x1 + (r() - 0.5) * 18 : x1 + t * (x2 - x1);
+    const cy = vert ? y1 + t * (y2 - y1) : y1 + (r() - 0.5) * 18;
+    g.fillStyle = rgb([150, 142, 128], Math.round((r() - 0.5) * 40));
+    g.beginPath(); g.arc(cx, cy, 2.5 + r() * 3.5, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = 1; g.stroke();
+  }
+}
+
 function dibujarTrampa(g, t) {
   const cx = t.x * TS + TS / 2, cy = t.y * TS + TS / 2;
   if (t.tipo === 'foso' && t.activa) {
@@ -396,7 +419,7 @@ export class Tablero {
     this.alTocar = alTocar;
     this.estado = null;
     this.vista = { pos: {}, ocultos: new Set(), vivos: new Set() };
-    this.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {} };
+    this.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {}, muros: [] };
     this.textos = [];
     this.destellos = [];
     this.cam = { x: W / 2, y: H / 2, z: 0.5 };
@@ -579,6 +602,7 @@ export class Tablero {
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
 
     dibujarEscalera(g, e.escalera);
+    for (const w of e.muros || []) if (w.roto && (vis(...w.a) || vis(...w.b))) dibujarMuroRoto(g, w);
     if (!plano) for (const k of Object.keys(e.rocas)) { const [x, y] = k.split(',').map(Number); if (vis(x, y)) dibujarRoca(g, x, y); }
     for (const tr of e.trampas) if (tr.descubierta && vis(tr.x, tr.y)) dibujarTrampa(g, tr);
     if (!plano) for (const u of e.muebles) if (vis(u.x, u.y)) dibujarMueble(g, u, t);
@@ -606,6 +630,17 @@ export class Tablero {
       const [x, y] = k.split(',').map(Number);
       g.fillStyle = `rgba(120,200,255,${0.14 + pulso * 0.1})`; g.fillRect(x * TS + 3, y * TS + 3, TS - 6, TS - 6);
       g.strokeStyle = 'rgba(120,200,255,0.6)'; g.lineWidth = 2; g.strokeRect(x * TS + 4, y * TS + 4, TS - 8, TS - 8);
+    }
+    // Muros frágiles que brillan al sacar la Trompa de Jericó.
+    for (const id of this.resaltes.muros || []) {
+      const w = (e.muros || []).find((x) => x.id === id);
+      if (!w) continue;
+      const [x1, y1, x2, y2] = ladoMuro(w);
+      g.save(); g.lineCap = 'round';
+      g.shadowColor = 'rgba(255,190,60,1)'; g.shadowBlur = 26 * fuerza;
+      g.strokeStyle = `rgba(255,214,120,${0.65 + pulso * 0.35})`; g.lineWidth = 14;
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+      g.restore();
     }
     for (const id of this.resaltes.trampas) {
       const tr = e.trampas.find((x) => x.id === id);
