@@ -65,12 +65,14 @@ for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (T.region(
 
 // ---------- Contenido según el tema ----------
 const TEMAS = {
-  orcos:   { nombre: ['la Guarida', 'la Madriguera', 'el Fortín', 'el Cubil'], monstruos: { trasgo: 4, orco: 4, guerrero: 1 }, errante: 'orco', salas: ['cuartel', 'guardia', 'despensa', 'tesoro', 'forja'] },
-  muertos: { nombre: ['la Cripta', 'el Osario', 'las Catacumbas', 'el Mausoleo'], monstruos: { esqueleto: 4, zombi: 3, momia: 2 }, errante: 'esqueleto', salas: ['cripta', 'cripta', 'biblioteca', 'capilla', 'tesoro'] },
-  mixto:   { nombre: ['la Mazmorra', 'las Ruinas', 'las Galerías', 'los Sótanos'], monstruos: { trasgo: 3, orco: 3, esqueleto: 3, zombi: 2, guerrero: 1 }, errante: 'orco', salas: ['cuartel', 'cripta', 'biblioteca', 'alquimia', 'guardia', 'tesoro'] },
-  oscuro:  { nombre: ['el Santuario', 'la Torre Hundida', 'el Templo', 'el Abismo'], monstruos: { esqueleto: 2, guerrero: 3, momia: 2, gargola: 1, orco: 2 }, errante: 'guerrero', salas: ['capilla', 'alquimia', 'biblioteca', 'cripta', 'tortura'] }
+  orcos:   { nombre: ['la Guarida', 'la Madriguera', 'el Fortín', 'el Cubil'], monstruos: { trasgo: 4, orco: 4, guerrero: 1, chaman: 1, bestias: 1 }, errante: 'orco', salas: ['cuartel', 'guardia', 'despensa', 'tesoro', 'forja'] },
+  muertos: { nombre: ['la Cripta', 'el Osario', 'las Catacumbas', 'el Mausoleo'], monstruos: { esqueleto: 4, zombi: 3, momia: 2, sacerdotisa: 1, bruja: 1 }, errante: 'esqueleto', salas: ['cripta', 'cripta', 'biblioteca', 'capilla', 'tesoro'] },
+  mixto:   { nombre: ['la Mazmorra', 'las Ruinas', 'las Galerías', 'los Sótanos'], monstruos: { trasgo: 3, orco: 3, esqueleto: 3, zombi: 2, guerrero: 1, ilusionista: 1, ojo: 1 }, errante: 'orco', salas: ['cuartel', 'cripta', 'biblioteca', 'alquimia', 'guardia', 'tesoro'] },
+  oscuro:  { nombre: ['el Santuario', 'la Torre Hundida', 'el Templo', 'el Abismo'], monstruos: { esqueleto: 2, guerrero: 3, momia: 2, gargola: 1, orco: 2, ojo: 1, golem: 1, ilusionista: 1 }, errante: 'guerrero', salas: ['capilla', 'alquimia', 'biblioteca', 'cripta', 'tortura'] }
 };
-const COSTE = { trasgo: 1, esqueleto: 1, orco: 2, zombi: 2, momia: 3, guerrero: 3, gargola: 4 };
+const COSTE = { trasgo: 1, esqueleto: 1, orco: 2, zombi: 2, momia: 3, guerrero: 3, gargola: 4, chaman: 3, bestias: 4, sacerdotisa: 3, bruja: 3, ilusionista: 3, ojo: 2, golem: 5 };
+// Los de poder solo salen a partir de cierta profundidad.
+const NIVEL_MIN = { chaman: 2, bestias: 3, sacerdotisa: 2, bruja: 3, ilusionista: 3, ojo: 2, golem: 5 };
 // Muebles por tipo de sala: [tipo, ancho, alto]
 const MUEBLES_SALA = {
   cuartel: [['mesa', 3, 2], ['chimenea', 3, 1], ['cofre', 1, 1]],
@@ -212,7 +214,7 @@ function intentar(r, semilla, nivel) {
   const libresDe = (s) => r.barajar(SALAS[s].celdas.filter(([x, y]) => !ocupado.has(k(x, y)) && !celdaPuerta.has(k(x, y))));
   const poner = (spec) => { monstruos.push(spec); ocupado.set(k(spec.x, spec.y), 'monstruo'); return spec; };
   const elegirTipo = (max) => {
-    const pool = Object.fromEntries(Object.entries(tema.monstruos).filter(([t]) => COSTE[t] <= max && (t !== 'gargola' || nivel >= 3) && (t !== 'momia' || nivel >= 2 || nombreTema === 'muertos')));
+    const pool = Object.fromEntries(Object.entries(tema.monstruos).filter(([t]) => COSTE[t] <= max && (t !== 'gargola' || nivel >= 3) && (t !== 'momia' || nivel >= 2 || nombreTema === 'muertos') && nivel >= (NIVEL_MIN[t] || 0)));
     return Object.keys(pool).length ? r.pesos(pool) : null;
   };
   for (const s of porDistancia) {

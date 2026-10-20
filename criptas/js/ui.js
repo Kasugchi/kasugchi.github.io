@@ -950,7 +950,7 @@ function pintarAcciones() {
   if (d.trance) info = h.alma ? 'Tu cuerpo ha caído: tu alma vive dentro del monstruo.' : 'Tu cuerpo está en trance: controla al poseído.';
   if (app.moverPoseido && !d.poseido) app.moverPoseido = false;
   if (app.moverPoseido) info = `Controlas a ${nombre(d.poseido.id)}: ${d.poseido.restante} casillas. Toca dónde llevarlo o a quién atacar.`;
-  if (app.seleccion?.tipo === 'habilidad') info = 'Toca el objetivo de ' + app.seleccion.nombre + '.';
+  if (app.seleccion?.tipo === 'habilidad' || app.seleccion?.tipo === 'poder') info = 'Toca el objetivo de ' + app.seleccion.nombre + '.';
   if (h.fragmentos) info += ' · Almas: ' + h.fragmentos + '/6';
   if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
   if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
@@ -960,7 +960,7 @@ function pintarAcciones() {
   et.innerHTML = `<b>${esc(h.nombre)}</b><span>${esc(info)}</span>`;
 
   if (!app.reproduciendo) {
-    if (app.seleccion?.tipo === 'hechizo' || app.seleccion?.tipo === 'habilidad') tablero.resaltes.magia = app.seleccion.objetivos;
+    if (['hechizo', 'habilidad', 'poder'].includes(app.seleccion?.tipo)) tablero.resaltes.magia = app.seleccion.objetivos;
     else if (app.moverPoseido) { tablero.resaltes.cargador = d.poseido.destinos; tablero.resaltes.ataque = d.poseido.atacables; }
     else if (app.moverCargador) tablero.resaltes.cargador = d.cargador.destinos;
     else {
@@ -979,6 +979,7 @@ function pintarAcciones() {
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
   for (const hb of d.habilidades || []) b.push(`<button class="acc ${app.seleccion?.habilidad === hb.id ? 'activo' : ''}" data-hab="${hb.id}" ${hb.ok ? '' : 'disabled'}>${svg(hb.icono)}<span>${esc(hb.nombre)}</span><span class="n">${esc(hb.ok ? 'habilidad' : hb.motivo)}</span></button>`);
+  if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
   if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : '', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') });
   const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
   if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
@@ -1106,6 +1107,20 @@ async function accionBoton(acc, h, d) {
     case 'pocion': return elegirPocion(h, d);
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
     case 'reliquias': app.seleccion = { tipo: 'reliquias' }; return pintarAcciones();
+    case 'poder': {
+      const pd = d.poseido.poder;
+      if (pd.objetivos.length === 1) return enviar({ ...base, tipo: 'poderPoseido', objetivo: pd.objetivos[0] });
+      if (pd.objetivos[0].includes(':')) {
+        const i = await modal('<h2>' + esc(pd.nombre) + '</h2>', [{ texto: 'Nada', clase: 'claro' }, ...pd.objetivos.map((o) => ({ texto: o.startsWith('roca') ? 'El derrumbe' : 'El muro frágil' }))]);
+        return i > 0 ? enviar({ ...base, tipo: 'poderPoseido', objetivo: pd.objetivos[i - 1] }) : null;
+      }
+      const vivos = pd.objetivos.filter((id) => app.estado.heroes[id] || app.estado.monstruos.find((m) => m.id === id)?.vivo);
+      if (!vivos.length) {
+        const i = await modal('<h2>' + esc(pd.nombre) + '</h2>', [{ texto: 'Nada', clase: 'claro' }, ...pd.objetivos.map((o) => ({ texto: app.estado.monstruos.find((m) => m.id === o)?.nombre || o }))]);
+        return i > 0 ? enviar({ ...base, tipo: 'poderPoseido', objetivo: pd.objetivos[i - 1] }) : null;
+      }
+      app.seleccion = { tipo: 'poder', objetivos: pd.objetivos, nombre: pd.nombre }; return pintarAcciones();
+    }
     case 'poseido': app.moverPoseido = !app.moverPoseido; app.moverCargador = false; app.seleccion = null; return pintarAcciones();
     case 'habilidadVieja': {
       const objs = d.habilidad.objetivos;
@@ -1235,7 +1250,7 @@ function fichaMonstruo(m) {
   const base = D.MONSTRUOS[m.tipo];
   const vida = Array.from({ length: m.cuerpoMax }, (_, i) => `<i class="${i < m.cuerpo ? '' : 'vacio'}"></i>`).join('');
   const ef = m.efectos || {};
-  const estados = [ef.dormido && 'Dormido', ef.aturdido && 'Aturdido', ef.raices > 0 && 'Atrapado por raíces', ef.poseido && 'Poseído'].filter(Boolean);
+  const estados = [ef.dormido && 'Dormido', ef.aturdido && 'Aturdido', ef.raices > 0 && 'Atrapado por raíces', ef.poseido && 'Poseído', ef.veneno && 'Envenenado', m.aliado && 'Aliado vuestro'].filter(Boolean);
   app.cerrarModalFuera = () => {};
   modal(`<div class="tarjeta monstruo">
       <div class="estandarte">${esc(m.nombre)}</div>
@@ -1261,7 +1276,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1282,6 +1297,10 @@ function alTocar(x, y) {
     if (app.moverPoseido && d.poseido) {
       if (d.poseido.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverPoseido', x, y });
       if (f && d.poseido.atacables.includes(f.id)) return enviar({ heroe: h.id, tipo: 'atacarPoseido', objetivo: f.id });
+    }
+    if (app.seleccion?.tipo === 'poder') {
+      if (f && app.seleccion.objetivos.includes(f.id)) { app.seleccion = null; return enviar({ heroe: h.id, tipo: 'poderPoseido', objetivo: f.id }); }
+      app.seleccion = null; return pintarAcciones();
     }
     if (app.seleccion?.tipo === 'habilidad') {
       if (f && app.seleccion.objetivos.includes(f.id)) { const hab = app.seleccion.habilidad; app.seleccion = null; return enviar({ heroe: h.id, tipo: 'habilidad', habilidad: hab, objetivo: f.id }); }

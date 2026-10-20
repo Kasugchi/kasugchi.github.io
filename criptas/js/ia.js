@@ -122,6 +122,9 @@ export function turnoMonstruo(estado, m, ctx) {
   const objetivos = objetivosDe(estado);
   if (!objetivos.length) return;
 
+  // 0) Poder propio (curar, alzar muertos, crear ilusiones…): puede gastar el turno.
+  if (ctx.poderEnemigo && ctx.poderEnemigo(estado, m)) return;
+
   // 1) Si ya está pegado a un héroe, ataca sin moverse.
   if (atacarSiPuede(estado, m, ctx)) return;
 

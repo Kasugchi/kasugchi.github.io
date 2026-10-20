@@ -231,6 +231,10 @@ function corona(y) {
 }
 
 // Color del plástico de cada figura (como las miniaturas sin pintar de un juego de mesa).
+// Los enemigos con poder reutilizan la figura más parecida.
+Object.assign(FIGURAS, { chaman: FIGURAS.orco, bestias: FIGURAS.orco, lobo: FIGURAS.trasgo, sacerdotisa: FIGURAS.hechicero,
+  ilusionista: FIGURAS.hechicero, bruja: FIGURAS.hechicero, ojo: FIGURAS.gargola, golem: FIGURAS.gargola });
+
 export const PLASTICO = {
   barbaro: 0xb3302a, enano: 0xb3302a, elfo: 0xb3302a, mago: 0xb3302a,
   cargador: 0x9a7a52,

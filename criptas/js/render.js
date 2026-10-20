@@ -401,6 +401,7 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.bendicion) marca('curar', '#e8c25a');
   if (ef.agotado) marca('reloj', '#e05a4a');
   if (f.aliado) marca('curar', '#7ad38a');
+  if (ef.veneno) marca('telarana', '#8ad05a');
   if (ef.dominado) marca('mente', '#e05a4a');
   if (ef.cadena) marca('verja', '#d8c8a0');
   if (ef.muro) marca('rodela', '#ffd36a');

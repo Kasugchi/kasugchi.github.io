@@ -92,7 +92,16 @@ export const MONSTRUOS = {
   momia:     { nombre: 'Momia',           icono: 'momia',     color: '#9a8a62', mov: 4,  ataque: 3, defensa: 4, cuerpo: 2, mente: 0, nomuerto: true },
   guerrero:  { nombre: 'Guerrero oscuro', icono: 'guerrero',  color: '#3a3440', mov: 7,  ataque: 3, defensa: 4, cuerpo: 1, mente: 3 },
   gargola:   { nombre: 'Gárgola',         icono: 'gargola',   color: '#5c5f66', mov: 6,  ataque: 4, defensa: 5, cuerpo: 3, mente: 4 },
-  hechicero: { nombre: 'Hechicero',       icono: 'hechicero', color: '#5a2a6a', mov: 6,  ataque: 2, defensa: 3, cuerpo: 4, mente: 6 }
+  hechicero: { nombre: 'Hechicero',       icono: 'hechicero', color: '#5a2a6a', mov: 6,  ataque: 2, defensa: 3, cuerpo: 4, mente: 6, poder: 'invocar' },
+  // Enemigos con poder: hacen algo propio y, si el mago los posee, ese poder es suyo.
+  chaman:      { nombre: 'Chamán orco',          icono: 'orco',      color: '#7a5a1a', mov: 6,  ataque: 2, defensa: 2, cuerpo: 2, mente: 2, poder: 'curar' },
+  sacerdotisa: { nombre: 'Sacerdotisa de hueso', icono: 'fantasma',  color: '#c8c0a8', mov: 5,  ataque: 2, defensa: 3, cuerpo: 3, mente: 4, nomuerto: true, poder: 'alzar' },
+  ilusionista: { nombre: 'Ilusionista',          icono: 'reflejo',   color: '#4a5ab0', mov: 6,  ataque: 2, defensa: 2, cuerpo: 2, mente: 4, poder: 'senuelo' },
+  ojo:         { nombre: 'Ojo flotante',         icono: 'ojo',       color: '#8a3a5a', mov: 4,  ataque: 1, defensa: 2, cuerpo: 2, mente: 2, poder: 'vision' },
+  bruja:       { nombre: 'Bruja de la plaga',    icono: 'telarana',  color: '#4a6a2a', mov: 6,  ataque: 2, defensa: 2, cuerpo: 3, mente: 4, poder: 'veneno' },
+  bestias:     { nombre: 'Señor de las bestias', icono: 'orco',      color: '#6a3a2a', mov: 7,  ataque: 3, defensa: 3, cuerpo: 3, mente: 2, poder: 'lobos' },
+  lobo:        { nombre: 'Lobo',                 icono: 'trasgo',    color: '#6a6a6a', mov: 12, ataque: 2, defensa: 1, cuerpo: 1, mente: 0 },
+  golem:       { nombre: 'Gólem rúnico',         icono: 'piedra',    color: '#6a7a8a', mov: 3,  ataque: 4, defensa: 4, cuerpo: 6, mente: 0, poder: 'embestir' }
 };
 
 // ---------- Armería ----------
