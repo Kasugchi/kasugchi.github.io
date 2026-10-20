@@ -11,10 +11,12 @@ import * as THREE from './vendor/three.module.min.js';
 import * as D from './datos.js';
 import * as T from './tablero.js';
 import { TS, dibujarMueble, dibujarFicha, dibujarRoca } from './render.js';
-import { crearMiniatura } from './miniaturas.js';
+import { crearMiniatura, PLASTICO } from './miniaturas.js';
+import { spriteDe } from './sprites.js';
+import { crearMueble, crearPuerta, frenteMueble } from './muebles3d.js';
 
 const ESCALA_SUELO = 0.75; // resolución de la textura del suelo
-const ALTO_PARED = 0.55;
+const ALTO_PARED = 0.26; // muros bajos, como los bordes del tablero: dejan ver las figuras
 const GROSOR = 0.16;
 const ALTURAS = { mesa: 0.42, cofre: 0.38, estanteria: 0.95, trono: 0.85, sarcofago: 0.5, chimenea: 0.75, armero: 0.7, alquimista: 0.45, potro: 0.4, caldero: 0.4, altar: 0.5 };
 const COLOR_LADO = { mesa: '#4e321b', cofre: '#5a3418', estanteria: '#3a2716', trono: '#5a1712', sarcofago: '#5e5a52', chimenea: '#3d241c', armero: '#46301c', alquimista: '#4a3420', potro: '#3e2a1a', caldero: '#1b1715', altar: '#6a645a' };
@@ -254,7 +256,7 @@ export class Escena3D {
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
     const malla = new THREE.InstancedMesh(geo, mat, tramos.length);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), giro = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-    const claro = hex('#d9d0c0'), oscuro = hex('#4a423a');
+    const claro = hex('#e6e0d2'), oscuro = hex('#4a423a');
     tramos.forEach((p, i) => {
       m4.compose(new THREE.Vector3(p.x, ALTO_PARED / 2, p.z), p.vert ? giro : q, new THREE.Vector3(1, 1, 1));
       malla.setMatrixAt(i, m4);
@@ -267,45 +269,13 @@ export class Escena3D {
   construirPuertas(e) {
     this.gPuertas.clear();
     const vis = (c) => !!e.revelado[T.clave(c[0], c[1])];
-    const madera = new THREE.MeshStandardMaterial({ color: 0x7a4a24, roughness: 0.8 });
-    const hierro = new THREE.MeshStandardMaterial({ color: 0x55524e, roughness: 0.5, metalness: 0.6 });
-    const piedra = new THREE.MeshStandardMaterial({ color: 0x8a8378, roughness: 0.9 });
     for (const p of e.puertas) {
       if (p.secreta && !p.descubierta) continue;
       if (!vis(p.a) && !vis(p.b)) continue;
       const vert = p.a[1] === p.b[1]; // borde vertical (vecinos en x)
-      const cx = vert ? Math.max(p.a[0], p.b[0]) : p.a[0] + 0.5;
-      const cz = vert ? p.a[1] + 0.5 : Math.max(p.a[1], p.b[1]);
-      const g = new THREE.Group();
-      g.position.set(cx, 0, cz);
+      const g = crearPuerta(THREE, p);
+      g.position.set(vert ? Math.max(p.a[0], p.b[0]) : p.a[0] + 0.5, 0, vert ? p.a[1] + 0.5 : Math.max(p.a[1], p.b[1]));
       if (vert) g.rotation.y = Math.PI / 2;
-      // Marco a los lados.
-      for (const s of [-1, 1]) {
-        const jamba = new THREE.Mesh(new THREE.BoxGeometry(0.1, ALTO_PARED + 0.08, GROSOR + 0.06), p.secreta ? piedra : madera);
-        jamba.position.set(s * 0.47, (ALTO_PARED + 0.08) / 2, 0); jamba.castShadow = true;
-        g.add(jamba);
-      }
-      if (p.bloqueada && !p.abierta) {
-        for (let i = 0; i < 6; i++) {
-          const barra = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, ALTO_PARED, 6), hierro);
-          barra.position.set(-0.35 + i * 0.14, ALTO_PARED / 2, 0); barra.castShadow = true;
-          g.add(barra);
-        }
-        const trav = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.05, 0.06), hierro);
-        trav.position.y = ALTO_PARED * 0.7; g.add(trav);
-      } else {
-        const hoja = new THREE.Mesh(new THREE.BoxGeometry(0.82, ALTO_PARED * 0.95, 0.07), p.secreta ? piedra : madera);
-        hoja.castShadow = true;
-        if (p.abierta) {
-          // Abierta: girada sobre la bisagra.
-          const bisagra = new THREE.Group(); bisagra.position.set(-0.41, 0, 0); bisagra.rotation.y = -Math.PI / 2 * 0.92;
-          hoja.position.set(0.41, ALTO_PARED * 0.475, 0); bisagra.add(hoja); g.add(bisagra);
-        } else {
-          hoja.position.y = ALTO_PARED * 0.475; g.add(hoja);
-          const pomo = new THREE.Mesh(new THREE.SphereGeometry(0.035, 8, 6), new THREE.MeshStandardMaterial({ color: 0xc9a24a, metalness: 0.8, roughness: 0.3 }));
-          pomo.position.set(0.25, ALTO_PARED * 0.45, 0.06); g.add(pomo);
-        }
-      }
       this.gPuertas.add(g);
     }
   }
@@ -315,21 +285,7 @@ export class Escena3D {
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
     for (const u of e.muebles) {
       if (!vis(u.x, u.y)) continue;
-      const alto = ALTURAS[u.tipo] || 0.45;
-      // La tapa usa el mismo dibujo que la vista 2D.
-      const c = document.createElement('canvas');
-      c.width = u.w * 64; c.height = u.h * 64;
-      const g = c.getContext('2d');
-      g.fillStyle = COLOR_LADO[u.tipo] || '#4e321b'; g.fillRect(0, 0, c.width, c.height);
-      g.translate(-u.x * TS, -u.y * TS);
-      dibujarMueble(g, u, 0);
-      const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace;
-      const lado = new THREE.MeshStandardMaterial({ color: hex(COLOR_LADO[u.tipo] || '#4e321b'), roughness: 0.8 });
-      const tapa = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7 });
-      const caja = new THREE.Mesh(new THREE.BoxGeometry(u.w - 0.14, alto, u.h - 0.14), [lado, lado, tapa, lado, lado, lado]);
-      caja.position.set(u.x + u.w / 2, alto / 2, u.y + u.h / 2);
-      caja.castShadow = true; caja.receiveShadow = true;
-      this.gMuebles.add(caja);
+      this.gMuebles.add(crearMueble(THREE, u, frenteMueble(u, T.region)));
     }
     // Rocas y derrumbes.
     const roca = new THREE.MeshStandardMaterial({ color: 0x7a7268, roughness: 1, flatShading: true });
@@ -365,27 +321,29 @@ export class Escena3D {
     const def = f.id === 'cargador' ? D.CARGADOR : esHeroe ? D.HEROES[f.tipo] : D.MONSTRUOS[f.tipo];
     const g = new THREE.Group();
     const color = hex(def.color);
-    const peana = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.1, 24), new THREE.MeshStandardMaterial({ color: esHeroe ? 0xc9a24a : f.jefe ? 0x8e1d16 : 0x2a211d, roughness: 0.5, metalness: esHeroe ? 0.5 : 0.1 }));
-    peana.position.y = 0.05; peana.castShadow = true; g.add(peana);
-    // Miniatura modelada (ver miniaturas.js). El borde de la peana lleva el color de la clase.
-    const mini = crearMiniatura(THREE, f.tipo, { fem: f.fem, jefe: f.jefe });
+    const modo = this.tab.modoFiguras || 'auto';
+    const plastico = modo === 'plastico';
+    const sprite = modo === 'auto' ? spriteDe(f) : null;
+    // Peana cuadrada; en plástico, del mismo color que la figura.
+    const colorPeana = plastico ? (PLASTICO[f.tipo] ?? 0x8a8a8a) : (esHeroe ? 0xc9a24a : f.jefe ? 0x8e1d16 : 0x2a211d);
+    const peana = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.07, 0.62), new THREE.MeshStandardMaterial({ color: colorPeana, roughness: 0.4 }));
+    peana.position.y = 0.04; peana.castShadow = true; peana.receiveShadow = true; g.add(peana);
+    if (!plastico) { const borde = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.03, 0.66), new THREE.MeshStandardMaterial({ color, roughness: 0.5 })); borde.position.y = 0.015; g.add(borde); }
+    // Miniatura modelada (ver miniaturas.js).
+    const mini = sprite ? this.figuraSprite(sprite, f.jefe) : crearMiniatura(THREE, f.tipo, { fem: f.fem, jefe: f.jefe, plastico });
+    mini.position.y = 0.08;
     g.add(mini);
     g.userData.mini = mini;
-    const borde = new THREE.Mesh(new THREE.TorusGeometry(0.385, 0.025, 6, 28), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
-    borde.rotation.x = Math.PI / 2; borde.position.y = 0.1; g.add(borde);
     // Anillo del turno.
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffd36a }));
     anillo.rotation.x = Math.PI / 2; anillo.position.y = 0.03; anillo.visible = false; g.add(anillo);
     g.userData.anillo = anillo;
-    // Barra de vida (monstruos con más de 1 punto y cargador).
-    if ((!esHeroe || f.id === 'cargador') && f.cuerpoMax > 1) {
-      const fondo = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.09), new THREE.MeshBasicMaterial({ color: 0x1c1612 }));
-      const barra = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.06), new THREE.MeshBasicMaterial({ color: 0xc43a2a }));
-      barra.position.z = 0.001;
-      const vida = new THREE.Group(); vida.add(fondo, barra); vida.position.y = f.jefe ? 1.3 : 1.08;
-      g.add(vida);
-      g.userData.vida = vida; g.userData.barra = barra;
-    }
+    // Corazones de vida encima de la figura.
+    const vida = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
+    vida.position.y = f.jefe ? 1.38 : 1.15;
+    vida.renderOrder = 10;
+    g.add(vida);
+    g.userData.vida = vida;
     this.gFichas.add(g);
     return g;
   }
@@ -401,12 +359,14 @@ export class Escena3D {
       g.userData.casilla = () => [Math.round(x.x), Math.round(x.y)];
       // La figura gira hacia la cámara (solo en horizontal) y la vida la mira de frente.
       g.userData.mini.rotation.y = Math.atan2(this.camara.position.x - g.position.x, this.camara.position.z - g.position.z);
-      if (g.userData.vida) {
-        g.userData.vida.quaternion.copy(this.camara.quaternion);
-        const k = Math.max(0, f.cuerpo / f.cuerpoMax);
-        g.userData.barra.scale.x = Math.max(0.001, k);
-        g.userData.barra.position.x = -0.33 * (1 - k);
+      const claveVida = f.cuerpo + '/' + f.cuerpoMax;
+      if (g.userData.claveVida !== claveVida) {
+        g.userData.claveVida = claveVida;
+        const { tex, ancho, alto } = this.corazones(f.cuerpo, f.cuerpoMax);
+        g.userData.vida.material.map = tex; g.userData.vida.material.needsUpdate = true;
+        g.userData.vida.scale.set(ancho, alto, 1);
       }
+      g.userData.vida.visible = !!f.vivo;
       g.userData.anillo.visible = !!x.activo;
       if (x.activo) g.userData.anillo.scale.setScalar(1 + Math.sin(t / 220) * 0.06);
       const caida = !f.vivo;
@@ -423,6 +383,49 @@ export class Escena3D {
       this.antorcha.intensity = 1.1 + Math.sin(t / 90) * 0.15;
     }
   }
+
+  // Ilustración de pie sobre la peana, como una figura de cartón recortada.
+  figuraSprite(img, jefe) {
+    this.texSprites ||= new Map();
+    let tex = this.texSprites.get(img.src);
+    if (!tex) { tex = new THREE.Texture(img); tex.needsUpdate = true; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; this.texSprites.set(img.src, tex); }
+    const alto = jefe ? 1.15 : 0.95;
+    const ancho = alto * (img.naturalWidth / img.naturalHeight);
+    const geo = new THREE.PlaneGeometry(ancho, alto); geo.translate(0, alto / 2, 0);
+    const lamina = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.75 }));
+    lamina.castShadow = true;
+    lamina.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.5 });
+    const g = new THREE.Group(); g.add(lamina);
+    return g;
+  }
+
+  // Corazones pixelados: rojos los que quedan, oscuros los perdidos (máx. 6 por fila).
+  corazones(n, max) {
+    const clave = n + '/' + max;
+    this.cacheCorazones ||= new Map();
+    if (this.cacheCorazones.has(clave)) return this.cacheCorazones.get(clave);
+    const FORMA = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
+    const porFila = Math.min(6, max), filas = Math.ceil(max / 6), px = 4, cw = 8 * px, ch = 7 * px;
+    const c = document.createElement('canvas'); c.width = porFila * cw; c.height = filas * ch;
+    const g = c.getContext('2d');
+    for (let i = 0; i < max; i++) {
+      const ox = (i % 6) * cw, oy = Math.floor(i / 6) * ch, lleno = i < n;
+      FORMA.forEach((fila, y) => [...fila].forEach((v, x) => {
+        if (v !== 'X') return;
+        const borde = y === 0 || x === 0 || x === 6 || FORMA[y + 1]?.[x] !== 'X' || FORMA[y - 1]?.[x] !== 'X' && y > 0;
+        g.fillStyle = lleno ? (borde ? '#7a0f0a' : (y === 1 && x <= 2 ? '#ff8a7a' : '#e0281e')) : (borde ? '#1a1412' : '#4a403a');
+        g.fillRect(ox + x * px, oy + y * px, px, px);
+      }));
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.colorSpace = THREE.SRGBColorSpace;
+    const res = { tex, ancho: porFila * 0.085, alto: filas * 0.075 };
+    this.cacheCorazones.set(clave, res);
+    return res;
+  }
+
+  // Volver a montar las figuras (al cambiar entre plástico y pintadas).
+  rehacerFichas() { for (const g of this.fichas.values()) this.gFichas.remove(g); this.fichas.clear(); }
 
   // Números de daño flotando en el aire.
   actualizarTextos() {

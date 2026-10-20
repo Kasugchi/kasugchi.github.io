@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020134723">
+<meta name="version" content="20261020140657">
+
+
+
 
 
 
@@ -27,21 +30,23 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020134723",
-    "./js/ia.js": "./js/ia.js?v=20261020134723",
-    "./js/iconos.js": "./js/iconos.js?v=20261020134723",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020134723",
-    "./js/motor.js": "./js/motor.js?v=20261020134723",
-    "./js/procedural.js": "./js/procedural.js?v=20261020134723",
-    "./js/red.js": "./js/red.js?v=20261020134723",
-    "./js/render.js": "./js/render.js?v=20261020134723",
-    "./js/render3d.js": "./js/render3d.js?v=20261020134723",
-    "./js/tablero.js": "./js/tablero.js?v=20261020134723",
-    "./js/ui.js": "./js/ui.js?v=20261020134723"
+    "./js/datos.js": "./js/datos.js?v=20261020140657",
+    "./js/ia.js": "./js/ia.js?v=20261020140657",
+    "./js/iconos.js": "./js/iconos.js?v=20261020140657",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020140657",
+    "./js/motor.js": "./js/motor.js?v=20261020140657",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020140657",
+    "./js/procedural.js": "./js/procedural.js?v=20261020140657",
+    "./js/red.js": "./js/red.js?v=20261020140657",
+    "./js/render.js": "./js/render.js?v=20261020140657",
+    "./js/render3d.js": "./js/render3d.js?v=20261020140657",
+    "./js/sprites.js": "./js/sprites.js?v=20261020140657",
+    "./js/tablero.js": "./js/tablero.js?v=20261020140657",
+    "./js/ui.js": "./js/ui.js?v=20261020140657"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020134723">
+<link rel="stylesheet" href="estilo.css?v=20261020140657">
 </head>
 <body>
 
@@ -182,6 +187,13 @@
   <header><h2>Diario</h2><button class="icono-btn" id="b-cerrar-registro" aria-label="Cerrar"></button></header>
   <div class="ficha-detalle objetivo-diario" id="diario-mision" hidden></div>
   <div class="ficha-detalle" id="diario-sala" hidden></div>
+  <label class="ficha-detalle campo-figuras">Figuras en 3D
+    <select id="sel-figuras">
+      <option value="auto">Ilustraciones propias (si las hay) o miniaturas</option>
+      <option value="pintadas">Miniaturas pintadas</option>
+      <option value="plastico">Miniaturas de plástico</option>
+    </select>
+  </label>
   <div class="ficha-detalle fila">
     <button class="btn madera" id="b-sonido" style="flex:1 1 120px;min-height:40px;font-size:15px">Sonido: sí</button>
     <button class="btn madera" id="b-al-campamento" style="flex:1 1 100%;min-height:40px;font-size:15px" hidden>Volver al campamento</button>
@@ -195,6 +207,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020134723"></script>
+<script type="module" src="js/ui.js?v=20261020140657"></script>
 </body>
 </html>

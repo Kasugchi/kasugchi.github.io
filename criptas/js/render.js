@@ -8,6 +8,7 @@
 import * as D from './datos.js';
 import * as T from './tablero.js';
 import { ICONOS } from './iconos.js';
+import { spriteDe } from './sprites.js';
 
 export const TS = 64; // tamaño de casilla en la capa interna
 const W = D.ANCHO * TS, H = D.ALTO * TS;
@@ -323,7 +324,16 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   g.lineWidth = esHeroe ? 4 : 3;
   g.strokeStyle = esHeroe ? '#d8b45a' : (f.jefe ? '#c43a2a' : '#1c1612');
   g.stroke();
-  pintarIcono(g, f.icono || def.icono, cx, cy, rad * 1.45, esHeroe ? '#f3e6c4' : '#ece4d2');
+  const sprite = opciones.sinSprite ? null : spriteDe(f);
+  if (sprite) {
+    // Ilustración propia recortada dentro del círculo de la ficha.
+    g.save();
+    g.beginPath(); g.arc(cx, cy, rad - 2, 0, 7); g.clip();
+    const k = (rad * 2.2) / Math.max(sprite.naturalWidth, sprite.naturalHeight);
+    const w = sprite.naturalWidth * k, h = sprite.naturalHeight * k;
+    g.drawImage(sprite, cx - w / 2, cy - h * 0.42, w, h);
+    g.restore();
+  } else pintarIcono(g, f.icono || def.icono, cx, cy, rad * 1.45, esHeroe ? '#f3e6c4' : '#ece4d2');
   if (f.jefe) pintarIcono(g, 'corona', cx, cy - rad - 4, 20, '#e2b84a');
   // estados
   const ef = f.efectos || {};

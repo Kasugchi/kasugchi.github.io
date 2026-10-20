@@ -14,6 +14,7 @@ const Red = async () => {
   catch { throw new Error('No se pudo cargar la conexión de partidas. Revisa tu conexión a internet.'); }
 };
 import { Tablero } from './render.js';
+import { cargarSprites } from './sprites.js';
 import { ICONOS } from './iconos.js';
 
 const $ = (s) => document.querySelector(s);
@@ -648,7 +649,12 @@ $('#b-al-campamento').addEventListener('click', async () => {
   enviar({ tipo: 'volverCampamento' });
 });
 $('#b-cerrar-registro').addEventListener('click', () => ($('#registro').hidden = true));
-$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); });
+$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
+// Figuras: ilustraciones propias (criptas/sprites), miniaturas pintadas o de plástico.
+tablero.modoFiguras = leer('criptas_figuras') || 'auto';
+$('#sel-figuras').value = tablero.modoFiguras;
+$('#sel-figuras').addEventListener('change', (e) => { tablero.modoFiguras = e.target.value; guardar('criptas_figuras', e.target.value); tablero.e3d?.rehacerFichas(); });
+cargarSprites(document.querySelector('meta[name="version"]')?.content).then(() => tablero.e3d?.rehacerFichas()); });
 $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
 $('#b-abandonar').addEventListener('click', async () => {
   const i = await modal('<h2>¿Abandonar?</h2><p>La partida queda guardada en este dispositivo y podrás continuarla desde la portada.</p>', [{ texto: 'Seguir jugando', clase: 'claro' }, { texto: 'Abandonar' }]);

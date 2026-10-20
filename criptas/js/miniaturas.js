@@ -230,17 +230,33 @@ function corona(y) {
   return g;
 }
 
+// Color del plástico de cada figura (como las miniaturas sin pintar de un juego de mesa).
+export const PLASTICO = {
+  barbaro: 0xb3302a, enano: 0xb3302a, elfo: 0xb3302a, mago: 0xb3302a,
+  cargador: 0x9a7a52,
+  trasgo: 0x4f7a34, orco: 0x4f7a34,
+  esqueleto: 0xd9d1bb, zombi: 0xd9d1bb, momia: 0xd9d1bb,
+  guerrero: 0x6e6e76, gargola: 0x6e6e76, hechicero: 0x6e6e76
+};
+
 export function crearMiniatura(THREE, tipo, opciones = {}) {
   T3 = THREE;
   const g = new THREE.Group();
   const cuerpo = new THREE.Group();
   (FIGURAS[tipo] || FIGURAS.orco)(cuerpo, opciones);
   g.add(cuerpo);
+  if (opciones.plastico) {
+    // Todo del mismo color, con brillo de plástico; sin ojos que brillan.
+    const plastico = mat(PLASTICO[tipo] ?? 0x8a8a8a, { roughness: 0.38, metalness: 0, flatShading: false });
+    cuerpo.traverse((o) => { if (o.isMesh) o.material = plastico; });
+  }
   const escala = (opciones.jefe ? 1.22 : 1) * (opciones.escala || 1);
   g.scale.setScalar(escala);
   if (opciones.jefe) {
     const caja3 = new THREE.Box3().setFromObject(cuerpo);
-    g.add(corona(caja3.max.y + 0.02));
+    const c = corona(caja3.max.y + 0.02);
+    if (opciones.plastico) c.traverse((o) => { if (o.isMesh) o.material = mat(PLASTICO[tipo] ?? 0x8a8a8a, { roughness: 0.38 }); });
+    g.add(c);
   }
   g.position.y = 0.1; // encima de la peana
   return g;
