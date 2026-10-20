@@ -22,7 +22,10 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const svg = (n, extra = '') => `<svg viewBox="0 0 512 512" aria-hidden="true" ${extra}><path d="${ICONOS[n] || ''}"/></svg>`;
 const del = (h) => (h.fem ? 'de la ' : 'del ') + h.nombre;
 const art = (h) => (h.fem ? 'la ' : 'el ') + h.nombre;
-const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+// Velocidad de las animaciones: 1 normal, 0.5 rápida, 0.25 muy rápida (se guarda en este aparato).
+const VELOCIDADES = [[1, 'normal'], [0.5, 'rápida'], [0.25, 'muy rápida']];
+let velocidad = (() => { try { return +localStorage.getItem('criptas_velocidad') || 1; } catch { return 1; } })();
+const espera = (ms) => new Promise((r) => setTimeout(r, ms * velocidad));
 const guardar = (k, v) => { try { localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
 const leer = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const borrar = (k) => { try { localStorage.removeItem(k); } catch { /* nada */ } };
@@ -481,14 +484,33 @@ function avisoPortada(t) { $('#aviso-portada').textContent = t; }
 
 function mostrarReglas() {
   app.cerrarModalFuera = () => {};
+  const sec = (titulo, cuerpo, abierta = false) => `<details class="guia" ${abierta ? 'open' : ''}><summary>${titulo}</summary>${cuerpo}</details>`;
   modal(`<h2>Cómo se juega</h2>
+    ${sec('Lo básico', `
     <p>Cada héroe, en su turno, <b>tira los dados de movimiento</b> y camina por las casillas iluminadas, y hace <b>una acción</b>: atacar, lanzar un hechizo, buscar tesoro, buscar trampas y puertas secretas o desarmar una trampa. Puede mover antes o después de actuar.</p>
-    <p>Las salas y pasillos se descubren al verlos. Abrir una puerta revela la sala entera… y lo que hay dentro.</p>
-    <p><b>Combate:</b> el atacante tira dados blancos y cuenta calaveras. El héroe se defiende con escudos blancos; el monstruo, con escudos negros. Cada calavera no parada quita un punto de cuerpo.</p>
-    <p>Tras el último héroe mueven los monstruos. Algunos te persiguen, otros guardan su sala y otros esperan a que pase algo.</p>
-    <p><b>Campamento:</b> antes de cada misión cada héroe compra, se equipa, guarda dinero en el banco y puede contratar un cargador. El equipo es de cada héroe: no se pasa a otros, pero se puede vender a mitad de precio. Del banco se puede transferir a otro héroe hasta un 40 % del dinero, una vez por misión.</p>
+    <p>Las salas y pasillos se descubren al verlos. Abrir una puerta revela la sala entera… y lo que hay dentro. Las piedras marcan un camino cortado.</p>
+    <p><b>Combate:</b> primero el atacante tira los dados y cuenta calaveras; después el que recibe tira los suyos y cuenta escudos (blancos el héroe, negros el monstruo). Cada calavera no parada quita un punto de cuerpo.</p>
+    <p>Tras el último héroe mueven los monstruos. Algunos te persiguen, otros guardan su sala y otros esperan a que pase algo.</p>`, true)}
+    ${sec('La barra de botones', `
+    <p>Siempre ves <b>Mover</b>, <b>Atacar</b>, <b>Hechizo</b> y <b>Fin del turno</b>. Lo que depende de dónde estés (abrir puerta, rezar, comerciar, beber del caldero, habilidades…) aparece solo cuando se puede usar.</p>
+    <p>El resto está en <b>Más</b>: pociones, reliquias, buscar cuando no se puede… Lo apagado dice por qué no se puede ahora.</p>
+    <p>En el <b>Diario</b> (el pergamino de arriba) cambias el sonido y la <b>velocidad</b> de las animaciones.</p>`)}
+    ${sec('Campamento y cargador', `
+    <p>Antes de cada misión cada héroe compra, se equipa, guarda dinero en el banco y puede contratar un cargador. El equipo es de cada héroe: no se pasa a otros, pero se puede vender a mitad de precio. Del banco se puede transferir a otro héroe hasta un 40 % del dinero, una vez por misión.</p>
     <p><b>Cargador:</b> lleva a la mazmorra lo que cada héroe le cargue. Para usarlo hay que ponerse a su lado y gastar 1 casilla. Si muere, lo que lleva se pierde.</p>
+    <p><b>Calderos:</b> bebe y tira un dado. 1: te quedas a 1 de cuerpo. 2: −1 dado de defensa. 3: −1 dado de ataque. 4: +1 dado de ataque. 5: +1 dado de defensa. 6: te curas del todo.</p>`)}
+    ${sec('Mazmorra Infinita', `
+    <p>Pisos al azar, uno detrás de otro, y cada vez más duros. El equipo y las heridas se conservan entre pisos; después de cada piso hay campamento. Si caéis todos, se acaba la partida (en Aventurero volvéis al campamento).</p>
+    <p><b>Niveles:</b> matar da experiencia. Cada nivel da una mejora, y en el <b>nivel 3</b> eliges especialización: tres por clase, cada una con su habilidad y su pega.</p>
+    <p><b>Zonas:</b> Cuevas (1–5), Catacumbas (6–10), Fortaleza (11–15) y Abismo (16–20). Cada 5 pisos hay un <b>jefe de zona</b>, y en el 20 espera el <b>Corazón de la Mazmorra</b>. Si lo destruís empieza la Pesadilla.</p>
+    <p><b>Maldiciones:</b> desde el piso 3 el Corazón puede maldecir un piso (oscuridad, inundado, fiebre del oro, sin descanso). Mira el Diario para saber cuál.</p>
+    <p><b>Descansar:</b> en el campamento, si alguien está herido, se puede votar descansar. Os curáis todos, pero el siguiente piso sale maldito.</p>
+    <p><b>Por el camino:</b> altares de tres dioses (Guerra, Suerte y Avaricia), un mercader errante (no le robes…), fantasmas de héroes caídos en otras partidas y piezas de <b>reliquias</b>, que se juntan para forjarlas.</p>
+    <p><b>Posesión:</b> el mago puede meter su alma en un monstruo y controlarlo. Su cuerpo se queda en trance y puede recibir golpes.</p>
+    <p><b>Dificultad:</b> Aventurero perdona, Héroe es lo normal, y en Leyenda quien cae, cae para siempre.</p>
+    <p><b>Jugar solo:</b> en la sala, «+ IA» añade compañeros que juegan por su cuenta.</p>`)}
     <p class="nota">Busca trampas antes de cruzar pasillos sospechosos y no busques tesoro con monstruos a la vista.</p>`, [{ texto: 'Entendido' }]);
+  requestAnimationFrame(() => { $('#modal-cuerpo').scrollTop = 0; });
 }
 
 // =============================================================
@@ -869,6 +891,14 @@ $('#sel-figuras').value = tablero.modoFiguras;
 $('#sel-figuras').addEventListener('change', (e) => { tablero.modoFiguras = e.target.value; guardar('criptas_figuras', e.target.value); tablero.e3d?.rehacerFichas(); });
 cargarSprites(document.querySelector('meta[name="version"]')?.content).then(() => tablero.e3d?.rehacerFichas()); });
 $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
+const pintarVelocidad = () => { $('#b-velocidad').textContent = 'Velocidad: ' + (VELOCIDADES.find((v) => v[0] === velocidad) || VELOCIDADES[0])[1]; };
+$('#b-velocidad').addEventListener('click', () => {
+  const i = VELOCIDADES.findIndex((v) => v[0] === velocidad);
+  velocidad = VELOCIDADES[(i + 1) % VELOCIDADES.length][0];
+  try { localStorage.setItem('criptas_velocidad', String(velocidad)); } catch { /* sin almacenamiento */ }
+  pintarVelocidad();
+});
+pintarVelocidad();
 $('#b-abandonar').addEventListener('click', async () => {
   const i = await modal('<h2>¿Abandonar?</h2><p>La partida queda guardada en este dispositivo y podrás continuarla desde la portada.</p>', [{ texto: 'Seguir jugando', clase: 'claro' }, { texto: 'Abandonar' }]);
   if (i === 1) salirAPortada();
@@ -1018,32 +1048,49 @@ function pintarAcciones() {
       tablero.resaltes.trampas = d.desarmables || [];
     }
   }
-  const b = [];
-  const boton = (id, icono, texto, extra = {}) => b.push(`<button class="acc ${extra.clase || ''}" data-acc="${id}" ${extra.off ? 'disabled' : ''} ${extra.titulo ? `title="${esc(extra.titulo)}"` : ''}>${svg(icono)}<span>${esc(texto)}</span>${extra.n ? `<span class="n">${esc(extra.n)}</span>` : ''}</button>`);
-  if (d.puedeTirar) boton('tirar', 'dados', 'Mover', { clase: 'principal', n: dadosTxt(h) });
-  boton('atacar', 'atacar', 'Atacar', { off: !d.atacables.length, n: D.ARMAS[h.arma].nombre, titulo: d.motivoAtaque });
-  if (h.hechizos.length) boton('hechizo', 'hechizo', 'Hechizo', { off: !d.hechizos.length, n: h.hechizos.length + ' restantes', clase: app.seleccion?.tipo === 'hechizo' ? 'activo' : '' });
-  boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda });
-  boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
+  // Botonera por grupos: lo de siempre (mover, atacar, hechizo, fin) siempre a la vista;
+  // lo que depende del sitio solo cuando se puede usar; lo demás, en «Más».
+  const fijos = [], aqui = [], mas = [];
+  const html = (id, icono, texto, extra = {}) => `<button class="acc ${extra.clase || ''}" ${extra.hab ? `data-hab="${id}"` : `data-acc="${id}"`} ${extra.off ? 'disabled' : ''} ${extra.titulo ? `title="${esc(extra.titulo)}"` : ''}>${svg(icono)}<span>${esc(texto)}</span>${extra.n ? `<span class="n">${esc(extra.n)}</span>` : ''}</button>`;
+  // grupo: 'fijo' siempre; 'aqui' en la barra si se puede usar y si no en «Más»; 'mas' siempre en «Más».
+  const boton = (id, icono, texto, extra = {}, grupo = 'aqui') => {
+    const x = html(id, icono, texto, extra);
+    if (grupo === 'fijo') fijos.push(x);
+    else if (grupo === 'aqui' && !extra.off) aqui.push(x);
+    else mas.push({ x, ok: !extra.off });
+  };
+  if (d.puedeTirar) boton('tirar', 'dados', 'Mover', { clase: 'principal', n: dadosTxt(h) }, 'fijo');
+  boton('atacar', 'atacar', 'Atacar', { off: !d.atacables.length, n: D.ARMAS[h.arma].nombre, titulo: d.motivoAtaque, clase: app.seleccion?.tipo === 'atacar' ? 'activo' : '' }, 'fijo');
+  if (h.hechizos.length) boton('hechizo', 'hechizo', 'Hechizo', { off: !d.hechizos.length, n: h.hechizos.length + ' restantes', clase: app.seleccion?.tipo === 'hechizo' ? 'activo' : '' }, 'fijo');
+  if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : 'principal', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') }, 'fijo');
+  if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
+  for (const hb of d.habilidades || []) boton(hb.id, hb.icono, hb.nombre, { hab: true, off: !hb.ok, n: hb.ok ? 'habilidad' : hb.motivo, clase: app.seleccion?.habilidad === hb.id ? 'activo' : '' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
-  for (const hb of d.habilidades || []) b.push(`<button class="acc ${app.seleccion?.habilidad === hb.id ? 'activo' : ''}" data-hab="${hb.id}" ${hb.ok ? '' : 'disabled'}>${svg(hb.icono)}<span>${esc(hb.nombre)}</span><span class="n">${esc(hb.ok ? 'habilidad' : hb.motivo)}</span></button>`);
-  if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
-  if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : '', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') });
   if (d.altar) boton('altar', 'altar', 'Rezar', { n: D.DIOSES[d.altar.dios].nombre });
   if (d.mercader?.items.length) boton('mercader', 'mochila', 'Comerciar', { n: d.mercader.items.length + ' cosas a la venta' });
-  const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
-  if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
-  if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
+  boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda, n: d.buscarTesoro ? '' : d.motivoBusqueda });
+  boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.cargador) {
     boton('cargador', 'cargador', app.moverCargador ? 'Mover a tu héroe' : 'Cargador', { clase: app.moverCargador ? 'activo' : '', n: d.cargador.puedeTirar ? 'tirar y mover' : d.cargador.restante + ' casillas', off: !d.cargador.puedeTirar && d.cargador.restante <= 0 && !app.moverCargador });
-    boton('seguir', 'mover', 'Que me siga', { off: !d.cargador.puedeTirar && d.cargador.restante <= 0 });
+    boton('seguir', 'mover', 'Que me siga', { off: !d.cargador.puedeTirar && d.cargador.restante <= 0 }, 'mas');
   }
-  if (d.cercaCargador) boton('mochila', 'mochila', 'Mochila', { off: !d.mochila, titulo: d.mochila ? '' : d.motivoMochila, n: t.mochila ? 'abierta' : '1 casilla' });
-  if (d.salir) boton('salir', 'escalera', 'Salir', { clase: 'principal' });
-  else if (enLaEscalera(e, h)) boton('salir', 'escalera', 'Salir', { off: true, n: 'Aún no', titulo: motivoNoSalir(e) });
-  boton('fin', 'reloj', 'Fin del turno');
+  if (d.cercaCargador) boton('mochila', 'mochila', 'Mochila', { off: !d.mochila, titulo: d.mochila ? '' : d.motivoMochila, n: t.mochila ? 'abierta' : (d.mochila ? '1 casilla' : d.motivoMochila) });
+  if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' }, 'mas');
+  const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
+  if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + (usables === 1 ? ' disponible' : ' disponibles') : 'ninguna ahora' }, usables ? 'aqui' : 'mas');
+  if (d.salir) boton('salir', 'escalera', 'Salir', { clase: 'principal' }, 'fijo');
+  else if (enLaEscalera(e, h)) boton('salir', 'escalera', 'Salir', { off: true, n: 'Aún no', titulo: motivoNoSalir(e) }, 'fijo');
+  const b = [...fijos, ...aqui];
+  if (app.verMas && (!mas.length || app.verMasDe !== t.heroe + ':' + e.ronda)) app.verMas = false;
+  if (app.verMas) {
+    et.innerHTML = `<b>Más acciones</b><span>Lo que no se puede usar ahora sale apagado, con el motivo.</span>`;
+    b.length = 0; b.push(...mas.map((m) => m.x), html('menos', 'reloj', 'Volver'));
+  } else {
+    if (mas.length) b.push(html('mas', 'pergamino', 'Más', { n: ((k) => (k ? k + (k === 1 ? ' disponible' : ' disponibles') : mas.length + (mas.length === 1 ? ' opción' : ' opciones')))(mas.filter((m) => m.ok).length) }));
+    b.push(html('fin', 'reloj', 'Fin del turno'));
+  }
   bot.innerHTML = b.join('');
   bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
   bot.querySelectorAll('[data-hab]').forEach((x) => x.addEventListener('click', () => usarHabilidadUI(x.dataset.hab, h, d)));
@@ -1125,6 +1172,7 @@ function pintarTrompa(e, h, d, et, bot) {
 async function usarHabilidadUI(id, h, d) {
   const hb = d.habilidades.find((x) => x.id === id);
   if (!hb?.ok) return;
+  app.verMas = false;
   const enviarHab = (objetivo) => enviar({ heroe: h.id, tipo: 'habilidad', habilidad: id, objetivo });
   if (hb.objetivos.length === 1 || hb.objetivo === 'ninguno') return enviarHab(hb.objetivos[0]);
   if (hb.objetivo === 'monstruo' || hb.objetivo === 'heroe') { app.seleccion = { tipo: 'habilidad', habilidad: id, nombre: hb.nombre, objetivos: hb.objetivos }; return pintarAcciones(); }
@@ -1146,6 +1194,8 @@ const dadosTxt = (h) => (M.dadosMovimiento(h) === 1 ? '1 dado' : '2 dados');
 
 async function accionBoton(acc, h, d) {
   const base = { heroe: h.id };
+  if (acc === 'mas' || acc === 'menos') { app.verMas = acc === 'mas'; app.verMasDe = h.id + ':' + app.estado.ronda; return pintarAcciones(); }
+  app.verMas = false;
   switch (acc) {
     case 'tirar': return enviar({ ...base, tipo: 'tirar' });
     case 'atacar':
@@ -1449,7 +1499,7 @@ const conArticulo = (id) => (app.estado.heroes[id] ? art(app.estado.heroes[id]) 
 
 function esperaSaltable(ms) {
   return new Promise((ok) => {
-    const t = setTimeout(fin, ms);
+    const t = setTimeout(fin, ms * Math.max(velocidad, 0.5));
     function fin() { clearTimeout(t); app.saltar = null; ok(); }
     app.saltar = fin;
   });
@@ -1491,7 +1541,7 @@ async function animar(ev) {
       break;
     }
     case 'mover': {
-      const paso = e.heroes[ev.id] ? 120 : 95;
+      const paso = (e.heroes[ev.id] ? 120 : 95) * velocidad;
       for (let i = 1; i < ev.ruta.length; i++) {
         const [ax, ay] = ev.ruta[i - 1], [bx, by] = ev.ruta[i];
         const t0 = performance.now();

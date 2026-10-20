@@ -148,7 +148,7 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 
 /* ---------- Juego ---------- */
 #juego { padding: 0; overflow: hidden; display: grid;
-  grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto 1fr auto;
   grid-template-areas: "barra" "heroes" "tablero" "acciones"; }
 .barra { grid-area: barra; display: flex; align-items: center; gap: 10px; padding: max(8px, env(safe-area-inset-top)) 12px 6px; }
 .barra h1 { font: 700 22px/1.1 var(--f-titulo); margin: 0; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e9c766; }
@@ -435,3 +435,8 @@ input.semilla { height: 48px; border-radius: 6px; border: 2px solid var(--pergam
 #portada:not([data-acceso="ok"]) .modos,
 #portada:not([data-acceso="ok"]) #menu-unirse,
 #portada:not([data-acceso="ok"]) #partidas { display: none !important; }
+
+/* Guía plegable */
+details.guia { border-bottom: 1px solid rgba(80,50,20,0.2); padding: 6px 0; }
+details.guia summary { font-weight: 700; cursor: pointer; padding: 6px 0; color: var(--lacre); }
+details.guia p { margin: 6px 0 10px; }
