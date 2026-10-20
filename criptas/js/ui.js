@@ -137,16 +137,18 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
   const codigo = $('#codigo').value.trim().toUpperCase();
   if (codigo.length !== 4) return avisoPortada('El código tiene 4 letras.');
   avisoPortada('Buscando la sala ' + codigo + '…');
-  try {
-    app.modo = 'invitado';
-    app.red = await (await Red()).unirseSala(codigo, miId, miNombre(), {
-      alMensaje: mensajeDelAnfitrion,
-      alAnfitrion: (online) => anfitrionCambia(online)
-    });
-    avisoPortada('');
-    if (!app.red.anfitrionOnline) anfitrionCambia(false);
-  } catch (e) { app.modo = null; avisoPortada(e.message); }
+  try { await unirseComoInvitado(codigo); avisoPortada(''); }
+  catch (e) { app.modo = null; avisoPortada(e.message); }
 });
+
+async function unirseComoInvitado(codigo) {
+  app.modo = 'invitado';
+  app.red = await (await Red()).unirseSala(codigo, miId, miNombre(), {
+    alMensaje: mensajeDelAnfitrion,
+    alAnfitrion: (online) => anfitrionCambia(online)
+  });
+  if (!app.red.anfitrionOnline) anfitrionCambia(false);
+}
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 $('#b-continuar').addEventListener('click', async () => {
   const g = guardado();
@@ -155,7 +157,12 @@ $('#b-continuar').addEventListener('click', async () => {
   if (g.modo === 'anfitrion' && g.codigo) {
     avisoPortada('Reabriendo la sala ' + g.codigo + '…');
     try { await retomarComoAnfitrion(g.codigo, g.estado); avisoPortada(''); }
-    catch (e) { avisoPortada(e.message); }
+    catch (e) {
+      if (e.name === 'SalaOcupada' || e.constructor?.name === 'SalaOcupada') {
+        try { await unirseComoInvitado(g.codigo); avisoPortada(''); toast('Otro jugador lleva ahora la partida. Has entrado como invitado.'); }
+        catch (e2) { app.modo = null; avisoPortada(e2.message); }
+      } else avisoPortada(e.message);
+    }
     return;
   }
   app.modo = 'local';
@@ -164,7 +171,7 @@ $('#b-continuar').addEventListener('click', async () => {
 });
 
 // Seguir una partida como anfitrión (tras recargar, o si el anfitrión se fue).
-async function retomarComoAnfitrion(codigo, estado) {
+async function retomarComoAnfitrion(codigo, estado, forzar = false) {
   app.red?.cerrar();
   app.red = null;
   app.modo = 'anfitrion';
@@ -175,29 +182,52 @@ async function retomarComoAnfitrion(codigo, estado) {
   app.sala = { codigo, jugadores: estado.jugadores, eleccion: {}, misionIdx: estado.misionIdx };
   app.visto = 0; app.estado = null; app.cola = [];
   app.estadoReal = estado; // antes de abrir la sala, para que los que se reconectan se apunten bien
-  app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo, retomar: true });
+  try {
+    app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo, forzar });
+  } catch (e) { app.modo = null; app.estadoReal = null; throw e; }
+  ocultarAvisoAnfitrion();
   toast('Sala ' + codigo + ' abierta. Los demás pueden volver a entrar con el mismo código.', 'bueno');
   publicar(estado);
 }
 
 // El invitado se entera de que el anfitrión se ha ido (o ha vuelto).
+// Se muestra un aviso discreto, no una ventana: así no tapa ni bloquea la partida.
 let avisoCaida = null;
 function anfitrionCambia(online) {
   if (app.modo !== 'invitado') return;
   clearTimeout(avisoCaida);
-  if (online) return;
-  // Margen por si solo ha recargado la página.
+  if (online) return ocultarAvisoAnfitrion();
+  // Margen amplio: un móvil que bloquea la pantalla o recarga vuelve enseguida.
   avisoCaida = setTimeout(async () => {
-    if (app.modo !== 'invitado') return;
+    if (app.modo !== 'invitado' || !app.red) return;
+    if (await app.red.anfitrionSigue()) return;
     const estado = await app.red.estadoGuardado();
     if (!estado) { salirAPortada(); return avisoPortada('El anfitrión ha cerrado la sala.'); }
-    app.cerrarModalFuera = null;
-    const i = await modal('<h2>El anfitrión se ha ido</h2><p>La partida está guardada. Puedes seguir tú como anfitrión con el mismo código, o esperar a que vuelva.</p>',
-      [{ texto: 'Esperar', clase: 'claro' }, { texto: 'Seguir como anfitrión' }]);
-    if (i === 1) {
-      try { await retomarComoAnfitrion(app.red.codigo, estado); } catch (e) { toast(e.message, 'peligro'); }
-    }
-  }, 6000);
+    mostrarAvisoAnfitrion();
+  }, 20000);
+}
+function mostrarAvisoAnfitrion() {
+  const el = $('#aviso-anfitrion');
+  el.hidden = false;
+  el.querySelector('button').disabled = false;
+}
+function ocultarAvisoAnfitrion() { $('#aviso-anfitrion').hidden = true; }
+$('#aviso-anfitrion button').addEventListener('click', async (ev) => {
+  ev.currentTarget.disabled = true;
+  if (app.modo !== 'invitado' || !app.red) return ocultarAvisoAnfitrion();
+  // Última comprobación, por si ha vuelto justo ahora.
+  if (await app.red.anfitrionSigue()) { toast('El anfitrión ha vuelto.', 'bueno'); return ocultarAvisoAnfitrion(); }
+  const estado = await app.red.estadoGuardado();
+  try { await retomarComoAnfitrion(app.red.codigo, estado, true); }
+  catch (e) { toast(e.message, 'peligro'); ev.currentTarget.disabled = false; }
+});
+
+// El anfitrión ve que otro jugador ha tomado el control: pasa a invitado.
+async function perderSala() {
+  const codigo = app.red?.codigo;
+  app.red = null; app.estadoReal = null;
+  toast('Otro jugador ha tomado el control de la partida. Sigues como invitado.', 'peligro');
+  try { await unirseComoInvitado(codigo); } catch (e) { salirAPortada(); avisoPortada(e.message); }
 }
 $('#b-reglas').addEventListener('click', () => mostrarReglas());
 function avisoPortada(t) { $('#aviso-portada').textContent = t; }
@@ -323,6 +353,7 @@ $('#b-empezar').addEventListener('click', async () => {
 });
 
 function salirAPortada() {
+  clearTimeout(avisoCaida); ocultarAvisoAnfitrion();
   app.red?.cerrar(); app.red = null; app.modo = null; app.estado = null; app.estadoReal = null; app.sala = null; app.cola = [];
   $('#b-continuar').hidden = !guardado();
   $('#registro').hidden = true;
@@ -334,6 +365,7 @@ function salirAPortada() {
 // =============================================================
 function eventosAnfitrion() {
   return {
+    alPerderSala: () => perderSala(),
     alConectar(id, nombre) {
       const s = app.sala;
       s.jugadores[id] = { nombre };

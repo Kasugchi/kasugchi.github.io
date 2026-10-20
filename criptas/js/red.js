@@ -12,6 +12,11 @@
 //
 //  El estado se guarda como texto JSON porque Firebase borra las
 //  listas y objetos vacíos (y el motor cuenta con ellos).
+//
+//  Presencia: un móvil pierde la conexión a menudo (pantalla bloqueada,
+//  cambio de app, cobertura). Firebase avisa con /.info/connected; cada
+//  vez que vuelve, se marca otra vez como conectado y se reprograma el
+//  aviso de desconexión.
 // =============================================================
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
@@ -32,6 +37,7 @@ const firebaseConfig = {
 };
 
 const db = getDatabase(initializeApp(firebaseConfig));
+const conectado = ref(db, '.info/connected');
 const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const nuevoCodigo = () => Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
 const raiz = (codigo, ruta = '') => ref(db, 'salas/' + codigo + (ruta ? '/' + ruta : ''));
@@ -42,9 +48,25 @@ function traducirError(e) {
   return new Error('No se pudo conectar con el servidor de partidas. Revisa tu conexión.');
 }
 
+// Marca "conectado" cada vez que hay conexión, y "desconectado" al perderla.
+function presencia(refMarca, valorOn, valorOff, usarUpdate) {
+  const escuchar = (snap) => {
+    if (snap.val() !== true) return;
+    const od = onDisconnect(refMarca);
+    (usarUpdate ? od.update(valorOff) : od.set(valorOff))
+      .then(() => (usarUpdate ? update(refMarca, valorOn) : set(refMarca, valorOn)))
+      .catch(() => {});
+  };
+  onValue(conectado, escuchar);
+  return () => { off(conectado, 'value', escuchar); onDisconnect(refMarca).cancel(); };
+}
+
+// Error especial: la sala sigue teniendo un anfitrión conectado.
+export class SalaOcupada extends Error { constructor(m) { super(m); this.name = 'SalaOcupada'; } }
+
 // ---------- Anfitrión ----------
-// eventos: alConectar(id, nombre), alMensaje(id, msg), alSalir(id)
-// opciones.codigo + opciones.retomar: volver a abrir una sala existente.
+// eventos: alConectar(id, nombre), alMensaje(id, msg), alSalir(id), alPerderSala()
+// opciones.codigo: volver a abrir una sala existente.
 export async function crearSala(idAnfitrion, eventos, opciones = {}) {
   let codigo = opciones.codigo;
   try {
@@ -57,11 +79,27 @@ export async function crearSala(idAnfitrion, eventos, opciones = {}) {
       if (!codigo) throw new Error('No hay códigos libres, inténtalo otra vez.');
       await set(raiz(codigo), { anfitrion: idAnfitrion, anfitrionOnline: true, creada: serverTimestamp() });
     } else {
+      const info = (await get(raiz(codigo))).val() || {};
+      // Si otro jugador ya lleva la partida y está conectado, no se la quitamos.
+      if (info.anfitrion && info.anfitrion !== idAnfitrion && info.anfitrionOnline === true && !opciones.forzar) {
+        throw new SalaOcupada('Otro jugador ya lleva esta partida.');
+      }
       await update(raiz(codigo), { anfitrion: idAnfitrion, anfitrionOnline: true });
     }
-  } catch (e) { throw e.message?.startsWith('No hay') ? e : traducirError(e); }
+  } catch (e) {
+    if (e instanceof SalaOcupada || e.message?.startsWith('No hay')) throw e;
+    throw traducirError(e);
+  }
 
-  onDisconnect(raiz(codigo, 'anfitrionOnline')).set(false);
+  let cerrada = false;
+  const quitarPresencia = presencia(raiz(codigo, 'anfitrionOnline'), true, false, false);
+
+  // Si otro jugador toma el control, este navegador deja de ser anfitrión.
+  const refAnf = raiz(codigo, 'anfitrion');
+  onValue(refAnf, (snap) => {
+    const v = snap.val();
+    if (!cerrada && v && v !== idAnfitrion) { sala.cerrar(true); eventos.alPerderSala?.(); }
+  });
 
   // Presencia de los invitados.
   const conocidos = new Map(); // id -> online
@@ -83,26 +121,31 @@ export async function crearSala(idAnfitrion, eventos, opciones = {}) {
     const { de, msg } = snap.val() || {};
     remove(snap.ref);
     const m = leerJSON(msg);
-    if (de && m && conocidos.get(de)) eventos.alMensaje(de, m);
+    if (!cerrada && de && m && conocidos.get(de)) eventos.alMensaje(de, m);
   });
 
-  return {
+  const sala = {
     codigo,
-    enviar(id, msg) { if (msg.t === 'error') set(raiz(codigo, 'errores/' + id), { texto: msg.texto, n: Date.now() }); },
+    enviar(id, msg) { if (!cerrada && msg.t === 'error') set(raiz(codigo, 'errores/' + id), { texto: msg.texto, n: Date.now() }); },
     difundir(msg) {
+      if (cerrada) return;
       if (msg.t === 'sala') set(raiz(codigo, 'sala'), JSON.stringify(msg.sala));
       if (msg.t === 'estado') set(raiz(codigo, 'estado'), JSON.stringify(msg.estado));
     },
-    cerrar() {
-      off(refJug); off(refAcc);
-      set(raiz(codigo, 'anfitrionOnline'), false);
-      onDisconnect(raiz(codigo, 'anfitrionOnline')).cancel();
+    // relevado = otro jugador ya es el anfitrión: no tocar su marca de conexión.
+    cerrar(relevado = false) {
+      if (cerrada) return;
+      cerrada = true;
+      off(refJug); off(refAcc); off(refAnf);
+      quitarPresencia();
+      if (!relevado) set(raiz(codigo, 'anfitrionOnline'), false);
     }
   };
+  return sala;
 }
 
 // ---------- Invitado ----------
-// eventos: alMensaje(msg), alAnfitrion(online, sala) cuando el anfitrión se cae o vuelve
+// eventos: alMensaje(msg), alAnfitrion(online)
 export async function unirseSala(codigo, idJugador, nombre, eventos) {
   codigo = codigo.toUpperCase();
   let info;
@@ -111,7 +154,7 @@ export async function unirseSala(codigo, idJugador, nombre, eventos) {
 
   const yo = raiz(codigo, 'jugadores/' + idJugador);
   await set(yo, { nombre, online: true });
-  onDisconnect(yo).update({ online: false });
+  const quitarPresencia = presencia(yo, { nombre, online: true }, { online: false }, true);
 
   const refs = [raiz(codigo, 'sala'), raiz(codigo, 'estado'), raiz(codigo, 'errores/' + idJugador), raiz(codigo, 'anfitrionOnline')];
   let ultimoError = Date.now();
@@ -125,11 +168,12 @@ export async function unirseSala(codigo, idJugador, nombre, eventos) {
     hayPartida: !!info.estado,
     anfitrionOnline: info.anfitrionOnline === true,
     estadoGuardado: () => get(raiz(codigo, 'estado')).then((s) => leerJSON(s.val())),
+    anfitrionSigue: () => get(raiz(codigo, 'anfitrionOnline')).then((s) => s.val() === true),
     enviar(msg) { push(raiz(codigo, 'acciones'), { de: idJugador, msg: JSON.stringify(msg) }); },
     cerrar() {
       for (const r of refs) off(r);
+      quitarPresencia();
       update(yo, { online: false });
-      onDisconnect(yo).cancel();
     }
   };
 }
