@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020114335">
+<meta name="version" content="20261020115037">
+
+
 
 
 
@@ -19,18 +21,19 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020114335",
-    "./js/ia.js": "./js/ia.js?v=20261020114335",
-    "./js/iconos.js": "./js/iconos.js?v=20261020114335",
-    "./js/motor.js": "./js/motor.js?v=20261020114335",
-    "./js/red.js": "./js/red.js?v=20261020114335",
-    "./js/render.js": "./js/render.js?v=20261020114335",
-    "./js/tablero.js": "./js/tablero.js?v=20261020114335",
-    "./js/ui.js": "./js/ui.js?v=20261020114335"
+    "./js/datos.js": "./js/datos.js?v=20261020115037",
+    "./js/ia.js": "./js/ia.js?v=20261020115037",
+    "./js/iconos.js": "./js/iconos.js?v=20261020115037",
+    "./js/motor.js": "./js/motor.js?v=20261020115037",
+    "./js/red.js": "./js/red.js?v=20261020115037",
+    "./js/render.js": "./js/render.js?v=20261020115037",
+    "./js/render3d.js": "./js/render3d.js?v=20261020115037",
+    "./js/tablero.js": "./js/tablero.js?v=20261020115037",
+    "./js/ui.js": "./js/ui.js?v=20261020115037"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020114335">
+<link rel="stylesheet" href="estilo.css?v=20261020115037">
 </head>
 <body>
 
@@ -56,7 +59,7 @@
       <p class="nota" id="aviso-portada" role="status"></p>
     </div>
     <div class="pergamino partidas" id="partidas" hidden></div>
-    <p class="creditos">Iconos de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (CC BY 3.0): Lorc, Delapouite, Skoll, Sbed, Carl Olsen, Kier Heyl, Willdabeast, Zeromancer, DarkZaitzev y otros autores.</p>
+    <p class="creditos">Iconos de <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a> (CC BY 3.0): Lorc, Delapouite, Skoll, Sbed, Carl Olsen, Kier Heyl, Willdabeast, Zeromancer, DarkZaitzev y otros autores. Vista 3D con <a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> (MIT).</p>
   </div>
 </section>
 
@@ -109,6 +112,7 @@
 <section id="juego" class="pantalla" hidden>
   <header class="barra">
     <h1 id="j-titulo"></h1>
+    <button class="icono-btn texto" id="b-vista" aria-label="Cambiar a vista de mesa 3D">3D</button>
     <button class="icono-btn" id="b-vertodo" aria-label="Ver todo el tablero"></button>
     <button class="icono-btn" id="b-registro" aria-label="Diario y menú"></button>
   </header>
@@ -117,6 +121,10 @@
     <canvas id="lienzo" aria-label="Tablero de juego"></canvas>
     <div class="cartel" id="cartel" style="opacity:0"></div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div class="giro3d" id="giro3d" hidden>
+      <button class="icono-btn" id="b-girar-izq" aria-label="Girar a la izquierda"><svg viewBox="0 0 24 24"><path d="M7 7h7a5 5 0 1 1-5 5" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M10 3L6 7l4 4" stroke="currentColor" stroke-width="2.4" fill="none"/></svg></button>
+      <button class="icono-btn" id="b-girar-der" aria-label="Girar a la derecha"><svg viewBox="0 0 24 24"><path d="M17 7h-7a5 5 0 1 0 5 5" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M14 3l4 4-4 4" stroke="currentColor" stroke-width="2.4" fill="none"/></svg></button>
+    </div>
 
   </div>
   <div class="acciones" id="acciones">
@@ -174,6 +182,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020114335"></script>
+<script type="module" src="js/ui.js?v=20261020115037"></script>
 </body>
 </html>

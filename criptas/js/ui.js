@@ -596,9 +596,23 @@ const tablero = new Tablero($('#lienzo'), alTocar);
 $('#b-vertodo').innerHTML = svg('ojo');
 $('#b-registro').innerHTML = svg('pergamino');
 $('#b-cerrar-registro').innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" fill="none"/></svg>';
+// ---------- Vista 2D / 3D (se recuerda en cada dispositivo) ----------
+async function cambiarVista(tres) {
+  try { await tablero.ponerVista3D(tres); }
+  catch (err) { console.error(err); toast('Este dispositivo no puede mostrar la vista 3D.', 'peligro'); tres = false; }
+  guardar('criptas_vista', tres ? '3d' : '2d');
+  $('#b-vista').textContent = tres ? '2D' : '3D';
+  $('#b-vista').setAttribute('aria-label', tres ? 'Cambiar a vista 2D' : 'Cambiar a vista de mesa 3D');
+  $('#giro3d').hidden = !tres;
+}
+$('#b-vista').addEventListener('click', () => cambiarVista(!tablero.e3d));
+$('#b-girar-izq').addEventListener('click', () => tablero.girar3D(-Math.PI / 4));
+$('#b-girar-der').addEventListener('click', () => tablero.girar3D(Math.PI / 4));
+if (leer('criptas_vista') === '3d') cambiarVista(true);
+
 $('#b-vertodo').addEventListener('click', () => {
   const e = app.estado;
-  if (tablero.cam.z > tablero.min * 1.05) tablero.verTodo();
+  if (tablero.acercado(1.05)) tablero.verTodo();
   else if (e?.turno) { const h = e.heroes[e.turno.heroe]; tablero.centrarEn(h.x, h.y, true); }
 });
 $('#b-registro').addEventListener('click', () => {
@@ -1013,7 +1027,7 @@ async function animar(ev) {
       }
       tablero.vista.pos[ev.id] = ev.ruta[ev.ruta.length - 1];
       const [fx, fy] = ev.ruta[ev.ruta.length - 1];
-      if (tablero.cam.z > tablero.min * 1.3) tablero.centrarEn(fx, fy, false);
+      if (tablero.acercado()) tablero.centrarEn(fx, fy, false);
       // Aviso si un héroe tuyo llega a la escalera sin poder salir todavía.
       const quien = e.heroes[ev.id];
       const [ix, iy] = ev.ruta[0];
@@ -1397,7 +1411,7 @@ $('#b-nueva').addEventListener('click', () => salirAPortada());
 window.addEventListener('beforeunload', (e) => { if (app.modo === 'anfitrion' && app.estado) { e.preventDefault(); e.returnValue = ''; } });
 
 // Acceso desde la consola del navegador, útil para depurar.
-window.criptas = { app, enviar, publicar, fichaMonstruo, M, D, T };
+window.criptas = { app, enviar, publicar, fichaMonstruo, tablero, M, D, T };
 
 // =============================================================
 //  TRUCOS (consola del navegador, F12)

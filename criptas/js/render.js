@@ -9,7 +9,7 @@ import * as D from './datos.js';
 import * as T from './tablero.js';
 import { ICONOS } from './iconos.js';
 
-const TS = 64; // tamaño de casilla en la capa interna
+export const TS = 64; // tamaño de casilla en la capa interna
 const W = D.ANCHO * TS, H = D.ALTO * TS;
 const caminos = {};
 const icono = (n) => (caminos[n] ||= new Path2D(ICONOS[n] || ''));
@@ -145,7 +145,7 @@ function madera(g, x, y, w, h, tono = [104, 66, 36]) {
 
 function sombra(g, x, y, w, h) { g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(x + 5, y + 6, w, h); }
 
-function dibujarMueble(g, u, t) {
+export function dibujarMueble(g, u, t) {
   const x = u.x * TS + 6, y = u.y * TS + 6, w = u.w * TS - 12, h = u.h * TS - 12;
   sombra(g, x, y, w, h);
   switch (u.tipo) {
@@ -242,7 +242,7 @@ function dibujarEscalera(g, esc) {
   g.strokeStyle = '#c9a24a'; g.lineWidth = 3; g.strokeRect(x, y, s, s);
 }
 
-function dibujarRoca(g, x, y) {
+export function dibujarRoca(g, x, y) {
   const r = semilla(x * 97 + y * 13);
   const px = x * TS, py = y * TS;
   g.fillStyle = '#2b2622'; g.fillRect(px, py, TS, TS);
@@ -310,7 +310,7 @@ function dibujarPuerta(g, p) {
   g.restore();
 }
 
-function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
+export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   const cx = x * TS + TS / 2, cy = y * TS + TS / 2, rad = TS * 0.4;
   const def = f.id === 'cargador' ? D.CARGADOR : esHeroe ? D.HEROES[f.tipo] : D.MONSTRUOS[f.tipo];
   g.save();
@@ -392,8 +392,23 @@ export class Tablero {
     // En móvil, casillas de ~36 px; en pantalla grande, todo el tablero.
     return r.width < 700 ? Math.max(this.min, 36 / TS) : this.min;
   }
-  verTodo() { this.objetivoCam = { x: W / 2, y: H / 2, z: this.min }; }
+  verTodo() { if (this.e3d) return this.e3d.verTodo(); this.objetivoCam = { x: W / 2, y: H / 2, z: this.min }; }
+  // ¿Está la cámara acercada? (para decidir si seguir a las fichas)
+  acercado(margen = 1.3) { return this.e3d ? !this.e3d.estaLejos() : this.cam.z > this.min * margen; }
+
+  // Vista 3D: se carga solo al activarla (three.js pesa).
+  async ponerVista3D(si) {
+    if (!!this.e3d === si) return true;
+    if (!si) { this.e3d.destruir(); this.e3d = null; this.cv.style.visibility = ''; return true; }
+    const { Escena3D } = await import('./render3d.js');
+    this.e3d = new Escena3D(this.cv.parentElement, this);
+    this.cv.style.visibility = 'hidden';
+    return true;
+  }
+  girar3D(rad) { this.e3d?.girar(rad); }
+
   centrarEn(x, y, zoom) {
+    if (this.e3d) return this.e3d.centrarEn(x, y, zoom);
     const z = zoom ? Math.max(this.cam.z, this.zInicial()) : this.cam.z;
     this.objetivoCam = { x: x * TS + TS / 2, y: y * TS + TS / 2, z };
   }
@@ -477,6 +492,7 @@ export class Tablero {
 
   // ---------- fotograma ----------
   dibujar(t) {
+    if (this.e3d) { this.e3d.pintar(t); return; }
     const g = this.g, e = this.estado;
     const r = this.cv.getBoundingClientRect();
     g.setTransform(1, 0, 0, 1, 0, 0);
@@ -492,16 +508,46 @@ export class Tablero {
     const dt = t - this.temblor;
     if (dt < 350) { ox += Math.sin(dt / 18) * 6 * (1 - dt / 350); oy += Math.cos(dt / 23) * 4 * (1 - dt / 350); }
     g.setTransform(this.dpr * this.cam.z, 0, 0, this.dpr * this.cam.z, this.dpr * ox, this.dpr * oy);
-
     // Sombra del tablero sobre la mesa.
     g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(14, 18, W, H);
+    this.dibujarMundo(g, t, false);
+  }
+
+  // Figuras que se ven ahora (con su posición animada). La usan el 2D y el 3D.
+  figurasVisibles() {
+    const e = this.estado, out = [];
+    const vis = (x, y) => !!e.revelado[T.clave(x, y)];
+    for (const m of e.monstruos) {
+      if (!((m.vivo || this.vista.vivos.has(m.id)) && m.visto && !this.vista.ocultos.has(m.id))) continue;
+      const [x, y] = this.vista.pos[m.id] || [m.x, m.y];
+      if (!vis(Math.round(x), Math.round(y)) && !this.vista.pos[m.id]) continue;
+      out.push({ f: m, x, y, esHeroe: false, alfa: m.vivo ? 1 : 0.8 });
+    }
+    for (const h of Object.values(e.heroes)) {
+      if ((!h.vivo && !this.vista.vivos.has(h.id)) || h.fuera) continue;
+      const [x, y] = this.vista.pos[h.id] || [h.x, h.y];
+      out.push({ f: h, x, y, esHeroe: true, activo: h.id === e.turno?.heroe && e.fase === 'mision' });
+    }
+    const c = e.cargador;
+    if (c && (c.vivo || this.vista.vivos.has('cargador'))) {
+      const [x, y] = this.vista.pos.cargador || [c.x, c.y];
+      out.push({ f: c, x, y, esHeroe: true, alfa: c.vivo ? 1 : 0.6 });
+    }
+    return out;
+  }
+
+  // Dibuja el tablero en coordenadas del mundo (1 casilla = TS).
+  // plano = true: solo lo que va pegado al suelo (para la vista 3D, que pone
+  // paredes, puertas, muebles, rocas y fichas en relieve).
+  dibujarMundo(g, t, plano) {
+    const e = this.estado;
     g.drawImage(this.base, 0, 0);
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
 
     dibujarEscalera(g, e.escalera);
-    for (const k of Object.keys(e.rocas)) { const [x, y] = k.split(',').map(Number); if (vis(x, y)) dibujarRoca(g, x, y); }
+    if (!plano) for (const k of Object.keys(e.rocas)) { const [x, y] = k.split(',').map(Number); if (vis(x, y)) dibujarRoca(g, x, y); }
     for (const tr of e.trampas) if (tr.descubierta && vis(tr.x, tr.y)) dibujarTrampa(g, tr);
-    for (const u of e.muebles) if (vis(u.x, u.y)) dibujarMueble(g, u, t);
+    if (!plano) for (const u of e.muebles) if (vis(u.x, u.y)) dibujarMueble(g, u, t);
 
     // Niebla: lo no descubierto queda en penumbra (se ve el plano, no lo que hay).
     g.fillStyle = 'rgba(10,7,6,0.6)';
@@ -509,16 +555,17 @@ export class Tablero {
     for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (!vis(x, y)) g.rect(x * TS, y * TS, TS, TS);
     g.fill();
 
-    for (const p of e.puertas) {
+    if (!plano) for (const p of e.puertas) {
       if (p.secreta && !p.descubierta) continue;
       if (vis(p.a[0], p.a[1]) || vis(p.b[0], p.b[1])) dibujarPuerta(g, p);
     }
 
     // Resaltes de acciones posibles.
     const pulso = 0.5 + Math.sin(t / 260) * 0.5;
+    const fuerza = plano ? 2 : 1; // en 3D la luz los apaga un poco: más marcados
     for (const k of Object.keys(this.resaltes.destinos)) {
       const [x, y] = k.split(',').map(Number);
-      g.fillStyle = `rgba(255,214,120,${0.16 + pulso * 0.1})`; g.fillRect(x * TS + 3, y * TS + 3, TS - 6, TS - 6);
+      g.fillStyle = `rgba(255,214,120,${(0.16 + pulso * 0.1) * fuerza})`; g.fillRect(x * TS + 3, y * TS + 3, TS - 6, TS - 6);
       g.strokeStyle = 'rgba(255,214,120,0.55)'; g.lineWidth = 2; g.strokeRect(x * TS + 4, y * TS + 4, TS - 8, TS - 8);
     }
     for (const k of Object.keys(this.resaltes.cargador || {})) {
@@ -532,24 +579,7 @@ export class Tablero {
     }
 
     // Fichas.
-    const turno = e.turno?.heroe;
-    for (const m of e.monstruos) {
-      const vivoVisible = (m.vivo || this.vista.vivos.has(m.id)) && m.visto && !this.vista.ocultos.has(m.id);
-      if (!vivoVisible) continue;
-      const [x, y] = this.vista.pos[m.id] || [m.x, m.y];
-      if (!vis(Math.round(x), Math.round(y)) && !this.vista.pos[m.id]) continue;
-      dibujarFicha(g, m, x, y, false, t, { alfa: m.vivo ? 1 : 0.8 });
-    }
-    for (const h of Object.values(e.heroes)) {
-      if ((!h.vivo && !this.vista.vivos.has(h.id)) || h.fuera) continue;
-      const [x, y] = this.vista.pos[h.id] || [h.x, h.y];
-      dibujarFicha(g, h, x, y, true, t, { activo: h.id === turno && e.fase === 'mision' });
-    }
-    const c = e.cargador;
-    if (c && (c.vivo || this.vista.vivos.has('cargador'))) {
-      const [x, y] = this.vista.pos.cargador || [c.x, c.y];
-      dibujarFicha(g, c, x, y, true, t, { alfa: c.vivo ? 1 : 0.6 });
-    }
+    if (!plano) for (const x of this.figurasVisibles()) dibujarFicha(g, x.f, x.x, x.y, x.esHeroe, t, { alfa: x.alfa, activo: x.activo });
     // Objetivos de ataque y de magia.
     const anillo = (id, color) => {
       const f = e.heroes[id] || e.monstruos.find((m) => m.id === id);
@@ -586,7 +616,7 @@ export class Tablero {
       g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, TS * (0.4 + k * 1.2), 0, 7); g.fill();
     }
     this.textos = this.textos.filter((x) => ahora - x.t0 < 1300);
-    for (const x of this.textos) {
+    if (!plano) for (const x of this.textos) {
       const k = (ahora - x.t0) / 1300;
       g.globalAlpha = 1 - k * k;
       g.font = '700 30px "Grenze Gotisch", serif';
