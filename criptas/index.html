@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020110920">
+<meta name="version" content="20261020111357">
+
 
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Criptas de Velmor</title>
@@ -15,18 +16,18 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020110920",
-    "./js/ia.js": "./js/ia.js?v=20261020110920",
-    "./js/iconos.js": "./js/iconos.js?v=20261020110920",
-    "./js/motor.js": "./js/motor.js?v=20261020110920",
-    "./js/red.js": "./js/red.js?v=20261020110920",
-    "./js/render.js": "./js/render.js?v=20261020110920",
-    "./js/tablero.js": "./js/tablero.js?v=20261020110920",
-    "./js/ui.js": "./js/ui.js?v=20261020110920"
+    "./js/datos.js": "./js/datos.js?v=20261020111357",
+    "./js/ia.js": "./js/ia.js?v=20261020111357",
+    "./js/iconos.js": "./js/iconos.js?v=20261020111357",
+    "./js/motor.js": "./js/motor.js?v=20261020111357",
+    "./js/red.js": "./js/red.js?v=20261020111357",
+    "./js/render.js": "./js/render.js?v=20261020111357",
+    "./js/tablero.js": "./js/tablero.js?v=20261020111357",
+    "./js/ui.js": "./js/ui.js?v=20261020111357"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020110920">
+<link rel="stylesheet" href="estilo.css?v=20261020111357">
 </head>
 <body>
 
@@ -88,6 +89,7 @@
     <div class="pergamino">
       <div class="mapa-num" id="br-num"></div>
       <h2 id="br-titulo"></h2>
+      <div class="conectados" id="br-conectados" hidden></div>
       <p id="br-intro" style="font-size:18px"></p>
       <canvas class="mapa-mision" id="br-mapa" aria-label="Mapa de la misión"></canvas>
       <p class="objetivo" id="br-objetivo"></p>
@@ -125,6 +127,7 @@
   <div class="centro" style="max-width:640px">
     <div class="pergamino">
       <h2>El campamento</h2>
+      <div class="conectados" id="arm-conectados" hidden></div>
       <p class="nota" id="arm-sub"></p>
       <div class="pestanas" id="arm-pestanas"></div>
       <div id="arm-cuerpo" style="margin-top:14px"></div>
@@ -168,6 +171,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020110920"></script>
+<script type="module" src="js/ui.js?v=20261020111357"></script>
 </body>
 </html>

@@ -531,6 +531,7 @@ function irAFase() {
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
+    pintarConectados($('#br-conectados'), e);
     pintarMapaMision($('#br-mapa'), e);
     $('#b-entrar').hidden = !manda;
     $('#b-campamento').hidden = !manda;
@@ -1114,8 +1115,23 @@ async function mostrarResultado(res) {
 //  Por héroe: carta y stats, equipo e inventario, tienda, banco y cargador.
 // =============================================================
 const SUBPESTANAS = [['heroe', 'Héroe'], ['equipo', 'Equipo'], ['tienda', 'Tienda'], ['banco', 'Banco'], ['cargador', 'Cargador']];
+// Quién está en la sala y quién no (solo en partidas con sala).
+function pintarConectados(el, e) {
+  if (app.modo === 'local' || !e.jugadores) { el.hidden = true; return; }
+  const lista = Object.entries(e.jugadores);
+  const dentro = lista.filter(([id, j]) => id === e.anfitrion || !j.desconectado).length;
+  el.hidden = false;
+  el.innerHTML = `<b>${dentro} de ${lista.length} ${lista.length === 1 ? 'jugador conectado' : 'jugadores conectados'}</b>`
+    + lista.map(([id, j]) => {
+      const on = id === e.anfitrion || !j.desconectado;
+      const heroes = e.orden.filter((t) => e.heroes[t].jugador === id).map((t) => e.heroes[t].nombre).join(', ');
+      return `<span class="jugador ${on ? 'on' : 'off'}"><i></i>${esc(j.nombre)}${id === miId ? ' (tú)' : ''}${id === e.anfitrion ? ' · anfitrión' : ''}${heroes ? ' · ' + esc(heroes) : ''}${on ? '' : ' · desconectado'}</span>`;
+    }).join('');
+}
+
 function pintarArmeria() {
   const e = app.estado;
+  pintarConectados($('#arm-conectados'), e);
   const manda = app.modo !== 'invitado';
   const misHeroes = e.orden.filter((t) => M.puedeControlar(e, miId, t));
   if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
