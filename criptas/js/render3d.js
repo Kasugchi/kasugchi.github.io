@@ -338,12 +338,6 @@ export class Escena3D {
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffd36a }));
     anillo.rotation.x = Math.PI / 2; anillo.position.y = 0.03; anillo.visible = false; g.add(anillo);
     g.userData.anillo = anillo;
-    // Corazones de vida encima de la figura.
-    const vida = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false }));
-    vida.position.y = f.jefe ? 1.38 : 1.15;
-    vida.renderOrder = 10;
-    g.add(vida);
-    g.userData.vida = vida;
     this.gFichas.add(g);
     return g;
   }
@@ -357,16 +351,8 @@ export class Escena3D {
       if (!g) { g = this.crearFicha(f, x.esHeroe); this.fichas.set(f.id, g); }
       g.position.set(x.x + 0.5, 0, x.y + 0.5);
       g.userData.casilla = () => [Math.round(x.x), Math.round(x.y)];
-      // La figura gira hacia la cámara (solo en horizontal) y la vida la mira de frente.
+      // La figura gira hacia la cámara (solo en horizontal).
       g.userData.mini.rotation.y = Math.atan2(this.camara.position.x - g.position.x, this.camara.position.z - g.position.z);
-      const claveVida = f.cuerpo + '/' + f.cuerpoMax;
-      if (g.userData.claveVida !== claveVida) {
-        g.userData.claveVida = claveVida;
-        const { tex, ancho, alto } = this.corazones(f.cuerpo, f.cuerpoMax);
-        g.userData.vida.material.map = tex; g.userData.vida.material.needsUpdate = true;
-        g.userData.vida.scale.set(ancho, alto, 1);
-      }
-      g.userData.vida.visible = !!f.vivo;
       g.userData.anillo.visible = !!x.activo;
       if (x.activo) g.userData.anillo.scale.setScalar(1 + Math.sin(t / 220) * 0.06);
       const caida = !f.vivo;
@@ -397,31 +383,6 @@ export class Escena3D {
     lamina.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.5 });
     const g = new THREE.Group(); g.add(lamina);
     return g;
-  }
-
-  // Corazones pixelados: rojos los que quedan, oscuros los perdidos (máx. 6 por fila).
-  corazones(n, max) {
-    const clave = n + '/' + max;
-    this.cacheCorazones ||= new Map();
-    if (this.cacheCorazones.has(clave)) return this.cacheCorazones.get(clave);
-    const FORMA = ['.XX.XX.', 'XXXXXXX', 'XXXXXXX', '.XXXXX.', '..XXX..', '...X...'];
-    const porFila = Math.min(6, max), filas = Math.ceil(max / 6), px = 4, cw = 8 * px, ch = 7 * px;
-    const c = document.createElement('canvas'); c.width = porFila * cw; c.height = filas * ch;
-    const g = c.getContext('2d');
-    for (let i = 0; i < max; i++) {
-      const ox = (i % 6) * cw, oy = Math.floor(i / 6) * ch, lleno = i < n;
-      FORMA.forEach((fila, y) => [...fila].forEach((v, x) => {
-        if (v !== 'X') return;
-        const borde = y === 0 || x === 0 || x === 6 || FORMA[y + 1]?.[x] !== 'X' || FORMA[y - 1]?.[x] !== 'X' && y > 0;
-        g.fillStyle = lleno ? (borde ? '#7a0f0a' : (y === 1 && x <= 2 ? '#ff8a7a' : '#e0281e')) : (borde ? '#1a1412' : '#4a403a');
-        g.fillRect(ox + x * px, oy + y * px, px, px);
-      }));
-    }
-    const tex = new THREE.CanvasTexture(c);
-    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.colorSpace = THREE.SRGBColorSpace;
-    const res = { tex, ancho: porFila * 0.085, alto: filas * 0.075 };
-    this.cacheCorazones.set(clave, res);
-    return res;
   }
 
   // Volver a montar las figuras (al cambiar entre plástico y pintadas).
