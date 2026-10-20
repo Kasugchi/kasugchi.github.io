@@ -30,13 +30,23 @@ async function onCambio(u) {
   $('#quien').textContent = u ? u.email : '';
   if (!u) return;
   $('#contenido').innerHTML = '<section><p class="nota">Cargando…</p></section>';
+  // Cada lectura por separado: si una falla, se ve cuál y el resto se pinta igual.
+  const fallos = [];
+  const leerCol = (nombre, q) => getDocs(q).then((r) => r.docs).catch((e) => { fallos.push(nombre + ': ' + (e.code || e.message)); return []; });
+  const [usuarios, partidas, permitidos, solicitudes] = await Promise.all([
+    leerCol('usuarios', collection(db, 'usuarios')), leerCol('partidas', collectionGroup(db, 'partidas')),
+    leerCol('permitidos', collection(db, 'permitidos')), leerCol('solicitudes', collection(db, 'solicitudes'))]);
+  if (fallos.length === 4) {
+    $('#contenido').innerHTML = `<section><p class="error">No tienes permiso para ver el panel con esta cuenta (${esc(fallos[0])}).</p></section>`;
+    return;
+  }
   try {
-    const [usuarios, partidas, permitidos, solicitudes] = await Promise.all([getDocs(collection(db, 'usuarios')), getDocs(collectionGroup(db, 'partidas')), getDocs(collection(db, 'permitidos')), getDocs(collection(db, 'solicitudes'))]);
-    pintar(solicitudes.docs.map((d) => ({ email: d.id, ...d.data() })), permitidos.docs.map((d) => d.id), usuarios.docs.map((d) => ({ uid: d.id, ...d.data() })), partidas.docs.map((d) => {
+    pintar(solicitudes.map((d) => ({ email: d.id, ...d.data() })), permitidos.map((d) => d.id), usuarios.map((d) => ({ uid: d.id, ...d.data() })), partidas.map((d) => {
       const x = d.data();
       let estado = null; try { estado = JSON.parse(x.estado); } catch { /* partida dañada */ }
       return { ...x, uid: d.ref.parent.parent.id, estado };
     }));
+    if (fallos.length) $('#contenido').insertAdjacentHTML('afterbegin', `<section><p class="error">Algunas lecturas fallaron (revisa las reglas de Firestore): ${esc(fallos.join(' · '))}</p></section>`);
   } catch (e) {
     $('#contenido').innerHTML = `<section><p class="error">No tienes permiso para ver el panel con esta cuenta (${esc(e.code || e.message)}).</p></section>`;
   }
