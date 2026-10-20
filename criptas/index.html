@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020225741">
+<meta name="version" content="20261020230503">
+
 
 
 
@@ -60,26 +61,26 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020225741",
-    "./js/firebase.js": "./js/firebase.js?v=20261020225741",
-    "./js/ia.js": "./js/ia.js?v=20261020225741",
-    "./js/iconos.js": "./js/iconos.js?v=20261020225741",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020225741",
-    "./js/motor.js": "./js/motor.js?v=20261020225741",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020225741",
-    "./js/nube.js": "./js/nube.js?v=20261020225741",
-    "./js/panel.js": "./js/panel.js?v=20261020225741",
-    "./js/procedural.js": "./js/procedural.js?v=20261020225741",
-    "./js/red.js": "./js/red.js?v=20261020225741",
-    "./js/render.js": "./js/render.js?v=20261020225741",
-    "./js/render3d.js": "./js/render3d.js?v=20261020225741",
-    "./js/sprites.js": "./js/sprites.js?v=20261020225741",
-    "./js/tablero.js": "./js/tablero.js?v=20261020225741",
-    "./js/ui.js": "./js/ui.js?v=20261020225741"
+    "./js/datos.js": "./js/datos.js?v=20261020230503",
+    "./js/firebase.js": "./js/firebase.js?v=20261020230503",
+    "./js/ia.js": "./js/ia.js?v=20261020230503",
+    "./js/iconos.js": "./js/iconos.js?v=20261020230503",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020230503",
+    "./js/motor.js": "./js/motor.js?v=20261020230503",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020230503",
+    "./js/nube.js": "./js/nube.js?v=20261020230503",
+    "./js/panel.js": "./js/panel.js?v=20261020230503",
+    "./js/procedural.js": "./js/procedural.js?v=20261020230503",
+    "./js/red.js": "./js/red.js?v=20261020230503",
+    "./js/render.js": "./js/render.js?v=20261020230503",
+    "./js/render3d.js": "./js/render3d.js?v=20261020230503",
+    "./js/sprites.js": "./js/sprites.js?v=20261020230503",
+    "./js/tablero.js": "./js/tablero.js?v=20261020230503",
+    "./js/ui.js": "./js/ui.js?v=20261020230503"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020225741">
+<link rel="stylesheet" href="estilo.css?v=20261020230503">
 </head>
 <body>
 
@@ -141,6 +142,13 @@
       <ul class="jugadores" id="lista-jugadores"></ul>
       <label class="campo" style="margin-top:18px" id="campo-mision">Empezar por
         <select class="mision" id="sel-mision"></select>
+      </label>
+      <label class="campo" id="campo-dificultad" hidden style="margin-top:12px">Dificultad
+        <select class="mision" id="sel-dificultad">
+          <option value="aventurero">Aventurero: si caéis todos, repetís el piso</option>
+          <option value="heroe">Héroe: si caéis todos, se acaba</option>
+          <option value="leyenda">Leyenda: se acaba, y quien cae, cae para siempre</option>
+        </select>
       </label>
       <label class="campo" id="campo-semilla" hidden style="margin-top:12px">Semilla (opcional)
         <input id="semilla" class="semilla" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Al azar">
@@ -206,7 +214,7 @@
     <div class="pergamino">
       <h2>El campamento</h2>
       <div class="conectados" id="arm-conectados" hidden></div>
-      <p class="nota" id="arm-sub"></p>
+      <div class="nota" id="arm-sub"></div>
       <div class="pestanas" id="arm-pestanas"></div>
       <div id="arm-cuerpo" style="margin-top:14px"></div>
       <div class="fila" style="margin-top:18px">
@@ -257,6 +265,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020225741"></script>
+<script type="module" src="js/ui.js?v=20261020230503"></script>
 </body>
 </html>

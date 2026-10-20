@@ -165,7 +165,7 @@ export function iniciarMision(estado, def) {
     const h = estado.heroes[t];
     const base = D.HEROES[t];
     if (h.efectos?.oso) h.cuerpoMax -= 3;
-    h.cuerpo = h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0;
+    h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0;
     h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
   }
@@ -210,6 +210,8 @@ function crearMonstruo(estado, spec, visible) {
     hechizos: (spec.hechizos || []).slice(), visto: !!visible, vivo: true, efectos: {}
   };
   if (spec.extra) Object.assign(m, JSON.parse(JSON.stringify(spec.extra)));
+  if (estado.mision?.maldicion === 'sinDescanso' && m.mov) m.mov = Math.ceil(m.mov * 1.5);
+  if (estado.pesadilla && !spec.noEscalar) { m.ataque += 1; m.cuerpo += 1; }
   // Mazmorra Infinita: cuanto más hondo, más duros (y algunos de élite).
   if (estado.aleatorio && !spec.noEscalar) {
     const piso = estado.misionIdx + 1;
@@ -256,13 +258,15 @@ export function revelar(estado) {
     const r0 = T.region(h.x, h.y);
     if (r0 !== '.') salas.add(r0);
     estado.revelado[clave(h.x, h.y)] = 1;
-    for (let y = Math.max(0, h.y - 14); y <= Math.min(D.ALTO - 1, h.y + 14); y++) {
-      for (let x = Math.max(0, h.x - 14); x <= Math.min(D.ANCHO - 1, h.x + 14); x++) {
+    const oscuro = estado.mision?.maldicion === 'oscuridad';
+    const R = oscuro ? 3 : 14;
+    for (let y = Math.max(0, h.y - R); y <= Math.min(D.ALTO - 1, h.y + R); y++) {
+      for (let x = Math.max(0, h.x - R); x <= Math.min(D.ANCHO - 1, h.x + R); x++) {
         const k = clave(x, y);
         const r = T.region(x, y);
         if (estado.revelado[k] || (r !== '.' && salas.has(r))) continue;
         if (!T.lineaVision(estado, h.x, h.y, x, y)) continue;
-        if (r === '.') estado.revelado[k] = 1; else salas.add(r);
+        if (r === '.' || oscuro) estado.revelado[k] = 1; else salas.add(r);
       }
     }
   }
@@ -376,8 +380,10 @@ export function danarMonstruo(estado, m, n) {
   if (m.efectos.dormido) delete m.efectos.dormido;
   if (n <= 0) return;
   m.cuerpo -= n;
+  if (m.cuerpo > 0 && m.fases) faseJefe(estado, m);
   if (m.cuerpo <= 0) {
     m.cuerpo = 0; m.vivo = false;
+    if (m.tipo === 'corazon') corazonVencido(estado);
     ev(estado, { tipo: 'muerte', id: m.id });
     sumar(cron(estado)?.monstruos, m.tipo);
     if (m.jefe) cron(estado)?.jefes.push(m.nombre);
@@ -417,7 +423,11 @@ function golpearMonstruo(estado, h, m, dados, etiqueta) {
   const defensa = tirarCombate(dormido ? 0 : m.defensa);
   let dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
   if (m.ilusion && dano === 0 && cuenta(ataque, 'calavera')) dano = 1;
-  if (h.efectos?.sombras) { dano *= 2; delete h.efectos.sombras; etiqueta = (etiqueta || '') + ' · desde las sombras (×2)'; }
+  if (h.efectos?.sombras) {
+    // Combo: si un Guardián enano tiene al monstruo entretenido (pegado a él), el golpe desde las sombras es triple.
+    const tanque = Object.values(estado.heroes).some((o) => o.vivo && o.subclase === 'guardian' && T.puedeTocar(estado, o, m));
+    dano *= tanque ? 3 : 2; delete h.efectos.sombras; etiqueta = (etiqueta || '') + (tanque ? ' · ¡combo con el Guardián! (×3)' : ' · desde las sombras (×2)');
+  }
   ev(estado, { tipo: 'dados', atacante: h.id, defensor: m.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta });
   log(estado, h.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + m.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
   sumar(cronH(estado, h.id), 'danoHecho', Math.min(dano, m.cuerpo));
@@ -1083,9 +1093,12 @@ function usarHabilidad(estado, h, id, objetivo) {
   if (hab.coste) h.fragmentos -= hab.coste;
   const m = estado.monstruos.find((x) => x.id === objetivo);
   const atacarDos = (etiqueta) => {
-    golpearMonstruo(estado, h, m, ataqueHeroe(h), etiqueta);
+    // Combo: con el grito de guerra del Campeón, los dos golpes van con +1.
+    const grito = h.efectos.grito ? 1 : 0;
+    if (grito) { delete h.efectos.grito; avisar(estado, '¡Combo! El grito de guerra empuja los dos golpes.', 'bueno'); }
+    golpearMonstruo(estado, h, m, ataqueHeroe(h) + grito, etiqueta);
     const otro = m.vivo ? m : estado.monstruos.find((x) => objetivosAtaque(estado, h).includes(x.id));
-    if (otro) golpearMonstruo(estado, h, otro, ataqueHeroe(h), etiqueta + ' (segundo golpe)');
+    if (otro) golpearMonstruo(estado, h, otro, ataqueHeroe(h) + grito, etiqueta + ' (segundo golpe)');
   };
   switch (id) {
     case 'furiaEnana': avisar(estado, '¡' + h.nombre + ' entra en Furia enana!', 'peligro'); atacarDos('Furia enana'); break;
@@ -1518,6 +1531,7 @@ function turnoIA(estado, h) {
 //  PODERES DE ENEMIGOS (lo que hacen solos) Y AL POSEERLOS
 // =============================================================
 const ORCOS = ['orco', 'trasgo', 'chaman', 'bestias', 'lobo'];
+const NOMUERTOS_COMBO = ['esqueleto', 'zombi'];
 const NOMUERTOS = ['esqueleto', 'zombi', 'momia'];
 const enemigoVisible = (estado, a, b) => b.vivo && !b.aliado && T.lineaVision(estado, a.x, a.y, b.x, b.y);
 function sitioJunto(estado, x, y) {
@@ -1807,6 +1821,108 @@ function rezar(estado, h, altar, opcion) {
   return 'Ese altar no responde.';
 }
 
+// =============================================================
+//  PISOS ESPECIALES: maldiciones, jefes de zona y el Corazón
+// =============================================================
+const JEFES_ZONA = {
+  cuevas:     { tipo: 'chaman', nombre: 'Ugrak, el Gran Chamán', cuerpo: 8, ataque: 4, defensa: 3, invoca: 'orco' },
+  catacumbas: { tipo: 'sacerdotisa', nombre: 'La Reina de Hueso', cuerpo: 9, ataque: 4, defensa: 4, invoca: 'esqueleto' },
+  fortaleza:  { tipo: 'golem', nombre: 'El Gólem Ancestral', cuerpo: 14, ataque: 5, defensa: 5, invoca: 'gargola' },
+  abismo:     { tipo: 'hechicero', nombre: 'El Heraldo del Abismo', cuerpo: 10, ataque: 4, defensa: 4, invoca: 'guerrero', hechizos: ['rayo', 'rayo'] }
+};
+function salaMasLejana(def) {
+  const [ex, ey] = def.escalera;
+  const salas = salasDe(def);
+  return salas.sort((a, b) => {
+    const da = Math.min(...T.casillasDe(a).map(([x, y]) => Math.abs(x - ex) + Math.abs(y - ey)));
+    const db = Math.min(...T.casillasDe(b).map(([x, y]) => Math.abs(x - ex) + Math.abs(y - ey)));
+    return db - da;
+  })[0];
+}
+function pisoEspecial(estado, def) {
+  const piso = def.numero || estado.misionIdx + 1;
+  def.monstruos ||= [];
+  // Jefe de zona cada 5 pisos; en el 20, el Corazón de la Mazmorra (y luego vuelve a empezar el ciclo, más duro).
+  if (piso % 5 === 0) {
+    const sala = salaMasLejana(def);
+    const p = sala && sitioLibre(def, sala);
+    if (p) {
+      const corazon = piso === 20 && !estado.pesadilla;
+      const j = corazon
+        ? { tipo: 'corazon', nombre: 'El Corazón de la Mazmorra', cuerpo: 18, ataque: 4, defensa: 4, hechizos: ['rayo', 'rayo', 'rayo', 'invocar'], invoca: 'guerrero' }
+        : JEFES_ZONA[def.zona] || JEFES_ZONA.cuevas;
+      def.monstruos.push({ id: 'jefezona', tipo: j.tipo, nombre: j.nombre, x: p[0], y: p[1], ia: corazon ? 'lanzador' : 'guardian', jefe: true,
+        cuerpo: j.cuerpo, ataque: j.ataque, defensa: j.defensa, hechizos: j.hechizos || [],
+        extra: { fases: corazon ? [{ umbral: 0.66, invoca: j.invoca, n: 2 }, { umbral: 0.33, invoca: 'gargola', n: 2 }] : [{ umbral: 0.5, invoca: j.invoca, n: 2 }] } });
+      def.objetivo = { tipo: 'matar', id: 'jefezona', texto: 'Derrota a ' + j.nombre + '.' };
+      def.tareas = [{ matar: 'jefezona', texto: 'Derrotar a ' + j.nombre }];
+      def.intro = corazon
+        ? 'Habéis llegado al fondo. Las paredes laten como si respiraran: aquí está el Corazón de la Mazmorra, lo que lanza las maldiciones y despierta a los muertos. Destruidlo.'
+        : (def.intro || '') + ' Al fondo de este piso os espera ' + j.nombre + ', señor de esta zona.';
+      return; // sin maldición en los pisos de jefe
+    }
+  }
+  // Maldición del Corazón: desde el piso 3, la mitad de las veces (siempre si descansasteis).
+  if (piso >= 3 && (estado.maldicionSegura || rnd(100) < 45)) {
+    const ids = Object.keys(D.MALDICIONES);
+    const id = ids[rnd(ids.length)];
+    def.maldicion = id;
+    def.intro = (def.intro || '') + ' El Corazón de la Mazmorra late con fuerza y maldice este piso: ' + D.MALDICIONES[id].nombre + '. ' + D.MALDICIONES[id].desc;
+    if (id === 'fiebreOro') {
+      for (const t of Object.values(def.tesoros || {})) if (t.oro) t.oro *= 2;
+      def.recompensa = (def.recompensa || 0) * 2;
+      def.trampas ||= [];
+      for (let i = 0; i < 3; i++) {
+        const c = PASILLO_LIBRE(def);
+        if (c) def.trampas.push({ id: 'tf' + i, tipo: ['foso', 'lanza'][rnd(2)], x: c[0], y: c[1] });
+      }
+    }
+  }
+  estado.maldicionSegura = false;
+}
+function PASILLO_LIBRE(def) {
+  for (let i = 0; i < 60; i++) {
+    const x = rnd(D.ANCHO), y = rnd(D.ALTO);
+    if (T.region(x, y) !== '.') continue;
+    const ocupada = (def.monstruos || []).some((m) => m.x === x && m.y === y) || (def.rocas || []).some(([a, b]) => a === x && b === y)
+      || (def.trampas || []).some((t) => t.x === x && t.y === y) || (def.puertas || []).some((p) => (p.a[0] === x && p.a[1] === y) || (p.b[0] === x && p.b[1] === y));
+    if (!ocupada) return [x, y];
+  }
+  return null;
+}
+// Al bajar de cierta vida, el jefe cambia de fase: llama refuerzos.
+function faseJefe(estado, m) {
+  for (const f of m.fases) {
+    if (f.hecha || m.cuerpo > m.cuerpoMax * f.umbral) continue;
+    f.hecha = true;
+    let n = 0;
+    for (let i = 0; i < f.n; i++) { const p = sitioJunto(estado, m.x, m.y); if (!p) break; const r = aparecer(estado, { tipo: f.invoca, x: p[0], y: p[1], ia: 'agresivo' }, false); if (r) { r.visto = true; ev(estado, { tipo: 'aparece', id: r.id }); n++; } }
+    ev(estado, { tipo: 'historia', texto: m.nombre + ' ruge de dolor y la mazmorra responde: ¡' + (n === 1 ? 'un refuerzo aparece' : n + ' refuerzos aparecen') + ' a su lado!' });
+  }
+}
+function corazonVencido(estado) {
+  estado.pesadilla = true;
+  ev(estado, { tipo: 'historia', texto: 'El Corazón de la Mazmorra estalla en mil pedazos y las maldiciones se apagan… por un momento. Algo más profundo despierta: se abre el MODO PESADILLA. La mazmorra sigue, y ahora es peor.' });
+  log(estado, '¡El Corazón de la Mazmorra ha caído!', 'bueno');
+}
+
+// Votación en el campamento: descansar cura a todos, pero el Corazón maldice el próximo piso.
+export const votosNecesarios = (estado) => Math.ceil(new Set(Object.values(estado.heroes).filter((h) => !h.ia && !h.caido).map((h) => h.jugador)).size / 2);
+function votarDescanso(estado, jugador) {
+  if (!estado.aleatorio) return 'Solo en la Mazmorra Infinita.';
+  if (estado.descansado) return 'Ya habéis descansado.';
+  estado.votosDescanso ||= {};
+  if (estado.votosDescanso[jugador]) delete estado.votosDescanso[jugador];
+  else estado.votosDescanso[jugador] = true;
+  if (Object.keys(estado.votosDescanso).length >= votosNecesarios(estado)) {
+    estado.descansado = true;
+    for (const h of Object.values(estado.heroes)) if (!h.caido) h.cuerpo = h.cuerpoMax;
+    estado.maldicionSegura = true;
+    log(estado, 'Acampáis junto a la escalera y os curáis las heridas… pero el Corazón de la Mazmorra os ha oído roncar: el próximo piso estará maldito.', 'bueno');
+  }
+  return null;
+}
+
 function aparecerErrante(estado, h) {
   const tipo = estado.mision.errante || 'orco';
   const cerca = T.DIRS.map(([dx, dy]) => [h.x + dx, h.y + dy])
@@ -1970,7 +2086,7 @@ function buscarTesoro(estado, h) {
   ev(estado, { tipo: 'tesoro', heroe: h.id, texto: c.texto, oro: c.oro || 0, objeto: c.objeto || null, carta: c.tipo });
   log(estado, h.nombre + ' busca tesoro: ' + c.texto, c.peligro ? 'peligro' : 'tesoro');
   if (c.tipo === 'oro' || c.tipo === 'pocion') apuntarTesoro(estado, h, c.oro, c.objeto);
-  if (c.tipo === 'oro') h.oro += c.oro;
+  if (c.tipo === 'oro') h.oro += c.oro * (estado.mision.maldicion === 'fiebreOro' ? 2 : 1);
   else if (c.tipo === 'pocion') h.objetos[c.objeto] = (h.objetos[c.objeto] || 0) + 1;
   else if (c.tipo === 'flecha' || c.tipo === 'derrumbe') danarHeroe(estado, h, 1);
   else if (c.tipo === 'errante') aparecerErrante(estado, h);
@@ -2057,6 +2173,12 @@ function lanzar(estado, h, id, objetivo) {
     }
     case 'coraje': o.efectos.coraje = 2; break;
     case 'purgatorio': {
+      // Combo: los esqueletos aliados que alcanza la luz estallan y dañan a los enemigos de alrededor.
+      for (const a of estado.monstruos.filter((x) => x.vivo && x.aliado && NOMUERTOS_COMBO.includes(x.tipo) && T.lineaVision(estado, h.x, h.y, x.x, x.y))) {
+        a.vivo = false; ev(estado, { tipo: 'muerte', id: a.id });
+        avisar(estado, '¡Combo! La luz hace estallar a ' + a.nombre + ' en esquirlas de hueso.', 'bueno');
+        for (const o of estado.monstruos.filter((x) => x.vivo && !x.aliado && Math.max(Math.abs(x.x - a.x), Math.abs(x.y - a.y)) <= 1)) danarMonstruo(estado, o, cuenta(tirarCombate(1), 'calavera') ? 2 : 1);
+      }
       const blancos = estado.monstruos.filter((x) => x.vivo && x.visto && !x.aliado && T.lineaVision(estado, h.x, h.y, x.x, x.y));
       for (const x of blancos) {
         const dado = tirarCombate(1);
@@ -2279,16 +2401,36 @@ export function aplicar(estado, a, jugador, cargarMision) {
         if (h.vivo && estado.resultado === 'victoria') ganarXP(estado, h, 5 + estado.misionIdx);
       }
     }
-    if (estado.aleatorio && !todos.some((h) => h.vivo)) {
-      // Han caído todos: se acaba la partida.
-      estado.fase = 'final';
-      estado.caida = { piso: estado.misionIdx + 1 };
+    const dificultad = estado.dificultad || 'heroe';
+    if (estado.aleatorio && dificultad === 'leyenda') {
+      // Leyenda: quien cae, cae para siempre.
+      for (const h of todos) if (!h.vivo && !h.caido) { h.caido = true; log(estado, h.nombre + ' ha caído para siempre.', 'peligro'); }
+      estado.orden = estado.orden.filter((t) => !estado.heroes[t].caido);
+    }
+    if (estado.aleatorio && (!todos.some((h) => h.vivo) || !estado.orden.some((t) => !estado.heroes[t].ia))) {
+      if (dificultad === 'aventurero' && estado.orden.length) {
+        log(estado, 'Despertáis en el campamento, magullados. Tendréis que volver a bajar a este piso.', 'peligro');
+        estado.fase = 'armeria';
+      } else {
+        // Han caído todos: se acaba la partida.
+        estado.fase = 'final';
+        estado.caida = { piso: estado.misionIdx + 1 };
+      }
     } else if (estado.resultado === 'victoria') {
       if (!estado.pruebas) estado.misionIdx++; // la zona de pruebas se repite
       estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     // La transferencia del banco se recupera al acabar cada misión.
-    for (const h of Object.values(estado.heroes)) { restaurarCaliz(h); delete h.alma; h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
+    for (const h of Object.values(estado.heroes)) {
+      if (h.caido) continue;
+      restaurarCaliz(h); delete h.alma;
+      if (h.efectos?.oso) { h.cuerpoMax -= 3; delete h.efectos.oso; }
+      // En la Infinita las heridas se arrastran (salvo que descanséis); quien cayó vuelve con la mitad.
+      if (estado.aleatorio) h.cuerpo = h.vivo ? Math.max(1, Math.min(h.cuerpo, h.cuerpoMax)) : Math.ceil(h.cuerpoMax / 2);
+      else h.cuerpo = h.cuerpoMax;
+      h.vivo = true; h.transferido = false;
+    }
+    estado.votosDescanso = {}; estado.descansado = false;
     const c = estado.cargador;
     if (c?.vivo) for (const [id, bolsa] of Object.entries(c.carga || {})) for (const i of contenido(bolsa)) meter(inventarioDe(estado.heroes[id]), i);
     estado.cargador = null;
@@ -2317,7 +2459,8 @@ export function aplicar(estado, a, jugador, cargarMision) {
       ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
-    if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); ponerExtrasInfinita(estado, def); }
+    if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); ponerExtrasInfinita(estado, def); pisoEspecial(estado, def); }
+    estado.votosDescanso = {}; estado.descansado = false;
     iniciarMision(estado, def);
     ev(estado, { tipo: 'pantalla', fase: 'briefing' });
     return null;
@@ -2331,6 +2474,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       case 'comprar': return comprar(estado, h, a.item);
       case 'mejorar': return mejorar(estado, h, a.mejora);
       case 'subclase': return elegirSubclase(estado, h, a.subclase);
+      case 'descansar': return votarDescanso(estado, jugador);
       case 'equipar': return equipar(estado, h, a.item);
       case 'guardar': return guardar(estado, h, a.item);
       case 'vender': return vender(estado, h, a.item);
@@ -2363,6 +2507,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       const valores = Array.from({ length: dadosMovimiento(h) }, d6);
       let total = valores.reduce((s, v) => s + v, 0);
       if (h.efectos.veloz) { total *= 2; delete h.efectos.veloz; }
+      if (estado.mision?.maldicion === 'inundado') total = Math.max(1, total - 2);
       t.movTirada = total; t.movRestante = total;
       ev(estado, { tipo: 'tirada', heroe: h.id, valores, total });
       break;

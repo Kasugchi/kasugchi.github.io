@@ -567,6 +567,9 @@ function pintarSala() {
   $('#sala-titulo').textContent = s.perdida ? 'Mazmorra Infinita: elige tus héroes' : 'Elige tus héroes';
   sel.disabled = !manda;
   $('#campo-semilla').hidden = !s.perdida;
+  $('#campo-dificultad').hidden = !s.perdida;
+  $('#sel-dificultad').value = s.dificultad || 'heroe';
+  $('#sel-dificultad').disabled = !manda;
   $('#semilla').value = s.semilla || '';
   $('#semilla').disabled = !manda;
   $('#b-empezar').hidden = !manda;
@@ -606,6 +609,7 @@ $('#sel-mision').addEventListener('change', (e) => {
   if (!app.sala.pruebas) app.sala.misionIdx = +e.target.value;
   difundirSala();
 });
+$('#sel-dificultad').addEventListener('change', (e) => { app.sala.dificultad = e.target.value; difundirSala(); });
 $('#semilla').addEventListener('change', (e) => {
   app.sala.semilla = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
   difundirSala();
@@ -626,6 +630,7 @@ $('#b-empezar').addEventListener('click', async () => {
     const { nuevaSemilla } = await import('./procedural.js');
     e.aleatorio = { semilla: s.semilla || nuevaSemilla() };
     e.fantasmas = leerFantasmas();
+    e.dificultad = s.dificultad || 'heroe';
     e.campana = [];
     e.misionIdx = 0;
   }
@@ -910,6 +915,8 @@ function htmlTareas(e) {
     || (t.salir && (e.resultado === 'victoria' || Object.values(e.heroes).some((h) => h.fuera)));
   const quedan = M.rondasRestantes(e);
   return `<h3>${esc(m.titulo)}</h3><p class="obj">${esc(m.objetivo.texto)}</p>`
+    + (m.maldicion ? `<p class="obj" style="color:var(--lacre)"><b>Maldición: ${esc(D.MALDICIONES[m.maldicion].nombre)}.</b> ${esc(D.MALDICIONES[m.maldicion].desc)}</p>` : '')
+    + (e.pesadilla ? '<p class="obj"><b>Modo pesadilla.</b></p>' : '')
     + (m.tareas?.length ? '<ul class="tareas">' + m.tareas.map((t) => `<li class="${hecha(t) ? 'hecha' : ''}">${esc(t.texto)}</li>`).join('') + '</ul>' : '')
     + htmlReliquias(e)
     + (quedan !== null ? `<p class="obj">Quedan <b>${quedan}</b> ${quedan === 1 ? 'ronda' : 'rondas'} antes del derrumbe.</p>` : '')
@@ -1782,8 +1789,15 @@ function pintarArmeria() {
   if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
   app.sub ||= 'heroe';
   const siguiente = e.aleatorio ? { titulo: 'Mazmorra Infinita, piso ' + (e.misionIdx + 1) + ' (semilla ' + e.aleatorio.semilla + ')' } : app.misiones[e.campana[e.misionIdx]];
+  const votos = Object.keys(e.votosDescanso || {}).length, faltan = M.votosNecesarios(e);
+  const yoVote = !!e.votosDescanso?.[miId];
+  const herido = e.orden.some((t) => e.heroes[t].cuerpo < e.heroes[t].cuerpoMax);
+  const descanso = !e.aleatorio || (!herido && !votos && !e.descansado) ? '' : (e.descansado ? '<p class="nota">Habéis descansado: estáis curados, pero el próximo piso estará maldito.</p>'
+    : `<p class="nota" style="margin-top:6px">${herido ? 'Las heridas se arrastran de un piso a otro. ' : ''}<b>¿Descansar antes de bajar?</b> Os cura a todos, pero el Corazón de la Mazmorra maldecirá el próximo piso. Votos: ${votos}/${faltan}.
+      <button class="btn madera" id="b-descansar" style="min-height:34px;font-size:14px;padding:0 12px;margin-left:6px">${yoVote ? 'Quitar mi voto' : 'Votar descansar'}</button></p>`);
   $('#arm-sub').innerHTML = esc('Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || ''))
-    + (e.cronica?.campana ? ' · <button class="enlace" id="b-cronica">Ver la crónica</button>' : '');
+    + (e.cronica?.campana ? ' · <button class="enlace" id="b-cronica">Ver la crónica</button>' : '') + descanso;
+  $('#b-descansar')?.addEventListener('click', () => { const mio = e.orden.find((t) => M.puedeControlar(e, miId, t)); if (mio) enviar({ tipo: 'descansar', heroe: mio }); });
   $('#b-cronica')?.addEventListener('click', verCronica);
   $('#arm-pestanas').innerHTML = e.orden.map((t) => `<button aria-pressed="${t === app.pestana}" data-t="${t}">${esc(e.heroes[t].nombre)}</button>`).join('');
   $('#arm-pestanas').querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', () => { app.pestana = b.dataset.t; pintarArmeria(); }));

@@ -103,6 +103,7 @@ export const MONSTRUOS = {
   lobo:        { nombre: 'Lobo',                 icono: 'trasgo',    color: '#6a6a6a', mov: 12, ataque: 2, defensa: 1, cuerpo: 1, mente: 0 },
   mercader:    { nombre: 'Mercader errante',     icono: 'mochila',   color: '#8a6a2a', mov: 8,  ataque: 5, defensa: 4, cuerpo: 8, mente: 3 },
   fantasma:    { nombre: 'Fantasma',             icono: 'fantasma',  color: '#7a8aa0', mov: 7,  ataque: 3, defensa: 2, cuerpo: 4, mente: 3, nomuerto: true },
+  corazon:     { nombre: 'Corazón de la Mazmorra', icono: 'ojo',     color: '#9a1a2a', mov: 0,  ataque: 4, defensa: 4, cuerpo: 18, mente: 8 },
   golem:       { nombre: 'Gólem rúnico',         icono: 'piedra',    color: '#6a7a8a', mov: 3,  ataque: 4, defensa: 4, cuerpo: 6, mente: 0, poder: 'embestir' }
 };
 
@@ -228,6 +229,18 @@ export const MERCANCIA = {
   pocionVelocidad: { tipo: 'pocion', precio: 150 },
   pergamino:       { tipo: 'especial', precio: 300, nombre: 'Pergamino de sabiduría', desc: '+15 de experiencia.' },
   pieza:           { tipo: 'especial', precio: 500, nombre: 'Pieza de reliquia', desc: 'Una pieza de reliquia que os falta.' }
+};
+// Maldiciones que el Corazón de la Mazmorra lanza sobre algunos pisos.
+export const MALDICIONES = {
+  oscuridad:   { nombre: 'Oscuridad', desc: 'Solo veis a 3 casillas, y las salas no se descubren hasta que entráis.' },
+  inundado:    { nombre: 'Inundado', desc: 'El agua os frena: 2 casillas menos en cada tirada de movimiento.' },
+  fiebreOro:   { nombre: 'Fiebre del oro', desc: 'Todo el oro vale el doble… pero hay más trampas.' },
+  sinDescanso: { nombre: 'Sin descanso', desc: 'Los monstruos están inquietos: se mueven la mitad más.' }
+};
+export const DIFICULTADES = {
+  aventurero: { nombre: 'Aventurero', desc: 'Si caéis todos, volvéis al campamento y repetís el piso (perdiendo la bolsa).' },
+  heroe:      { nombre: 'Héroe', desc: 'Si caéis todos, se acaba la partida.' },
+  leyenda:    { nombre: 'Leyenda', desc: 'Si caéis todos, se acaba. Y el héroe que cae, cae para siempre.' }
 };
 export const EPITETOS = ['Rabioso', 'Viejo', 'Tuerto', 'Sanguinario', 'de Hierro', 'Maldito', 'Despiadado', 'Hambriento'];
 
