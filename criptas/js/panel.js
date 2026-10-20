@@ -6,10 +6,14 @@
 // =============================================================
 import { app } from './firebase.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, collectionGroup, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, collection, collectionGroup, getDocs, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getDatabase, ref, set, remove } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
+const rtdb = getDatabase(app);
+// En la base de datos de salas, las claves no admiten puntos: se cambian por comas.
+const claveCorreo = (e) => e.toLowerCase().replace(/\./g, ',');
 const $ = (s) => document.querySelector(s);
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fecha = (t) => (t ? new Date(t).toLocaleString('es-ES', { day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
@@ -20,14 +24,15 @@ $('#b-entrar').addEventListener('click', async () => {
 });
 $('#b-salir').addEventListener('click', () => signOut(auth));
 
-onAuthStateChanged(auth, async (u) => {
+onAuthStateChanged(auth, (u) => onCambio(u));
+async function onCambio(u) {
   $('#b-entrar').hidden = !!u; $('#b-salir').hidden = !u;
   $('#quien').textContent = u ? u.email : '';
   if (!u) return;
   $('#contenido').innerHTML = '<section><p class="nota">Cargando…</p></section>';
   try {
-    const [usuarios, partidas] = await Promise.all([getDocs(collection(db, 'usuarios')), getDocs(collectionGroup(db, 'partidas'))]);
-    pintar(usuarios.docs.map((d) => ({ uid: d.id, ...d.data() })), partidas.docs.map((d) => {
+    const [usuarios, partidas, permitidos, solicitudes] = await Promise.all([getDocs(collection(db, 'usuarios')), getDocs(collectionGroup(db, 'partidas')), getDocs(collection(db, 'permitidos')), getDocs(collection(db, 'solicitudes'))]);
+    pintar(solicitudes.docs.map((d) => ({ email: d.id, ...d.data() })), permitidos.docs.map((d) => d.id), usuarios.docs.map((d) => ({ uid: d.id, ...d.data() })), partidas.docs.map((d) => {
       const x = d.data();
       let estado = null; try { estado = JSON.parse(x.estado); } catch { /* partida dañada */ }
       return { ...x, uid: d.ref.parent.parent.id, estado };
@@ -35,9 +40,9 @@ onAuthStateChanged(auth, async (u) => {
   } catch (e) {
     $('#contenido').innerHTML = `<section><p class="error">No tienes permiso para ver el panel con esta cuenta (${esc(e.code || e.message)}).</p></section>`;
   }
-});
+}
 
-function pintar(usuarios, partidas) {
+function pintar(solicitudes, permitidos, usuarios, partidas) {
   const nombre = Object.fromEntries(usuarios.map((u) => [u.uid, u.nombre || u.email || u.uid.slice(0, 6)]));
   // Una partida multijugador aparece una vez por jugador: contar cada una solo una vez.
   const unicas = new Map();
@@ -62,6 +67,17 @@ function pintar(usuarios, partidas) {
   const modo = (p) => (p.estado?.aleatorio ? 'Infinita' : p.estado?.pruebas ? 'Pruebas' : 'Historia') + (p.codigo ? ' · sala ' + p.codigo : ' · solo');
 
   $('#contenido').innerHTML = `
+    <section><h2>Solicitudes de acceso${solicitudes.length ? ' (' + solicitudes.length + ')' : ''}</h2>
+      <table>${solicitudes.sort((a, b) => (b.fecha || 0) - (a.fecha || 0)).map((s) => `<tr><td><b>${esc(s.nombre || '')}</b> ${esc(s.email)}</td><td>${fecha(s.fecha)}</td><td class="num"><button data-aceptar="${esc(s.email)}">Aceptar</button> <button class="claro" style="color:var(--lacre);border-color:var(--lacre)" data-rechazar="${esc(s.email)}">Rechazar</button></td></tr>`).join('') || '<tr><td class="nota">No hay solicitudes pendientes.</td></tr>'}</table>
+    </section>
+    <section><h2>Acceso</h2>
+      <p class="nota">Solo estas cuentas de Google pueden jugar. Añade el correo con el que entra cada uno.</p>
+      <form id="f-permitir" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <input id="correo-nuevo" type="email" required placeholder="correo@gmail.com" style="flex:1 1 220px;padding:8px;border-radius:6px;border:1px solid var(--linea);font:inherit">
+        <button>Dar acceso</button>
+      </form>
+      <table>${permitidos.sort().map((e) => `<tr><td>${esc(e)}</td><td class="num"><button class="claro" style="color:var(--lacre);border-color:var(--lacre)" data-quitar="${esc(e)}">Quitar</button></td></tr>`).join('') || '<tr><td class="nota">Nadie todavía. Empieza por tu propio correo.</td></tr>'}</table>
+    </section>
     <section><h2>Resumen</h2><div class="cifras">
       ${cifra(usuarios.length, 'jugadores con cuenta')}
       ${cifra(lista.length, 'partidas')}
@@ -83,4 +99,32 @@ function pintar(usuarios, partidas) {
       <tr><th>Nombre</th><th>Correo</th><th class="num">Partidas</th><th>Última vez</th></tr>
       ${usuarios.sort((a, b) => (b.ultimaVez || 0) - (a.ultimaVez || 0)).map((u) => `<tr><td>${esc(u.nombre)}</td><td>${esc(u.email)}</td><td class="num">${partidas.filter((p) => p.uid === u.uid).length}</td><td>${fecha(u.ultimaVez)}</td></tr>`).join('')}
     </table></section>`;
+  const permitir = async (correo) => {
+    await setDoc(doc(db, 'permitidos', correo), { fecha: Date.now() });
+    await set(ref(rtdb, 'permitidos/' + claveCorreo(correo)), true);
+    await deleteDoc(doc(db, 'solicitudes', correo)).catch(() => {});
+  };
+  $('#f-permitir').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const correo = $('#correo-nuevo').value.trim().toLowerCase();
+    if (!correo) return;
+    try { await permitir(correo); recargar(); } catch (e) { alert('No se pudo dar acceso: ' + (e.code || e.message)); }
+  });
+  document.querySelectorAll('[data-aceptar]').forEach((b) => b.addEventListener('click', async () => {
+    try { await permitir(b.dataset.aceptar); recargar(); } catch (e) { alert('No se pudo aceptar: ' + (e.code || e.message)); }
+  }));
+  document.querySelectorAll('[data-rechazar]').forEach((b) => b.addEventListener('click', async () => {
+    if (!confirm('¿Rechazar la solicitud de ' + b.dataset.rechazar + '?')) return;
+    try { await deleteDoc(doc(db, 'solicitudes', b.dataset.rechazar)); recargar(); } catch (e) { alert('No se pudo rechazar: ' + (e.code || e.message)); }
+  }));
+  document.querySelectorAll('[data-quitar]').forEach((b) => b.addEventListener('click', async () => {
+    const correo = b.dataset.quitar;
+    if (!confirm('¿Quitar el acceso a ' + correo + '?')) return;
+    try {
+      await deleteDoc(doc(db, 'permitidos', correo));
+      await remove(ref(rtdb, 'permitidos/' + claveCorreo(correo)));
+      recargar();
+    } catch (e) { alert('No se pudo quitar: ' + (e.code || e.message)); }
+  }));
 }
+const recargar = () => onCambio(auth.currentUser);

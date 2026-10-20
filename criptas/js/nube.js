@@ -14,7 +14,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDocs, deleteDoc, collection
+  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const auth = getAuth(app);
@@ -42,6 +42,21 @@ export async function entrar() {
   }
 }
 export const salir = () => signOut(auth);
+
+// Lista de acceso: permitidos/{correo} en Firestore (la gestiona el panel).
+export async function tieneAcceso() {
+  if (!usuario?.email) return false;
+  const r = await getDoc(doc(db, 'permitidos', usuario.email.toLowerCase()));
+  return r.exists();
+}
+// Solicitudes de acceso: solicitudes/{correo}; el panel las acepta o rechaza.
+export async function haSolicitado() {
+  if (!usuario?.email) return false;
+  return (await getDoc(doc(db, 'solicitudes', usuario.email.toLowerCase()))).exists();
+}
+export function solicitarAcceso() {
+  return setDoc(doc(db, 'solicitudes', usuario.email.toLowerCase()), { email: usuario.email.toLowerCase(), nombre: usuario.displayName || '', fecha: Date.now() });
+}
 
 const coleccion = () => collection(db, 'usuarios', usuario.uid, 'partidas');
 
