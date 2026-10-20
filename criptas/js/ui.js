@@ -159,7 +159,8 @@ function resumenPartida(e) {
   const heroes = e.orden.map((t) => e.heroes[t].nombre).join(', ');
   const fin = e.fase === 'final';
   const idx = Math.min(e.misionIdx, e.campana.length - 1);
-  const mision = fin ? 'Campaña completada' : 'Misión ' + (idx + 1) + ' de ' + e.campana.length + ': ' + (app.misiones[e.campana[idx]]?.titulo || '');
+  const mision = e.aleatorio ? 'Mazmorra Perdida · nivel ' + (e.misionIdx + 1) + (e.mision?.generada ? ': ' + e.mision.titulo : '')
+    : fin ? 'Campaña completada' : 'Misión ' + (idx + 1) + ' de ' + e.campana.length + ': ' + (app.misiones[e.campana[idx]]?.titulo || '');
   const oro = e.orden.reduce((s, t) => s + e.heroes[t].oro, 0);
   return { heroes, mision, oro, fin };
 }
@@ -386,13 +387,17 @@ function pintarSala() {
   $('#heroes-sel').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => elegirHeroe(b.dataset.heroe)));
   $('#lista-jugadores').innerHTML = Object.entries(s.jugadores).map(([id, j]) => `<li class="${j.desconectado ? 'fuera' : ''}">${esc(j.nombre)}${id === miId ? ' (tú)' : ''}</li>`).join('');
   const sel = $('#sel-mision');
-  sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('');
-  sel.value = String(s.misionIdx);
+  sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
+    + '<option value="perdida">★ Mazmorra Perdida (aleatoria)</option>';
+  sel.value = s.perdida ? 'perdida' : String(s.misionIdx);
   sel.disabled = !manda;
+  $('#campo-semilla').hidden = !s.perdida;
+  $('#semilla').value = s.semilla || '';
+  $('#semilla').disabled = !manda;
   $('#b-empezar').hidden = !manda;
   $('#sala-espera').hidden = manda;
   $('#b-empezar').disabled = !Object.keys(s.eleccion).length;
-  $('#b-empezar').textContent = s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
+  $('#b-empezar').textContent = s.perdida ? 'Bajar a la Mazmorra Perdida' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
 }
 listas.then(() => { if (app.sala && !$('#sala').hidden) pintarSala(); });
 
@@ -421,7 +426,15 @@ function difundirSala() {
   pintarSala();
   if (app.modo === 'anfitrion') app.red?.difundir({ t: 'sala', sala: app.sala });
 }
-$('#sel-mision').addEventListener('change', (e) => { app.sala.misionIdx = +e.target.value; difundirSala(); });
+$('#sel-mision').addEventListener('change', (e) => {
+  app.sala.perdida = e.target.value === 'perdida';
+  if (!app.sala.perdida) app.sala.misionIdx = +e.target.value;
+  difundirSala();
+});
+$('#semilla').addEventListener('change', (e) => {
+  app.sala.semilla = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  difundirSala();
+});
 $('#b-salir-sala').addEventListener('click', () => salirAPortada());
 $('#b-empezar').addEventListener('click', async () => {
   await listas;
@@ -432,6 +445,13 @@ $('#b-empezar').addEventListener('click', async () => {
   e.anfitrion = miId;
   app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
   e.misionIdx = s.misionIdx;
+  if (s.perdida) {
+    // Mazmorra Perdida: niveles infinitos generados a partir de una semilla.
+    const { nuevaSemilla } = await import('./procedural.js');
+    e.aleatorio = { semilla: s.semilla || nuevaSemilla() };
+    e.campana = [];
+    e.misionIdx = 0;
+  }
   e.fase = 'armeria'; // primero el campamento: equipo, banco y cargador
   app.visto = 0; app.estado = null; app.cola = [];
   publicar(e);
@@ -527,7 +547,7 @@ function irAFase() {
   const manda = app.modo !== 'invitado';
   if (e.fase === 'briefing') {
     const m = e.mision;
-    $('#br-num').textContent = 'Misión ' + m.numero + ' de ' + e.campana.length;
+    $('#br-num').textContent = e.aleatorio ? 'Mazmorra Perdida · nivel ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
@@ -671,6 +691,12 @@ function pintarJuego() {
     $('#hoja-cargador').addEventListener('click', () => verMochila(false));
   }
   $('#hojas').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => fichaHeroe(b.dataset.heroe)));
+  const quedan = M.rondasRestantes(e);
+  $('#reloj-rondas').hidden = quedan === null;
+  if (quedan !== null) {
+    $('#reloj-rondas').innerHTML = svg('reloj') + `<b>${quedan}</b> ${quedan === 1 ? 'ronda' : 'rondas'}`;
+    $('#reloj-rondas').classList.toggle('urgente', quedan <= 3);
+  }
   pintarAcciones();
   if (app.mochilaAbierta) pintarMochila();
 }
@@ -1075,6 +1101,7 @@ async function animar(ev) {
       if (e.heroes[ev.id]) toast(nombre(ev.id) + ' ha caído.', 'peligro');
       break;
     }
+    case 'temblor': tablero.temblar(); sonar('trampa'); await espera(500); break;
     case 'trampa': {
       const p = posDe(ev.heroe);
       tablero.temblar(); sonar('trampa');
@@ -1140,7 +1167,7 @@ async function mostrarResultado(res) {
   sonar(victoria ? 'tesoro' : 'muerte');
   app.cerrarModalFuera = null;
   if (manda) {
-    await modal(html, [{ texto: victoria ? (e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir al campamento') : 'Ir al campamento y reintentar' }]);
+    await modal(html, [{ texto: victoria ? (!e.aleatorio && e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir al campamento') : 'Ir al campamento y reintentar' }]);
     app.trasCola = { tipo: 'continuar' };
   } else await modal(html, [{ texto: 'De acuerdo' }]);
 }
@@ -1283,7 +1310,7 @@ function pintarArmeria() {
   const misHeroes = e.orden.filter((t) => M.puedeControlar(e, miId, t));
   if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
   app.sub ||= 'heroe';
-  const siguiente = app.misiones[e.campana[e.misionIdx]];
+  const siguiente = e.aleatorio ? { titulo: 'Mazmorra Perdida, nivel ' + (e.misionIdx + 1) + ' (semilla ' + e.aleatorio.semilla + ')' } : app.misiones[e.campana[e.misionIdx]];
   $('#arm-sub').innerHTML = esc('Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || ''))
     + (e.cronica?.campana ? ' · <button class="enlace" id="b-cronica">Ver la crónica</button>' : '');
   $('#b-cronica')?.addEventListener('click', verCronica);

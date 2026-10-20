@@ -10,7 +10,7 @@ Las coordenadas son `[x, y]`: `x` va de 0 a 25 (columnas, de izquierda a derecha
 |---|---|
 | `id` | Igual que el nombre del archivo, sin `.json`. |
 | `numero`, `titulo`, `intro` | Lo que se lee en el pergamino de inicio. |
-| `objetivo` | `{ "tipo": "escalera", "requiere": ["flag"], "texto": "..." }` (salir por la escalera tras conseguir esas flags) o `{ "tipo": "matar", "id": "jefe", "texto": "..." }` (acabar con un monstruo). |
+| `objetivo` | `{ "tipo": "escalera", "requiere": ["flag"], "texto": "..." }` (salir por la escalera tras conseguir esas flags), `{ "tipo": "matar", "id": "jefe", "texto": "..." }` (acabar con un monstruo) o `{ "tipo": "escapar", "rondas": 20, "requiere": ["flag"], "texto": "..." }` (salir antes de que pasen esas rondas; al acabarse, quien siga dentro queda sepultado). |
 | `recompensa` | Oro para cada héroe superviviente. |
 | `errante` | Tipo de monstruo que sale con la carta de monstruo errante. |
 | `escalera` | Esquina superior izquierda de la escalera (ocupa 2×2 y debe ir dentro de una sala). |
@@ -56,3 +56,12 @@ Cada disparador salta una sola vez. Acciones posibles:
 - `revelar` + `region`
 
 Mira `03-celdas-de-hierro.json` como ejemplo: una llave que abre una celda y una alarma que hace aparecer refuerzos.
+
+## Mazmorra Perdida
+
+Las mazmorras aleatorias las crea `js/procedural.js` con este mismo formato. Para ver una en JSON, en la consola del navegador:
+
+```js
+const P = await import('./js/procedural.js?v=1');
+P.generarMision('MISEMILLA-1', 1)
+```

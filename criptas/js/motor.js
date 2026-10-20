@@ -9,6 +9,7 @@
 import * as D from './datos.js';
 import * as T from './tablero.js';
 import { turnoMonstruo } from './ia.js';
+import { generarMision, semillaDeNivel } from './procedural.js';
 
 const { clave } = T;
 export const rnd = (n) => Math.floor(Math.random() * n);
@@ -514,8 +515,25 @@ export function objetivosHechizo(estado, h, id) {
 const enEscalera = (estado, h) => estado.escalera.some(([x, y]) => x === h.x && y === h.y);
 const requisitosSalida = (estado) => {
   const o = estado.mision.objetivo;
-  return o.tipo === 'escalera' && (o.requiere || []).every((f) => estado.flags[f]);
+  return (o.tipo === 'escalera' || o.tipo === 'escapar') && (o.requiere || []).every((f) => estado.flags[f]);
 };
+
+// Objetivo "escapar": rondas que quedan antes del derrumbe (null si no aplica).
+export function rondasRestantes(estado) {
+  const o = estado.mision?.objetivo;
+  if (o?.tipo !== 'escapar') return null;
+  return Math.max(0, o.rondas - (estado.ronda || 0));
+}
+
+// Se acaba el tiempo: quien siga dentro queda sepultado.
+function derrumbe(estado) {
+  avisar(estado, '¡La mazmorra se derrumba! Quien no ha salido queda sepultado bajo las piedras.', 'peligro');
+  ev(estado, { tipo: 'temblor' });
+  for (const h of Object.values(estado.heroes)) {
+    if (h.vivo && !h.fuera) { h.vivo = false; h.cuerpo = 0; ev(estado, { tipo: 'muerte', id: h.id }); sumar(cronH(estado, h.id), 'caidas'); }
+  }
+  comprobarFin(estado);
+}
 
 export function disponibles(estado, id) {
   const h = estado.heroes[id];
@@ -968,6 +986,11 @@ function siguienteTurno(estado) {
   comprobarFin(estado);
   if (estado.resultado) return;
   estado.ronda++;
+  const quedan = rondasRestantes(estado);
+  if (quedan !== null) {
+    if (quedan <= 0) return derrumbe(estado);
+    if (quedan <= 3) avisar(estado, quedan === 1 ? '¡Última ronda antes del derrumbe!' : '¡Quedan ' + quedan + ' rondas antes del derrumbe!', 'peligro');
+  }
   const primero = estado.orden.find((t) => estado.heroes[t].vivo && !estado.heroes[t].fuera);
   if (primero) empezarTurno(estado, primero);
 }
@@ -1096,7 +1119,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
     if (!esAnfitrion || estado.fase !== 'resultado') return 'Solo el anfitrión.';
     if (estado.resultado === 'victoria') {
       estado.misionIdx++;
-      estado.fase = estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
+      estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     // La transferencia del banco se recupera al acabar cada misión.
     for (const h of Object.values(estado.heroes)) { h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
@@ -1123,7 +1146,10 @@ export function aplicar(estado, a, jugador, cargarMision) {
   }
   if (a.tipo === 'siguienteMision') {
     if (!esAnfitrion || estado.fase !== 'armeria') return 'Solo el anfitrión.';
-    const def = cargarMision(estado.campana[estado.misionIdx]);
+    // Mazmorra Perdida: cada nivel se genera a partir de la semilla de la partida.
+    const def = estado.aleatorio
+      ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
+      : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
     iniciarMision(estado, def);
     ev(estado, { tipo: 'pantalla', fase: 'briefing' });

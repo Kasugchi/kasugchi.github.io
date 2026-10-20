@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020115037">
+<meta name="version" content="20261020132849">
+
+
 
 
 
@@ -21,19 +23,20 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020115037",
-    "./js/ia.js": "./js/ia.js?v=20261020115037",
-    "./js/iconos.js": "./js/iconos.js?v=20261020115037",
-    "./js/motor.js": "./js/motor.js?v=20261020115037",
-    "./js/red.js": "./js/red.js?v=20261020115037",
-    "./js/render.js": "./js/render.js?v=20261020115037",
-    "./js/render3d.js": "./js/render3d.js?v=20261020115037",
-    "./js/tablero.js": "./js/tablero.js?v=20261020115037",
-    "./js/ui.js": "./js/ui.js?v=20261020115037"
+    "./js/datos.js": "./js/datos.js?v=20261020132849",
+    "./js/ia.js": "./js/ia.js?v=20261020132849",
+    "./js/iconos.js": "./js/iconos.js?v=20261020132849",
+    "./js/motor.js": "./js/motor.js?v=20261020132849",
+    "./js/procedural.js": "./js/procedural.js?v=20261020132849",
+    "./js/red.js": "./js/red.js?v=20261020132849",
+    "./js/render.js": "./js/render.js?v=20261020132849",
+    "./js/render3d.js": "./js/render3d.js?v=20261020132849",
+    "./js/tablero.js": "./js/tablero.js?v=20261020132849",
+    "./js/ui.js": "./js/ui.js?v=20261020132849"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020115037">
+<link rel="stylesheet" href="estilo.css?v=20261020132849">
 </head>
 <body>
 
@@ -80,6 +83,10 @@
       <label class="campo" style="margin-top:18px" id="campo-mision">Empezar por
         <select class="mision" id="sel-mision"></select>
       </label>
+      <label class="campo" id="campo-semilla" hidden style="margin-top:12px">Semilla (opcional)
+        <input id="semilla" class="semilla" maxlength="8" autocomplete="off" autocapitalize="characters" placeholder="Al azar">
+        <span class="nota" style="font-weight:400">Con la misma semilla salen las mismas mazmorras: compártela para que otro grupo juegue el mismo reto.</span>
+      </label>
       <div class="fila" style="margin-top:18px">
         <button class="btn claro" id="b-salir-sala">Salir</button>
         <button class="btn" id="b-empezar">Empezar la campaña</button>
@@ -112,6 +119,7 @@
 <section id="juego" class="pantalla" hidden>
   <header class="barra">
     <h1 id="j-titulo"></h1>
+    <span class="reloj-rondas" id="reloj-rondas" hidden></span>
     <button class="icono-btn texto" id="b-vista" aria-label="Cambiar a vista de mesa 3D">3D</button>
     <button class="icono-btn" id="b-vertodo" aria-label="Ver todo el tablero"></button>
     <button class="icono-btn" id="b-registro" aria-label="Diario y menú"></button>
@@ -182,6 +190,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020115037"></script>
+<script type="module" src="js/ui.js?v=20261020132849"></script>
 </body>
 </html>

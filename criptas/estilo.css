@@ -381,3 +381,12 @@ button.enlace { appearance: none; border: 0; background: none; padding: 0; color
 .giro3d { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 8px; z-index: 3; }
 .giro3d .icono-btn { background: rgba(20,12,8,0.75); color: var(--pergamino); }
 .giro3d .icono-btn svg { fill: none; }
+
+/* Mazmorra Perdida */
+input.semilla { height: 48px; border-radius: 6px; border: 2px solid var(--pergamino-osc); background: #f3e7c9; color: var(--tinta); font: 700 20px var(--f-texto); letter-spacing: .2em; text-transform: uppercase; padding: 0 12px; }
+.reloj-rondas { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 999px; background: rgba(0,0,0,0.35); color: #f3e6c4; font-size: 15px; flex: none; }
+.reloj-rondas svg { width: 18px; height: 18px; fill: #f3e6c4; }
+.reloj-rondas b { font: 700 20px var(--f-titulo); }
+.reloj-rondas.urgente { background: var(--lacre); animation: latido 1s ease-in-out infinite; }
+@keyframes latido { 50% { transform: scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .reloj-rondas.urgente { animation: none; } }
