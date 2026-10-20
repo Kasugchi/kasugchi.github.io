@@ -1006,6 +1006,7 @@ function alTocar(x, y) {
     return toast('Caldero burbujeante. Ponte al lado para beber (gasta la acción del turno, una vez por héroe).');
   }
   if (u) return toast(D.MUEBLES[u.tipo].nombre + '.');
+  if (e.rocas[k]) return toast('Derrumbe: el paso está cortado por las piedras.');
   const tr = e.trampas.find((t) => t.x === x && t.y === y && t.descubierta);
   if (tr) return toast(D.TRAMPAS[tr.tipo].nombre + (tr.activa ? '. Rodéala o desármala.' : ', desarmada.'));
   if (e.escalera.some(([a, b]) => a === x && b === y)) return toast('La escalera: por aquí se entra y se sale.');

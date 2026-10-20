@@ -287,16 +287,27 @@ export class Escena3D {
       if (!vis(u.x, u.y)) continue;
       this.gMuebles.add(crearMueble(THREE, u, frenteMueble(u, T.region)));
     }
-    // Rocas y derrumbes.
-    const roca = new THREE.MeshStandardMaterial({ color: 0x7a7268, roughness: 1, flatShading: true });
+    // Rocas y derrumbes: un montón de piedras que tapa la casilla.
+    const roca = new THREE.MeshStandardMaterial({ color: 0x8a8174, roughness: 1, flatShading: true });
+    const rocaOsc = new THREE.MeshStandardMaterial({ color: 0x5e574d, roughness: 1, flatShading: true });
     for (const k of Object.keys(e.rocas)) {
       const [x, y] = k.split(',').map(Number);
       if (!vis(x, y)) continue;
-      for (let i = 0; i < 4; i++) {
-        const r = 0.2 + ((x * 7 + y * 3 + i * 5) % 7) / 40;
-        const piedra = new THREE.Mesh(new THREE.DodecahedronGeometry(r, 0), roca);
-        piedra.position.set(x + 0.3 + (i % 2) * 0.4, r * 0.8, y + 0.3 + Math.floor(i / 2) * 0.4);
-        piedra.rotation.set(i, x, y); piedra.castShadow = true;
+      let n = x * 31 + y * 17;
+      const azar = () => { n = (n * 1103515245 + 12345) & 0x7fffffff; return n / 0x7fffffff; };
+      // Pedrusco grande en el centro
+      const grande = new THREE.Mesh(new THREE.DodecahedronGeometry(0.34, 0), roca);
+      grande.scale.set(1, 0.95, 1); grande.position.set(x + 0.45 + azar() * 0.1, 0.3, y + 0.45 + azar() * 0.1);
+      grande.rotation.set(azar() * 3, azar() * 3, azar() * 3); grande.castShadow = true; grande.receiveShadow = true;
+      this.gMuebles.add(grande);
+      // Piedras medianas y cascotes alrededor
+      for (let i = 0; i < 9; i++) {
+        const a = (i / 9) * Math.PI * 2 + azar() * 0.6;
+        const d = 0.22 + azar() * 0.18;
+        const r = i < 4 ? 0.16 + azar() * 0.07 : 0.06 + azar() * 0.05;
+        const piedra = new THREE.Mesh(i % 3 ? new THREE.DodecahedronGeometry(r, 0) : new THREE.IcosahedronGeometry(r, 0), i % 2 ? roca : rocaOsc);
+        piedra.position.set(x + 0.5 + Math.cos(a) * d, r * 0.7 + (i < 4 ? 0.05 : 0), y + 0.5 + Math.sin(a) * d);
+        piedra.rotation.set(azar() * 3, azar() * 3, azar() * 3); piedra.castShadow = true;
         this.gMuebles.add(piedra);
       }
     }

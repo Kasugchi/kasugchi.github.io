@@ -243,17 +243,38 @@ function dibujarEscalera(g, esc) {
   g.strokeStyle = '#c9a24a'; g.lineWidth = 3; g.strokeRect(x, y, s, s);
 }
 
+// Casilla de derrumbe: montón de piedras que corta el paso.
 export function dibujarRoca(g, x, y) {
   const r = semilla(x * 97 + y * 13);
   const px = x * TS, py = y * TS;
-  g.fillStyle = '#2b2622'; g.fillRect(px, py, TS, TS);
-  for (let i = 0; i < 6; i++) {
-    const cx = px + 10 + r() * (TS - 20), cy = py + 10 + r() * (TS - 20), rad = 9 + r() * 12;
-    g.fillStyle = rgb([118, 110, 100], Math.round((r() - 0.5) * 40));
-    g.beginPath();
-    for (let k = 0; k < 6; k++) { const a = (k / 6) * Math.PI * 2 + r(); g.lineTo(cx + Math.cos(a) * rad, cy + Math.sin(a) * rad); }
-    g.closePath(); g.fill();
-    g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 1.5; g.stroke();
+  // Hueco oscuro con polvo
+  const fondo = g.createRadialGradient(px + TS / 2, py + TS / 2, 4, px + TS / 2, py + TS / 2, TS * 0.7);
+  fondo.addColorStop(0, '#3a332c'); fondo.addColorStop(1, '#1c1814');
+  g.fillStyle = fondo; g.fillRect(px + 1, py + 1, TS - 2, TS - 2);
+  // Piedras: de las pequeñas del fondo a las grandes de delante
+  const piedras = [];
+  for (let i = 0; i < 9; i++) piedras.push({ cx: px + 8 + r() * (TS - 16), cy: py + 8 + r() * (TS - 16), rad: 5 + r() * 6 });
+  piedras.push({ cx: px + TS * (0.35 + r() * 0.1), cy: py + TS * (0.42 + r() * 0.1), rad: TS * 0.26 });
+  piedras.push({ cx: px + TS * (0.62 + r() * 0.1), cy: py + TS * (0.6 + r() * 0.08), rad: TS * 0.2 });
+  for (const p of piedras) {
+    const lados = 6 + Math.floor(r() * 3), giro = r() * 6;
+    const puntos = [];
+    for (let k = 0; k < lados; k++) { const a = (k / lados) * Math.PI * 2 + giro; const d = p.rad * (0.8 + r() * 0.3); puntos.push([p.cx + Math.cos(a) * d, p.cy + Math.sin(a) * d * 0.9]); }
+    // sombra
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.beginPath();
+    for (const [a, b] of puntos) g.lineTo(a + 2.5, b + 3); g.closePath(); g.fill();
+    // cuerpo con luz arriba a la izquierda
+    const t = Math.round((r() - 0.5) * 30);
+    const grad = g.createLinearGradient(p.cx - p.rad, p.cy - p.rad, p.cx + p.rad, p.cy + p.rad);
+    grad.addColorStop(0, rgb([170, 160, 145], t)); grad.addColorStop(1, rgb([92, 84, 74], t));
+    g.fillStyle = grad; g.beginPath();
+    for (const [a, b] of puntos) g.lineTo(a, b); g.closePath(); g.fill();
+    g.strokeStyle = 'rgba(20,15,10,0.75)'; g.lineWidth = 1.5; g.stroke();
+    // grieta en las grandes
+    if (p.rad > 12) {
+      g.strokeStyle = 'rgba(30,24,18,0.6)'; g.lineWidth = 1.2; g.beginPath();
+      g.moveTo(p.cx - p.rad * 0.4, p.cy - p.rad * 0.2); g.lineTo(p.cx, p.cy + p.rad * 0.05); g.lineTo(p.cx + p.rad * 0.3, p.cy - p.rad * 0.35); g.stroke();
+    }
   }
 }
 
