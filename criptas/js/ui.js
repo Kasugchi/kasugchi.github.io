@@ -552,7 +552,6 @@ function irAFase() {
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
     pintarConectados($('#br-conectados'), e);
-    pintarMapaMision($('#br-mapa'), e);
     $('#b-entrar').hidden = !manda;
     $('#b-campamento').hidden = !manda;
     $('#br-espera').hidden = manda;
