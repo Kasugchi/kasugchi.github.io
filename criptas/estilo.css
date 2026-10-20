@@ -76,7 +76,7 @@ button { font: inherit; color: inherit; }
 .fila .btn { flex: 1 1 160px; }
 
 /* ---------- Portada ---------- */
-#portada { justify-content: center; }
+#portada { justify-content: flex-start; } /* centrado con margin:auto en .centro: si la lista crece se puede hacer scroll hasta arriba */
 .titulo { text-align: center; }
 .titulo h1 {
   font-family: var(--f-titulo); font-weight: 900; margin: 0; line-height: .82;
