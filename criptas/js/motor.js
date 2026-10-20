@@ -1164,7 +1164,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (a.tipo === 'continuar') {
     if (!esAnfitrion || estado.fase !== 'resultado') return 'Solo el anfitrión.';
     if (estado.resultado === 'victoria') {
-      estado.misionIdx++;
+      if (!estado.pruebas) estado.misionIdx++; // la zona de pruebas se repite
       estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     // La transferencia del banco se recupera al acabar cada misión.

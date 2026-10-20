@@ -1,0 +1,261 @@
+{
+ "id": "pruebas",
+ "numero": 0,
+ "titulo": "Zona de pruebas",
+ "intro": "Una mazmorra de entrenamiento para probar el equipo nuevo. Cada héroe empieza con 5000 monedas y pociones: pasad por la tienda, comprad lo que queráis y bajad. Hay calderos para beber, puertas para abrir, derrumbes y monstruos quietos a distancia para probar la ballesta pesada.",
+ "objetivo": {
+  "tipo": "escalera",
+  "requiere": [],
+  "texto": "Prueba lo que quieras y sal por la escalera cuando acabes."
+ },
+ "recompensa": 0,
+ "errante": "trasgo",
+ "escalera": [
+  7,
+  14
+ ],
+ "rocas": [
+  [
+   5,
+   12
+  ],
+  [
+   19,
+   12
+  ],
+  [
+   10,
+   5
+  ]
+ ],
+ "puertas": [
+  {
+   "id": "d1",
+   "a": [
+    8,
+    13
+   ],
+   "b": [
+    8,
+    12
+   ]
+  },
+  {
+   "id": "d2",
+   "a": [
+    9,
+    11
+   ],
+   "b": [
+    9,
+    12
+   ]
+  },
+  {
+   "id": "d3",
+   "a": [
+    12,
+    13
+   ],
+   "b": [
+    12,
+    12
+   ]
+  },
+  {
+   "id": "d4",
+   "a": [
+    18,
+    8
+   ],
+   "b": [
+    19,
+    8
+   ],
+   "secreta": true
+  },
+  {
+   "id": "d6",
+   "a": [
+    21,
+    5
+   ],
+   "b": [
+    21,
+    6
+   ]
+  },
+  {
+   "id": "d5",
+   "a": [
+    22,
+    8
+   ],
+   "b": [
+    22,
+    9
+   ],
+   "bloqueada": true
+  }
+ ],
+ "muebles": [
+  {
+   "tipo": "caldero",
+   "x": 8,
+   "y": 10,
+   "w": 1,
+   "h": 1
+  },
+  {
+   "tipo": "caldero",
+   "x": 13,
+   "y": 15,
+   "w": 1,
+   "h": 1
+  },
+  {
+   "tipo": "cofre",
+   "x": 14,
+   "y": 17,
+   "w": 1,
+   "h": 1
+  },
+  {
+   "tipo": "mesa",
+   "x": 12,
+   "y": 8,
+   "w": 2,
+   "h": 2
+  },
+  {
+   "tipo": "armero",
+   "x": 22,
+   "y": 6,
+   "w": 3,
+   "h": 1
+  },
+  {
+   "tipo": "cofre",
+   "x": 24,
+   "y": 11,
+   "w": 1,
+   "h": 1
+  }
+ ],
+ "monstruos": [
+  {
+   "id": "p1",
+   "tipo": "trasgo",
+   "x": 16,
+   "y": 7,
+   "ia": "centinela"
+  },
+  {
+   "id": "p2",
+   "tipo": "trasgo",
+   "x": 17,
+   "y": 10,
+   "ia": "centinela"
+  },
+  {
+   "id": "p3",
+   "tipo": "orco",
+   "x": 17,
+   "y": 8,
+   "ia": "centinela"
+  },
+  {
+   "id": "p4",
+   "tipo": "esqueleto",
+   "x": 15,
+   "y": 6,
+   "ia": "centinela"
+  },
+  {
+   "id": "p5",
+   "tipo": "zombi",
+   "x": 23,
+   "y": 10,
+   "ia": "guardian"
+  }
+ ],
+ "trampas": [
+  {
+   "id": "tr1",
+   "tipo": "foso",
+   "x": 14,
+   "y": 12
+  }
+ ],
+ "tesoros": {
+  "K": {
+   "texto": "El cofre guarda una ballesta pesada envuelta en lona.",
+   "arma": "ballestaPesada"
+  },
+  "H": {
+   "texto": "En el armero hay 100 monedas escondidas.",
+   "oro": 100
+  },
+  "N": {
+   "texto": "Tras la puerta atrancada, un cofre con 300 monedas.",
+   "oro": 300
+  }
+ },
+ "disparadores": [
+  {
+   "cuando": "region_revelada",
+   "region": "G",
+   "acciones": [
+    {
+     "tipo": "mensaje",
+     "texto": "Los monstruos de esta sala no se mueven: son blancos de práctica."
+    }
+   ]
+  },
+  {
+   "cuando": "puerta_abierta",
+   "puerta": "d4",
+   "acciones": [
+    {
+     "tipo": "flag",
+     "nombre": "secreta"
+    },
+    {
+     "tipo": "desbloquear",
+     "puerta": "d5"
+    },
+    {
+     "tipo": "mensaje",
+     "texto": "Al abrir la puerta secreta se oye un cerrojo: la puerta atrancada de la sala de al lado se ha liberado."
+    }
+   ]
+  },
+  {
+   "cuando": "monstruo_muerto",
+   "id": "p3",
+   "acciones": [
+    {
+     "tipo": "flag",
+     "nombre": "orco"
+    }
+   ]
+  }
+ ],
+ "tareas": [
+  {
+   "flag": "orco",
+   "texto": "Tumbar al orco de prácticas (prueba la ballesta pesada)"
+  },
+  {
+   "flag": "secreta",
+   "texto": "Encontrar la puerta secreta de la sala grande"
+  },
+  {
+   "texto": "Beber de los calderos (hay dos)"
+  },
+  {
+   "salir": true,
+   "texto": "Volver a la escalera y salir"
+  }
+ ]
+}

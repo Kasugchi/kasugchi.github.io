@@ -106,7 +106,7 @@ $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && ap
 // =============================================================
 //  CARGA DE MISIONES
 // =============================================================
-const listas = Promise.all(D.CAMPANA.map((id) => fetch('misiones/' + id + '.json').then((r) => r.json()).then((j) => (app.misiones[id] = j))));
+const listas = Promise.all([...D.CAMPANA, 'pruebas'].map((id) => fetch('misiones/' + id + '.json').then((r) => r.json()).then((j) => (app.misiones[id] = j))));
 
 // =============================================================
 //  PORTADA
@@ -389,8 +389,9 @@ function pintarSala() {
   $('#lista-jugadores').innerHTML = Object.entries(s.jugadores).map(([id, j]) => `<li class="${j.desconectado ? 'fuera' : ''}">${esc(j.nombre)}${id === miId ? ' (tú)' : ''}</li>`).join('');
   const sel = $('#sel-mision');
   sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
-    + '<option value="perdida">★ Mazmorra Perdida (aleatoria)</option>';
-  sel.value = s.perdida ? 'perdida' : String(s.misionIdx);
+    + '<option value="perdida">★ Mazmorra Perdida (aleatoria)</option>'
+    + '<option value="pruebas">⚙ Zona de pruebas (5000 monedas, para probar cosas)</option>';
+  sel.value = s.pruebas ? 'pruebas' : s.perdida ? 'perdida' : String(s.misionIdx);
   sel.disabled = !manda;
   $('#campo-semilla').hidden = !s.perdida;
   $('#semilla').value = s.semilla || '';
@@ -398,7 +399,7 @@ function pintarSala() {
   $('#b-empezar').hidden = !manda;
   $('#sala-espera').hidden = manda;
   $('#b-empezar').disabled = !Object.keys(s.eleccion).length;
-  $('#b-empezar').textContent = s.perdida ? 'Bajar a la Mazmorra Perdida' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
+  $('#b-empezar').textContent = s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Perdida' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
 }
 listas.then(() => { if (app.sala && !$('#sala').hidden) pintarSala(); });
 
@@ -429,7 +430,8 @@ function difundirSala() {
 }
 $('#sel-mision').addEventListener('change', (e) => {
   app.sala.perdida = e.target.value === 'perdida';
-  if (!app.sala.perdida) app.sala.misionIdx = +e.target.value;
+  app.sala.pruebas = e.target.value === 'pruebas';
+  if (!app.sala.perdida && !app.sala.pruebas) app.sala.misionIdx = +e.target.value;
   difundirSala();
 });
 $('#semilla').addEventListener('change', (e) => {
@@ -452,6 +454,11 @@ $('#b-empezar').addEventListener('click', async () => {
     e.aleatorio = { semilla: s.semilla || nuevaSemilla() };
     e.campana = [];
     e.misionIdx = 0;
+  }
+  if (s.pruebas) {
+    // Zona de pruebas: una sola misión que se repite, con dinero de sobra para la tienda.
+    e.pruebas = true; e.campana = ['pruebas']; e.misionIdx = 0;
+    for (const h of Object.values(e.heroes)) { h.oro = 5000; h.objetos.pocionCurar = 3; h.kit = true; }
   }
   e.fase = 'armeria'; // primero el campamento: equipo, banco y cargador
   app.visto = 0; app.estado = null; app.cola = [];
@@ -548,7 +555,7 @@ function irAFase() {
   const manda = app.modo !== 'invitado';
   if (e.fase === 'briefing') {
     const m = e.mision;
-    $('#br-num').textContent = e.aleatorio ? 'Mazmorra Perdida · nivel ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
+    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Perdida · nivel ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
