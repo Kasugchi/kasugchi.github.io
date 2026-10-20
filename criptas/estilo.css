@@ -288,7 +288,7 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 .mesa-dados .tocar { margin: 14px 0 0; font-size: 14px; color: #a8977a; }
 
 /* Aviso de anfitrión desconectado (no bloquea la partida) */
-.aviso-anfitrion { position: absolute; left: 12px; right: 12px; top: 10px; z-index: 5; display: flex; align-items: center; gap: 10px;
+.aviso-anfitrion { position: fixed; left: 12px; right: 12px; top: max(10px, env(safe-area-inset-top)); z-index: 30; display: flex; align-items: center; gap: 10px;
   background: rgba(20,12,8,0.94); color: #f3e6c4; padding: 8px 8px 8px 14px; border-radius: 6px; box-shadow: 0 0 0 2px var(--lacre-claro);
   max-width: 520px; margin: 0 auto; font-size: 15px; line-height: 1.3; }
 .aviso-anfitrion span { flex: 1; }

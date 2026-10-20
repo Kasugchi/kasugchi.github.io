@@ -95,10 +95,7 @@
     <canvas id="lienzo" aria-label="Tablero de juego"></canvas>
     <div class="cartel" id="cartel" style="opacity:0"></div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
-    <div class="aviso-anfitrion" id="aviso-anfitrion" hidden role="status">
-      <span>El anfitrión no responde. La partida está guardada.</span>
-      <button class="btn">Seguir yo</button>
-    </div>
+
   </div>
   <div class="acciones" id="acciones">
     <div class="estado-turno" id="estado-turno"></div>
@@ -147,6 +144,11 @@
   </div>
   <ol id="diario"></ol>
 </aside>
+
+<div class="aviso-anfitrion" id="aviso-anfitrion" hidden role="status">
+      <span>El anfitrión no responde. La partida está guardada.</span>
+      <button class="btn">Seguir yo</button>
+    </div>
 
 <script type="module" src="js/ui.js"></script>
 </body>

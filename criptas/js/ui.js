@@ -220,7 +220,8 @@ async function unirseComoInvitado(codigo) {
     alMensaje: mensajeDelAnfitrion,
     alAnfitrion: (online) => anfitrionCambia(online)
   });
-  if (!app.red.anfitrionOnline) anfitrionCambia(false);
+  // Si la sala ya no tiene anfitrión, ofrecer seguir enseguida.
+  if (!app.red.anfitrionOnline) anfitrionCambia(false, 3000);
 }
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 async function continuarPartida(id) {
@@ -274,7 +275,7 @@ async function retomarComoAnfitrion(codigo, estado, forzar = false) {
 // El invitado se entera de que el anfitrión se ha ido (o ha vuelto).
 // Se muestra un aviso discreto, no una ventana: así no tapa ni bloquea la partida.
 let avisoCaida = null;
-function anfitrionCambia(online) {
+function anfitrionCambia(online, retraso = 20000) {
   if (app.modo !== 'invitado') return;
   clearTimeout(avisoCaida);
   if (online) return ocultarAvisoAnfitrion();
@@ -285,7 +286,7 @@ function anfitrionCambia(online) {
     const estado = await app.red.estadoGuardado();
     if (!estado) { salirAPortada(); return avisoPortada('El anfitrión ha cerrado la sala.'); }
     mostrarAvisoAnfitrion();
-  }, 20000);
+  }, retraso);
 }
 function mostrarAvisoAnfitrion() {
   const el = $('#aviso-anfitrion');
