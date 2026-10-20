@@ -533,6 +533,7 @@ function irAFase() {
     $('#br-objetivo').textContent = m.objetivo.texto;
     pintarMapaMision($('#br-mapa'), e);
     $('#b-entrar').hidden = !manda;
+    $('#b-campamento').hidden = !manda;
     $('#br-espera').hidden = manda;
     mostrar('briefing');
   } else if (e.fase === 'mision' || e.fase === 'resultado') {
@@ -545,6 +546,7 @@ function irAFase() {
 }
 
 $('#b-entrar').addEventListener('click', () => enviar({ tipo: 'empezar' }));
+$('#b-campamento').addEventListener('click', () => enviar({ tipo: 'volverCampamento' }));
 
 // Mapa al estilo de un libro de misiones: granate lo que no se juega,
 // claro la zona de la misión. No muestra monstruos, trampas ni pasadizos.

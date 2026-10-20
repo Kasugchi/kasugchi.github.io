@@ -138,7 +138,6 @@ export function iniciarMision(estado, def) {
     }
   }
   estado.contrato = null;
-  for (const h of Object.values(estado.heroes)) h.transferido = false;
   log(estado, 'Misión ' + m.numero + ': ' + m.titulo, 'titulo');
   return estado;
 }
@@ -1023,11 +1022,23 @@ export function aplicar(estado, a, jugador, cargarMision) {
       estado.misionIdx++;
       estado.fase = estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
-    for (const h of Object.values(estado.heroes)) { h.vivo = true; h.cuerpo = h.cuerpoMax; }
+    // La transferencia del banco se recupera al acabar cada misión.
+    for (const h of Object.values(estado.heroes)) { h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
     const c = estado.cargador;
     if (c?.vivo) for (const [id, bolsa] of Object.entries(c.carga || {})) for (const i of contenido(bolsa)) meter(inventarioDe(estado.heroes[id]), i);
     estado.cargador = null;
     ev(estado, { tipo: 'pantalla', fase: estado.fase });
+    return null;
+  }
+  // Desde el pergamino de la misión se puede volver al campamento.
+  if (a.tipo === 'volverCampamento') {
+    if (!esAnfitrion || estado.fase !== 'briefing') return 'Solo el anfitrión.';
+    asegurarInventario(estado);
+    const c = estado.cargador;
+    if (c) estado.contrato = { patron: c.patron, carga: c.carga || {} };
+    estado.cargador = null;
+    estado.fase = 'armeria';
+    ev(estado, { tipo: 'pantalla', fase: 'armeria' });
     return null;
   }
   if (a.tipo === 'siguienteMision') {
