@@ -122,11 +122,39 @@ export const OBJETOS_TIENDA = {
 export const MAGO_ARMAS = ['daga', 'baston'];
 
 // ---------- Reliquias (del grupo, se guardan toda la campaña) ----------
-// Se encuentran como tesoro fijo de una misión ("reliquia": "escritos").
+// Cada reliquia se forma al juntar dos piezas. Las piezas se encuentran como
+// tesoro fijo de una misión ("reliquia": "mecha") o en la Mazmorra Perdida.
+export const PIEZAS = {
+  escritos:      { nombre: 'Escritos Antiguos',          pista: 'Hablan de una trompeta capaz de derribar murallas…' },
+  trompeta:      { nombre: 'Trompeta Ancestral',         pista: 'Está cubierta de runas que nadie sabe leer.' },
+  mecha:         { nombre: 'Mecha Eterna',               pista: 'Arde sin consumirse, pero no da luz por sí sola.' },
+  farolHierro:   { nombre: 'Farol de Hierro',            pista: 'Un farol oxidado al que le falta la mecha.' },
+  grillete1:     { nombre: 'Grillete del Hermano Mayor', pista: 'Lleva grabado un nombre y media cadena rota.' },
+  grillete2:     { nombre: 'Grillete del Hermano Menor', pista: 'La otra mitad de alguna cadena.' },
+  umbo:          { nombre: 'Umbo de Bronce',             pista: 'El centro de un escudo legendario, sin correas.' },
+  correas:       { nombre: 'Correas del Centinela',      pista: 'Cuero viejo que todavía aguanta. ¿De qué escudo serán?' },
+  aguja:         { nombre: 'Aguja Imantada',             pista: 'Tiembla sola, como si buscara algo.' },
+  cajaHueso:     { nombre: 'Caja de Hueso',              pista: 'Una cajita con una rosa de los vientos tallada. Vacía.' },
+  caliz1:        { nombre: 'Mitad Dorada del Cáliz',     pista: 'Media copa. La otra mitad debe de andar por ahí.' },
+  caliz2:        { nombre: 'Mitad Negra del Cáliz',      pista: 'Media copa negra que encaja con algo.' },
+  badajo:        { nombre: 'Badajo de Plomo',            pista: 'Pesa demasiado para su tamaño.' },
+  campanaRajada: { nombre: 'Campana Rajada',             pista: 'Una campana sin badajo. Los muertos le tienen miedo.' }
+};
 export const RELIQUIAS = {
-  escritos: { nombre: 'Escritos Antiguos', icono: 'pergamino' },
-  trompeta: { nombre: 'Trompeta Ancestral', icono: 'viento' },
-  jerico:   { nombre: 'Trompa de Jericó', icono: 'viento', desc: 'Solo el mago. Una vez por misión, con alguien pegado delante que la sujete: deja tontos a los enemigos de esa línea o derriba un muro frágil.' }
+  jerico:  { nombre: 'Trompa de Jericó', piezas: ['escritos', 'trompeta'], icono: 'viento',
+    desc: 'Solo el mago, una vez por misión, con alguien pegado delante que la sujete: Estruendo (los enemigos de esa línea pierden su turno) o derribar un muro frágil.' },
+  farol:   { nombre: 'Farol de los Ahogados', piezas: ['mecha', 'farolHierro'], icono: 'antorcha',
+    desc: 'Una vez por misión: quien lo enciende ve las trampas y puertas secretas de cada sala que pisa hasta el final de la misión. Pero brilla: los monstruos que lo ven van a por él primero.' },
+  cadena:  { nombre: 'Cadena de Hermanos', piezas: ['grillete1', 'grillete2'], icono: 'verja',
+    desc: 'Una vez por misión, con otro héroe pegado: quedáis encadenados hasta el final de la misión y os repartís el daño. Si uno se aleja más de 2 casillas, la cadena da un tirón y el otro no podrá moverse en su turno.' },
+  escudo:  { nombre: 'Escudo del Último Muro', piezas: ['umbo', 'correas'], icono: 'rodela',
+    desc: 'Una vez por misión: te plantas y ningún monstruo puede entrar en tu casilla ni en las de alrededor hasta tu próximo turno. Mientras, no puedes moverte.' },
+  brujula: { nombre: 'Brújula del Desertor', piezas: ['aguja', 'cajaHueso'], icono: 'ojo',
+    desc: 'Antes de moverte: la aguja señala el objetivo más cercano (o la salida). A cambio, ese turno no te mueves.' },
+  caliz:   { nombre: 'Cáliz Partido', piezas: ['caliz1', 'caliz2'], icono: 'pocion',
+    desc: 'Al beber de un caldero puedes elegir el efecto en vez de tirar el dado, a cambio de 1 de cuerpo máximo hasta acabar la misión.' },
+  campana: { nombre: 'Campana de los Muertos', piezas: ['badajo', 'campanaRajada'], icono: 'calavera',
+    desc: 'Una vez por misión: los no muertos a la vista vuelven a su sitio y pierden su turno. Pero suena en toda la mazmorra y atrae a un monstruo errante.' }
 };
 
 // ---------- Cargador ----------

@@ -2,7 +2,7 @@
  "id": "pruebas",
  "numero": 0,
  "titulo": "Zona de pruebas",
- "intro": "Una mazmorra de entrenamiento para probar el equipo nuevo. Cada héroe empieza con 5000 monedas y pociones: pasad por la tienda, comprad lo que queráis y bajad. Hay calderos para beber, puertas para abrir, derrumbes, monstruos quietos para probar la ballesta pesada y las dos piezas de la Trompa de Jericó (el mago la usa con alguien pegado delante que la sujete).",
+ "intro": "Una mazmorra de entrenamiento. Cada héroe empieza con 5000 monedas y pociones, y el grupo trae todas las reliquias forjadas (botón «Reliquias»), salvo la Trompa de Jericó: sus dos piezas están escondidas aquí. Hay calderos, puertas, derrumbes, una sala tapiada, blancos quietos para la ballesta pesada y no muertos para la campana.",
  "objetivo": {
   "tipo": "escalera",
   "requiere": [],

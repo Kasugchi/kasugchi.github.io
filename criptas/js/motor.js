@@ -135,7 +135,12 @@ export function iniciarMision(estado, def) {
   estado.muros = (m.muros || []).map((w, i) => ({ id: w.id || 'm' + (i + 1), a: w.a, b: w.b, roto: false }));
   estado.murosPorBorde = {};
   estado.muros.forEach((w, i) => { estado.murosPorBorde[T.claveBorde(w.a, w.b)] = i; });
-  estado.trompaUsada = {};
+  estado.reliquiasUsadas = {};
+  estado.farol = null; estado.cadena = null; estado.escudo = null;
+  for (const h of Object.values(estado.heroes)) {
+    for (const k of ['farol', 'cadena', 'muro', 'tiron', 'sordo']) delete h.efectos[k];
+    restaurarCaliz(h);
+  }
   estado.puertasPorBorde = {};
   estado.puertas.forEach((p, i) => { estado.puertasPorBorde[T.claveBorde(p.a, p.b)] = i; });
 
@@ -194,7 +199,7 @@ function crearMonstruo(estado, spec, visible) {
   while (estado.monstruos.some((m) => m.id === id)) id += '_';
   const m = {
     id, tipo: spec.tipo, nombre: spec.nombre || base.nombre, jefe: !!spec.jefe,
-    x: spec.x, y: spec.y, region: T.region(spec.x, spec.y),
+    x: spec.x, y: spec.y, x0: spec.x, y0: spec.y, region: T.region(spec.x, spec.y),
     mov: spec.mov ?? base.mov, ataque: spec.ataque ?? base.ataque, defensa: spec.defensa ?? base.defensa,
     cuerpo: spec.cuerpo ?? base.cuerpo, cuerpoMax: spec.cuerpo ?? base.cuerpo, mente: base.mente,
     nomuerto: !!base.nomuerto, ia: spec.ia || 'agresivo', activo: spec.ia !== 'centinela',
@@ -247,6 +252,7 @@ export function revelar(estado) {
     }
   }
   for (const r of salas) revelarSala(estado, r);
+  farolIlumina(estado);
   const nuevos = [];
   for (const m of estado.monstruos) {
     if (m.vivo && !m.visto && estado.revelado[clave(m.x, m.y)]) { m.visto = true; nuevos.push(m.id); }
@@ -305,8 +311,16 @@ function ponerFlag(estado, nombre) {
 // =============================================================
 //  DAÑO Y COMBATE
 // =============================================================
-export function danarHeroe(estado, h, n) {
+export function danarHeroe(estado, h, n, sinCadena = false) {
   if (n <= 0 || !h.vivo) return;
+  // Cadena de Hermanos: el golpe se reparte entre los dos.
+  const otro = !sinCadena && companeroCadena(estado, h);
+  if (otro && n >= 2) {
+    const mitad = Math.floor(n / 2);
+    n -= mitad;
+    avisar(estado, 'La cadena reparte el golpe: ' + otro.nombre + ' se lleva ' + mitad + '.', '');
+    danarHeroe(estado, otro, mitad, true);
+  }
   if (h.efectos.piel) { delete h.efectos.piel; }
   h.cuerpo -= n;
   if (h.cuerpo <= 0) {
@@ -438,6 +452,7 @@ export function destinos(estado, h) {
     if (c.d === 0) continue;
     const f = T.figuraEn(estado, c.x, c.y);
     if (f) continue;
+    if (!dentroCadena(estado, h, c.x, c.y)) continue;
     out[k] = c.d;
   }
   return { mapa, out };
@@ -484,6 +499,14 @@ function moverHeroe(estado, h, x, y) {
       abrirPuerta(estado, h, p);
       const f2 = T.figuraEn(estado, n[0], n[1]);
       if (f2 && !T.esAliado(estado, f2)) { avisar(estado, 'Hay alguien al otro lado de la puerta.', 'peligro'); break; }
+    }
+    if (!dentroCadena(estado, h, n[0], n[1])) {
+      volcar();
+      const otro = companeroCadena(estado, h);
+      otro.efectos.tiron = true;
+      t.movRestante = 0;
+      avisar(estado, '¡La cadena da un tirón! ' + h.nombre + ' se frena en seco y ' + otro.nombre + ' no podrá moverse en su turno.', 'peligro');
+      break;
     }
     h.x = n[0]; h.y = n[1];
     t.movRestante--;
@@ -585,10 +608,12 @@ export function disponibles(estado, id) {
       && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h;
   }) : [];
   r.puertas = puertasAlLado(estado, h);
-  if (estado.reliquias?.jerico && D.HEROES[h.tipo].sinArmadura && !(estado.trompaUsada || {})[h.id]) {
+  if (estado.reliquias?.jerico && D.HEROES[h.tipo].sinArmadura && !(estado.reliquiasUsadas || {}).jerico) {
     const apoyos = libre ? apoyosTrompa(estado, h) : [];
     r.trompa = { apoyos, motivo: !libre ? 'Ya has hecho tu acción este turno.' : !apoyos.length ? 'Necesitas a alguien pegado delante de ti (no en diagonal) que la sujete: sola se te caería.' : '' };
   }
+  r.reliquias = reliquiasDe(estado, h, t, libre);
+  if (t.tiron) r.motivoTiron = 'La cadena te dio un tirón: este turno no puedes moverte.';
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
   // Cargador: lo mueve el héroe que lo contrató, en su turno.
@@ -871,17 +896,199 @@ function apuntarTesoro(estado, h, oro, objeto) {
 //  El mago la sopla apoyada en un aliado pegado a él; suena en la
 //  dirección del aliado hasta la primera pared.
 // =============================================================
-// Las dos piezas se juntan solas en cuanto el grupo tiene ambas.
+// =============================================================
+//  RELIQUIAS
+// =============================================================
+const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const enJuego = (h) => h && h.vivo && !h.fuera;
+
+function restaurarCaliz(h) {
+  if (h.calizPerdido) { h.cuerpoMax += h.calizPerdido; delete h.calizPerdido; }
+}
+
+// --- Cadena de Hermanos ---
+function companeroCadena(estado, h) {
+  const c = estado.cadena;
+  if (!c || !c.includes(h.id)) return null;
+  const otro = estado.heroes[c[0] === h.id ? c[1] : c[0]];
+  if (!enJuego(otro) || !enJuego(h)) { romperCadena(estado); return null; }
+  return otro;
+}
+function romperCadena(estado) {
+  if (!estado.cadena) return;
+  for (const id of estado.cadena) delete estado.heroes[id]?.efectos.cadena;
+  estado.cadena = null;
+}
+function dentroCadena(estado, h, x, y) {
+  const otro = companeroCadena(estado, h);
+  return !otro || Math.max(Math.abs(otro.x - x), Math.abs(otro.y - y)) <= 2;
+}
+
+// --- Farol de los Ahogados: ve trampas y puertas secretas a su alrededor ---
+function farolIlumina(estado) {
+  const h = estado.heroes[estado.farol];
+  if (!enJuego(h)) return;
+  const sala = T.region(h.x, h.y);
+  const celdas = new Set();
+  if (sala !== '.') for (const [x, y] of T.casillasDe(sala)) celdas.add(clave(x, y));
+  else for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) celdas.add(clave(h.x + dx, h.y + dy));
+  let trampas = 0, secretas = 0;
+  for (const tr of estado.trampas) if (tr.activa && !tr.descubierta && celdas.has(clave(tr.x, tr.y))) { tr.descubierta = true; trampas++; }
+  for (const p of estado.puertas) if (p.secreta && !p.descubierta && (celdas.has(clave(...p.a)) || celdas.has(clave(...p.b)))) { p.descubierta = true; secretas++; }
+  if (trampas || secretas) {
+    const partes = [];
+    if (trampas) partes.push(trampas === 1 ? 'una trampa' : trampas + ' trampas');
+    if (secretas) partes.push(secretas === 1 ? 'una puerta secreta' : secretas + ' puertas secretas');
+    avisar(estado, 'La luz verdosa del farol revela ' + partes.join(' y ') + '.', 'bueno');
+  }
+}
+
+// --- Brújula del Desertor: camino hasta el objetivo más cercano ---
+function rumboBrujula(estado, h) {
+  const pasa = (c, n) => !T.esRoca(estado, n[0], n[1]) && ['libre', 'puerta'].includes(T.borde(estado, c, n));
+  const mapa = T.explorar([h.x, h.y], 400, pasa);
+  const cands = [];
+  for (const id of (estado.mision.tareas || []).map((x) => x.matar).filter(Boolean)) {
+    const m = estado.monstruos.find((o) => o.id === id && o.vivo);
+    if (m) cands.push({ celdas: [[m.x, m.y]], que: 'vuestro objetivo' });
+  }
+  for (const [r, f] of Object.entries(estado.mision.tesoros || {})) {
+    if (estado.tesoroTomado[r]) continue;
+    if (f.flag) cands.push({ celdas: T.casillasDe(r), que: 'algo que buscáis' });
+    else if (f.reliquia && !estado.reliquias?.[f.reliquia]) cands.push({ celdas: T.casillasDe(r), que: 'una reliquia' });
+  }
+  if (!cands.length) cands.push({ celdas: estado.escalera, que: 'la salida' });
+  let mejor = null;
+  for (const c of cands) for (const [x, y] of c.celdas) {
+    const nodo = mapa[clave(x, y)];
+    if (nodo && nodo.d > 0 && (!mejor || nodo.d < mejor.d)) mejor = { d: nodo.d, k: clave(x, y), que: c.que, x, y };
+  }
+  if (!mejor) return null;
+  return { ...mejor, ruta: T.reconstruir(mapa, mejor.k) };
+}
+const RUMBOS = ['este', 'sureste', 'sur', 'suroeste', 'oeste', 'noroeste', 'norte', 'noreste'];
+function nombreRumbo(dx, dy) {
+  if (!dx && !dy) return 'aquí mismo';
+  const a = Math.atan2(dy, dx);
+  return 'el ' + RUMBOS[(Math.round(a / (Math.PI / 4)) + 8) % 8];
+}
+
+// Estado de cada reliquia forjada para el héroe en turno.
+function reliquiasDe(estado, h, t, libre) {
+  const r = estado.reliquias || {};
+  const usadas = estado.reliquiasUsadas || {};
+  const out = [];
+  const add = (id, motivo, extra = {}) => out.push({ id, ok: !motivo, motivo: motivo || '', ...extra });
+  const yaUsada = 'Ya la habéis usado en esta misión.';
+  const sinAccion = 'Ya has hecho tu acción este turno.';
+  if (r.farol) add('farol', usadas.farol ? yaUsada : !libre ? sinAccion : '');
+  if (r.cadena) {
+    const pegados = Object.values(estado.heroes).filter((o) => o.id !== h.id && enJuego(o) && cheb(o, h) <= 1).map((o) => o.id);
+    add('cadena', usadas.cadena ? yaUsada : !libre ? sinAccion : !pegados.length ? 'Necesitas a otro héroe pegado a ti.' : '', { companeros: pegados });
+  }
+  if (r.escudo) add('escudo', usadas.escudo ? yaUsada : !libre ? sinAccion : '');
+  if (r.brujula) add('brujula', t.movido ? 'Solo antes de moverte.' : t.brujula ? 'Ya la has consultado este turno.' : '');
+  if (r.caliz) add('caliz', 'Se usa al beber de un caldero.');
+  if (r.campana) add('campana', usadas.campana ? yaUsada : !libre ? sinAccion : '');
+  return out;
+}
+
+function usarReliquia(estado, h, t, a, usarAccion) {
+  const usadas = (estado.reliquiasUsadas ||= {});
+  switch (a.reliquia) {
+    case 'farol': {
+      usarAccion(); usadas.farol = 1;
+      estado.farol = h.id; h.efectos.farol = true;
+      ev(estado, { tipo: 'reliquia', reliquia: 'farol', heroe: h.id, texto: h.nombre + ' enciende el Farol de los Ahogados. Una luz verdosa lo envuelve… y se ve desde lejos.' });
+      farolIlumina(estado);
+      return null;
+    }
+    case 'cadena': {
+      const otro = estado.heroes[a.companero];
+      if (!otro || otro.id === h.id || !enJuego(otro) || cheb(otro, h) > 1) return 'Necesitas a otro héroe pegado a ti.';
+      usarAccion(); usadas.cadena = 1;
+      estado.cadena = [h.id, otro.id]; h.efectos.cadena = true; otro.efectos.cadena = true;
+      ev(estado, { tipo: 'reliquia', reliquia: 'cadena', heroe: h.id, texto: h.nombre + ' y ' + otro.nombre + ' se cierran la Cadena de Hermanos. Os repartiréis los golpes… y no os podréis separar más de 2 casillas.' });
+      return null;
+    }
+    case 'escudo': {
+      usarAccion(); usadas.escudo = 1;
+      estado.escudo = { heroe: h.id }; h.efectos.muro = true;
+      t.plantado = true; t.movRestante = 0;
+      ev(estado, { tipo: 'reliquia', reliquia: 'escudo', heroe: h.id, texto: h.nombre + ' clava el Escudo del Último Muro. Ningún monstruo podrá acercarse a su lado hasta su próximo turno.' });
+      return null;
+    }
+    case 'brujula': {
+      t.brujula = true; t.plantado = true; t.movRestante = 0;
+      const rumbo = rumboBrujula(estado, h);
+      const aqui = rumbo && T.region(h.x, h.y) !== '.' && T.region(rumbo.x, rumbo.y) === T.region(h.x, h.y);
+      const texto = rumbo
+        ? `La aguja de la Brújula del Desertor gira y se clava: ${rumbo.que} está ${aqui ? 'en esta misma sala' : 'hacia ' + nombreRumbo(rumbo.x - h.x, rumbo.y - h.y) + ', a ' + (rumbo.d === 1 ? 'un paso' : 'unas ' + rumbo.d + ' casillas')}.`
+        : 'La aguja de la Brújula del Desertor gira sin parar: no hay camino.';
+      ev(estado, { tipo: 'reliquia', reliquia: 'brujula', heroe: h.id, ruta: rumbo ? rumbo.ruta.slice(1, 14) : [], texto });
+      log(estado, texto);
+      return null;
+    }
+    case 'campana': {
+      usarAccion(); usadas.campana = 1;
+      const muertos = estado.monstruos.filter((m) => m.vivo && m.visto && m.nomuerto && T.lineaVision(estado, h.x, h.y, m.x, m.y));
+      ev(estado, { tipo: 'reliquia', reliquia: 'campana', heroe: h.id, texto: h.nombre + ' tañe la Campana de los Muertos. ¡DONG!' });
+      for (const m of muertos) {
+        m.efectos.aturdido = true;
+        if ((m.x !== m.x0 || m.y !== m.y0) && !T.figuraEn(estado, m.x0, m.y0)) {
+          ev(estado, { tipo: 'mover', id: m.id, ruta: [[m.x, m.y], [m.x0, m.y0]] });
+          m.x = m.x0; m.y = m.y0;
+        }
+      }
+      avisar(estado, muertos.length ? (muertos.length === 1 ? 'Un no muerto retrocede' : muertos.length + ' no muertos retroceden') + ' a su sitio y pierde' + (muertos.length === 1 ? '' : 'n') + ' su próximo turno.' : 'No hay no muertos a la vista… pero el sonido recorre toda la mazmorra.', 'bueno');
+      avisar(estado, 'Algo ha oído la campana…', 'peligro');
+      aparecerErrante(estado, h);
+      return null;
+    }
+  }
+  return 'Esa reliquia no se usa así.';
+}
+
+function aparecerErrante(estado, h) {
+  const tipo = estado.mision.errante || 'orco';
+  const cerca = T.DIRS.map(([dx, dy]) => [h.x + dx, h.y + dy])
+    .find(([x, y]) => T.dentro(x, y) && T.borde(estado, [h.x, h.y], [x, y]) === 'libre' && !T.esRoca(estado, x, y) && !T.muebleEn(estado, x, y) && !T.figuraEn(estado, x, y));
+  const m = aparecer(estado, { tipo, x: (cerca || [h.x, h.y])[0], y: (cerca || [h.x, h.y])[1], ia: 'agresivo' });
+  if (m) { if (!m.visto) { m.visto = true; ev(estado, { tipo: 'aparece', id: m.id }); } if (T.puedeTocar(estado, m, h)) golpearHeroe(estado, m, h, m.ataque); }
+}
+
+// Mazmorra Perdida: a veces hay una pieza de reliquia que el grupo no tiene
+// (antes las que completan una reliquia a medias).
+function esconderPieza(estado, def) {
+  const r = estado.reliquias || {};
+  const faltan = Object.values(D.RELIQUIAS).filter((rq) => !rq.piezas.every((p) => r[p]));
+  if (!faltan.length || rnd(100) >= 60) return;
+  const medias = faltan.filter((rq) => rq.piezas.some((p) => r[p]));
+  const rq = (medias.length ? medias : faltan)[rnd(medias.length || faltan.length)];
+  const pieza = rq.piezas.find((p) => !r[p]);
+  const inicio = T.region(def.escalera[0], def.escalera[1]);
+  const salas = [...new Set((def.puertas || []).flatMap((p) => [T.region(...p.a), T.region(...p.b)]))]
+    .filter((s) => s !== '.' && s !== inicio && !def.tesoros?.[s]?.flag && !def.tesoros?.[s]?.reliquia);
+  if (!salas.length) return;
+  const sala = salas[rnd(salas.length)];
+  def.tesoros ||= {};
+  const previo = def.tesoros[sala];
+  const texto = 'Entre el polvo aparece algo antiguo: ' + D.PIEZAS[pieza].nombre.toLowerCase() + '.';
+  def.tesoros[sala] = previo ? { ...previo, texto: previo.texto + ' ' + texto, reliquia: pieza } : { texto, reliquia: pieza };
+}
+
+// Las piezas se juntan solas en cuanto el grupo tiene las dos de una reliquia.
 function ganarReliquia(estado, id) {
   const r = (estado.reliquias ||= {});
-  if (r[id]) return '';
+  if (r[id] || !D.PIEZAS[id]) return '';
   r[id] = true;
-  let texto = '(Reliquia: ' + D.RELIQUIAS[id].nombre + '.)';
-  if (r.escritos && r.trompeta && !r.jerico) {
-    r.jerico = true;
-    texto += ' Al leer los Escritos Antiguos junto a la Trompeta Ancestral, sus runas se encienden: es la Trompa de Jericó. Solo un mago sabrá despertarla.';
-  } else if (id === 'escritos') texto += ' Hablan de una trompeta capaz de derribar murallas…';
-  else if (id === 'trompeta') texto += ' Está cubierta de runas que nadie sabe leer.';
+  let texto = '(Pieza de reliquia: ' + D.PIEZAS[id].nombre + '.)';
+  const nueva = Object.entries(D.RELIQUIAS).find(([k, rq]) => !r[k] && rq.piezas.every((p) => r[p]));
+  if (nueva) {
+    const [k, rq] = nueva;
+    r[k] = true;
+    texto += ' Al juntar ' + rq.piezas.map((p) => D.PIEZAS[p].nombre).join(' y ') + ', encajan como si se buscaran y forman la reliquia «' + rq.nombre + '». ' + rq.desc;
+  } else texto += ' ' + D.PIEZAS[id].pista;
   return texto;
 }
 
@@ -914,7 +1121,7 @@ export function apoyosTrompa(estado, h) {
   return out;
 }
 function tocarTrompa(estado, h, ap, modo) {
-  (estado.trompaUsada ||= {})[h.id] = 1;
+  (estado.reliquiasUsadas ||= {}).jerico = 1;
   const apoyo = estado.heroes[ap.id] || estado.cargador;
   const quien = ap.id === 'cargador' ? 'el cargador' : apoyo.nombre;
   const { celdas, muro } = lineaTrompa(estado, [apoyo.x, apoyo.y], ap.dir);
@@ -950,10 +1157,17 @@ function tocarTrompa(estado, h, ap, modo) {
 }
 
 // El caldero: un trago y que sea lo que el dado quiera.
-function beberCaldero(estado, h, i) {
+function beberCaldero(estado, h, i, elegido) {
   (estado.bebido ||= {})[h.id + ':' + i] = 1;
   sumar(cronH(estado, h.id), 'pociones');
-  const dado = d6();
+  const eleccion = Math.round(+elegido);
+  const dado = eleccion >= 1 && eleccion <= 6 ? eleccion : d6();
+  if (dado === eleccion) {
+    h.calizPerdido = (h.calizPerdido || 0) + 1;
+    h.cuerpoMax = Math.max(1, h.cuerpoMax - 1);
+    h.cuerpo = Math.min(h.cuerpo, h.cuerpoMax);
+    avisar(estado, h.nombre + ' bebe con el Cáliz Partido y elige su suerte (−1 de cuerpo máximo hasta acabar la misión).', '');
+  }
   const n = h.nombre;
   let texto, tono = 'bueno';
   switch (dado) {
@@ -1001,13 +1215,8 @@ function buscarTesoro(estado, h) {
   if (c.tipo === 'oro') h.oro += c.oro;
   else if (c.tipo === 'pocion') h.objetos[c.objeto] = (h.objetos[c.objeto] || 0) + 1;
   else if (c.tipo === 'flecha' || c.tipo === 'derrumbe') danarHeroe(estado, h, 1);
-  else if (c.tipo === 'errante') {
-    const tipo = estado.mision.errante || 'orco';
-    const cerca = T.DIRS.map(([dx, dy]) => [h.x + dx, h.y + dy])
-      .find(([x, y]) => T.dentro(x, y) && T.borde(estado, [h.x, h.y], [x, y]) === 'libre' && !T.esRoca(estado, x, y) && !T.muebleEn(estado, x, y) && !T.figuraEn(estado, x, y));
-    const m = aparecer(estado, { tipo, x: (cerca || [h.x, h.y])[0], y: (cerca || [h.x, h.y])[1], ia: 'agresivo' });
-    if (m) { if (!m.visto) { m.visto = true; ev(estado, { tipo: 'aparece', id: m.id }); } if (T.puedeTocar(estado, m, h)) golpearHeroe(estado, m, h, m.ataque); }
-  }
+  else if (c.tipo === 'errante') aparecerErrante(estado, h);
+
 }
 
 function buscarTrampas(estado, h) {
@@ -1110,7 +1319,9 @@ function lanzar(estado, h, id, objetivo) {
 function empezarTurno(estado, id) {
   const h = estado.heroes[id];
   delete h.efectos.niebla;
+  if (estado.escudo?.heroe === id) { estado.escudo = null; delete h.efectos.muro; }
   estado.turno = { heroe: id, movTirada: null, movRestante: 0, movido: false, accion: false, cargTirada: null, cargRestante: 0, mochila: false };
+  if (h.efectos.tiron) { delete h.efectos.tiron; estado.turno.plantado = true; estado.turno.tiron = true; }
   ev(estado, { tipo: 'turno', heroe: id });
 }
 
@@ -1261,7 +1472,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     // La transferencia del banco se recupera al acabar cada misión.
-    for (const h of Object.values(estado.heroes)) { h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
+    for (const h of Object.values(estado.heroes)) { restaurarCaliz(h); h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
     const c = estado.cargador;
     if (c?.vivo) for (const [id, bolsa] of Object.entries(c.carga || {})) for (const i of contenido(bolsa)) meter(inventarioDe(estado.heroes[id]), i);
     estado.cargador = null;
@@ -1272,7 +1483,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (a.tipo === 'volverCampamento') {
     // Temporal: también desde dentro de la misión (la misión se reinicia al volver a bajar).
     if (!esAnfitrion || !['briefing', 'mision'].includes(estado.fase)) return 'Solo el anfitrión.';
-    for (const h of Object.values(estado.heroes)) { h.vivo = true; h.fuera = false; h.cuerpo = h.cuerpoMax; h.efectos = {}; }
+    for (const h of Object.values(estado.heroes)) { restaurarCaliz(h); h.vivo = true; h.fuera = false; h.cuerpo = h.cuerpoMax; h.efectos = {}; }
     estado.turno = null;
     if (estado.cargador && !estado.cargador.vivo) estado.cargador = null;
     asegurarInventario(estado);
@@ -1290,6 +1501,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
+    if (estado.aleatorio) esconderPieza(estado, def);
     iniciarMision(estado, def);
     ev(estado, { tipo: 'pantalla', fase: 'briefing' });
     return null;
@@ -1375,6 +1587,12 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       abrirPuerta(estado, h, estado.puertas.find((x) => x.id === q.id));
       break;
     }
+    case 'reliquia': {
+      const rq = disp.reliquias.find((x) => x.id === a.reliquia);
+      if (!rq) return 'No tenéis esa reliquia.';
+      if (!rq.ok) return rq.motivo;
+      return usarReliquia(estado, h, t, a, usarAccion);
+    }
     case 'trompa': {
       const ap = disp.trompa?.apoyos.find((x) => x.id === a.apoyo);
       if (!ap) return disp.trompa?.motivo || 'No puedes tocar la trompa ahora.';
@@ -1383,7 +1601,8 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
     }
     case 'caldero': {
       if (!disp.calderos.includes(a.caldero)) return 'No puedes beber de ese caldero.';
-      usarAccion(); beberCaldero(estado, h, a.caldero); break;
+      if (a.elegido && !estado.reliquias?.caliz) return 'Necesitas el Cáliz Partido para elegir.';
+      usarAccion(); beberCaldero(estado, h, a.caldero, a.elegido); break;
     }
     case 'pocion': {
       if (!(h.objetos[a.objeto] > 0)) return 'No tienes esa poción.';

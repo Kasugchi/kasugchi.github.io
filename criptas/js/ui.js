@@ -459,6 +459,9 @@ $('#b-empezar').addEventListener('click', async () => {
     // Zona de pruebas: una sola misión que se repite, con dinero de sobra para la tienda.
     e.pruebas = true; e.campana = ['pruebas']; e.misionIdx = 0;
     for (const h of Object.values(e.heroes)) { h.oro = 5000; h.objetos.pocionCurar = 3; h.kit = true; }
+    // Todas las reliquias ya forjadas menos la trompa, cuyas piezas están en la mazmorra.
+    e.reliquias = {};
+    for (const [k, rq] of Object.entries(D.RELIQUIAS)) if (k !== 'jerico') { e.reliquias[k] = true; for (const pz of rq.piezas) e.reliquias[pz] = true; }
   }
   e.fase = 'armeria'; // primero el campamento: equipo, banco y cargador
   app.visto = 0; app.estado = null; app.cola = [];
@@ -695,8 +698,12 @@ $('#b-abandonar').addEventListener('click', async () => {
 function htmlReliquias(e) {
   const r = e.reliquias || {};
   if (!Object.keys(r).length) return '';
-  const lista = r.jerico ? [D.RELIQUIAS.jerico.nombre + ' (la toca el mago)'] : ['escritos', 'trompeta'].filter((k) => r[k]).map((k) => D.RELIQUIAS[k].nombre);
-  return `<p class="obj"><b>Reliquias:</b> ${esc(lista.join(', '))}${r.jerico ? '' : ' · falta la otra pieza'}</p>`;
+  const lineas = [];
+  for (const [k, rq] of Object.entries(D.RELIQUIAS)) {
+    if (r[k]) lineas.push(`<li><b>${esc(rq.nombre)}</b>: ${esc(rq.desc)}</li>`);
+    else if (rq.piezas.some((p) => r[p])) lineas.push(`<li>${esc(rq.piezas.filter((p) => r[p]).map((p) => D.PIEZAS[p].nombre).join(', '))} · falta otra pieza</li>`);
+  }
+  return `<h3 style="margin-top:12px">Reliquias</h3><ul class="tareas">${lineas.join('')}</ul>`;
 }
 function htmlTareas(e) {
   const m = e?.mision;
@@ -784,6 +791,9 @@ function pintarAcciones() {
   if (app.moverCargador) info = d.cargador.restante > 0 ? `Cargador: ${d.cargador.restante} casillas. Toca dónde llevarlo.` : 'El cargador ya no puede moverse este turno.';
   if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
   if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
+  if (app.seleccion?.tipo === 'reliquias') return pintarReliquias(e, h, d, et, bot);
+  if (app.seleccion?.tipo === 'caliz') return pintarCaliz(e, h, d, et, bot);
+  if (d.motivoTiron && !t.movTirada) info = d.motivoTiron;
   et.innerHTML = `<b>${esc(h.nombre)}</b><span>${esc(info)}</span>`;
 
   if (!app.reproduciendo) {
@@ -804,7 +814,8 @@ function pintarAcciones() {
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
-  if (d.trompa) boton('trompa', 'viento', 'Trompa de Jericó', { n: 'una vez por misión' });
+  const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
+  if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
   if (d.cargador) {
@@ -819,6 +830,56 @@ function pintarAcciones() {
   bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
   if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
 }
+// Reliquias: lista con las forjadas y para qué sirve cada una ahora.
+function pintarReliquias(e, h, d, et, bot) {
+  et.innerHTML = `<b>Reliquias</b><span>Elige cuál usar. Las piezas que os faltan están en el Diario.</span>`;
+  const b = [];
+  const fila = (id, ok, motivo, extra = '') => b.push(`<button class="acc ${ok ? 'principal' : ''}" data-rq="${id}" ${extra} ${ok ? '' : 'disabled'}>${svg(D.RELIQUIAS[id].icono)}<span>${esc(D.RELIQUIAS[id].nombre)}</span><span class="n">${esc(ok ? '' : motivo)}</span></button>`);
+  if (e.reliquias?.jerico) {
+    const usada = e.reliquiasUsadas?.jerico;
+    const mago = D.HEROES[h.tipo].sinArmadura;
+    fila('jerico', !!d.trompa, usada ? 'Ya la habéis usado en esta misión.' : !mago ? 'Solo el mago sabe tocarla.' : '');
+  }
+  for (const r of d.reliquias) {
+    if (r.id === 'cadena' && r.ok && r.companeros.length > 1) {
+      for (const c of r.companeros) b.push(`<button class="acc principal" data-rq="cadena" data-con="${esc(c)}">${svg('verja')}<span>Cadena con ${esc(e.heroes[c].nombre)}</span></button>`);
+      continue;
+    }
+    fila(r.id, r.ok, r.motivo, r.id === 'cadena' && r.ok ? `data-con="${esc(r.companeros[0])}"` : '');
+  }
+  b.push(`<button class="acc" data-rq="">${svg('reloj')}<span>Volver</span></button>`);
+  bot.innerHTML = b.join('');
+  bot.querySelectorAll('[data-rq]').forEach((x) => x.addEventListener('click', async () => {
+    const id = x.dataset.rq;
+    app.seleccion = null;
+    if (!id) return pintarAcciones();
+    if (id === 'jerico') { app.seleccion = { tipo: 'trompa' }; return pintarAcciones(); }
+    app.cerrarModalFuera = () => {};
+    const si = await modal(`<h2>${esc(D.RELIQUIAS[id].nombre)}</h2><p>${esc(D.RELIQUIAS[id].desc)}</p>`, [{ texto: 'Mejor no', clase: 'claro' }, { texto: 'Usarla' }]);
+    if (si !== 1) return pintarAcciones();
+    enviar({ heroe: h.id, tipo: 'reliquia', reliquia: id, companero: x.dataset.con });
+  }));
+  if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
+}
+
+// Cáliz Partido: elegir el efecto del caldero (o tirar el dado como siempre).
+const EFECTOS_CALDERO = { 4: '+1 dado en tu próximo ataque', 5: 'Robustez: +1 dado de defensa', 6: 'Recuperar toda la vida' };
+function pintarCaliz(e, h, d, et, bot) {
+  const caldero = app.seleccion.caldero ?? d.calderos?.[0];
+  if (caldero === undefined || !d.calderos.includes(caldero)) { app.seleccion = null; return pintarAcciones(); }
+  et.innerHTML = `<b>Cáliz Partido</b><span>Elegir el efecto cuesta 1 de cuerpo máximo hasta acabar la misión. Tirar el dado, nada.</span>`;
+  const b = [`<button class="acc principal" data-cz="0">${svg('dados')}<span>Tirar el dado</span><span class="n">como siempre</span></button>`];
+  for (const [n, txt] of Object.entries(EFECTOS_CALDERO)) b.push(`<button class="acc" data-cz="${n}">${svg('pocion')}<span>${esc(txt)}</span><span class="n">−1 cuerpo máx.</span></button>`);
+  b.push(`<button class="acc" data-cz="x">${svg('reloj')}<span>Volver</span></button>`);
+  bot.innerHTML = b.join('');
+  bot.querySelectorAll('[data-cz]').forEach((x) => x.addEventListener('click', () => {
+    app.seleccion = null;
+    if (x.dataset.cz === 'x') return pintarAcciones();
+    enviar({ heroe: h.id, tipo: 'caldero', caldero, elegido: +x.dataset.cz || undefined });
+  }));
+  if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
+}
+
 // Trompa de Jericó: al sacarla brillan los muros frágiles a la vista y se elige qué hacer.
 const FLECHAS = { '1,0': '→', '-1,0': '←', '0,1': '↓', '0,-1': '↑' };
 function pintarTrompa(e, h, d, et, bot) {
@@ -830,7 +891,7 @@ function pintarTrompa(e, h, d, et, bot) {
   const b = [];
   for (const ap of d.trompa.apoyos) {
     const f = FLECHAS[ap.dir.join(',')];
-    b.push(`<button class="acc principal" data-trompa="${esc(ap.id)}" data-modo="aturdir">${svg('viento')}<span>${f} Dejar tontos</span><span class="n">sujeta ${esc(nombreDe(ap.id))} · ${ap.enemigos} ${ap.enemigos === 1 ? 'enemigo' : 'enemigos'}</span></button>`);
+    b.push(`<button class="acc principal" data-trompa="${esc(ap.id)}" data-modo="aturdir">${svg('viento')}<span>${f} Estruendo</span><span class="n">sujeta ${esc(nombreDe(ap.id))} · ${ap.enemigos} ${ap.enemigos === 1 ? 'enemigo' : 'enemigos'}</span></button>`);
     if (ap.muro) b.push(`<button class="acc principal" data-trompa="${esc(ap.id)}" data-modo="muro">${svg('derrumbe')}<span>${f} Romper el muro</span><span class="n">sujeta ${esc(nombreDe(ap.id))}</span></button>`);
   }
   b.push(`<button class="acc" data-trompa="">${svg('reloj')}<span>Guardarla</span></button>`);
@@ -863,8 +924,10 @@ async function accionBoton(acc, h, d) {
     case 'desarmar': return enviar({ ...base, tipo: 'desarmar', trampa: d.desarmables[0] });
     case 'pocion': return elegirPocion(h, d);
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
-    case 'trompa': app.seleccion = { tipo: 'trompa' }; return pintarAcciones();
-    case 'caldero': return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
+    case 'reliquias': app.seleccion = { tipo: 'reliquias' }; return pintarAcciones();
+    case 'caldero':
+      if (app.estado.reliquias?.caliz) { app.seleccion = { tipo: 'caliz' }; return pintarAcciones(); }
+      return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
     case 'salir': return enviar({ ...base, tipo: 'salir' });
     case 'cargador':
       if (app.moverCargador) { app.moverCargador = false; return pintarAcciones(); }
@@ -1007,7 +1070,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1043,7 +1106,10 @@ function alTocar(x, y) {
   const u = T.muebleEn(e, x, y);
   if (u?.tipo === 'caldero') {
     const i = e.muebles.indexOf(u);
-    if (h && M.disponibles(e, h.id).calderos?.includes(i)) return enviar({ heroe: h.id, tipo: 'caldero', caldero: i });
+    if (h && M.disponibles(e, h.id).calderos?.includes(i)) {
+      if (e.reliquias?.caliz) { app.seleccion = { tipo: 'caliz', caldero: i }; return pintarAcciones(); }
+      return enviar({ heroe: h.id, tipo: 'caldero', caldero: i });
+    }
     return toast('Caldero burbujeante. Ponte al lado para beber (gasta la acción del turno, una vez por héroe).');
   }
   if (u) return toast(D.MUEBLES[u.tipo].nombre + '.');
@@ -1252,6 +1318,14 @@ async function animar(ev) {
       break;
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
+    case 'reliquia': {
+      sonar(ev.reliquia === 'campana' ? 'trampa' : 'aparece');
+      const p = posDe(ev.heroe);
+      if (p) tablero.destello(p[0], p[1], ev.reliquia === 'farol' ? 'rgba(120,255,160,A)' : 'rgba(255,220,140,A)');
+      toast(ev.texto, 'bueno');
+      for (const [x, y] of ev.ruta || []) { tablero.destello(x, y, 'rgba(140,200,255,A)'); await espera(110); }
+      await espera(1100); break;
+    }
     case 'trompa': {
       sonar('trampa');
       for (const [x, y] of ev.celdas || []) tablero.destello(x, y, 'rgba(255,220,140,A)');

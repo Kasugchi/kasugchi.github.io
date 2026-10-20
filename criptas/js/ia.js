@@ -23,6 +23,9 @@ function caminoHaciaHeroe(estado, m, objetivos, soloSala) {
     const [x, y] = n;
     if (T.esRoca(estado, x, y) || T.muebleEn(estado, x, y)) return false;
     if (T.borde(estado, c, n) !== 'libre') return false;
+    // Escudo del Último Muro: nadie entra junto al héroe plantado.
+    const esc = estado.escudo && estado.heroes[estado.escudo.heroe];
+    if (esc && Math.max(Math.abs(esc.x - x), Math.abs(esc.y - y)) <= 1) return false;
     if (soloSala && T.region(x, y) !== m.region) return false;
     return !T.figuraEn(estado, x, y);
   });
@@ -46,7 +49,8 @@ function moverPor(estado, m, ruta, pasos, ctx) {
 function atacarSiPuede(estado, m, ctx) {
   const pegados = objetivosDe(estado).filter((h) => T.puedeTocar(estado, m, h));
   if (!pegados.length) return false;
-  ctx.golpearHeroe(estado, m, masDebil(pegados), m.ataque);
+  const farol = pegados.find((h) => h.id === estado.farol);
+  ctx.golpearHeroe(estado, m, farol || masDebil(pegados), m.ataque);
   return true;
 }
 
@@ -98,7 +102,10 @@ export function turnoMonstruo(estado, m, ctx) {
   // 3) Moverse hacia el héroe más cercano (el guardián, sin salir de su sala).
   if (inmovil) return;
   const soloSala = m.ia === 'guardian' || m.ia === 'lanzador';
-  const ruta = caminoHaciaHeroe(estado, m, objetivos, soloSala);
+  // Farol de los Ahogados: si lo ve, va a por quien lo lleva.
+  const farol = objetivos.find((h) => h.id === estado.farol);
+  const haciaFarol = farol && T.lineaVision(estado, m.x, m.y, farol.x, farol.y) && caminoHaciaHeroe(estado, m, [farol], soloSala);
+  const ruta = haciaFarol || caminoHaciaHeroe(estado, m, objetivos, soloSala);
   if (!ruta) return;
   moverPor(estado, m, ruta, m.mov, ctx);
 

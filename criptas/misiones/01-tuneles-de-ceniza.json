@@ -289,13 +289,15 @@
   ],
   "tesoros": {
     "K": {
-      "texto": "Entre las armas oxidadas del armero hay una espada larga bien conservada.",
-      "arma": "espadaLarga"
+      "texto": "Entre las armas oxidadas del armero hay una espada larga bien conservada. Detrás de las armas, un disco de bronce abollado: el centro de un escudo.",
+      "arma": "espadaLarga",
+      "reliquia": "umbo"
     },
     "L": {
-      "texto": "El cofre guarda 80 monedas de oro.",
+      "texto": "El cofre guarda 80 monedas de oro. En el fondo del cofre, una mecha que arde sin consumirse.",
       "oro": 80,
-      "trampaCofre": true
+      "trampaCofre": true,
+      "reliquia": "mecha"
     },
     "M": {
       "texto": "Junto a la chimenea, olvidado, un frasco curativo.",
@@ -304,6 +306,10 @@
     "G": {
       "texto": "En el cofre de Grumak brillan 150 monedas robadas a las caravanas.",
       "oro": 150
+    },
+    "I": {
+      "texto": "Bajo la mesa, entre huesos roídos, un grillete con media cadena rota.",
+      "reliquia": "grillete1"
     }
   },
   "disparadores": [

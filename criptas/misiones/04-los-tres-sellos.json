@@ -489,12 +489,14 @@
       "reliquia": "trompeta"
     },
     "J": {
-      "texto": "Detrás de los libros, un frasco curativo.",
-      "objeto": "pocionCurar"
+      "texto": "Detrás de los libros, un frasco curativo. Tras los libros, una campana rajada sin badajo.",
+      "objeto": "pocionCurar",
+      "reliquia": "campanaRajada"
     },
     "K": {
-      "texto": "Colgada de la pared, una ballesta con su carcaj.",
-      "arma": "ballesta"
+      "texto": "Colgada de la pared, una ballesta con su carcaj. Al lado del caldero, media copa negra.",
+      "arma": "ballesta",
+      "reliquia": "caliz2"
     }
   },
   "disparadores": [

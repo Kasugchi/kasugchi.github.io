@@ -390,6 +390,10 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.niebla) marca('agua', '#a8d0f0');
   if (ef.coraje || ef.fuerza || ef.calderoAtq > 0) marca('fuego', '#ff9a50');
   if (ef.calderoAtq < 0) marca('atacar', '#e05a4a');
+  if (ef.farol) marca('antorcha', '#8af0a8');
+  if (ef.cadena) marca('verja', '#d8c8a0');
+  if (ef.muro) marca('rodela', '#ffd36a');
+  if (ef.tiron) marca('verja', '#e05a4a');
   if (ef.calderoDef > 0) marca('escudo', '#9fd08a');
   if (ef.calderoDef < 0) marca('escudo', '#e05a4a');
   // vida de monstruos con más de 1 punto
