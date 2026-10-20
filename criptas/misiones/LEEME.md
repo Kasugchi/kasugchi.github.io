@@ -20,7 +20,7 @@ Las coordenadas son `[x, y]`: `x` va de 0 a 25 (columnas, de izquierda a derecha
 | `muebles` | `{ "tipo", "x", "y", "w", "h" }`. Tipos: mesa, cofre, estanteria, trono, sarcofago, chimenea, armero, alquimista, potro, caldero, altar. |
 | `monstruos` | `{ "id", "tipo", "x", "y", "ia" }`. Tipos: trasgo, orco, esqueleto, zombi, momia, guerrero, gargola, hechicero. Opcional: `nombre`, `jefe`, `cuerpo`, `ataque`, `defensa`, `hechizos` (solo el hechicero: `rayo`, `invocar`). |
 | `trampas` | `{ "id", "tipo", "x", "y" }`. Tipos: foso, lanza, bloque. |
-| `tesoros` | Por letra de sala: lo que se encuentra la primera vez que alguien busca tesoro en ella. Campos: `texto`, `oro`, `objeto` (una poción), `arma`, `flag`, `trampaCofre`, `reliquia` (`escritos` o `trompeta`: al tener las dos, el grupo consigue la Trompa de Jericó). Las salas sin tesoro fijo usan el mazo de cartas. |
+| `tesoros` | Por letra de sala: lo que se encuentra la primera vez que alguien busca tesoro en ella. Campos: `texto`, `oro`, `objeto` (una poción), `arma`, `flag`, `trampaCofre`, `reliquia` (una pieza de reliquia: `escritos`, `trompeta`, `mecha`, `farolHierro`, `grillete1`, `grillete2`, `umbo`, `correas`, `aguja`, `cajaHueso`, `caliz1`, `caliz2`, `badajo`, `campanaRajada`; al tener las dos de una reliquia, el grupo la consigue. Están todas en `PIEZAS` y `RELIQUIAS`, dentro de `js/datos.js`). Las salas sin tesoro fijo usan el mazo de cartas. |
 | `disparadores` | El guion de la misión (ver abajo). |
 
 ## IA de los monstruos
