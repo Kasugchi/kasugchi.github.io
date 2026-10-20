@@ -846,12 +846,7 @@ function pintarMochila() {
 }
 
 // Carta del monstruo, como las de los héroes pero en negro y rojo.
-const IA_TEXTO = {
-  agresivo: 'Te persigue en cuanto te ve.',
-  guardian: 'Guarda su sala: no sale de ella.',
-  centinela: 'Inmóvil… hasta que algo lo despierte.',
-  lanzador: 'Ataca con magia a distancia y llama a los muertos.'
-};
+// No muestra cómo se comporta (sería un spoiler).
 function fichaMonstruo(m) {
   const base = D.MONSTRUOS[m.tipo];
   const vida = Array.from({ length: m.cuerpoMax }, (_, i) => `<i class="${i < m.cuerpo ? '' : 'vacio'}"></i>`).join('');
@@ -870,7 +865,6 @@ function fichaMonstruo(m) {
         <div><span>Puntos mentales</span><b>${m.mente}</b></div>
       </div>
       <dl class="lineas">
-        <dt>Conducta</dt><dd>${esc(IA_TEXTO[m.ia] || '')}</dd>
         ${m.nomuerto ? '<dt>No muerto</dt><dd>Inmune al sueño</dd>' : ''}
         ${estados.length ? `<dt>Estado</dt><dd>${esc(estados.join(', '))}</dd>` : ''}
         ${m.hechizos?.length ? `<dt>Hechizos</dt><dd>${m.hechizos.length} por lanzar</dd>` : ''}
