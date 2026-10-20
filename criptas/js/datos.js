@@ -105,7 +105,9 @@ export const ARMAS = {
   espadaAncha: { nombre: 'Espada ancha',  ataque: 3, precio: 250, icono: 'espada' },
   espadaLarga: { nombre: 'Espada larga',  ataque: 3, precio: 350, icono: 'espada', diagonal: true },
   ballesta:    { nombre: 'Ballesta',      ataque: 3, precio: 350, icono: 'ballesta', distancia: true },
-  hacha:       { nombre: 'Hacha de guerra', ataque: 4, precio: 450, icono: 'hacha', dosManos: true }
+  hacha:       { nombre: 'Hacha de guerra', ataque: 4, precio: 450, icono: 'hacha', dosManos: true },
+  // pesada: hay que plantarla para disparar, así que no se puede mover y atacar en el mismo turno.
+  ballestaPesada: { nombre: 'Ballesta pesada', ataque: 4, precio: 600, icono: 'ballesta', distancia: true, dosManos: true, pesada: true }
 };
 export const ARMADURAS = {
   casco:   { nombre: 'Casco',           defensa: 1, precio: 125, icono: 'casco' },

@@ -782,7 +782,7 @@ function pintarAcciones() {
   const b = [];
   const boton = (id, icono, texto, extra = {}) => b.push(`<button class="acc ${extra.clase || ''}" data-acc="${id}" ${extra.off ? 'disabled' : ''} ${extra.titulo ? `title="${esc(extra.titulo)}"` : ''}>${svg(icono)}<span>${esc(texto)}</span>${extra.n ? `<span class="n">${esc(extra.n)}</span>` : ''}</button>`);
   if (d.puedeTirar) boton('tirar', 'dados', 'Mover', { clase: 'principal', n: dadosTxt(h) });
-  boton('atacar', 'atacar', 'Atacar', { off: !d.atacables.length, n: D.ARMAS[h.arma].nombre });
+  boton('atacar', 'atacar', 'Atacar', { off: !d.atacables.length, n: D.ARMAS[h.arma].nombre, titulo: d.motivoAtaque });
   if (h.hechizos.length) boton('hechizo', 'hechizo', 'Hechizo', { off: !d.hechizos.length, n: h.hechizos.length + ' restantes', clase: app.seleccion?.tipo === 'hechizo' ? 'activo' : '' });
   boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda });
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
@@ -1386,7 +1386,7 @@ function pintarArmeria() {
   M.inventarioDe(h);
   const mio = M.puedeControlar(e, miId, h.id);
   const off = mio ? '' : 'disabled';
-  const descDe = (def) => def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}`
+  const descDe = (def) => def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}${def.pesada ? '; no se puede mover y disparar en el mismo turno' : ''}`
     : def.defensa ? `+${def.defensa} de defensa${def.lenta ? ', mueves con 1 dado' : ''}` : def.desc;
   const con = e.contrato;
   const monedas = `<div class="monedas-fila"><span class="monedas">${svg('oro')}${h.oro} <small>en la bolsa</small></span><span class="monedas banco">${svg('corona')}${h.banco || 0} <small>en el banco</small></span></div>`;

@@ -407,7 +407,7 @@ function activarTrampa(estado, h, t, previa) {
 // =============================================================
 export function alcance(estado, h) {
   const t = estado.turno;
-  if (!t || t.heroe !== h.id || !t.movTirada || t.movRestante <= 0) return {};
+  if (!t || t.heroe !== h.id || !t.movTirada || t.movRestante <= 0 || t.plantado) return {};
   const visible = (x, y) => !!estado.revelado[clave(x, y)];
   return T.explorar([h.x, h.y], t.movRestante,
     (c, n) => {
@@ -558,12 +558,15 @@ export function disponibles(estado, id) {
   const r = { miTurno: false };
   if (!h || estado.fase !== 'mision' || !t || t.heroe !== id || estado.resultado) return r;
   r.miTurno = true;
-  r.puedeTirar = !t.movTirada;
+  r.puedeTirar = !t.movTirada && !t.plantado;
   r.destinos = destinos(estado, h).out;
   const libre = !t.accion;
   const sala = T.region(h.x, h.y);
   const aLaVista = monstruosALaVista(estado, h).length > 0;
-  r.atacables = libre ? objetivosAtaque(estado, h) : [];
+  // Armas pesadas: plantarla y disparar ocupa todo el turno, así que no se combina con moverse.
+  const pesada = !!D.ARMAS[h.arma]?.pesada;
+  r.atacables = libre && !(pesada && t.movido) ? objetivosAtaque(estado, h) : [];
+  if (libre && pesada && t.movido) r.motivoAtaque = 'Con la ' + D.ARMAS[h.arma].nombre.toLowerCase() + ' no puedes atacar después de moverte.';
   r.hechizos = libre ? h.hechizos.map((hz) => ({ id: hz, objetivos: objetivosHechizo(estado, h, hz) })).filter((x) => x.objetivos.length) : [];
   r.buscarTesoro = libre && sala !== '.' && !aLaVista && !estado.buscado[id + ':' + sala];
   r.buscarTrampas = libre && !aLaVista;
@@ -1252,6 +1255,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       usarAccion();
       const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0) + (h.efectos.calderoAtq || 0);
       delete h.efectos.coraje; delete h.efectos.fuerza; delete h.efectos.calderoAtq;
+      if (D.ARMAS[h.arma].pesada) { t.plantado = true; t.movRestante = 0; }
       golpearMonstruo(estado, h, m, Math.max(1, ataqueHeroe(h) + extra), D.ARMAS[h.arma].nombre);
       break;
     }
