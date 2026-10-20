@@ -344,7 +344,10 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.raices > 0) marca('tierra', '#a6c35a');
   if (ef.piel) marca('piedra', '#d0c8b8');
   if (ef.niebla) marca('agua', '#a8d0f0');
-  if (ef.coraje || ef.fuerza) marca('fuego', '#ff9a50');
+  if (ef.coraje || ef.fuerza || ef.calderoAtq > 0) marca('fuego', '#ff9a50');
+  if (ef.calderoAtq < 0) marca('atacar', '#e05a4a');
+  if (ef.calderoDef > 0) marca('escudo', '#9fd08a');
+  if (ef.calderoDef < 0) marca('escudo', '#e05a4a');
   // vida de monstruos con más de 1 punto
   if ((!esHeroe || f.id === 'cargador') && f.cuerpoMax > 1) {
     const w = rad * 1.6, px = cx - w / 2, py = cy + rad + 4;

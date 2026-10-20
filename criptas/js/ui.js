@@ -940,7 +940,8 @@ function fichaHeroe(t) {
   const e = app.estado, h = e.heroes[t], def = D.HEROES[t];
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
-  const ef = Object.keys(h.efectos).map((k) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla' }[k])).filter(Boolean).join(', ');
+  const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);

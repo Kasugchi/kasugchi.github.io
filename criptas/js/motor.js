@@ -359,8 +359,9 @@ function golpearMonstruo(estado, h, m, dados, etiqueta) {
 // Ataque de monstruo a héroe.
 export function golpearHeroe(estado, m, h, dados, etiqueta) {
   const ataque = tirarCombate(dados);
-  const extra = h.efectos.piel ? 2 : 0;
-  const defensa = tirarCombate(defensaHeroe(h) + extra);
+  const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0);
+  delete h.efectos.calderoDef;
+  const defensa = tirarCombate(Math.max(0, defensaHeroe(h) + extra));
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
   log(estado, m.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + h.nombre + ': ' + dano + ' de daño.', dano ? 'peligro' : '');
@@ -845,11 +846,11 @@ function beberCaldero(estado, h, i) {
   const n = h.nombre;
   let texto, tono = 'bueno';
   switch (dado) {
-    case 1: h.cuerpo = Math.max(1, h.cuerpo - 1); texto = `¡Puaj! ${n} bebe del caldero y es veneno: pierde 1 de cuerpo.`; tono = 'peligro'; break;
-    case 2: texto = `${n} bebe del caldero. Sabe a calcetín hervido… y no pasa nada.`; tono = ''; break;
-    case 3: h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + 2); texto = `${n} bebe del caldero: un caldo reconfortante (+2 de cuerpo).`; break;
-    case 4: h.efectos.fuerza = 2; texto = `${n} bebe del caldero y siente una fuerza salvaje: +2 dados en su próximo ataque.`; break;
-    case 5: h.efectos.piel = true; texto = `${n} bebe del caldero y su piel se vuelve gris como la roca.`; break;
+    case 1: h.cuerpo = 1; texto = `¡Puaj! ${n} bebe del caldero y es veneno: se queda con 1 de cuerpo.`; tono = 'peligro'; break;
+    case 2: h.efectos.calderoDef = -1; texto = `${n} bebe del caldero y se siente flojo. Vulnerable: 1 dado menos de defensa en el próximo ataque que reciba.`; tono = 'peligro'; break;
+    case 3: h.efectos.calderoAtq = -1; texto = `${n} bebe del caldero y se le nubla la vista: 1 dado menos en su próximo ataque.`; tono = 'peligro'; break;
+    case 4: h.efectos.calderoAtq = 1; texto = `${n} bebe del caldero y siente una fuerza salvaje: +1 dado en su próximo ataque.`; break;
+    case 5: h.efectos.calderoDef = 1; texto = `${n} bebe del caldero. Robustez: +1 dado de defensa en el próximo ataque que reciba.`; break;
     default: h.cuerpo = h.cuerpoMax; texto = `¡${n} bebe del caldero y todas sus heridas se cierran! Cuerpo al máximo.`;
   }
   ev(estado, { tipo: 'caldero', heroe: h.id, dado, texto, tono });
@@ -1233,9 +1234,9 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       if (!disp.atacables.includes(a.objetivo)) return 'No puedes atacar a ese objetivo.';
       const m = estado.monstruos.find((x) => x.id === a.objetivo);
       usarAccion();
-      const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0);
-      delete h.efectos.coraje; delete h.efectos.fuerza;
-      golpearMonstruo(estado, h, m, ataqueHeroe(h) + extra, D.ARMAS[h.arma].nombre);
+      const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0) + (h.efectos.calderoAtq || 0);
+      delete h.efectos.coraje; delete h.efectos.fuerza; delete h.efectos.calderoAtq;
+      golpearMonstruo(estado, h, m, Math.max(1, ataqueHeroe(h) + extra), D.ARMAS[h.arma].nombre);
       break;
     }
     case 'hechizo': {
