@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020194625">
+<meta name="version" content="20261020201042">
+
 
 
 
@@ -46,23 +47,23 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020194625",
-    "./js/ia.js": "./js/ia.js?v=20261020194625",
-    "./js/iconos.js": "./js/iconos.js?v=20261020194625",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020194625",
-    "./js/motor.js": "./js/motor.js?v=20261020194625",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020194625",
-    "./js/procedural.js": "./js/procedural.js?v=20261020194625",
-    "./js/red.js": "./js/red.js?v=20261020194625",
-    "./js/render.js": "./js/render.js?v=20261020194625",
-    "./js/render3d.js": "./js/render3d.js?v=20261020194625",
-    "./js/sprites.js": "./js/sprites.js?v=20261020194625",
-    "./js/tablero.js": "./js/tablero.js?v=20261020194625",
-    "./js/ui.js": "./js/ui.js?v=20261020194625"
+    "./js/datos.js": "./js/datos.js?v=20261020201042",
+    "./js/ia.js": "./js/ia.js?v=20261020201042",
+    "./js/iconos.js": "./js/iconos.js?v=20261020201042",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020201042",
+    "./js/motor.js": "./js/motor.js?v=20261020201042",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020201042",
+    "./js/procedural.js": "./js/procedural.js?v=20261020201042",
+    "./js/red.js": "./js/red.js?v=20261020201042",
+    "./js/render.js": "./js/render.js?v=20261020201042",
+    "./js/render3d.js": "./js/render3d.js?v=20261020201042",
+    "./js/sprites.js": "./js/sprites.js?v=20261020201042",
+    "./js/tablero.js": "./js/tablero.js?v=20261020201042",
+    "./js/ui.js": "./js/ui.js?v=20261020201042"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020194625">
+<link rel="stylesheet" href="estilo.css?v=20261020201042">
 </head>
 <body>
 
@@ -202,6 +203,11 @@
 
 <aside class="registro" id="registro" hidden aria-label="Diario">
   <header><h2>Diario</h2><button class="icono-btn" id="b-cerrar-registro" aria-label="Cerrar"></button></header>
+  <div class="ficha-detalle fila">
+    <button class="btn madera" id="b-sonido" style="flex:1 1 120px;min-height:40px;font-size:15px">Sonido: sí</button>
+    <button class="btn madera" id="b-al-campamento" style="flex:1 1 100%;min-height:40px;font-size:15px" hidden>Volver al campamento</button>
+    <button class="btn claro" id="b-abandonar" style="flex:1 1 120px;min-height:40px;font-size:15px">Abandonar</button>
+  </div>
   <div class="ficha-detalle objetivo-diario" id="diario-mision" hidden></div>
   <div class="ficha-detalle" id="diario-sala" hidden></div>
   <label class="ficha-detalle campo-figuras">Figuras en 3D
@@ -211,11 +217,6 @@
       <option value="plastico">Miniaturas de plástico</option>
     </select>
   </label>
-  <div class="ficha-detalle fila">
-    <button class="btn madera" id="b-sonido" style="flex:1 1 120px;min-height:40px;font-size:15px">Sonido: sí</button>
-    <button class="btn madera" id="b-al-campamento" style="flex:1 1 100%;min-height:40px;font-size:15px" hidden>Volver al campamento</button>
-    <button class="btn claro" id="b-abandonar" style="flex:1 1 120px;min-height:40px;font-size:15px">Abandonar</button>
-  </div>
   <ol id="diario"></ol>
 </aside>
 
@@ -224,6 +225,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020194625"></script>
+<script type="module" src="js/ui.js?v=20261020201042"></script>
 </body>
 </html>

@@ -245,12 +245,16 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 
 /* Registro */
 .registro { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw); z-index: 15; background: var(--pergamino); color: var(--tinta);
-  box-shadow: -10px 0 30px rgba(0,0,0,0.6); display: flex; flex-direction: column; }
+  box-shadow: -10px 0 30px rgba(0,0,0,0.6); display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: contain; }
+.registro > * { flex: none; }
+.registro header { position: sticky; top: 0; background: var(--pergamino); z-index: 1; }
+.reliquias-diario summary { cursor: pointer; font: 700 20px var(--f-titulo); color: var(--lacre); margin: 12px 0 6px; }
+.reliquias-diario ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .registro header { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid rgba(80,50,20,0.3); }
 .registro header h2 { flex: 1; margin: 0; font: 700 28px var(--f-titulo); color: var(--lacre); }
 .registro header .icono-btn svg { fill: var(--tinta); }
 .registro header .icono-btn { background: rgba(80,50,20,0.12); }
-.registro ol { list-style: none; margin: 0; padding: 10px 16px 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
+.registro ol { list-style: none; margin: 0; padding: 10px 16px 30px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; }
 .registro li.peligro { color: var(--lacre); }
 .registro li.bueno { color: var(--bueno); }
 .registro li.magia { color: var(--magia); }

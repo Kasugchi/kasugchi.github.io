@@ -703,7 +703,7 @@ function htmlReliquias(e) {
     if (r[k]) lineas.push(`<li><b>${esc(rq.nombre)}</b>: ${esc(rq.desc)}</li>`);
     else if (rq.piezas.some((p) => r[p])) lineas.push(`<li>${esc(rq.piezas.filter((p) => r[p]).map((p) => D.PIEZAS[p].nombre).join(', '))} · falta otra pieza</li>`);
   }
-  return `<h3 style="margin-top:12px">Reliquias</h3><ul class="tareas">${lineas.join('')}</ul>`;
+  return `<details class="reliquias-diario"><summary>Reliquias (${Object.keys(D.RELIQUIAS).filter((k) => r[k]).length})</summary><ul>${lineas.join('')}</ul></details>`;
 }
 function htmlTareas(e) {
   const m = e?.mision;
