@@ -320,7 +320,8 @@ function mostrarReglas() {
     <p>Las salas y pasillos se descubren al verlos. Abrir una puerta revela la sala entera… y lo que hay dentro.</p>
     <p><b>Combate:</b> el atacante tira dados blancos y cuenta calaveras. El héroe se defiende con escudos blancos; el monstruo, con escudos negros. Cada calavera no parada quita un punto de cuerpo.</p>
     <p>Tras el último héroe mueven los monstruos. Algunos te persiguen, otros guardan su sala y otros esperan a que pase algo.</p>
-    <p><b>Equipo:</b> lo que no lleve nadie se queda en el almacén del grupo. Se reparte en la armería entre misiones o, dentro de la mazmorra, desde la mochila de un cargador contratado: hay que ponerse a su lado y gastar 1 casilla.</p>
+    <p><b>Campamento:</b> antes de cada misión cada héroe compra, se equipa, guarda dinero en el banco y puede contratar un cargador. El equipo es de cada héroe: no se pasa a otros, pero se puede vender a mitad de precio. Del banco se puede transferir a otro héroe hasta un 40 % del dinero, una vez por misión.</p>
+    <p><b>Cargador:</b> lleva a la mazmorra lo que cada héroe le cargue. Para usarlo hay que ponerse a su lado y gastar 1 casilla. Si muere, lo que lleva se pierde.</p>
     <p class="nota">Busca trampas antes de cruzar pasillos sospechosos y no busques tesoro con monstruos a la vista.</p>`, [{ texto: 'Entendido' }]);
 }
 
@@ -352,7 +353,7 @@ function tarjetaHTML(tipo, fem, h) {
       <dt>Arma</dt><dd>${esc(arma)}</dd>
       <dt>Armadura</dt><dd>${esc(armadura)}</dd>
       ${magia ? `<dt>Magia</dt><dd>${esc(magia)}</dd>` : ''}
-      ${h ? `<dt>Oro</dt><dd>${h.oro} monedas</dd>` : ''}
+      ${h ? `<dt>Bolsa</dt><dd>${h.oro} monedas</dd><dt>Banco</dt><dd>${h.banco || 0} monedas</dd>` : ''}
     </dl>
   </div>`;
 }
@@ -430,7 +431,7 @@ $('#b-empezar').addEventListener('click', async () => {
   e.anfitrion = miId;
   app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
   e.misionIdx = s.misionIdx;
-  M.iniciarMision(e, app.misiones[D.CAMPANA[s.misionIdx]]);
+  e.fase = 'armeria'; // primero el campamento: equipo, banco y cargador
   app.visto = 0; app.estado = null; app.cola = [];
   publicar(e);
 });
@@ -494,6 +495,7 @@ function mensajeDelAnfitrion(msg) {
 //  ESTADO Y ACCIONES
 // =============================================================
 function publicar(estado) {
+  M.asegurarInventario(estado); // partidas de versiones anteriores
   guardarPartida(estado);
   if (app.modo === 'anfitrion') app.red?.difundir({ t: 'estado', estado });
   recibirEstado(JSON.parse(JSON.stringify(estado)), estado);
@@ -782,20 +784,25 @@ function filaItem(item, boton, motivo) {
   const desc = def.ataque ? def.ataque + ' dados de ataque' : def.defensa ? '+' + def.defensa + ' de defensa' : def.desc || '';
   return `<div class="item">${svg(def.icono)}<strong>${esc(def.nombre)}</strong>${boton || ''}<span>${esc(motivo || desc)}</span></div>`;
 }
-function contenidoAlmacen(e) {
-  const alm = e.almacen || { armas: [], armaduras: [], objetos: {} };
-  const items = [...alm.armas, ...alm.armaduras];
-  for (const [k, n] of Object.entries(alm.objetos)) for (let i = 0; i < n; i++) items.push(k);
-  return items;
-}
+// Agrupa objetos repetidos: [['espadaCorta', 2], ...]
+const agrupar = (items) => { const m = new Map(); for (const i of items) m.set(i, (m.get(i) || 0) + 1); return [...m]; };
 function pintarMochila() {
   const e = app.estado;
   const soloVer = app.mochilaAbierta === '__ver';
   const h = soloVer ? null : e.heroes[app.mochilaAbierta];
   const t = e.turno;
   const sigue = h && e.fase === 'mision' && t?.heroe === h.id && M.disponibles(e, h.id).mochila;
-  const items = contenidoAlmacen(e);
+  const c = e.cargador;
   let html = `<h2>Mochila del cargador</h2>`;
+  if (soloVer) {
+    // Consulta: lo que lleva cada héroe en la mochila.
+    html += '<p class="nota">Cada héroe solo puede coger lo suyo. Si el cargador muere, todo se pierde.</p>';
+    for (const t of e.orden) {
+      const items = M.contenido(c?.carga?.[t]);
+      html += `<h3 class="sec">De ${esc(art(e.heroes[t]))}</h3>` + (items.length ? '<div class="armeria-grid">' + agrupar(items).map(([i, n]) => filaItem(i, '', n > 1 ? '×' + n : '')).join('') + '</div>' : '<p class="nota">Nada.</p>');
+    }
+  }
+  const items = h ? M.contenido(c?.carga?.[h.id]) : [];
   if (h) {
     html += `<p class="nota">${sigue ? 'Coge o deja lo que quieras: ya has pagado la casilla de este turno.' : 'Ya no estás junto al cargador.'}</p>
       <h3 class="sec">Lo que lleva ${esc(art(h))}</h3><div class="armeria-grid">
@@ -804,13 +811,11 @@ function pintarMochila() {
       ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${sigue ? '' : 'disabled'}>Dejar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
       </div>`;
   }
-  html += `<h3 class="sec">En la mochila</h3>`;
-  if (!items.length) html += '<p class="nota">Está vacía.</p>';
-  else {
-    const vistos = new Set();
-    html += '<div class="armeria-grid">' + items.filter((i) => !vistos.has(i) && vistos.add(i)).map((i) => {
-      const n = items.filter((x) => x === i).length;
-      const motivo = h ? M.motivoNoEquipar(h, i) : null;
+  if (h) html += `<h3 class="sec">Tus cosas en la mochila</h3>`;
+  if (h && !items.length) html += '<p class="nota">No llevas nada en la mochila. Se carga en el campamento, antes de bajar.</p>';
+  else if (h) {
+    html += '<div class="armeria-grid">' + agrupar(items).map(([i, n]) => {
+      const motivo = M.motivoNoEquipar(h, i);
       const btn = h ? `<button class="btn" data-coger="${i}" ${sigue && !motivo ? '' : 'disabled'} title="${esc(motivo || '')}">Coger</button>` : '';
       return filaItem(i, btn, motivo || (n > 1 ? '×' + n : ''));
     }).join('') + '</div>';
@@ -1088,72 +1093,129 @@ async function mostrarResultado(res) {
 // =============================================================
 //  ARMERÍA
 // =============================================================
+// =============================================================
+//  CAMPAMENTO (antes de cada misión)
+//  Por héroe: carta y stats, equipo e inventario, tienda, banco y cargador.
+// =============================================================
+const SUBPESTANAS = [['heroe', 'Héroe'], ['equipo', 'Equipo'], ['tienda', 'Tienda'], ['banco', 'Banco'], ['cargador', 'Cargador']];
 function pintarArmeria() {
   const e = app.estado;
   const manda = app.modo !== 'invitado';
   const misHeroes = e.orden.filter((t) => M.puedeControlar(e, miId, t));
-  if (!misHeroes.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
+  if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
+  app.sub ||= 'heroe';
   const siguiente = app.misiones[e.campana[e.misionIdx]];
-  $('#arm-sub').textContent = 'Preparad el equipo antes de bajar. Siguiente misión: ' + (siguiente?.titulo || '');
+  $('#arm-sub').textContent = 'Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || '');
   $('#arm-pestanas').innerHTML = e.orden.map((t) => `<button aria-pressed="${t === app.pestana}" data-t="${t}">${esc(e.heroes[t].nombre)}</button>`).join('');
   $('#arm-pestanas').querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', () => { app.pestana = b.dataset.t; pintarArmeria(); }));
   const h = e.heroes[app.pestana];
+  M.inventarioDe(h);
   const mio = M.puedeControlar(e, miId, h.id);
   const off = mio ? '' : 'disabled';
   const descDe = (def) => def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}`
     : def.defensa ? `+${def.defensa} de defensa${def.lenta ? ', mueves con 1 dado' : ''}` : def.desc;
-
-  // Equipo puesto
-  const puesto = `<h3 class="sec">Lo que lleva</h3><div class="armeria-grid">
-    ${filaItem(h.arma, '', 'Arma · ' + descDe(D.ARMAS[h.arma]))}
-    ${h.armaduras.map((x) => filaItem(x, `<button class="btn claro" data-guardar="${x}" ${off}>Guardar</button>`, 'Armadura · ' + descDe(D.ARMADURAS[x]))).join('')}
-    ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${off}>Guardar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
-  </div>`;
-
-  // Almacén del grupo
-  const items = contenidoAlmacen(e);
-  const vistos = new Set();
-  const almacen = `<h3 class="sec">Almacén del grupo</h3>` + (items.length ? '<div class="armeria-grid">' + items.filter((i) => !vistos.has(i) && vistos.add(i)).map((i) => {
-    const n = items.filter((x) => x === i).length;
-    const motivo = M.motivoNoEquipar(h, i);
-    const def = D.ARMAS[i] || D.ARMADURAS[i] || D.POCIONES[i];
-    const venta = Math.floor((def.precio || 100) / 2);
-    return filaItem(i, `<span class="botones"><button class="btn" data-equipar="${i}" ${mio && !motivo ? '' : 'disabled'} title="${esc(motivo || '')}">Equipar</button><button class="btn claro" data-vender="${i}" ${off}>Vender ${venta}</button></span>`,
-      (motivo ? motivo : descDe(def)) + (n > 1 ? ' · ×' + n : ''));
-  }).join('') + '</div>' : '<p class="nota">Vacío. Las armas que cambiéis o encontréis y no uséis acabarán aquí.</p>');
-
-  // Cargador
   const con = e.contrato;
-  const patron = con && e.heroes[con.patron];
-  const cargador = `<h3 class="sec">Cargador</h3><div class="item">${svg('cargador')}<strong>Cargador · ${D.CARGADOR.precio} monedas</strong>
-    ${con ? (con.patron === h.id ? `<button class="btn claro" data-despedir ${off}>Cancelar</button>` : '<button class="btn" disabled>Contratado</button>')
-      : `<button class="btn" data-contratar ${mio && h.oro >= D.CARGADOR.precio ? '' : 'disabled'}>Contratar</button>`}
-    <span>${con ? 'Contratado por ' + esc(patron?.nombre || '') + ' para la próxima misión.' : 'Lleva el almacén a la mazmorra. Lo mueve quien lo paga; para usar la mochila hay que estar a su lado y gastar 1 casilla. Tiene 2 de cuerpo.'}</span></div>`;
+  const monedas = `<div class="monedas-fila"><span class="monedas">${svg('oro')}${h.oro} <small>en la bolsa</small></span><span class="monedas banco">${svg('corona')}${h.banco || 0} <small>en el banco</small></span></div>`;
+  let cuerpo = '';
 
-  // Tienda
-  const fila = (id, def, tipoTxt) => {
-    const motivo = M.puedeComprar(e, h, id);
-    const usable = D.OBJETOS_TIENDA[id] || !M.motivoNoEquipar(h, id);
-    return `<div class="item">${svg(def.icono)}<strong>${esc(def.nombre)}</strong>
-      <button class="btn" data-comprar="${id}" ${!mio || motivo ? 'disabled' : ''} title="${esc(motivo || '')}">${def.precio} oro</button>
-      <span>${esc(tipoTxt + ' · ' + descDe(def) + (usable ? '' : ' · irá al almacén'))}</span></div>`;
-  };
-  $('#arm-cuerpo').innerHTML = `<div class="monedas">${svg('oro')}${h.oro} monedas</div>
-    ${mio ? '' : '<p class="nota">Este héroe lo equipa otro jugador.</p>'}
-    ${puesto}${almacen}${cargador}
-    <h3 class="sec">Tienda</h3><div class="armeria-grid">
+  if (app.sub === 'heroe') {
+    const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
+    cuerpo = `<div class="campamento-heroe">${tarjetaHTML(h.id, h.fem, h)}</div>
+      <p class="nota" style="margin-top:12px">${esc(D.HEROES[h.tipo].lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
+      ${hz ? `<p><b>Hechizos:</b> ${esc(hz)}</p>` : ''}
+      ${mio ? '' : '<p class="nota">Este héroe lo lleva otro jugador.</p>'}`;
+  }
+
+  if (app.sub === 'equipo') {
+    const inv = M.contenido(h.inventario);
+    cuerpo = `<h3 class="sec">Lo que lleva</h3><div class="armeria-grid">
+      ${filaItem(h.arma, '', 'Arma · ' + descDe(D.ARMAS[h.arma]))}
+      ${h.armaduras.map((x) => filaItem(x, `<button class="btn claro" data-guardar="${x}" ${off}>Guardar</button>`, 'Armadura · ' + descDe(D.ARMADURAS[x]))).join('')}
+      ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${off}>Guardar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
+    </div>
+    <h3 class="sec">Inventario</h3>
+    <p class="nota">Lo que tienes guardado. No se puede pasar a otros héroes, pero sí vender a mitad de precio.</p>` +
+    (inv.length ? '<div class="armeria-grid">' + agrupar(inv).map(([i, n]) => {
+      const motivo = M.motivoNoEquipar(h, i);
+      const def = D.ARMAS[i] || D.ARMADURAS[i] || D.POCIONES[i];
+      return filaItem(i, `<span class="botones"><button class="btn" data-equipar="${i}" ${mio && !motivo ? '' : 'disabled'} title="${esc(motivo || '')}">Equipar</button><button class="btn claro" data-vender="${i}" ${off}>Vender ${M.precioVenta(i)}</button></span>`,
+        (motivo || descDe(def)) + (n > 1 ? ' · ×' + n : ''));
+    }).join('') + '</div>' : '<p class="nota">Vacío. Al cambiar de arma, la anterior se guarda aquí.</p>');
+  }
+
+  if (app.sub === 'tienda') {
+    const fila = (id, def, tipoTxt) => {
+      const motivo = M.puedeComprar(e, h, id);
+      const aInv = !D.OBJETOS_TIENDA[id] && !motivo && M.motivoNoEquipar(h, id);
+      return `<div class="item">${svg(def.icono)}<strong>${esc(def.nombre)}</strong>
+        <button class="btn" data-comprar="${id}" ${!mio || motivo ? 'disabled' : ''} title="${esc(motivo || '')}">${def.precio} oro</button>
+        <span>${esc(tipoTxt + ' · ' + (motivo && motivo !== 'No tienes oro suficiente en la bolsa.' ? motivo : descDe(def) + (aInv ? ' · irá a tu inventario' : '')))}</span></div>`;
+    };
+    cuerpo = `<p class="nota">Se paga con el dinero de la bolsa.</p><div class="armeria-grid">
       ${Object.entries(D.ARMAS).filter(([id]) => id !== 'daga').map(([id, d]) => fila(id, d, 'Arma')).join('')}
       ${Object.entries(D.ARMADURAS).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
       ${Object.entries(D.OBJETOS_TIENDA).map(([id, d]) => fila(id, d, 'Objeto')).join('')}
     </div>`;
+  }
+
+  if (app.sub === 'banco') {
+    const max = M.maxTransferencia(h);
+    const otros = e.orden.filter((t) => t !== h.id);
+    cuerpo = `<p class="nota">El dinero del banco no se gasta en la tienda: sácalo antes de comprar.</p>
+      <div class="banco-op">
+        <input type="number" min="1" step="1" inputmode="numeric" id="cant-banco" placeholder="Cantidad" ${off}>
+        <button class="btn" data-banco="depositar" ${off}>Ingresar</button>
+        <button class="btn madera" data-banco="retirar" ${off}>Sacar</button>
+      </div>
+      <h3 class="sec">Transferir a otro héroe</h3>
+      <p class="nota">Sale de tu banco y llega al suyo. Como mucho el 40 % de tu dinero (${max} monedas ahora) y una vez por misión.</p>
+      ${h.transferido ? '<p class="nota"><b>Ya has transferido antes de esta misión.</b></p>' : ''}
+      ${otros.length ? `<div class="banco-op">
+        <select id="dest-banco" ${off}>${otros.map((t) => `<option value="${t}">${esc(e.heroes[t].nombre)}</option>`).join('')}</select>
+        <input type="number" min="1" step="1" inputmode="numeric" max="${max}" id="cant-transf" placeholder="Hasta ${max}" ${off}>
+        <button class="btn" id="b-transferir" ${mio && !h.transferido && max > 0 ? '' : 'disabled'}>Transferir</button>
+      </div>` : '<p class="nota">No hay más héroes en el grupo.</p>'}`;
+  }
+
+  if (app.sub === 'cargador') {
+    const patron = con && e.heroes[con.patron];
+    const inv = M.contenido(h.inventario);
+    const carga = con ? M.contenido(con.carga?.[h.id]) : [];
+    cuerpo = `<div class="item">${svg('cargador')}<strong>Cargador · ${D.CARGADOR.precio} monedas</strong>
+      ${con ? (con.patron === h.id ? `<button class="btn claro" data-despedir ${off}>Cancelar</button>` : '<button class="btn" disabled>Contratado</button>')
+        : `<button class="btn" data-contratar ${mio && h.oro >= D.CARGADOR.precio ? '' : 'disabled'}>Contratar</button>`}
+      <span>${con ? 'Contratado por ' + esc(patron?.nombre || '') + ' para esta misión.' : 'Lo mueve quien lo paga. Tiene 2 de cuerpo.'}</span></div>
+      <p class="nota">Lleva a la mazmorra lo que cada héroe cargue aquí. Para usarlo hay que ponerse a su lado y gastar 1 casilla. <b>Si muere, lo que lleva se pierde.</b></p>` +
+      (con ? `<h3 class="sec">Tus cosas en la mochila</h3>` + (carga.length ? '<div class="armeria-grid">' + agrupar(carga).map(([i, n]) => filaItem(i, `<button class="btn claro" data-descargar="${i}" ${off}>Sacar</button>`, n > 1 ? '×' + n : '')).join('') + '</div>' : '<p class="nota">Nada todavía.</p>')
+        + `<h3 class="sec">Tu inventario</h3>` + (inv.length ? '<div class="armeria-grid">' + agrupar(inv).map(([i, n]) => filaItem(i, `<button class="btn" data-cargar="${i}" ${off}>Cargar</button>`, n > 1 ? '×' + n : '')).join('') + '</div>' : '<p class="nota">Tu inventario está vacío.</p>')
+      : '');
+  }
+
+  $('#arm-cuerpo').innerHTML = monedas
+    + `<div class="pestanas sub" id="arm-sub-pestanas">${SUBPESTANAS.map(([k, n]) => `<button aria-pressed="${k === app.sub}" data-sub="${k}">${n}</button>`).join('')}</div>`
+    + `<div class="sub-cuerpo">${cuerpo}</div>`;
   const q = (sel, fn) => $('#arm-cuerpo').querySelectorAll(sel).forEach((b) => b.addEventListener('click', () => fn(b)));
+  q('[data-sub]', (b) => { app.sub = b.dataset.sub; pintarArmeria(); });
   q('[data-comprar]', (b) => enviar({ tipo: 'comprar', heroe: h.id, item: b.dataset.comprar }));
   q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
   q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
   q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));
+  q('[data-cargar]', (b) => enviar({ tipo: 'cargar', heroe: h.id, item: b.dataset.cargar }));
+  q('[data-descargar]', (b) => enviar({ tipo: 'descargar', heroe: h.id, item: b.dataset.descargar }));
   q('[data-contratar]', () => enviar({ tipo: 'contratar', heroe: h.id }));
   q('[data-despedir]', () => enviar({ tipo: 'despedir', heroe: h.id }));
+  q('[data-banco]', (b) => {
+    const n = Math.floor(Number($('#cant-banco').value));
+    if (!(n > 0)) return toast('Escribe una cantidad.', 'peligro');
+    enviar({ tipo: b.dataset.banco, heroe: h.id, cantidad: n });
+  });
+  q('#b-transferir', () => {
+    const n = Math.floor(Number($('#cant-transf').value));
+    if (!(n > 0)) return toast('Escribe una cantidad.', 'peligro');
+    enviar({ tipo: 'transferir', heroe: h.id, a: $('#dest-banco').value, cantidad: n });
+  });
   $('#b-siguiente').hidden = !manda;
+  $('#b-siguiente').textContent = 'Bajar a la mazmorra';
   $('#arm-espera').hidden = manda;
 }
 $('#b-siguiente').addEventListener('click', () => enviar({ tipo: 'siguienteMision' }));
