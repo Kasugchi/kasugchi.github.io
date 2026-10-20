@@ -600,7 +600,19 @@ $('#b-vertodo').addEventListener('click', () => {
   if (tablero.cam.z > tablero.min * 1.05) tablero.verTodo();
   else if (e?.turno) { const h = e.heroes[e.turno.heroe]; tablero.centrarEn(h.x, h.y, true); }
 });
-$('#b-registro').addEventListener('click', () => { pintarDiario(); $('#registro').hidden = false; });
+$('#b-registro').addEventListener('click', () => {
+  pintarDiario();
+  $('#b-al-campamento').hidden = app.modo === 'invitado' || app.estado?.fase !== 'mision';
+  $('#registro').hidden = false;
+});
+// Temporal: volver al campamento a mitad de misión (la misión empieza de cero al bajar otra vez).
+$('#b-al-campamento').addEventListener('click', async () => {
+  app.cerrarModalFuera = () => {};
+  const i = await modal('<h2>¿Volver al campamento?</h2><p>Los héroes conservan el oro y el equipo que llevan, pero la misión empezará de cero al volver a bajar.</p>', [{ texto: 'Seguir jugando', clase: 'claro' }, { texto: 'Volver al campamento' }]);
+  if (i !== 1) return;
+  $('#registro').hidden = true;
+  enviar({ tipo: 'volverCampamento' });
+});
 $('#b-cerrar-registro').addEventListener('click', () => ($('#registro').hidden = true));
 $('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); });
 $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');

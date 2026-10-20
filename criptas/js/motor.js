@@ -1032,7 +1032,11 @@ export function aplicar(estado, a, jugador, cargarMision) {
   }
   // Desde el pergamino de la misión se puede volver al campamento.
   if (a.tipo === 'volverCampamento') {
-    if (!esAnfitrion || estado.fase !== 'briefing') return 'Solo el anfitrión.';
+    // Temporal: también desde dentro de la misión (la misión se reinicia al volver a bajar).
+    if (!esAnfitrion || !['briefing', 'mision'].includes(estado.fase)) return 'Solo el anfitrión.';
+    for (const h of Object.values(estado.heroes)) { h.vivo = true; h.fuera = false; h.cuerpo = h.cuerpoMax; h.efectos = {}; }
+    estado.turno = null;
+    if (estado.cargador && !estado.cargador.vivo) estado.cargador = null;
     asegurarInventario(estado);
     const c = estado.cargador;
     if (c) estado.contrato = { patron: c.patron, carga: c.carga || {} };
