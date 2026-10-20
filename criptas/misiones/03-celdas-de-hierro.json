@@ -302,22 +302,16 @@
       "flag": "rescatado"
     },
     "L": {
-      "texto": "Bajo la mesa de los orcos, una bolsa con 70 monedas. Debajo de la bolsa, un badajo de plomo que pesa una barbaridad.",
-      "oro": 70,
-      "reliquia": "badajo"
+      "texto": "Bajo la mesa de los orcos, una bolsa con 70 monedas.",
+      "oro": 70
     },
     "H": {
       "texto": "En un estante, un frasco curativo.",
       "objeto": "pocionCurar"
     },
     "D": {
-      "texto": "En el armero queda una lanza en buen estado. En un hueco del armero, una cajita de hueso con una rosa de los vientos.",
-      "arma": "lanza",
-      "reliquia": "cajaHueso"
-    },
-    "M": {
-      "texto": "Junto al caldero, media copa dorada partida limpiamente.",
-      "reliquia": "caliz1"
+      "texto": "En el armero queda una lanza en buen estado.",
+      "arma": "lanza"
     }
   },
   "disparadores": [

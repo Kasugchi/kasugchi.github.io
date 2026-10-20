@@ -484,19 +484,16 @@
       "oro": 80
     },
     "O": {
-      "texto": "Entre las tumbas, ofrendas olvidadas: 120 monedas y una vieja trompeta de hueso, la Trompeta Ancestral.",
-      "oro": 120,
-      "reliquia": "trompeta"
+      "texto": "Entre las tumbas, ofrendas olvidadas: 120 monedas.",
+      "oro": 120
     },
     "J": {
-      "texto": "Detrás de los libros, un frasco curativo. Tras los libros, una campana rajada sin badajo.",
-      "objeto": "pocionCurar",
-      "reliquia": "campanaRajada"
+      "texto": "Detrás de los libros, un frasco curativo.",
+      "objeto": "pocionCurar"
     },
     "K": {
-      "texto": "Colgada de la pared, una ballesta con su carcaj. Al lado del caldero, media copa negra.",
-      "arma": "ballesta",
-      "reliquia": "caliz2"
+      "texto": "Colgada de la pared, una ballesta con su carcaj.",
+      "arma": "ballesta"
     }
   },
   "disparadores": [

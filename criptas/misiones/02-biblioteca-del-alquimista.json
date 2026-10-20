@@ -337,37 +337,29 @@
   ],
   "tesoros": {
     "A": {
-      "texto": "En un estante, detrás de un cráneo, un elixir gris. Junto al elixir, una aguja que tiembla sola.",
-      "objeto": "pocionPiedra",
-      "reliquia": "aguja"
+      "texto": "En un estante, detrás de un cráneo, un elixir gris.",
+      "objeto": "pocionPiedra"
     },
     "C": {
-      "texto": "Entre los libros hay una nota y 30 monedas: «El grimorio duerme al este de la cripta, tras un muro hueco del corredor». Junto a la nota, atado con un cordel, un legajo de Escritos Antiguos.",
-      "oro": 30,
-      "reliquia": "escritos"
+      "texto": "Entre los libros hay una nota y 30 monedas: «El grimorio duerme al este de la cripta, tras un muro hueco del corredor».",
+      "oro": 30
     },
     "D": {
       "texto": "Dentro del sarcófago, entre vendas podridas, 120 monedas.",
       "oro": 120
     },
     "F": {
-      "texto": "Colgado del potro, un frasco curativo intacto. A los pies del potro, un farol de hierro sin mecha.",
-      "objeto": "pocionCurar",
-      "reliquia": "farolHierro"
+      "texto": "Colgado del potro, un frasco curativo intacto.",
+      "objeto": "pocionCurar"
     },
     "H": {
-      "texto": "En el armero hay una bolsa con 100 monedas. Colgadas del armero, unas correas de cuero viejo y recio.",
-      "oro": 100,
-      "reliquia": "correas"
+      "texto": "En el armero hay una bolsa con 100 monedas.",
+      "oro": 100
     },
     "E": {
       "texto": "Sobre la mesa del alquimista descansa el Grimorio de Ceniza, junto a 50 monedas. Al cogerlo, la estatua del rincón abre los ojos.",
       "oro": 50,
       "flag": "grimorio"
-    },
-    "B": {
-      "texto": "Clavado en la pared, un grillete oxidado que encaja con algo.",
-      "reliquia": "grillete2"
     }
   },
   "disparadores": [
