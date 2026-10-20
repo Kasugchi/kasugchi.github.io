@@ -140,7 +140,8 @@ export function iniciarMision(estado, def) {
   estado.habUsada = {};
   estado.farol = null; estado.cadena = null; estado.escudo = null;
   for (const h of Object.values(estado.heroes)) {
-    for (const k of ['farol', 'cadena', 'muro', 'tiron', 'sordo', 'furia']) delete h.efectos[k];
+    for (const k of ['farol', 'cadena', 'muro', 'tiron', 'sordo', 'furia', 'trance', 'dominado', 'aturdidoAlma']) delete h.efectos[k];
+    delete h.alma;
     restaurarCaliz(h);
   }
   estado.puertasPorBorde = {};
@@ -335,6 +336,7 @@ export function danarHeroe(estado, h, n, sinCadena = false) {
   }
   if (h.efectos.piel) { delete h.efectos.piel; }
   h.cuerpo -= n;
+  if (h.efectos?.trance) cuerpoGolpeado(estado, h, h.cuerpo <= 0 && !(h.objetos?.pocionCurar > 0));
   if (h.cuerpo <= 0) {
     if (h.objetos.pocionCurar > 0) {
       h.objetos.pocionCurar--;
@@ -394,7 +396,8 @@ export function golpearHeroe(estado, m, h, dados, etiqueta) {
   const ataque = tirarCombate(dados);
   const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0);
   delete h.efectos.calderoDef; delete h.efectos.sordo;
-  const defensa = tirarCombate(h.efectos?.furia ? 0 : Math.max(0, defensaHeroe(h) + extra));
+  const base = h.efectos?.trance ? Math.floor(defensaHeroe(h) / 2) : defensaHeroe(h);
+  const defensa = tirarCombate(h.efectos?.furia ? 0 : Math.max(0, base + extra));
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
   log(estado, m.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + h.nombre + ': ' + dano + ' de daño.', dano ? 'peligro' : '');
@@ -600,6 +603,14 @@ export function disponibles(estado, id) {
   const r = { miTurno: false };
   if (!h || estado.fase !== 'mision' || !t || t.heroe !== id || estado.resultado) return r;
   r.miTurno = true;
+  if (h.efectos.trance || h.alma) {
+    // El alma está en otro cuerpo: solo se controla al poseído.
+    Object.assign(r, { puedeTirar: false, destinos: {}, atacables: [], hechizos: [], buscarTesoro: false, buscarTrampas: false,
+      desarmables: [], pociones: [], salir: false, puertas: [], calderos: [], reliquias: [], trance: true,
+      motivoBusqueda: 'Tu alma está en otro cuerpo.' });
+    if (t.poseido) r.poseido = poseidoDe(estado, t);
+    return r;
+  }
   r.puedeTirar = !t.movTirada && !t.plantado;
   r.destinos = destinos(estado, h).out;
   const libre = !t.accion;
@@ -935,6 +946,7 @@ function mejorar(estado, h, mejora) {
   h.mejoras[mejora] = (h.mejoras[mejora] || 0) + 1;
   h.puntos--;
   if (mejora === 'cuerpo') { h.cuerpoMax++; h.cuerpo = h.cuerpoMax; }
+  if (mejora === 'mente') h.mente++;
   log(estado, h.nombre + ' mejora: ' + def.nombre + '.', 'bueno');
   return null;
 }
@@ -999,6 +1011,17 @@ function usarHabilidad(estado, h, id, objetivo) {
     revelar(estado);
     if (tipo === 'muro') disparar(estado, 'muro_roto', { muro: ref });
   } else if (id === 'posesion') {
+    if ((m.mente || 0) >= 3) {
+      const a = d6() + h.mente, b = d6() + m.mente;
+      ev(estado, { tipo: 'duelo', heroe: h.id, monstruo: m.id, a, b });
+      if (a <= b) {
+        h.efectos.dominado = m.id;
+        avisar(estado, 'Duelo de mentes: ' + h.nombre + ' ' + a + ' contra ' + m.nombre + ' ' + b + '. ¡' + m.nombre + ' le da la vuelta! En su próximo turno, ' + h.nombre + ' estará bajo su control.', 'peligro');
+        return null;
+      }
+      avisar(estado, 'Duelo de mentes: ' + h.nombre + ' ' + a + ' contra ' + m.nombre + ' ' + b + '. ¡Gana el mago!', 'bueno');
+    }
+    h.efectos.trance = m.id;
     m.efectos.poseido = { por: h.id, rondas: 2 };
     delete m.efectos.dormido;
     estado.turno.poseido = { id: m.id, restante: m.mov, ataco: false };
@@ -1021,7 +1044,8 @@ function poseidoDe(estado, t) {
   if (!m) { delete t.poseido; return undefined; }
   const destinos = {};
   if (t.poseido.restante > 0) for (const [k, c] of Object.entries(alcancePoseido(estado, m, t.poseido.restante))) if (c.d > 0) destinos[k] = c.d;
-  const atacables = t.poseido.ataco ? [] : estado.monstruos.filter((o) => o !== m && o.vivo && o.visto && T.puedeTocar(estado, m, o)).map((o) => o.id);
+  const rayo = m.hechizos?.includes('rayo');
+  const atacables = t.poseido.ataco ? [] : estado.monstruos.filter((o) => o !== m && o.vivo && o.visto && (T.puedeTocar(estado, m, o) || (rayo && T.lineaVision(estado, m.x, m.y, o.x, o.y, true)))).map((o) => o.id);
   return { id: m.id, restante: t.poseido.restante, destinos, atacables };
 }
 function moverPoseido(estado, t, x, y) {
@@ -1039,18 +1063,64 @@ function atacarPoseido(estado, h, t, objetivo) {
   const m = estado.monstruos.find((o) => o.id === t.poseido.id);
   const o = estado.monstruos.find((x) => x.id === objetivo);
   t.poseido.ataco = true;
-  const ataque = tirarCombate(m.ataque);
+  const conRayo = !T.puedeTocar(estado, m, o) && m.hechizos?.includes('rayo');
+  if (conRayo) m.hechizos.splice(m.hechizos.indexOf('rayo'), 1);
+  const ataque = tirarCombate(conRayo ? 3 : m.ataque);
   const defensa = tirarCombate(o.efectos.dormido ? 0 : o.defensa);
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
-  ev(estado, { tipo: 'dados', atacante: m.id, defensor: o.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta: 'Poseído por ' + h.nombre });
+  ev(estado, { tipo: 'dados', atacante: m.id, defensor: o.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta: (conRayo ? 'Rayo sombrío · ' : '') + 'Poseído por ' + h.nombre });
   log(estado, m.nombre + ' (poseído) → ' + o.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
   danarMonstruo(estado, o, dano);
   return null;
 }
 function liberarPosesion(estado, m, muerto = false) {
+  const p = m.efectos.poseido;
   delete m.efectos.poseido;
+  const mago = p && estado.heroes[p.por];
+  if (mago) {
+    delete mago.efectos.trance;
+    if (mago.alma === m.id) {
+      delete mago.alma;
+      avisar(estado, 'Con ' + m.nombre + ' muere también el alma de ' + mago.nombre + '.', 'peligro');
+      ev(estado, { tipo: 'muerte', id: mago.id });
+    } else if (!muerto) avisar(estado, 'El alma de ' + mago.nombre + ' vuelve a su cuerpo.', '');
+    else avisar(estado, m.nombre + ' cae y el alma de ' + mago.nombre + ' vuelve a su cuerpo.', '');
+  }
   if (estado.turno?.poseido?.id === m.id) delete estado.turno.poseido;
   if (!muerto) avisar(estado, m.nombre + ' recupera el control de su cuerpo.', 'peligro');
+}
+
+// Golpe al cuerpo vacío del mago: el alma vuelve de golpe… o se queda atrapada.
+function cuerpoGolpeado(estado, h, muere) {
+  const m = estado.monstruos.find((x) => x.id === h.efectos.trance);
+  if (!m) { delete h.efectos.trance; return; }
+  if (!muere) {
+    avisar(estado, '¡Golpean el cuerpo de ' + h.nombre + ' y la conexión se rompe!', 'peligro');
+    liberarPosesion(estado, m);
+    h.efectos.aturdidoAlma = true;
+  } else {
+    // Muere el cuerpo: el alma se queda dentro del monstruo hasta que este caiga.
+    h.alma = m.id;
+    m.efectos.poseido.rondas = 999;
+    avisar(estado, '¡El cuerpo de ' + h.nombre + ' ha caído! Su alma queda atrapada dentro de ' + m.nombre + '. Si ese monstruo muere, ' + h.nombre + ' se va con él.', 'peligro');
+  }
+}
+
+// Turno del mago dominado: el monstruo ganó el duelo y le hace atacar a los suyos.
+function turnoDominado(estado, h) {
+  const amo = estado.monstruos.find((m) => m.id === h.efectos.dominado);
+  delete h.efectos.dominado;
+  const t = estado.turno;
+  t.accion = true; t.plantado = true;
+  const victimas = Object.values(estado.heroes).filter((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, h, o));
+  if (!victimas.length) { avisar(estado, h.nombre + ', con la mirada vacía, se tambalea sin nadie a quien atacar. Pierde el turno.', 'peligro'); return; }
+  const v = victimas.sort((a, b) => a.cuerpo - b.cuerpo)[0];
+  avisar(estado, (amo ? amo.nombre : 'Una voz') + ' controla a ' + h.nombre + ', que se lanza contra ' + v.nombre + '.', 'peligro');
+  const ataque = tirarCombate(ataqueHeroe(h));
+  const defensa = tirarCombate(defensaHeroe(v));
+  const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
+  ev(estado, { tipo: 'dados', atacante: h.id, defensor: v.id, ataque, defensa, dano, defiende: 'heroe', etiqueta: 'Dominado' });
+  danarHeroe(estado, v, dano);
 }
 
 // =============================================================
@@ -1480,6 +1550,8 @@ function empezarTurno(estado, id) {
   estado.turno = { heroe: id, movTirada: null, movRestante: 0, movido: false, accion: false, cargTirada: null, cargRestante: 0, mochila: false };
   if (h.efectos.tiron) { delete h.efectos.tiron; estado.turno.plantado = true; estado.turno.tiron = true; }
   delete h.efectos.furia;
+  if (h.efectos.aturdidoAlma) { delete h.efectos.aturdidoAlma; estado.turno.accion = true; estado.turno.plantado = true; avisar(estado, h.nombre + ' sigue mareado por el regreso brusco de su alma: pierde el turno.', 'peligro'); }
+  if (h.efectos.dominado) turnoDominado(estado, h);
   const pos = estado.monstruos.find((m) => m.vivo && m.efectos.poseido?.por === id);
   if (pos) estado.turno.poseido = { id: pos.id, restante: pos.mov, ataco: false };
   ev(estado, { tipo: 'turno', heroe: id });
@@ -1487,7 +1559,7 @@ function empezarTurno(estado, id) {
 
 function siguienteTurno(estado) {
   if (estado.resultado) return;
-  const activos = estado.orden.filter((t) => estado.heroes[t].vivo && !estado.heroes[t].fuera);
+  const activos = estado.orden.filter((t) => (estado.heroes[t].vivo && !estado.heroes[t].fuera) || estado.heroes[t].alma);
   if (!activos.length) return comprobarFin(estado);
   const actual = estado.turno ? estado.orden.indexOf(estado.turno.heroe) : -1;
   const siguiente = estado.orden.slice(actual + 1).find((t) => activos.includes(t));
@@ -1649,7 +1721,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     // La transferencia del banco se recupera al acabar cada misión.
-    for (const h of Object.values(estado.heroes)) { restaurarCaliz(h); h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
+    for (const h of Object.values(estado.heroes)) { restaurarCaliz(h); delete h.alma; h.vivo = true; h.cuerpo = h.cuerpoMax; h.transferido = false; }
     const c = estado.cargador;
     if (c?.vivo) for (const [id, bolsa] of Object.entries(c.carga || {})) for (const i of contenido(bolsa)) meter(inventarioDe(estado.heroes[id]), i);
     estado.cargador = null;
@@ -1853,6 +1925,6 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       return 'Acción desconocida.';
   }
   comprobarFin(estado);
-  if (!estado.resultado && !h.vivo) siguienteTurno(estado);
+  if (!estado.resultado && !h.vivo && !h.alma) siguienteTurno(estado);
   return null;
 }

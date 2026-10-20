@@ -393,6 +393,8 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.farol) marca('antorcha', '#8af0a8');
   if (ef.furia) marca('fuego', '#e05a4a');
   if (ef.poseido) marca('mente', '#c49aff');
+  if (ef.trance) marca('sueno', '#c49aff');
+  if (ef.dominado) marca('mente', '#e05a4a');
   if (ef.cadena) marca('verja', '#d8c8a0');
   if (ef.muro) marca('rodela', '#ffd36a');
   if (ef.tiron) marca('verja', '#e05a4a');

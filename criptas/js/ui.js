@@ -809,6 +809,8 @@ function pintarAcciones() {
   if (app.seleccion?.tipo === 'atacar') info = 'Toca el monstruo al que quieres atacar.';
   if (app.moverCargador && !d.cargador) app.moverCargador = false;
   if (app.moverCargador) info = d.cargador.restante > 0 ? `Cargador: ${d.cargador.restante} casillas. Toca dónde llevarlo.` : 'El cargador ya no puede moverse este turno.';
+  if (d.trance && d.poseido) app.moverPoseido = true;
+  if (d.trance) info = h.alma ? 'Tu cuerpo ha caído: tu alma vive dentro del monstruo.' : 'Tu cuerpo está en trance: controla al poseído.';
   if (app.moverPoseido && !d.poseido) app.moverPoseido = false;
   if (app.moverPoseido) info = `Controlas a ${nombre(d.poseido.id)}: ${d.poseido.restante} casillas. Toca dónde llevarlo o a quién atacar.`;
   if (app.seleccion?.tipo === 'habilidad') info = 'Toca el objetivo de ' + D.HABILIDADES[h.tipo].nombre + '.';
@@ -1106,7 +1108,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1362,6 +1364,7 @@ async function animar(ev) {
       break;
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
+    case 'duelo': { sonar('aparece'); const p = posDe(ev.heroe), q = posDe(ev.monstruo); if (p) tablero.destello(p[0], p[1], 'rgba(190,140,255,A)'); if (q) tablero.destello(q[0], q[1], 'rgba(190,140,255,A)'); await espera(500); break; }
     case 'nivel': { const p = posDe(ev.heroe); if (p) tablero.destello(p[0], p[1], 'rgba(190,140,255,A)'); sonar('aparece'); break; }
     case 'reliquia': {
       sonar(ev.reliquia === 'campana' ? 'trampa' : 'aparece');

@@ -131,7 +131,8 @@ export const NIVEL_HABILIDAD = 3;
 export const MEJORAS = {
   cuerpo:  { nombre: '+1 de cuerpo',            max: 4 },
   ataque:  { nombre: '+1 dado de ataque',       max: 2 },
-  defensa: { nombre: '+1 dado de defensa',      max: 2 }
+  defensa: { nombre: '+1 dado de defensa',      max: 2 },
+  mente:   { nombre: '+1 de mente',             max: 3 }
 };
 export const HABILIDADES = {
   barbaro: { id: 'furia', nombre: 'Furia', icono: 'hacha',
@@ -141,7 +142,7 @@ export const HABILIDADES = {
   elfo:    { id: 'disparo', nombre: 'Disparo certero', icono: 'ballesta',
     desc: 'Una vez por piso: dispara 3 dados de ataque a cualquier enemigo a la vista que no esté pegado a ti.' },
   mago:    { id: 'posesion', nombre: 'Posesión', icono: 'mente',
-    desc: 'Una vez por piso: toma el cuerpo de un enemigo a la vista (no un jefe) y lo controlas en tus dos próximos turnos: lo mueves y ataca a los suyos.' }
+    desc: 'Una vez por piso: saca su alma y la mete en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten: duelo de mentes, y si pierdes, él te controla a ti. Mientras posees, tu cuerpo se queda en trance: si le pegan, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' }
 };
 export const EPITETOS = ['Rabioso', 'Viejo', 'Tuerto', 'Sanguinario', 'de Hierro', 'Maldito', 'Despiadado', 'Hambriento'];
 
