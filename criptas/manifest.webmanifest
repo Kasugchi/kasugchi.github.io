@@ -1,0 +1,10 @@
+{
+  "name": "Criptas de Velmor",
+  "short_name": "Criptas",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#1f1611",
+  "theme_color": "#1f1611",
+  "icons": [{ "src": "icono.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

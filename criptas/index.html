@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020141915">
+<meta name="version" content="20261020161020">
+
 
 
 
@@ -27,29 +28,33 @@
 <meta name="description" content="Juego de mazmorras por turnos para 1 a 4 jugadores en el navegador. Crea una sala, comparte el código y bajad juntos a las criptas.">
 <meta name="theme-color" content="#1f1611">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Grenze+Gotisch:wght@600;700;900&display=swap">
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020141915",
-    "./js/ia.js": "./js/ia.js?v=20261020141915",
-    "./js/iconos.js": "./js/iconos.js?v=20261020141915",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020141915",
-    "./js/motor.js": "./js/motor.js?v=20261020141915",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020141915",
-    "./js/procedural.js": "./js/procedural.js?v=20261020141915",
-    "./js/red.js": "./js/red.js?v=20261020141915",
-    "./js/render.js": "./js/render.js?v=20261020141915",
-    "./js/render3d.js": "./js/render3d.js?v=20261020141915",
-    "./js/sprites.js": "./js/sprites.js?v=20261020141915",
-    "./js/tablero.js": "./js/tablero.js?v=20261020141915",
-    "./js/ui.js": "./js/ui.js?v=20261020141915"
+    "./js/datos.js": "./js/datos.js?v=20261020161020",
+    "./js/ia.js": "./js/ia.js?v=20261020161020",
+    "./js/iconos.js": "./js/iconos.js?v=20261020161020",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020161020",
+    "./js/motor.js": "./js/motor.js?v=20261020161020",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020161020",
+    "./js/procedural.js": "./js/procedural.js?v=20261020161020",
+    "./js/red.js": "./js/red.js?v=20261020161020",
+    "./js/render.js": "./js/render.js?v=20261020161020",
+    "./js/render3d.js": "./js/render3d.js?v=20261020161020",
+    "./js/sprites.js": "./js/sprites.js?v=20261020161020",
+    "./js/tablero.js": "./js/tablero.js?v=20261020161020",
+    "./js/ui.js": "./js/ui.js?v=20261020161020"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020141915">
+<link rel="stylesheet" href="estilo.css?v=20261020161020">
 </head>
 <body>
 
@@ -133,6 +138,7 @@
     <h1 id="j-titulo"></h1>
     <span class="reloj-rondas" id="reloj-rondas" hidden></span>
     <button class="icono-btn texto" id="b-vista" aria-label="Cambiar a vista de mesa 3D">3D</button>
+    <button class="icono-btn" id="b-pantalla" aria-label="Pantalla completa"></button>
     <button class="icono-btn" id="b-vertodo" aria-label="Ver todo el tablero"></button>
     <button class="icono-btn" id="b-registro" aria-label="Diario y menú"></button>
   </header>
@@ -210,6 +216,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020141915"></script>
+<script type="module" src="js/ui.js?v=20261020161020"></script>
 </body>
 </html>

@@ -630,6 +630,29 @@ $('#b-girar-izq').addEventListener('click', () => tablero.girar3D(-Math.PI / 4))
 $('#b-girar-der').addEventListener('click', () => tablero.girar3D(Math.PI / 4));
 if (leer('criptas_vista') === '3d') cambiarVista(true);
 
+// ---------- Pantalla completa ----------
+const ICONO_COMPLETA = '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" stroke="currentColor" stroke-width="2.4" fill="none"/></svg>';
+const ICONO_SALIR_COMPLETA = '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" stroke="currentColor" stroke-width="2.4" fill="none"/></svg>';
+const enCompleta = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+const pintarBotonPantalla = () => {
+  $('#b-pantalla').innerHTML = enCompleta() ? ICONO_SALIR_COMPLETA : ICONO_COMPLETA;
+  $('#b-pantalla').setAttribute('aria-label', enCompleta() ? 'Salir de pantalla completa' : 'Pantalla completa');
+};
+pintarBotonPantalla();
+document.addEventListener('fullscreenchange', pintarBotonPantalla);
+document.addEventListener('webkitfullscreenchange', pintarBotonPantalla);
+$('#b-pantalla').addEventListener('click', async () => {
+  const doc = document.documentElement;
+  try {
+    if (enCompleta()) await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else if (doc.requestFullscreen) await doc.requestFullscreen({ navigationUI: 'hide' });
+    else if (doc.webkitRequestFullscreen) doc.webkitRequestFullscreen();
+    else throw new Error('sin soporte');
+  } catch {
+    toast('Este navegador no deja ponerla a pantalla completa. Usa «Compartir → Añadir a pantalla de inicio» y ábrela desde el icono: se verá sin barras.');
+  }
+});
+
 $('#b-vertodo').addEventListener('click', () => {
   const e = app.estado;
   if (tablero.acercado(1.05)) tablero.verTodo();
@@ -764,6 +787,7 @@ function pintarAcciones() {
   boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda });
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
+  if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
   if (d.cargador) {
@@ -798,6 +822,7 @@ async function accionBoton(acc, h, d) {
     case 'trampas': return enviar({ ...base, tipo: 'buscarTrampas' });
     case 'desarmar': return enviar({ ...base, tipo: 'desarmar', trampa: d.desarmables[0] });
     case 'pocion': return elegirPocion(h, d);
+    case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
     case 'caldero': return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
     case 'salir': return enviar({ ...base, tipo: 'salir' });
     case 'cargador':

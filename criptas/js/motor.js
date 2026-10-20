@@ -438,6 +438,27 @@ export function destinos(estado, h) {
   return { mapa, out };
 }
 
+function abrirPuerta(estado, h, p) {
+  p.abierta = true;
+  sumar(cron(estado), 'puertas');
+  sumar(cronH(estado, h.id), 'puertas');
+  ev(estado, { tipo: 'puerta', puerta: p.id });
+  log(estado, h.nombre + ' abre una puerta.');
+  disparar(estado, 'puerta_abierta', { puerta: p.id });
+  revelar(estado);
+}
+
+// Puertas cerradas pegadas al héroe (abrirlas no gasta movimiento ni acción).
+function puertasAlLado(estado, h) {
+  const out = [];
+  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const n = [h.x + dx, h.y + dy];
+    const p = T.puertaEntre(estado, [h.x, h.y], n);
+    if (p && !p.abierta && (!p.secreta || p.descubierta)) out.push({ id: p.id, bloqueada: !!p.bloqueada });
+  }
+  return out;
+}
+
 function moverHeroe(estado, h, x, y) {
   const { mapa, out } = destinos(estado, h);
   const k = clave(x, y);
@@ -455,13 +476,7 @@ function moverHeroe(estado, h, x, y) {
     if (b === 'puerta') {
       const p = T.puertaEntre(estado, prev, n);
       volcar();
-      p.abierta = true;
-      sumar(cron(estado), 'puertas');
-      sumar(cronH(estado, h.id), 'puertas');
-      ev(estado, { tipo: 'puerta', puerta: p.id });
-      log(estado, h.nombre + ' abre una puerta.');
-      disparar(estado, 'puerta_abierta', { puerta: p.id });
-      revelar(estado);
+      abrirPuerta(estado, h, p);
       const f2 = T.figuraEn(estado, n[0], n[1]);
       if (f2 && !T.esAliado(estado, f2)) { avisar(estado, 'Hay alguien al otro lado de la puerta.', 'peligro'); break; }
     }
@@ -561,6 +576,7 @@ export function disponibles(estado, id) {
     return u.tipo === 'caldero' && !(estado.bebido || {})[h.id + ':' + i] && T.region(u.x, u.y) === sala
       && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h;
   }) : [];
+  r.puertas = puertasAlLado(estado, h);
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
   // Cargador: lo mueve el héroe que lo contrató, en su turno.
@@ -1255,6 +1271,13 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
     case 'desarmar':
       if (!disp.desarmables.includes(a.trampa)) return 'No puedes desarmar eso.';
       usarAccion(); desarmar(estado, h, a.trampa); break;
+    case 'abrirPuerta': {
+      const q = disp.puertas.find((x) => x.id === a.puerta) || disp.puertas[0];
+      if (!q) return 'No hay ninguna puerta a tu lado.';
+      if (q.bloqueada) { avisar(estado, 'La puerta está cerrada a cal y canto. Habrá que encontrar la forma de abrirla.', 'peligro'); break; }
+      abrirPuerta(estado, h, estado.puertas.find((x) => x.id === q.id));
+      break;
+    }
     case 'caldero': {
       if (!disp.calderos.includes(a.caldero)) return 'No puedes beber de ese caldero.';
       usarAccion(); beberCaldero(estado, h, a.caldero); break;
