@@ -11,6 +11,7 @@ import * as THREE from './vendor/three.module.min.js';
 import * as D from './datos.js';
 import * as T from './tablero.js';
 import { TS, dibujarMueble, dibujarFicha, dibujarRoca } from './render.js';
+import { crearMiniatura } from './miniaturas.js';
 
 const ESCALA_SUELO = 0.75; // resolución de la textura del suelo
 const ALTO_PARED = 0.55;
@@ -366,11 +367,12 @@ export class Escena3D {
     const color = hex(def.color);
     const peana = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.4, 0.1, 24), new THREE.MeshStandardMaterial({ color: esHeroe ? 0xc9a24a : f.jefe ? 0x8e1d16 : 0x2a211d, roughness: 0.5, metalness: esHeroe ? 0.5 : 0.1 }));
     peana.position.y = 0.05; peana.castShadow = true; g.add(peana);
-    const cuerpo = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.28, 0.5, 16), new THREE.MeshStandardMaterial({ color, roughness: 0.6 }));
-    cuerpo.position.y = 0.35; cuerpo.castShadow = true; g.add(cuerpo);
-    const lamina = new THREE.Mesh(new THREE.PlaneGeometry(0.95, 0.95), new THREE.MeshStandardMaterial({ map: this.texturaFicha(f, esHeroe), transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.6 }));
-    lamina.position.y = 1.0; lamina.castShadow = true; g.add(lamina);
-    g.userData.lamina = lamina;
+    // Miniatura modelada (ver miniaturas.js). El borde de la peana lleva el color de la clase.
+    const mini = crearMiniatura(THREE, f.tipo, { fem: f.fem, jefe: f.jefe });
+    g.add(mini);
+    g.userData.mini = mini;
+    const borde = new THREE.Mesh(new THREE.TorusGeometry(0.385, 0.025, 6, 28), new THREE.MeshStandardMaterial({ color, roughness: 0.5 }));
+    borde.rotation.x = Math.PI / 2; borde.position.y = 0.1; g.add(borde);
     // Anillo del turno.
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffd36a }));
     anillo.rotation.x = Math.PI / 2; anillo.position.y = 0.03; anillo.visible = false; g.add(anillo);
@@ -380,7 +382,7 @@ export class Escena3D {
       const fondo = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.09), new THREE.MeshBasicMaterial({ color: 0x1c1612 }));
       const barra = new THREE.Mesh(new THREE.PlaneGeometry(0.66, 0.06), new THREE.MeshBasicMaterial({ color: 0xc43a2a }));
       barra.position.z = 0.001;
-      const vida = new THREE.Group(); vida.add(fondo, barra); vida.position.y = 1.5;
+      const vida = new THREE.Group(); vida.add(fondo, barra); vida.position.y = f.jefe ? 1.3 : 1.08;
       g.add(vida);
       g.userData.vida = vida; g.userData.barra = barra;
     }
@@ -397,8 +399,8 @@ export class Escena3D {
       if (!g) { g = this.crearFicha(f, x.esHeroe); this.fichas.set(f.id, g); }
       g.position.set(x.x + 0.5, 0, x.y + 0.5);
       g.userData.casilla = () => [Math.round(x.x), Math.round(x.y)];
-      // La lámina y la vida miran siempre a la cámara.
-      g.userData.lamina.quaternion.copy(this.camara.quaternion);
+      // La figura gira hacia la cámara (solo en horizontal) y la vida la mira de frente.
+      g.userData.mini.rotation.y = Math.atan2(this.camara.position.x - g.position.x, this.camara.position.z - g.position.z);
       if (g.userData.vida) {
         g.userData.vida.quaternion.copy(this.camara.quaternion);
         const k = Math.max(0, f.cuerpo / f.cuerpoMax);
