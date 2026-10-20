@@ -18,25 +18,13 @@
 //  vez que vuelve, se marca otra vez como conectado y se reprograma el
 //  aviso de desconexión.
 // =============================================================
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { app } from './firebase.js';
 import {
   getDatabase, ref, get, set, update, remove, push, onValue, onChildAdded,
   onDisconnect, serverTimestamp, off
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
-// Esta configuración es pública por diseño: identifica el proyecto, no da permisos.
-// Lo que protege los datos son las reglas de seguridad de la base de datos.
-const firebaseConfig = {
-  apiKey: 'AIzaSyDfmvjGRPhUzR2b90yjzpq8Bg9llYclmds',
-  authDomain: 'kasugchi.firebaseapp.com',
-  databaseURL: 'https://kasugchi-default-rtdb.europe-west1.firebasedatabase.app',
-  projectId: 'kasugchi',
-  storageBucket: 'kasugchi.firebasestorage.app',
-  messagingSenderId: '1017762951602',
-  appId: '1:1017762951602:web:3f11670c7dbf6f91cdb4ab'
-};
-
-const db = getDatabase(initializeApp(firebaseConfig));
+const db = getDatabase(app);
 const conectado = ref(db, '.info/connected');
 const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const nuevoCodigo = () => Array.from({ length: 4 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');

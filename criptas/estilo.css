@@ -249,6 +249,11 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 .registro > * { flex: none; }
 .registro header { position: sticky; top: 0; background: var(--pergamino); z-index: 1; }
 .modos { display: grid; gap: 16px; }
+.pergamino.nube { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 14px 18px; }
+.pergamino.nube p { margin: 0; flex: 1 1 200px; font-size: 15px; }
+.pergamino.nube .btn { min-height: 40px; font-size: 15px; flex: 0 1 auto; padding: 0 14px; }
+.partida .en-nube { color: #3a6ab0; font-weight: 700; }
+.partidas .importar { margin-top: 10px; }
 @media (min-width: 720px) { .modos { grid-template-columns: 1fr 1fr; } }
 .pergamino.modo { display: flex; flex-direction: column; gap: 10px; }
 .pergamino.modo h2 { margin: 0; }

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criptas · Panel</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<style>
+  :root { --fondo: #1f1611; --papel: #efe2c0; --tinta: #2a1d14; --suave: #7a6a55; --lacre: #9a2a20; --azul: #3a6ab0; --linea: rgba(80,50,20,0.25); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 18px 16px; color: var(--papel); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  header h1 { margin: 0; font-size: 22px; flex: 1; }
+  main { padding: 0 16px 40px; display: grid; gap: 16px; max-width: 1100px; margin: 0 auto; }
+  section { background: var(--papel); border-radius: 10px; padding: 16px; overflow-x: auto; }
+  h2 { margin: 0 0 10px; font-size: 18px; color: var(--lacre); }
+  button { font: inherit; border: 0; border-radius: 6px; padding: 8px 14px; background: #7a4a24; color: #fff; cursor: pointer; }
+  button.claro { background: transparent; border: 1px solid var(--papel); color: var(--papel); }
+  .cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .cifra { background: rgba(255,255,255,0.45); border-radius: 8px; padding: 10px 12px; }
+  .cifra b { display: block; font-size: 26px; }
+  .cifra span { color: var(--suave); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--linea); white-space: nowrap; }
+  th { color: var(--suave); font-weight: 600; }
+  td.num, th.num { text-align: right; }
+  .barra { display: flex; align-items: center; gap: 8px; }
+  .barra i { display: block; height: 10px; background: var(--azul); border-radius: 3px; }
+  .nota { color: var(--suave); }
+  .error { color: var(--lacre); }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --papel: #e8dcbc; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Criptas de Velmor · Panel</h1>
+  <span id="quien"></span>
+  <button id="b-entrar">Entrar con Google</button>
+  <button id="b-salir" class="claro" hidden>Salir</button>
+</header>
+<main id="contenido">
+  <section><p class="nota">Entra con la cuenta de administrador para ver las partidas y estadísticas de todos los jugadores.</p></section>
+</main>
+<script type="module" src="js/panel.js"></script>
+</body>
+</html>

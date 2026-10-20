@@ -151,11 +151,16 @@ function guardarPartida(estado) {
   // Los eventos solo sirven para animar: no hace falta guardarlos.
   todas[app.partidaId] = {
     id: app.partidaId, modo: app.modo, codigo: app.red?.codigo || null,
-    estado: app.modo === 'invitado' ? null : { ...estado, eventos: [] },
+    estado: { ...estado, eventos: [] },
     resumen: resumenPartida(estado), actualizada: Date.now()
   };
   escribirPartidas(todas);
+  // Copia en la nube (si hay sesión): enseguida al cambiar de fase, si no, con calma.
+  const cambioFase = ultimaFase[app.partidaId] !== estado.fase;
+  ultimaFase[app.partidaId] = estado.fase;
+  nube()?.subir(todas[app.partidaId], cambioFase);
 }
+const ultimaFase = {};
 function resumenPartida(e) {
   const heroes = e.orden.map((t) => e.heroes[t].nombre).join(', ');
   const fin = e.fase === 'final';
@@ -165,30 +170,100 @@ function resumenPartida(e) {
   const oro = e.orden.reduce((s, t) => s + e.heroes[t].oro, 0);
   return { heroes, mision, oro, fin };
 }
-function borrarPartida(id) { const todas = leerPartidas(); delete todas[id]; escribirPartidas(todas); }
+function borrarPartida(id) { const todas = leerPartidas(); delete todas[id]; escribirPartidas(todas); nube()?.borrarNube(id); }
+// Lo local y lo de la nube juntos: gana la copia más reciente de cada partida.
+function todasLasPartidas() {
+  const todas = leerPartidas();
+  for (const p of app.nubePartidas || []) {
+    if (!p.estado || !p.resumen) continue;
+    const local = todas[p.id];
+    if (!local || (p.actualizada || 0) > (local.actualizada || 0)) todas[p.id] = { ...p, soloNube: !local };
+    todas[p.id].enNube = true;
+  }
+  return todas;
+}
 
 function pintarPartidas() {
-  const todas = Object.values(leerPartidas()).filter((p) => p.resumen).sort((a, b) => b.actualizada - a.actualizada);
+  const todas = Object.values(todasLasPartidas()).filter((p) => p.resumen).sort((a, b) => b.actualizada - a.actualizada);
   const fecha = (t) => new Date(t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const fila = (p) => `<li class="partida">
       <div><strong>${esc(p.resumen.heroes)}</strong>
       <span>${esc(p.resumen.mision)}</span>
-      <small>${p.codigo ? 'Sala ' + esc(p.codigo) + (p.modo === 'invitado' ? ' · como invitado' : ' · como anfitrión') + ' · ' : ''}${fecha(p.actualizada)}</small></div>
+      <small>${p.codigo ? 'Sala ' + esc(p.codigo) + (p.modo === 'invitado' ? ' · como invitado' : ' · como anfitrión') + ' · ' : ''}${fecha(p.actualizada)}${p.enNube ? ' · <span class="en-nube">en la nube</span>' : ''}</small></div>
+      <button class="icono-btn borrar" data-exportar="${esc(p.id)}" aria-label="Exportar partida" title="Exportar a un archivo">${'<svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14" stroke="currentColor" stroke-width="2.4" fill="none"/></svg>'}</button>
       <button class="btn" data-seguir="${esc(p.id)}">${p.resumen.fin ? 'Ver' : p.modo === 'invitado' ? 'Volver a entrar' : 'Continuar'}</button>
       <button class="icono-btn borrar" data-borrar="${esc(p.id)}" aria-label="Borrar partida">${'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" fill="none"/></svg>'}</button>
     </li>`;
   const solo = todas.filter((p) => p.modo === 'local'), multi = todas.filter((p) => p.modo !== 'local');
-  $('#partidas').hidden = !todas.length;
+  $('#partidas').hidden = false;
   $('#partidas').innerHTML = (solo.length ? `<h2>En solitario</h2><ul>${solo.map(fila).join('')}</ul>` : '')
-    + (multi.length ? `<h2>Multijugador</h2><ul>${multi.map(fila).join('')}</ul>` : '');
+    + (multi.length ? `<h2>Multijugador</h2><ul>${multi.map(fila).join('')}</ul>` : '')
+    + `<label class="btn claro importar">Importar partida desde archivo<input type="file" accept=".json,application/json" id="importar" hidden></label>`;
+  $('#importar').addEventListener('change', (ev) => importarPartida(ev.target.files[0]));
+  $('#partidas').querySelectorAll('[data-exportar]').forEach((b) => b.addEventListener('click', () => exportarPartida(b.dataset.exportar)));
   $('#partidas').querySelectorAll('[data-seguir]').forEach((b) => b.addEventListener('click', () => continuarPartida(b.dataset.seguir)));
   $('#partidas').querySelectorAll('[data-borrar]').forEach((b) => b.addEventListener('click', async () => {
     app.cerrarModalFuera = () => {};
-    const i = await modal('<h2>¿Borrar esta partida?</h2><p>Se perderá el progreso guardado en este dispositivo.</p>', [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Borrar' }]);
+    const i = await modal('<h2>¿Borrar esta partida?</h2><p>Se borrará de este dispositivo y de la nube.</p>', [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Borrar' }]);
     if (i === 1) { borrarPartida(b.dataset.borrar); pintarPartidas(); }
   }));
 }
 listas.then(pintarPartidas);
+
+// ---------- Exportar / importar una partida a un archivo ----------
+function exportarPartida(id) {
+  const p = todasLasPartidas()[id];
+  if (!p?.estado) return toast('Esta partida no tiene datos que exportar.');
+  const nombreArchivo = 'criptas-' + (p.resumen?.heroes || 'partida').replace(/[^a-z0-9áéíóúñ]+/gi, '-').toLowerCase() + '.json';
+  const blob = new Blob([JSON.stringify({ criptas: 1, partida: { ...p, soloNube: undefined, enNube: undefined } })], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nombreArchivo; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+async function importarPartida(archivo) {
+  if (!archivo) return;
+  try {
+    const datos = JSON.parse(await archivo.text());
+    const p = datos?.partida;
+    if (!datos?.criptas || !p?.estado?.heroes) throw new Error('formato');
+    const todas = leerPartidas();
+    const id = todas[p.id] ? p.id + '-' + Date.now().toString(36) : p.id;
+    todas[id] = { ...p, id, actualizada: Date.now() };
+    escribirPartidas(todas);
+    nube()?.subir(todas[id], true);
+    pintarPartidas();
+    toast('Partida importada.', 'bueno');
+  } catch { toast('Ese archivo no es una partida de Criptas.', 'peligro'); }
+}
+
+// ---------- Partidas en la nube (Firestore, con cuenta de Google) ----------
+let moduloNube = null;
+const nube = () => moduloNube;
+import('./nube.js').then((m) => {
+  moduloNube = m;
+  m.alCambiarUsuario(async (u) => {
+    pintarNube(u);
+    app.nubePartidas = [];
+    if (!u) return pintarPartidas();
+    try {
+      app.nubePartidas = await m.listar();
+      // Lo que solo estaba en este dispositivo, a la nube.
+      const enNube = new Set(app.nubePartidas.map((p) => p.id));
+      for (const p of Object.values(leerPartidas())) if (p.estado && !enNube.has(p.id)) m.subir(p, true);
+    } catch (e) { console.warn('Nube no disponible:', e.message); pintarNube(u, true); }
+    pintarPartidas();
+  });
+}).catch(() => pintarNube(null, true));
+function pintarNube(u, fallo = false) {
+  const caja = $('#nube');
+  if (fallo && !u) { caja.innerHTML = '<p>Guardado en la nube no disponible ahora mismo. Tus partidas siguen guardadas en este dispositivo.</p>'; return; }
+  caja.innerHTML = u
+    ? `<p>☁ Tus partidas se guardan en la nube como <b>${esc(u.displayName || u.email || 'tu cuenta')}</b>.${fallo ? ' <span class="nota">(No se ha podido leer la nube: revisa la conexión.)</span>' : ''}</p><button class="btn claro" id="b-salir-nube">Cerrar sesión</button>`
+    : '<p>☁ Entra con Google para guardar tus partidas en la nube y seguirlas desde cualquier dispositivo.</p><button class="btn madera" id="b-entrar-nube">Entrar con Google</button>';
+  $('#b-entrar-nube')?.addEventListener('click', () => moduloNube?.entrar().catch((e) => toast('No se pudo iniciar sesión: ' + (e.code || e.message), 'peligro')));
+  $('#b-salir-nube')?.addEventListener('click', () => moduloNube?.salir());
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') moduloNube?.vaciar(); });
 
 // Dos modos de juego; en los dos se juega solo o con sala.
 document.querySelectorAll('#portada [data-modo]').forEach((b) => b.addEventListener('click', () => {
@@ -231,14 +306,25 @@ async function unirseComoInvitado(codigo) {
 }
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 async function continuarPartida(id) {
-  const g = leerPartidas()[id];
+  const g = todasLasPartidas()[id];
   if (!g) return;
   await listas;
   app.partidaId = id;
   if (g.modo === 'invitado') {
     avisoPortada('Entrando en la sala ' + g.codigo + '…');
     try { await unirseComoInvitado(g.codigo); avisoPortada(''); }
-    catch (e) { app.modo = null; avisoPortada(e.message); }
+    catch (e) {
+      app.modo = null; avisoPortada(e.message);
+      // La sala ya no está, pero tenemos la partida: la puede seguir este jugador.
+      if (g.estado) {
+        app.cerrarModalFuera = () => {};
+        const i = await modal('<h2>La sala ya no está abierta</h2><p>Tienes guardada la partida entera. ¿La abres tú como anfitrión? Los demás podrán entrar con el mismo código.</p>', [{ texto: 'Ahora no', clase: 'claro' }, { texto: 'Abrirla yo' }]);
+        if (i === 1) {
+          avisoPortada('Abriendo la sala ' + g.codigo + '…');
+          try { await retomarComoAnfitrion(g.codigo, g.estado, true); avisoPortada(''); } catch (e2) { avisoPortada(e2.message); }
+        }
+      }
+    }
     return;
   }
   if (g.modo === 'anfitrion' && g.codigo) {
