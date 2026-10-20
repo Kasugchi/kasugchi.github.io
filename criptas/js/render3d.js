@@ -241,7 +241,8 @@ export class Escena3D {
   construirParedes(e) {
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
     const huecos = new Set();
-    for (const p of e.puertas) if (!p.secreta || p.descubierta) huecos.add(T.claveBorde(p.a, p.b));
+    // Solo se abre hueco para las puertas que ya se han visto: si no, la pared delataría dónde están.
+    for (const p of e.puertas) if ((!p.secreta || p.descubierta) && (vis(...p.a) || vis(...p.b))) huecos.add(T.claveBorde(p.a, p.b));
     const tramos = [];
     for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) {
       if (x + 1 < D.ANCHO && T.region(x, y) !== T.region(x + 1, y) && !huecos.has(T.claveBorde([x, y], [x + 1, y]))) tramos.push({ x: x + 1, z: y + 0.5, vert: true, vis: vis(x, y) || vis(x + 1, y) });
