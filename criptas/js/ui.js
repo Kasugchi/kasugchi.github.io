@@ -833,16 +833,24 @@ function htmlNivel(h, mio) {
   const n = h.nivel || 1, xp = h.xp || 0;
   const desde = D.xpParaNivel(n), hasta = D.xpParaNivel(n + 1);
   const pct = Math.round(((xp - desde) / (hasta - desde)) * 100);
-  const hab = D.HABILIDADES[h.tipo];
   const mejoras = Object.entries(D.MEJORAS).map(([k, m]) => {
     const tiene = h.mejoras?.[k] || 0;
     return `<button class="btn madera" data-mejora="${k}" ${!mio || !(h.puntos > 0) || tiene >= m.max ? 'disabled' : ''}>${esc(m.nombre)} (${tiene}/${m.max})</button>`;
   }).join('');
+  const sc = M.subclaseDe(h);
+  const opciones = D.SUBCLASES[h.tipo] || {};
+  let esp = '';
+  if (sc) esp = `<p style="margin-top:10px"><b>Especialización: ${esc(sc.nombre)}</b> (${esc(sc.papel)}). <span class="nota">${esc(sc.bueno)} ${esc(sc.malo)}</span></p>`
+    + [sc.hab, ...(sc.extra || [])].map((hb) => `<p><b>${esc(hb.nombre)}</b>: ${esc(hb.desc)}</p>`).join('');
+  else if (n >= D.NIVEL_HABILIDAD) esp = `<h3 class="sec" style="margin-top:12px">Elige especialización</h3><div class="armeria-grid">${Object.entries(opciones).map(([k, o]) => `<div class="item">${svg(o.hab.icono)}<strong>${esc(o.nombre)}</strong>
+      <button class="btn" data-subclase="${k}" ${mio ? '' : 'disabled'}>Elegir</button>
+      <span><b>${esc(o.hab.nombre)}:</b> ${esc(o.hab.desc)} <br>✔ ${esc(o.bueno)} <br>✘ ${esc(o.malo)}</span></div>`).join('')}</div>`;
+  else esp = `<p class="nota" style="margin-top:10px">En el nivel ${D.NIVEL_HABILIDAD} elegirás especialización: ${Object.values(opciones).map((o) => esc(o.nombre)).join(', ')}.</p>`;
+  const mejoras2 = mejoras;
   return `<div class="nivel-heroe"><b>Nivel ${n}</b> · ${xp} de experiencia (siguiente nivel a ${hasta})
     <div class="barra-xp"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>
     ${h.puntos > 0 ? `<p><b>Tienes ${h.puntos} ${h.puntos === 1 ? 'mejora' : 'mejoras'} por elegir:</b></p>` : '<p class="nota">Al subir de nivel podrás elegir una mejora.</p>'}
-    <div class="mejoras">${mejoras}</div>
-    <p style="margin-top:10px"><b>${esc(hab.nombre)}</b> ${n >= D.NIVEL_HABILIDAD ? '' : `<span class="nota">(se desbloquea en el nivel ${D.NIVEL_HABILIDAD})</span>`}: ${esc(hab.desc)}</p></div>`;
+    <div class="mejoras">${mejoras2}</div>${esp}</div>`;
 }
 function htmlReliquias(e) {
   const r = e.reliquias || {};
@@ -942,7 +950,8 @@ function pintarAcciones() {
   if (d.trance) info = h.alma ? 'Tu cuerpo ha caído: tu alma vive dentro del monstruo.' : 'Tu cuerpo está en trance: controla al poseído.';
   if (app.moverPoseido && !d.poseido) app.moverPoseido = false;
   if (app.moverPoseido) info = `Controlas a ${nombre(d.poseido.id)}: ${d.poseido.restante} casillas. Toca dónde llevarlo o a quién atacar.`;
-  if (app.seleccion?.tipo === 'habilidad') info = 'Toca el objetivo de ' + D.HABILIDADES[h.tipo].nombre + '.';
+  if (app.seleccion?.tipo === 'habilidad') info = 'Toca el objetivo de ' + app.seleccion.nombre + '.';
+  if (h.fragmentos) info += ' · Almas: ' + h.fragmentos + '/6';
   if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
   if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
   if (app.seleccion?.tipo === 'reliquias') return pintarReliquias(e, h, d, et, bot);
@@ -969,7 +978,7 @@ function pintarAcciones() {
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
-  if (d.habilidad) { const hb = D.HABILIDADES[h.tipo]; boton('habilidad', hb.icono, hb.nombre, { off: !d.habilidad.ok, clase: app.seleccion?.tipo === 'habilidad' ? 'activo' : '', n: d.habilidad.ok ? 'una vez por piso' : d.habilidad.motivo }); }
+  for (const hb of d.habilidades || []) b.push(`<button class="acc ${app.seleccion?.habilidad === hb.id ? 'activo' : ''}" data-hab="${hb.id}" ${hb.ok ? '' : 'disabled'}>${svg(hb.icono)}<span>${esc(hb.nombre)}</span><span class="n">${esc(hb.ok ? 'habilidad' : hb.motivo)}</span></button>`);
   if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : '', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') });
   const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
   if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
@@ -985,6 +994,7 @@ function pintarAcciones() {
   boton('fin', 'reloj', 'Fin del turno');
   bot.innerHTML = b.join('');
   bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
+  bot.querySelectorAll('[data-hab]').forEach((x) => x.addEventListener('click', () => usarHabilidadUI(x.dataset.hab, h, d)));
   if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
 }
 // Reliquias: lista con las forjadas y para qué sirve cada una ahora.
@@ -1060,6 +1070,20 @@ function pintarTrompa(e, h, d, et, bot) {
   }));
   if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
 }
+async function usarHabilidadUI(id, h, d) {
+  const hb = d.habilidades.find((x) => x.id === id);
+  if (!hb?.ok) return;
+  const enviarHab = (objetivo) => enviar({ heroe: h.id, tipo: 'habilidad', habilidad: id, objetivo });
+  if (hb.objetivos.length === 1 || hb.objetivo === 'ninguno') return enviarHab(hb.objetivos[0]);
+  if (hb.objetivo === 'monstruo' || hb.objetivo === 'heroe') { app.seleccion = { tipo: 'habilidad', habilidad: id, nombre: hb.nombre, objetivos: hb.objetivos }; return pintarAcciones(); }
+  // Elegir de una lista: derrumbes/muros, muertos para alzar, caídos para revivir.
+  const e = app.estado;
+  const texto = (o) => o.startsWith('roca:') ? 'El derrumbe de ' + o.split(':')[1] : o.startsWith('muro:') ? 'El muro frágil'
+    : e.heroes[o] ? e.heroes[o].nombre : (e.monstruos.find((m) => m.id === o)?.nombre || o);
+  app.cerrarModalFuera = () => {};
+  const i = await modal('<h2>' + esc(hb.nombre) + '</h2><p>Elige:</p>', [{ texto: 'Nada', clase: 'claro' }, ...hb.objetivos.map((o) => ({ texto: texto(o) }))]);
+  if (i > 0) enviarHab(hb.objetivos[i - 1]);
+}
 const enLaEscalera = (e, h) => e.escalera.some(([x, y]) => x === h.x && y === h.y);
 function motivoNoSalir(e) {
   const o = e.mision.objetivo;
@@ -1083,7 +1107,7 @@ async function accionBoton(acc, h, d) {
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
     case 'reliquias': app.seleccion = { tipo: 'reliquias' }; return pintarAcciones();
     case 'poseido': app.moverPoseido = !app.moverPoseido; app.moverCargador = false; app.seleccion = null; return pintarAcciones();
-    case 'habilidad': {
+    case 'habilidadVieja': {
       const objs = d.habilidad.objetivos;
       if (objs.length === 1) return enviar({ ...base, tipo: 'habilidad', objetivo: objs[0] });
       if (D.HABILIDADES[h.tipo].id === 'rompepiedras') {
@@ -1237,7 +1261,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1260,7 +1284,7 @@ function alTocar(x, y) {
       if (f && d.poseido.atacables.includes(f.id)) return enviar({ heroe: h.id, tipo: 'atacarPoseido', objetivo: f.id });
     }
     if (app.seleccion?.tipo === 'habilidad') {
-      if (f && app.seleccion.objetivos.includes(f.id)) { app.seleccion = null; return enviar({ heroe: h.id, tipo: 'habilidad', objetivo: f.id }); }
+      if (f && app.seleccion.objetivos.includes(f.id)) { const hab = app.seleccion.habilidad; app.seleccion = null; return enviar({ heroe: h.id, tipo: 'habilidad', habilidad: hab, objetivo: f.id }); }
       app.seleccion = null; return pintarAcciones();
     }
     if (app.seleccion?.tipo === 'hechizo') {
@@ -1770,6 +1794,7 @@ function pintarArmeria() {
   q('[data-sub]', (b) => { app.sub = b.dataset.sub; pintarArmeria(); });
   q('[data-comprar]', (b) => enviar({ tipo: 'comprar', heroe: h.id, item: b.dataset.comprar }));
   q('[data-mejora]', (b) => enviar({ tipo: 'mejorar', heroe: h.id, mejora: b.dataset.mejora }));
+  q('[data-subclase]', (b) => enviar({ tipo: 'subclase', heroe: h.id, subclase: b.dataset.subclase }));
   q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
   q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
   q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));

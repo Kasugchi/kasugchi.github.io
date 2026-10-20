@@ -394,6 +394,13 @@ export function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.furia) marca('fuego', '#e05a4a');
   if (ef.poseido) marca('mente', '#c49aff');
   if (ef.trance) marca('sueno', '#c49aff');
+  if (ef.escudoPiedra) marca('rodela', '#d0c8b8');
+  if (ef.grito) marca('fuego', '#ffd36a');
+  if (ef.sombras) marca('fantasma', '#9a8ab0');
+  if (ef.oso) marca('tierra', '#a6c35a');
+  if (ef.bendicion) marca('curar', '#e8c25a');
+  if (ef.agotado) marca('reloj', '#e05a4a');
+  if (f.aliado) marca('curar', '#7ad38a');
   if (ef.dominado) marca('mente', '#e05a4a');
   if (ef.cadena) marca('verja', '#d8c8a0');
   if (ef.muro) marca('rodela', '#ffd36a');

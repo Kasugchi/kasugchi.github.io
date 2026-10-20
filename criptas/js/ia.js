@@ -11,10 +11,20 @@ import * as T from './tablero.js';
 const { clave } = T;
 
 const objetivosDe = (estado) => {
-  const lista = Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla);
+  const lista = Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla && !h.efectos.sombras);
   if (estado.cargador?.vivo) lista.push(estado.cargador); // el cargador también es una presa
+  // Los aliados del grupo (muertos alzados, invocaciones) también son presas.
+  for (const m of estado.monstruos) if (m.vivo && m.aliado) lista.push(m);
   return lista;
 };
+// Santuario del sacerdote: nadie puede atacar a los héroes de esa sala.
+const protegido = (estado, h) => {
+  const s = estado.santuario;
+  if (!s || !estado.heroes[h.id]) return false;
+  return s.region !== '.' ? h.region === s.region || (T.region(h.x, h.y) === s.region) : Math.max(Math.abs(h.x - s.x), Math.abs(h.y - s.y)) <= 1;
+};
+// Quien llama la atención (farol encendido o grito de guerra) es el primer objetivo.
+const llamativo = (estado, lista) => lista.find((h) => h.id === estado.farol || h.efectos?.provoca);
 const masDebil = (lista) => lista.slice().sort((a, b) => a.cuerpo - b.cuerpo)[0];
 
 // Busca el camino más corto hasta una casilla pegada a algún héroe.
@@ -47,10 +57,11 @@ function moverPor(estado, m, ruta, pasos, ctx) {
 }
 
 function atacarSiPuede(estado, m, ctx) {
-  const pegados = objetivosDe(estado).filter((h) => T.puedeTocar(estado, m, h));
+  const pegados = objetivosDe(estado).filter((h) => T.puedeTocar(estado, m, h) && !protegido(estado, h));
   if (!pegados.length) return false;
-  const farol = pegados.find((h) => h.id === estado.farol);
-  ctx.golpearHeroe(estado, m, farol || masDebil(pegados), m.ataque);
+  const v = llamativo(estado, pegados) || masDebil(pegados);
+  if (v.aliado) ctx.golpeEntreMonstruos(estado, m, v);
+  else ctx.golpearHeroe(estado, m, v, m.ataque);
   return true;
 }
 
@@ -74,13 +85,31 @@ function intentarHechizo(estado, m, ctx) {
   }
   const j = m.hechizos.indexOf('rayo');
   if (j < 0) return false;
-  const visibles = objetivos.filter((h) => !T.puedeTocar(estado, m, h) && T.lineaVision(estado, m.x, m.y, h.x, h.y, true));
+  const visibles = objetivos.filter((h) => !h.aliado && !protegido(estado, h) && !T.puedeTocar(estado, m, h) && T.lineaVision(estado, m.x, m.y, h.x, h.y, true));
   if (!visibles.length) return false;
   m.hechizos.splice(j, 1);
   const h = masDebil(visibles);
   ctx.ev(estado, { tipo: 'hechizoMonstruo', id: m.id, hechizo: 'rayo', objetivo: h.id });
   ctx.golpearHeroe(estado, m, h, 3, 'Rayo sombrío');
   return true;
+}
+
+// Aliados del grupo: van a por el monstruo enemigo más cercano.
+export function turnoAliado(estado, m, ctx) {
+  if (--m.aliado.turnos < 0) {
+    m.vivo = false;
+    ctx.ev(estado, { tipo: 'muerte', id: m.id });
+    ctx.avisar(estado, m.nombre + ' se deshace en polvo.', '');
+    return;
+  }
+  const enemigos = estado.monstruos.filter((o) => o.vivo && o.visto && !o.aliado);
+  const pegado = enemigos.find((o) => T.puedeTocar(estado, m, o));
+  if (pegado) return ctx.golpeEntreMonstruos(estado, m, pegado);
+  const ruta = caminoHaciaHeroe(estado, m, enemigos, false);
+  if (!ruta) return;
+  moverPor(estado, m, ruta, m.mov, ctx);
+  const ahora = enemigos.find((o) => o.vivo && T.puedeTocar(estado, m, o));
+  if (ahora) ctx.golpeEntreMonstruos(estado, m, ahora);
 }
 
 export function turnoMonstruo(estado, m, ctx) {
@@ -102,8 +131,8 @@ export function turnoMonstruo(estado, m, ctx) {
   // 3) Moverse hacia el héroe más cercano (el guardián, sin salir de su sala).
   if (inmovil) return;
   const soloSala = m.ia === 'guardian' || m.ia === 'lanzador';
-  // Farol de los Ahogados: si lo ve, va a por quien lo lleva.
-  const farol = objetivos.find((h) => h.id === estado.farol);
+  // Farol de los Ahogados o grito de guerra: si lo ve, va a por él.
+  const farol = llamativo(estado, objetivos);
   const haciaFarol = farol && T.lineaVision(estado, m.x, m.y, farol.x, farol.y) && caminoHaciaHeroe(estado, m, [farol], soloSala);
   const ruta = haciaFarol || caminoHaciaHeroe(estado, m, objetivos, soloSala);
   if (!ruta) return;

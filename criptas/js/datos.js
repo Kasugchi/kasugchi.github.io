@@ -134,16 +134,72 @@ export const MEJORAS = {
   defensa: { nombre: '+1 dado de defensa',      max: 2 },
   mente:   { nombre: '+1 de mente',             max: 3 }
 };
-export const HABILIDADES = {
-  barbaro: { id: 'furia', nombre: 'Furia', icono: 'hacha',
-    desc: 'Una vez por piso: ataca dos veces seguidas. Hasta tu próximo turno no tiras defensa.' },
-  enano:   { id: 'rompepiedras', nombre: 'Rompepiedras', icono: 'derrumbe',
-    desc: 'Una vez por piso: revienta un derrumbe o un muro frágil pegado a ti.' },
-  elfo:    { id: 'disparo', nombre: 'Disparo certero', icono: 'ballesta',
-    desc: 'Una vez por piso: dispara 3 dados de ataque a cualquier enemigo a la vista que no esté pegado a ti.' },
-  mago:    { id: 'posesion', nombre: 'Posesión', icono: 'mente',
-    desc: 'Una vez por piso: saca su alma y la mete en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten: duelo de mentes, y si pierdes, él te controla a ti. Mientras posees, tu cuerpo se queda en trance: si le pegan, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' }
+// Subclases: se eligen al llegar al nivel 3 y traen su habilidad (una vez por piso).
+// mods: cambios fijos de estadísticas. objetivo: qué hay que tocar al usarla.
+export const SUBCLASES = {
+  enano: {
+    guardian:  { nombre: 'Guardián', papel: 'Protege', mods: { defensa: 1, movimiento: 1 },
+      bueno: '+1 dado de defensa.', malo: 'Se mueve con un solo dado.',
+      hab: { id: 'escudoPiedra', nombre: 'Escudo de piedra', icono: 'rodela', objetivo: 'heroe',
+        desc: 'Un compañero pegado a ti (o tú) no recibe daño del próximo golpe.' } },
+    minero:    { nombre: 'Minero', papel: 'Utilidad', mods: { ataque: -1 }, ventrampas: true,
+      bueno: 'Ve las trampas de cada sala al entrar.', malo: '−1 dado de ataque.',
+      hab: { id: 'rompepiedras', nombre: 'Rompepiedras', icono: 'derrumbe', objetivo: 'lista',
+        desc: 'Revienta un derrumbe o un muro frágil pegado a ti.' } },
+    berserker: { nombre: 'Berserker', papel: 'Daño', mods: { defensa: -1 }, arma: 'hacha', locura: true,
+      bueno: 'Recibe un hacha de guerra.', malo: '−1 dado de defensa; a 1 de cuerpo ataca a lo que tenga más cerca, aunque sea un amigo.',
+      hab: { id: 'furiaEnana', nombre: 'Furia enana', icono: 'hacha', objetivo: 'monstruo',
+        desc: 'Ataca dos veces seguidas.' } }
+  },
+  barbaro: {
+    campeon:   { nombre: 'Campeón', papel: 'Líder', mods: {},
+      bueno: 'Inspira al grupo.', malo: 'Al gritar, los monstruos van a por él hasta su próximo turno.',
+      hab: { id: 'grito', nombre: 'Grito de guerra', icono: 'fuego', objetivo: 'ninguno',
+        desc: 'Todo el grupo tira +1 dado en su próximo ataque.' } },
+    gemelas:   { nombre: 'Espadas gemelas', papel: 'Daño', mods: {}, sinEscudo: true,
+      bueno: 'Dos espadas.', malo: 'No puede llevar escudo; tras el Doble tajo queda agotado (1 dado de movimiento y −1 defensa un turno).',
+      hab: { id: 'dobleTajo', nombre: 'Doble tajo', icono: 'espada', objetivo: 'monstruo',
+        desc: 'Ataca dos veces este turno. Al siguiente, agotado.' } },
+    cazador:   { nombre: 'Cazador', papel: 'A distancia', mods: {}, arma: 'ballesta', torpe: true,
+      bueno: 'Recibe una ballesta.', malo: '−1 dado si ataca a alguien pegado.',
+      hab: { id: 'disparoDoble', nombre: 'Disparo doble', icono: 'ballesta', objetivo: 'monstruo',
+        desc: 'Dos disparos de 3 dados a enemigos a la vista que no estén pegados.' } }
+  },
+  elfo: {
+    arquero:   { nombre: 'Arquero lunar', papel: 'Tirador', mods: {},
+      bueno: 'Su flecha atraviesa filas enteras.', malo: 'Si se ha movido, no puede usar la Flecha de luna.',
+      hab: { id: 'flechaLuna', nombre: 'Flecha de luna', icono: 'ballesta', objetivo: 'monstruo',
+        desc: 'Elige un enemigo en tu misma fila o columna: la flecha da a todos los de esa línea hasta la pared (3 dados cada uno).' } },
+    sombras:   { nombre: 'Caminante de sombras', papel: 'Sigilo', mods: {}, sinArmadura: true,
+      bueno: 'Invisible y letal.', malo: 'No puede llevar armadura.',
+      hab: { id: 'sombras', nombre: 'Fundirse en sombras', icono: 'fantasma', objetivo: 'ninguno',
+        desc: 'Invisible 2 turnos: los monstruos le ignoran. Su primer ataque desde las sombras hace el doble y le hace visible.' } },
+    bosque:    { nombre: 'Guardián del bosque', papel: 'Cambiaformas', mods: {},
+      bueno: 'Se convierte en oso.', malo: 'Como oso no lanza hechizos ni usa objetos; al volver pierde el turno.',
+      hab: { id: 'oso', nombre: 'Forma de oso', icono: 'tierra', objetivo: 'ninguno',
+        desc: '3 turnos: +3 de cuerpo y +2 dados de ataque.' } }
+  },
+  mago: {
+    hechicero: { nombre: 'Hechicero', papel: 'Control', mods: {},
+      bueno: 'Posesión.', malo: 'Mientras posee, su cuerpo queda en trance y es vulnerable.',
+      hab: { id: 'posesion', nombre: 'Posesión', icono: 'mente', objetivo: 'monstruo',
+        desc: 'Mete su alma en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten con un duelo de mentes, y si pierdes, él te controla a ti. Si golpean tu cuerpo, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' } },
+    nigromante: { nombre: 'Nigromante', papel: 'Muertos', mods: {}, almas: true,
+      bueno: 'Recoge fragmentos de alma de los enemigos que mueren cerca (máx. 6).', malo: 'Los fragmentos se pierden al acabar el piso; revivir atrae a un monstruo errante.',
+      hab: { id: 'alzar', nombre: 'Alzar muerto', icono: 'esqueleto', objetivo: 'cadaver', coste: 2, sinLimite: true,
+        desc: '2 fragmentos: un enemigo muerto en tu sala se levanta como esqueleto aliado 3 turnos.' },
+      extra: [
+        { id: 'cosecha', nombre: 'Cosecha', icono: 'curar', objetivo: 'ninguno', coste: 1, sinLimite: true, sinAccion: true, desc: '1 fragmento: recuperas 1 de cuerpo, sin gastar acción.' },
+        { id: 'tumba', nombre: 'Volver de la tumba', icono: 'calavera', objetivo: 'caido', coste: 5, desc: '5 fragmentos, una vez por piso: revive a un héroe caído con la mitad de su cuerpo (−1 de cuerpo máximo el resto del piso).' }
+      ] },
+    sacerdote: { nombre: 'Sacerdote', papel: 'Apoyo', mods: {}, sinArmas: true, luz: true,
+      bueno: 'Magia de luz: Purgatorio, Luz sanadora y Bendición.', malo: 'No ataca con armas, ni con la daga; contra vivos su luz hace la mitad.',
+      hab: { id: 'santuario', nombre: 'Santuario', icono: 'altar', objetivo: 'ninguno',
+        desc: 'Hasta tu próximo turno, ningún monstruo puede atacar a los héroes de tu sala.' } }
+  }
 };
+// Hechizos de luz del sacerdote (sustituyen a los elementales al especializarse).
+export const HECHIZOS_LUZ = ['purgatorio', 'purgatorio', 'luzSanadora', 'luzSanadora', 'bendicion'];
 export const EPITETOS = ['Rabioso', 'Viejo', 'Tuerto', 'Sanguinario', 'de Hierro', 'Maldito', 'Despiadado', 'Hambriento'];
 
 // ---------- Reliquias (del grupo, se guardan toda la campaña) ----------
@@ -200,7 +256,8 @@ export const ELEMENTOS = {
   fuego: { nombre: 'Fuego', icono: 'fuego', color: '#d9572a' },
   aire:  { nombre: 'Aire',  icono: 'aire',  color: '#8fb3c9' },
   agua:  { nombre: 'Agua',  icono: 'agua',  color: '#3f86c9' },
-  tierra:{ nombre: 'Tierra',icono: 'tierra',color: '#7a8f3a' }
+  tierra:{ nombre: 'Tierra',icono: 'tierra',color: '#7a8f3a' },
+  luz:   { nombre: 'Luz',   icono: 'curar', color: '#e8c25a' }
 };
 export const HECHIZOS = {
   bolaFuego:  { elemento: 'fuego',  nombre: 'Bola de fuego',  objetivo: 'monstruo', desc: '2 de daño. El monstruo tira 2 dados para salvarse.' },
@@ -214,7 +271,10 @@ export const HECHIZOS = {
   sueno:      { elemento: 'agua',   nombre: 'Sueño profundo', objetivo: 'monstruo', desc: 'El monstruo duerme hasta que le ataquen. No afecta a no muertos.' },
   pielRoca:   { elemento: 'tierra', nombre: 'Piel de roca',   objetivo: 'heroe',    desc: '+2 dados de defensa hasta que el héroe reciba daño.' },
   raices:     { elemento: 'tierra', nombre: 'Raíces',         objetivo: 'monstruo', desc: 'El monstruo no puede moverse durante 2 turnos.' },
-  balsamo:    { elemento: 'tierra', nombre: 'Bálsamo de tierra', objetivo: 'heroe', desc: 'Recupera 4 de cuerpo.' }
+  balsamo:    { elemento: 'tierra', nombre: 'Bálsamo de tierra', objetivo: 'heroe', desc: 'Recupera 4 de cuerpo.' },
+  purgatorio: { elemento: 'luz', nombre: 'Purgatorio', objetivo: 'monstruo', desc: 'Un dado por cada enemigo a la vista: a los no muertos, una calavera quita 2; a los vivos, 1.' },
+  luzSanadora:{ elemento: 'luz', nombre: 'Luz sanadora', objetivo: 'heroe', desc: 'Recupera 4 de cuerpo.' },
+  bendicion:  { elemento: 'luz', nombre: 'Bendición', objetivo: 'heroe', desc: '+1 dado de defensa hasta su próximo turno.' }
 };
 export const HECHIZOS_POR_ELEMENTO = {
   fuego: ['bolaFuego', 'llamarada', 'coraje'],

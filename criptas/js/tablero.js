@@ -79,7 +79,7 @@ export function figuraEn(estado, x, y) {
 }
 
 // Héroes y cargador: se pueden cruzar entre ellos, pero no con monstruos.
-export const esAliado = (estado, f) => !!f && (!!estado.heroes[f.id] || f.id === 'cargador');
+export const esAliado = (estado, f) => !!f && (!!estado.heroes[f.id] || f.id === 'cargador' || !!f.aliado);
 
 // Línea de visión entre centros de casilla.
 // conFiguras: si true, las figuras intermedias tapan la vista (para ataques a distancia).
