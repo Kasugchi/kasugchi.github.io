@@ -20,9 +20,9 @@ const barajar = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = 
 const copia = (o) => JSON.parse(JSON.stringify(o));
 
 // ---------- Estadísticas de héroe ----------
-export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque || 0) + (h.subclase ? modSub(h, 'ataque') : 0) + (h.efectos?.oso ? 2 : 0);
+export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque || 0) + (h.efectos?.guerraAtq ? 1 : 0) + (h.subclase ? modSub(h, 'ataque') : 0) + (h.efectos?.oso ? 2 : 0);
 export const defensaHeroe = (h) => (h.id === 'cargador' ? D.CARGADOR.defensa
-  : D.HEROES[h.tipo].defensa + (h.mejoras?.defensa || 0) + (h.subclase ? modSub(h, 'defensa') : 0) + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
+  : D.HEROES[h.tipo].defensa + (h.mejoras?.defensa || 0) + (h.efectos?.guerraDef ? 1 : 0) - (h.efectos?.malaSuerte ? 1 : 0) + (h.subclase ? modSub(h, 'defensa') : 0) + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
 export const dadosMovimiento = (h) => (h.armaduras.includes('placas') || h.efectos?.agotado || (h.subclase && modSub(h, 'movimiento')) ? 1 : 2);
 export const nombreDe = (estado, id) => {
   if (id === 'cargador') return 'Cargador';
@@ -209,8 +209,9 @@ function crearMonstruo(estado, spec, visible) {
     nomuerto: !!base.nomuerto, ia: spec.ia || 'agresivo', activo: spec.ia !== 'centinela',
     hechizos: (spec.hechizos || []).slice(), visto: !!visible, vivo: true, efectos: {}
   };
+  if (spec.extra) Object.assign(m, JSON.parse(JSON.stringify(spec.extra)));
   // Mazmorra Infinita: cuanto más hondo, más duros (y algunos de élite).
-  if (estado.aleatorio) {
+  if (estado.aleatorio && !spec.noEscalar) {
     const piso = estado.misionIdx + 1;
     m.cuerpo += Math.floor((piso - 1) / 3); m.ataque += Math.floor((piso - 1) / 4); m.defensa += Math.floor((piso - 1) / 6);
     if (!m.jefe && piso >= 2 && rnd(100) < Math.min(35, (piso - 1) * 5)) {
@@ -384,6 +385,15 @@ export function danarMonstruo(estado, m, n) {
     if (autor) { sumar(autor.muertes, m.tipo); if (m.jefe) sumar(autor, 'jefes'); }
     if (estado.aleatorio && estado.heroes[estado._autor]) ganarXP(estado, estado.heroes[estado._autor], 1 + m.cuerpoMax + (m.elite ? 3 : 0) + (m.jefe ? 6 : 0));
     if (m.efectos.poseido) liberarPosesion(estado, m, true);
+    // Lo que llevaba (el mercader, un fantasma) pasa a quien lo mató.
+    const ganador = estado.heroes[estado._autor];
+    if (ganador && (m.mercancia?.length || m.equipo?.length)) {
+      const cosas = [...(m.mercancia || []), ...(m.equipo || [])];
+      for (const it of cosas) entregarItem(estado, ganador, it);
+      avisar(estado, ganador.nombre + ' se queda con lo que llevaba ' + m.nombre + ': ' + cosas.map((it) => nombreMercancia(it)).join(', ') + '.', 'tesoro');
+      m.mercancia = []; m.equipo = [];
+      if (m.tipo === 'fantasma') estado.fantasmaVencido = true;
+    }
     // Nigromantes cerca: recogen fragmentos de alma.
     if (!m.aliado) for (const n of Object.values(estado.heroes)) {
       if (!n.vivo || n.fuera || !subclaseDe(n)?.almas) continue;
@@ -400,6 +410,7 @@ export function danarMonstruo(estado, m, n) {
 
 // Ataque de héroe a monstruo (arma o hechizo de ataque).
 function golpearMonstruo(estado, h, m, dados, etiqueta) {
+  if (m.neutral) enfadarMercader(estado, m, h.nombre + ' ataca al mercader.');
   if (estado.monstruos.some((o) => o.tipo === 'ojo' && o.vivo && o.efectos.poseido && T.lineaVision(estado, o.x, o.y, h.x, h.y))) dados += 1;
   const ataque = tirarCombate(dados);
   const dormido = !!m.efectos.dormido;
@@ -664,6 +675,11 @@ export function disponibles(estado, id) {
     r.trompa = { apoyos, motivo: !libre ? 'Ya has hecho tu acción este turno.' : !apoyos.length ? 'Necesitas a alguien pegado delante de ti (no en diagonal) que la sujete: sola se te caería.' : '' };
   }
   r.reliquias = reliquiasDe(estado, h, t, libre);
+  // Altar con dios pegado, y mercader neutral pegado.
+  const altar = estado.muebles.find((u) => u.dios && !u.usado && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h && T.region(u.x, u.y) === T.region(h.x, h.y));
+  if (altar && libre) r.altar = { dios: altar.dios, idx: estado.muebles.indexOf(altar) };
+  const merc = estado.monstruos.find((m) => m.vivo && m.neutral && T.puedeTocar(estado, h, m));
+  if (merc) r.mercader = { id: merc.id, items: merc.mercancia || [] };
   r.habilidades = habilidadesDe(estado, h, t, libre);
   const scH = subclaseDe(h);
   if (scH?.sinArmas) { r.atacables = []; r.motivoAtaque = 'El sacerdote no ataca con armas.'; }
@@ -1439,7 +1455,7 @@ function turnoIA(estado, h) {
   const t = estado.turno;
   const usarAccion = () => { t.accion = true; if (t.movido) t.movRestante = 0; };
   const hacer = (a) => { estado._autor = h.id; try { return accionHeroe(estado, a, h, t, disponibles(estado, h.id), usarAccion); } finally { delete estado._autor; } };
-  const vivos = () => estado.monstruos.filter((m) => m.vivo && m.visto && !m.efectos.poseido);
+  const vivos = () => estado.monstruos.filter((m) => m.vivo && m.visto && !m.efectos.poseido && !m.neutral && !m.aliado);
   const distancia = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
   const actuar = () => {
     if (t.accion || !h.vivo) return;
@@ -1450,8 +1466,9 @@ function turnoIA(estado, h) {
       const herido = cura.objetivos.map((id) => estado.heroes[id]).filter((o) => o && o.cuerpo <= o.cuerpoMax - 3).sort((a, b) => a.cuerpo - b.cuerpo)[0];
       if (herido) return hacer({ tipo: 'hechizo', hechizo: cura.id, objetivo: herido.id });
     }
-    if (d.atacables.length) {
-      const m = d.atacables.map((id) => estado.monstruos.find((x) => x.id === id)).sort((a, b) => (b.jefe - a.jefe) || (a.cuerpo - b.cuerpo))[0];
+    const atacables = d.atacables.filter((id) => !estado.monstruos.find((x) => x.id === id)?.neutral);
+    if (atacables.length) {
+      const m = atacables.map((id) => estado.monstruos.find((x) => x.id === id)).sort((a, b) => (b.jefe - a.jefe) || (a.cuerpo - b.cuerpo))[0];
       return hacer({ tipo: 'atacar', objetivo: m.id });
     }
     // Hechizo de daño a distancia contra lo más peligroso a la vista.
@@ -1651,6 +1668,143 @@ function locuraBerserker(estado, h) {
     ev(estado, { tipo: 'dados', atacante: h.id, defensor: v.id, ataque, defensa, dano, defiende: 'heroe', etiqueta: 'Locura berserker' });
     danarHeroe(estado, v, dano);
   } else golpearMonstruo(estado, h, v, ataqueHeroe(h), 'Locura berserker');
+}
+
+// =============================================================
+//  MAZMORRA INFINITA: altares, mercader errante y fantasma del caído
+// =============================================================
+function libreEnDef(def, x, y) {
+  if (T.region(x, y) === '.') return false;
+  const ocupada = (def.monstruos || []).some((m) => m.x === x && m.y === y) || (def.rocas || []).some(([a, b]) => a === x && b === y)
+    || (def.muebles || []).some((u) => x >= u.x && x < u.x + u.w && y >= u.y && y < u.y + u.h)
+    || (def.puertas || []).some((p) => (p.a[0] === x && p.a[1] === y) || (p.b[0] === x && p.b[1] === y))
+    || (def.trampas || []).some((t) => t.x === x && t.y === y);
+  const [ex, ey] = def.escalera;
+  return !ocupada && !(x >= ex && x <= ex + 1 && y >= ey && y <= ey + 1);
+}
+function salasDe(def) {
+  const inicio = T.region(def.escalera[0], def.escalera[1]);
+  return [...new Set((def.puertas || []).flatMap((p) => [T.region(...p.a), T.region(...p.b)]))].filter((s) => s !== '.' && s !== inicio);
+}
+function sitioLibre(def, sala) {
+  const c = T.casillasDe(sala).filter(([x, y]) => libreEnDef(def, x, y));
+  return c.length ? c[rnd(c.length)] : null;
+}
+function ponerExtrasInfinita(estado, def) {
+  const piso = def.numero || estado.misionIdx + 1;
+  const salas = salasDe(def);
+  if (!salas.length) return;
+  def.muebles ||= []; def.monstruos ||= [];
+  // Altar con dios: uno de cada dos pisos más o menos.
+  if (rnd(100) < 55) {
+    let altar = def.muebles.find((u) => u.tipo === 'altar');
+    if (!altar) {
+      const s = salas[rnd(salas.length)], p = sitioLibre(def, s);
+      if (p) { altar = { tipo: 'altar', x: p[0], y: p[1], w: 1, h: 1 }; def.muebles.push(altar); }
+    }
+    if (altar) altar.dios = ['guerra', 'suerte', 'avaricia'][rnd(3)];
+  }
+  // Mercader errante, desde el piso 2.
+  if (piso >= 2 && rnd(100) < 35) {
+    const s = salas[rnd(salas.length)], p = sitioLibre(def, s);
+    if (p) {
+      const todo = Object.keys(D.MERCANCIA);
+      const mercancia = [];
+      while (mercancia.length < 3) { const it = todo[rnd(todo.length)]; if (!mercancia.includes(it)) mercancia.push(it); }
+      const hostil = estado.ladron && rnd(2) === 0;
+      def.monstruos.push({ id: 'mercader', tipo: 'mercader', x: p[0], y: p[1], ia: hostil ? 'agresivo' : 'neutral', noEscalar: true,
+        extra: hostil ? { mercancia, nombre: 'Mercader rencoroso' } : { neutral: true, mercancia } });
+    }
+  }
+  // Fantasma del grupo que cayó en este piso en una partida anterior.
+  const f = (estado.fantasmas || []).find((x) => x.piso === piso);
+  if (f) {
+    const lejos = salas.slice().sort(() => rnd(3) - 1);
+    for (const g of f.heroes.slice(0, 2)) {
+      const s = lejos.pop() || salas[0], p = sitioLibre(def, s);
+      if (!p) continue;
+      def.monstruos.push({ tipo: 'fantasma', x: p[0], y: p[1], ia: 'guardian', nombre: 'Fantasma de ' + g.nombre,
+        ataque: Math.max(2, g.ataque), defensa: Math.max(2, g.defensa), cuerpo: Math.max(3, Math.ceil(g.cuerpoMax / 2)),
+        extra: { equipo: g.equipo || [] } });
+    }
+    def.intro = (def.intro || '') + ' Un frío conocido recorre la mazmorra: aquí cayó un grupo de héroes, y sus fantasmas siguen vagando con su equipo.';
+  }
+}
+
+const nombreMercancia = (it) => D.MERCANCIA[it]?.nombre || D.ARMAS[it]?.nombre || D.ARMADURAS[it]?.nombre || D.POCIONES[it]?.nombre || it;
+export const precioMercader = (estado, it) => Math.round((D.MERCANCIA[it]?.precio || D.ARMAS[it]?.precio || D.ARMADURAS[it]?.precio || 100) * (estado.ladron ? 3 : 1));
+function entregarItem(estado, h, it) {
+  const def = D.MERCANCIA[it];
+  if (D.POCIONES[it]) h.objetos[it] = (h.objetos[it] || 0) + 1;
+  else if (it === 'pergamino') ganarXP(estado, h, 15);
+  else if (it === 'pieza') {
+    const r = estado.reliquias || {};
+    const falta = Object.values(D.RELIQUIAS).flatMap((rq) => rq.piezas).find((p) => !r[p]);
+    if (falta) avisar(estado, ganarReliquia(estado, falta), 'tesoro'); else h.oro += 300;
+  } else if (D.ARMAS[it] || D.ARMADURAS[it]) meter(inventarioDe(h), it);
+  else if (def) h.oro += def.precio;
+}
+function enfadarMercader(estado, m, motivo) {
+  if (!m.neutral) return;
+  m.neutral = false; m.ia = 'agresivo'; m.activo = true;
+  m.nombre = 'Mercader furioso'; m.ataque += 1;
+  estado.ladron = true;
+  avisar(estado, motivo + ' ¡El mercader saca un hacha enorme! A partir de ahora, ningún mercader os tratará igual.', 'peligro');
+}
+function tratoMercader(estado, h, m, it, robar) {
+  if (!m.mercancia?.includes(it)) return 'El mercader no tiene eso.';
+  const precio = precioMercader(estado, it);
+  if (robar) {
+    m.mercancia.splice(m.mercancia.indexOf(it), 1);
+    entregarItem(estado, h, it);
+    enfadarMercader(estado, m, h.nombre + ' se lleva ' + nombreMercancia(it) + ' sin pagar.');
+    return null;
+  }
+  if (h.oro < precio) return 'No tienes oro suficiente en la bolsa (' + precio + ').';
+  h.oro -= precio;
+  m.mercancia.splice(m.mercancia.indexOf(it), 1);
+  entregarItem(estado, h, it);
+  avisar(estado, h.nombre + ' compra ' + nombreMercancia(it) + ' por ' + precio + ' monedas.' + (D.ARMAS[it] || D.ARMADURAS[it] ? ' Va a su inventario.' : ''), 'tesoro');
+  return null;
+}
+function rezar(estado, h, altar, opcion) {
+  const dios = altar.dios;
+  if (subclaseDe(h)?.almas && dios !== 'avaricia') return 'Los dioses no escuchan a un nigromante.';
+  if (dios === 'guerra') {
+    if (!['ataque', 'defensa'].includes(opcion)) return 'Elige ataque o defensa.';
+    altar.usado = true;
+    h.cuerpo = Math.max(1, h.cuerpo - 2);
+    h.efectos[opcion === 'ataque' ? 'guerraAtq' : 'guerraDef'] = true;
+    avisar(estado, h.nombre + ' ofrece su sangre al Dios de la guerra: +1 dado de ' + opcion + ' el resto del piso.', 'bueno');
+    return null;
+  }
+  if (dios === 'suerte') {
+    altar.usado = true;
+    const dado = d6();
+    const textos = {
+      1: () => { h.efectos.malaSuerte = true; return 'Mala suerte: −1 dado de defensa el resto del piso.'; },
+      2: () => { aparecerErrante(estado, h); return '¡La diosa se ríe y aparece un monstruo!'; },
+      3: () => { const oro = 40 + (estado.misionIdx + 1) * 20; h.oro += oro; return '+' + oro + ' monedas.'; },
+      4: () => { h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; return 'Una poción curativa.'; },
+      5: () => { for (const o of Object.values(estado.heroes)) if (o.vivo) o.cuerpo = o.cuerpoMax; return '¡Todo el grupo se cura por completo!'; },
+      6: () => { entregarItem(estado, h, 'pieza'); return '¡Una pieza de reliquia!'; }
+    };
+    ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado });
+    avisar(estado, 'La Diosa de la suerte tira el dado (' + dado + '): ' + textos[dado](), dado <= 2 ? 'peligro' : 'bueno');
+    return null;
+  }
+  if (dios === 'avaricia') {
+    const ofrenda = { poco: 50, bastante: 150, mucho: 350 }[opcion];
+    if (!ofrenda) return 'Elige cuánto ofreces.';
+    if (h.oro < ofrenda) return 'No llevas tanto oro en la bolsa.';
+    altar.usado = true;
+    h.oro -= ofrenda;
+    if (ofrenda === 50) { h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; avisar(estado, 'El Dios de la avaricia acepta la ofrenda con desdén: una poción curativa.', 'bueno'); }
+    if (ofrenda === 150) { for (const o of Object.values(estado.heroes)) if (o.vivo) o.cuerpo = o.cuerpoMax; h.objetos.pocionFuerza = (h.objetos.pocionFuerza || 0) + 1; avisar(estado, 'El Dios de la avaricia sonríe: el grupo se cura y recibes una poción de fuerza.', 'bueno'); }
+    if (ofrenda === 350) { entregarItem(estado, h, 'pieza'); h.puntos = (h.puntos || 0) + 1; avisar(estado, '¡El Dios de la avaricia se deshace en oro! Una pieza de reliquia y un punto de mejora.', 'bueno'); }
+    return null;
+  }
+  return 'Ese altar no responde.';
 }
 
 function aparecerErrante(estado, h) {
@@ -2163,7 +2317,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
-    if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); }
+    if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); ponerExtrasInfinita(estado, def); }
     iniciarMision(estado, def);
     ev(estado, { tipo: 'pantalla', fase: 'briefing' });
     return null;
@@ -2275,6 +2429,15 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
     case 'atacarPoseido': {
       if (!disp.poseido?.atacables.includes(a.objetivo)) return 'No puede atacar a ese.';
       return atacarPoseido(estado, h, t, a.objetivo);
+    }
+    case 'rezar': {
+      if (!disp.altar) return 'No hay ningún altar a tu lado.';
+      usarAccion();
+      return rezar(estado, h, estado.muebles[disp.altar.idx], a.opcion);
+    }
+    case 'mercader': {
+      if (!disp.mercader) return 'No hay ningún mercader a tu lado.';
+      return tratoMercader(estado, h, estado.monstruos.find((m) => m.id === disp.mercader.id), a.item, a.robar);
     }
     case 'reliquia': {
       const rq = disp.reliquias.find((x) => x.id === a.reliquia);

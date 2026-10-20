@@ -101,6 +101,8 @@ export const MONSTRUOS = {
   bruja:       { nombre: 'Bruja de la plaga',    icono: 'telarana',  color: '#4a6a2a', mov: 6,  ataque: 2, defensa: 2, cuerpo: 3, mente: 4, poder: 'veneno' },
   bestias:     { nombre: 'Señor de las bestias', icono: 'orco',      color: '#6a3a2a', mov: 7,  ataque: 3, defensa: 3, cuerpo: 3, mente: 2, poder: 'lobos' },
   lobo:        { nombre: 'Lobo',                 icono: 'trasgo',    color: '#6a6a6a', mov: 12, ataque: 2, defensa: 1, cuerpo: 1, mente: 0 },
+  mercader:    { nombre: 'Mercader errante',     icono: 'mochila',   color: '#8a6a2a', mov: 8,  ataque: 5, defensa: 4, cuerpo: 8, mente: 3 },
+  fantasma:    { nombre: 'Fantasma',             icono: 'fantasma',  color: '#7a8aa0', mov: 7,  ataque: 3, defensa: 2, cuerpo: 4, mente: 3, nomuerto: true },
   golem:       { nombre: 'Gólem rúnico',         icono: 'piedra',    color: '#6a7a8a', mov: 3,  ataque: 4, defensa: 4, cuerpo: 6, mente: 0, poder: 'embestir' }
 };
 
@@ -209,6 +211,24 @@ export const SUBCLASES = {
 };
 // Hechizos de luz del sacerdote (sustituyen a los elementales al especializarse).
 export const HECHIZOS_LUZ = ['purgatorio', 'purgatorio', 'luzSanadora', 'luzSanadora', 'bendicion'];
+// Altares de la Mazmorra Infinita: cada uno de un dios con su carácter.
+export const DIOSES = {
+  guerra:   { nombre: 'Dios de la guerra', desc: 'Pide sangre: 2 de cuerpo a cambio de +1 dado de ataque o de defensa el resto del piso.' },
+  suerte:   { nombre: 'Diosa de la suerte', desc: 'Una ruleta: puede curar al grupo, dar oro o una reliquia… o traer una maldición o un monstruo.' },
+  avaricia: { nombre: 'Dios de la avaricia', desc: 'Pide oro. Cuanto más le das, mejor responde.' }
+};
+// Lo que puede llevar el mercader errante (se eligen 3 al azar en cada piso).
+export const MERCANCIA = {
+  espadaRunica:    { tipo: 'arma', precio: 1400 },
+  cotaElfica:      { tipo: 'armadura', precio: 1500 },
+  ballestaPesada:  { tipo: 'arma', precio: 800 },
+  pocionCurar:     { tipo: 'pocion', precio: 200 },
+  pocionFuerza:    { tipo: 'pocion', precio: 180 },
+  pocionPiedra:    { tipo: 'pocion', precio: 180 },
+  pocionVelocidad: { tipo: 'pocion', precio: 150 },
+  pergamino:       { tipo: 'especial', precio: 300, nombre: 'Pergamino de sabiduría', desc: '+15 de experiencia.' },
+  pieza:           { tipo: 'especial', precio: 500, nombre: 'Pieza de reliquia', desc: 'Una pieza de reliquia que os falta.' }
+};
 export const EPITETOS = ['Rabioso', 'Viejo', 'Tuerto', 'Sanguinario', 'de Hierro', 'Maldito', 'Despiadado', 'Hambriento'];
 
 // ---------- Reliquias (del grupo, se guardan toda la campaña) ----------

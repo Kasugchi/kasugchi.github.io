@@ -194,6 +194,7 @@ function guardarPartida(estado) {
     resumen: resumenPartida(estado), actualizada: Date.now()
   };
   escribirPartidas(todas);
+  if (estado.fantasmaVencido && app.modo !== 'invitado') escribirFantasmas(leerFantasmas().filter((f) => f.piso !== estado.misionIdx + 1));
   // Copia en la nube (si hay sesión): enseguida al cambiar de fase, si no, con calma.
   const cambioFase = ultimaFase[app.partidaId] !== estado.fase;
   ultimaFase[app.partidaId] = estado.fase;
@@ -624,6 +625,7 @@ $('#b-empezar').addEventListener('click', async () => {
     // Mazmorra Perdida: niveles infinitos generados a partir de una semilla.
     const { nuevaSemilla } = await import('./procedural.js');
     e.aleatorio = { semilla: s.semilla || nuevaSemilla() };
+    e.fantasmas = leerFantasmas();
     e.campana = [];
     e.misionIdx = 0;
   }
@@ -1021,6 +1023,8 @@ function pintarAcciones() {
   for (const hb of d.habilidades || []) b.push(`<button class="acc ${app.seleccion?.habilidad === hb.id ? 'activo' : ''}" data-hab="${hb.id}" ${hb.ok ? '' : 'disabled'}>${svg(hb.icono)}<span>${esc(hb.nombre)}</span><span class="n">${esc(hb.ok ? 'habilidad' : hb.motivo)}</span></button>`);
   if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
   if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : '', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') });
+  if (d.altar) boton('altar', 'altar', 'Rezar', { n: D.DIOSES[d.altar.dios].nombre });
+  if (d.mercader?.items.length) boton('mercader', 'mochila', 'Comerciar', { n: d.mercader.items.length + ' cosas a la venta' });
   const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
   if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
@@ -1147,6 +1151,27 @@ async function accionBoton(acc, h, d) {
     case 'pocion': return elegirPocion(h, d);
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
     case 'reliquias': app.seleccion = { tipo: 'reliquias' }; return pintarAcciones();
+    case 'altar': {
+      const dios = D.DIOSES[d.altar.dios];
+      app.cerrarModalFuera = () => {};
+      const ops = { guerra: [['ataque', '+1 dado de ataque (−2 cuerpo)'], ['defensa', '+1 dado de defensa (−2 cuerpo)']],
+        suerte: [['ruleta', 'Tentar a la suerte']], avaricia: [['poco', 'Ofrecer 50 monedas'], ['bastante', 'Ofrecer 150 monedas'], ['mucho', 'Ofrecer 350 monedas']] }[d.altar.dios];
+      const i = await modal(`<h2>${esc(dios.nombre)}</h2><p>${esc(dios.desc)}</p><p class="nota">Rezar gasta tu acción. Cada altar responde una sola vez.</p>`, [{ texto: 'Irse', clase: 'claro' }, ...ops.map(([, t]) => ({ texto: t }))]);
+      return i > 0 ? enviar({ ...base, tipo: 'rezar', opcion: ops[i - 1][0] }) : null;
+    }
+    case 'mercader': {
+      const nombreIt = (it) => D.MERCANCIA[it]?.nombre || D.ARMAS[it]?.nombre || D.ARMADURAS[it]?.nombre || D.POCIONES[it]?.nombre || it;
+      const descIt = (it) => D.MERCANCIA[it]?.desc || D.POCIONES[it]?.desc || (D.ARMAS[it] ? D.ARMAS[it].ataque + ' dados de ataque' : D.ARMADURAS[it] ? '+' + D.ARMADURAS[it].defensa + ' de defensa' : '');
+      const items = d.mercader.items;
+      app.cerrarModalFuera = () => {};
+      const lista = items.map((it) => `<li><b>${esc(nombreIt(it))}</b> — ${M.precioMercader(app.estado, it)} monedas <span class="nota">${esc(descIt(it))}</span></li>`).join('');
+      const i = await modal(`<h2>Mercader errante</h2><p>«Cosas raras, amigo. Todo tiene un precio… y yo nunca olvido una cara.»</p><ul>${lista}</ul><p class="nota">Llevas ${h.oro} monedas en la bolsa.</p>`,
+        [{ texto: 'Nada', clase: 'claro' }, ...items.map((it) => ({ texto: 'Comprar ' + nombreIt(it) })), ...items.map((it) => ({ texto: 'Robar ' + nombreIt(it), clase: 'claro' }))]);
+      if (i <= 0) return null;
+      const robar = i > items.length;
+      const it = items[(i - 1) % items.length];
+      return enviar({ ...base, tipo: 'mercader', item: it, robar });
+    }
     case 'poder': {
       const pd = d.poseido.poder;
       if (pd.objetivos.length === 1) return enviar({ ...base, tipo: 'poderPoseido', objetivo: pd.objetivos[0] });
@@ -1316,7 +1341,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', guerraAtq: '+1 ataque (Dios de la guerra)', guerraDef: '+1 defensa (Dios de la guerra)', malaSuerte: 'Mala suerte: −1 defensa', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1881,6 +1906,7 @@ function pintarFinal() {
   const e = app.estado;
   if (e.caida) {
     guardarRecord(e);
+    guardarFantasma(e);
     $('#final-titulo').innerHTML = 'Habéis caído<small>Piso ' + e.caida.piso + ' de la Mazmorra Infinita</small>';
     const mejor = mejorRecord();
     $('#final-texto').textContent = 'La mazmorra se ha tragado al grupo en el piso ' + e.caida.piso + '. '
@@ -1893,6 +1919,16 @@ function pintarFinal() {
   $('#final-heroes').innerHTML = htmlCampana(e);
 }
 // Récords de la Mazmorra Infinita (en este dispositivo).
+// Fantasmas del caído: el grupo que cae deja su fantasma en ese piso para futuras partidas (en este dispositivo).
+function leerFantasmas() { try { return JSON.parse(localStorage.getItem('criptas_fantasmas') || '[]'); } catch { return []; } }
+function escribirFantasmas(l) { try { localStorage.setItem('criptas_fantasmas', JSON.stringify(l.slice(-10))); } catch {} }
+function guardarFantasma(e) {
+  if (app.modo === 'invitado' || e.fantasmaGuardado) return;
+  e.fantasmaGuardado = true;
+  const heroes = e.orden.map((t) => e.heroes[t]).map((h) => ({ nombre: h.nombre, tipo: h.tipo, ataque: M.ataqueHeroe(h), defensa: M.defensaHeroe(h), cuerpoMax: h.cuerpoMax,
+    equipo: [h.arma, ...h.armaduras].filter((x) => x && x !== D.HEROES[h.tipo].arma) }));
+  escribirFantasmas([...leerFantasmas().filter((f) => f.piso !== e.caida.piso), { piso: e.caida.piso, heroes, fecha: Date.now() }]);
+}
 function leerRecords() { try { return JSON.parse(localStorage.getItem('criptas_records') || '[]'); } catch { return []; } }
 function guardarRecord(e) {
   const lista = leerRecords().filter((r) => r.id !== app.partidaId);

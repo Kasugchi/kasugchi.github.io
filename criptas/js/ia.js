@@ -113,6 +113,7 @@ export function turnoAliado(estado, m, ctx) {
 }
 
 export function turnoMonstruo(estado, m, ctx) {
+  if (m.neutral) return; // el mercader no pelea… mientras nadie le moleste
   const ef = m.efectos;
   if (ef.dormido) return;
   if (ef.aturdido) { delete ef.aturdido; ctx.avisar(estado, m.nombre + ' sigue aturdido y pierde el turno.'); return; }
