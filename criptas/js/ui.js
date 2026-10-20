@@ -655,8 +655,25 @@ $('#b-abandonar').addEventListener('click', async () => {
   if (i === 1) salirAPortada();
 });
 
+// Lo que hay que hacer en la misión, con lo ya cumplido tachado.
+function htmlTareas(e) {
+  const m = e?.mision;
+  if (!m) return '';
+  const hecha = (t) => (t.flag && e.flags?.[t.flag]) || (t.matar && e.monstruos.some((x) => x.id === t.matar && !x.vivo))
+    || (t.salir && (e.resultado === 'victoria' || Object.values(e.heroes).some((h) => h.fuera)));
+  const quedan = M.rondasRestantes(e);
+  return `<h3>${esc(m.titulo)}</h3><p class="obj">${esc(m.objetivo.texto)}</p>`
+    + (m.tareas?.length ? '<ul class="tareas">' + m.tareas.map((t) => `<li class="${hecha(t) ? 'hecha' : ''}">${esc(t.texto)}</li>`).join('') + '</ul>' : '')
+    + (quedan !== null ? `<p class="obj">Quedan <b>${quedan}</b> ${quedan === 1 ? 'ronda' : 'rondas'} antes del derrumbe.</p>` : '')
+    + '<button class="enlace" id="b-ver-historia">Releer la historia</button>';
+}
+
 function pintarDiario() {
   const e = app.estado;
+  const enMision = e?.mision && ['mision', 'resultado', 'briefing'].includes(e.fase);
+  $('#diario-mision').hidden = !enMision;
+  $('#diario-mision').innerHTML = enMision ? htmlTareas(e) : '';
+  $('#b-ver-historia')?.addEventListener('click', () => { app.cerrarModalFuera = () => {}; modal(`<h2>${esc(e.mision.titulo)}</h2><p style="font-size:18px">${esc(e.mision.intro)}</p><p class="objetivo">${esc(e.mision.objetivo.texto)}</p>`, [{ texto: 'Cerrar' }]); });
   const version = document.querySelector('meta[name="version"]')?.content || '';
   $('#diario-sala').hidden = false;
   $('#diario-sala').innerHTML = (app.red ? 'Código de la sala: <b>' + esc(app.red.codigo) + '</b><br>' : '') + '<small>Versión ' + esc(version) + '</small>';

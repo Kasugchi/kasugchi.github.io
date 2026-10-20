@@ -537,5 +537,11 @@
         }
       ]
     }
+  ],
+  "tareas": [
+    {
+      "matar": "velmor",
+      "texto": "Derrotar a Velmor el Pálido"
+    }
   ]
 }

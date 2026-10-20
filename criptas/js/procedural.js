@@ -271,6 +271,7 @@ function intentar(r, semilla, nivel) {
   const mayus = (t) => t.replace(/^./, (c) => c.toUpperCase());
   const intermedias = porDistancia.filter((s) => s !== salaObj);
   let objetivo, intro;
+  let tareas = []; // pasos que se muestran en el diario
   const refuerzos = () => {
     // Al coger el objetivo, salen monstruos en el camino de vuelta.
     const medio = PASILLO.filter(([x, y]) => !ocupado.has(k(x, y)) && !celdaPuerta.has(k(x, y)) && Math.abs((dist[k(x, y)] ?? 0) - distSala[salaObj] / 2) <= 3);
@@ -279,6 +280,7 @@ function intentar(r, semilla, nivel) {
   switch (objetivoTipo) {
     case 'jefe':
       objetivo = { tipo: 'matar', id: 'jefe', texto: 'Acaba con ' + jefe.nombre + '.' };
+      tareas = [{ matar: 'jefe', texto: 'Acabar con ' + jefe.nombre }];
       intro = `Los caminos del norte llevan semanas cortados. Los supervivientes hablan ${/^el /.test(enTexto) ? 'del ' + enTexto.slice(3) : 'de ' + enTexto}, donde ${jefe.nombre} reúne a sus huestes. La Hermandad os envía a terminar con él antes de que su sombra llegue a las aldeas.`;
       disparadores.push({ cuando: 'region_revelada', region: salaObj, acciones: [{ tipo: 'historia', texto: `Al fondo de la sala, ${jefe.nombre} se vuelve hacia vosotros. «Habéis llegado lejos… para morir aquí.»` }] });
       tesoros[salaObj] = { texto: `Entre las pertenencias de ${nombreJefe} hay ${60 + nivel * 30} monedas.`, oro: 60 + nivel * 30 };
@@ -286,6 +288,7 @@ function intentar(r, semilla, nivel) {
     case 'reliquia':
     case 'escapar': {
       tesoros[salaObj] = { texto: `Sobre un pedestal descansa ${reliquia}. Al cogerlo, algo cruje en las paredes.`, flag: 'reliquia', oro: 30 + nivel * 15 };
+      tareas = [{ flag: 'reliquia', texto: 'Encontrar ' + reliquia + ' (busca tesoro en las salas)' }, { salir: true, texto: 'Volver a la escalera y salir' }];
       const salida = { tipo: 'aparecer', monstruos: refuerzos() };
       if (objetivoTipo === 'reliquia') {
         objetivo = { tipo: 'escalera', requiere: ['reliquia'], texto: `Recupera ${reliquia} y vuelve a la escalera.` };
@@ -306,6 +309,7 @@ function intentar(r, semilla, nivel) {
       tesoros[salaLlave] = { texto: 'Colgada de un clavo, una llave de hierro grande y oxidada.', flag: 'llave' };
       tesoros[salaObj] = { texto: `Encadenado al muro está ${preso}. Rompéis los grilletes: «Sabía que vendría alguien. Sacadme de aquí».`, flag: 'rescatado' };
       objetivo = { tipo: 'escalera', requiere: ['rescatado'], texto: `Libera a ${preso} y vuelve con vida a la escalera.` };
+      tareas = [{ flag: 'llave', texto: 'Encontrar la llave de la celda (busca tesoro en las salas)' }, { flag: 'rescatado', texto: 'Abrir la celda y liberar a ' + preso }, { salir: true, texto: 'Volver a la escalera y salir' }];
       intro = `${preso.replace(/^./, (c) => c.toUpperCase())} bajó ${/^el /.test(enTexto) ? 'al ' + enTexto.slice(3) : 'a ' + enTexto} y no ha vuelto. Lo tienen encerrado tras una puerta de hierro; la llave debe de estar en alguna parte de la mazmorra.`;
       disparadores.push({ cuando: 'flag', nombre: 'llave', acciones: [{ tipo: 'desbloquear', puerta: 'sellada' }, { tipo: 'historia', texto: 'La llave encaja en la cerradura de la celda: ya podéis abrirla.' }] });
       disparadores.push({ cuando: 'flag', nombre: 'rescatado', acciones: [{ tipo: 'aparecer', monstruos: refuerzos() }, { tipo: 'historia', texto: 'Alguien da la alarma. ¡Volved a la escalera con el prisionero!' }] });
@@ -321,6 +325,7 @@ function intentar(r, semilla, nivel) {
       disparadores.push({ cuando: 'flag', requiere: flags, acciones: [{ tipo: 'desbloquear', puerta: 'sellada' }, { tipo: 'historia', texto: 'Los sellos vibran a la vez: la puerta sellada ya no resiste.' }] });
       disparadores.push({ cuando: 'region_revelada', region: salaObj, acciones: [{ tipo: 'historia', texto: `${jefe.nombre} os esperaba. «Nadie rompe mis sellos y sale vivo.»` }] });
       objetivo = { tipo: 'matar', id: 'jefe', texto: `Reúne ${n === 1 ? 'el sello' : 'los ' + n + ' sellos'}, abre la puerta sellada y acaba con ${jefe.nombre}.` };
+      tareas = [...sellos.map((s2, i) => ({ flag: flags[i], texto: 'Encontrar el Sello de ' + s2 })), { matar: 'jefe', texto: 'Cruzar la puerta sellada y acabar con ' + jefe.nombre }];
       intro = `${jefe.nombre} se ha encerrado en lo más hondo ${/^el /.test(enTexto) ? 'del ' + enTexto.slice(3) : 'de ' + enTexto}, tras una puerta que solo ceden ${n === 1 ? 'un sello' : n + ' sellos'} escondidos en la mazmorra. Encontradlos y terminad con él.`;
       break;
     }
@@ -352,7 +357,7 @@ function intentar(r, semilla, nivel) {
   }
 
   return {
-    id: 'perdida-' + semilla, numero: nivel, titulo, intro, objetivo, semilla, generada: true,
+    id: 'perdida-' + semilla, numero: nivel, titulo, intro, objetivo, tareas, semilla, generada: true,
     recompensa: 40 + nivel * 20, errante: tema.errante, tema: nombreTema,
     escalera: [ex, ey], rocas, puertas, muebles, monstruos, trampas, tesoros, disparadores,
     _salas: elegidas, _salaObjetivo: salaObj
