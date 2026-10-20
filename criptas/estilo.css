@@ -284,3 +284,5 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
   .acciones { border-radius: 4px 0 0 0; }
 }
 @media (prefers-reduced-motion: reduce) { .dado.rueda, .toast { animation: none; } }
+
+.mesa-dados .tocar { margin: 14px 0 0; font-size: 14px; color: #a8977a; }

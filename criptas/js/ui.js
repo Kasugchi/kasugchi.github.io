@@ -739,9 +739,10 @@ async function animar(ev) {
       break;
     case 'tirada': {
       $('#mesa-dados').innerHTML = `<h3>${esc(nombre(ev.heroe))} se mueve</h3><div class="tira">${ev.valores.map(dadoRojo).join('')}</div>
-        <div class="resultado-dados">${ev.total} casillas${ev.total > ev.valores.reduce((a, b) => a + b, 0) ? ' (¡doble!)' : ''}</div>`;
+        <div class="resultado-dados">${ev.total} casillas${ev.total > ev.valores.reduce((a, b) => a + b, 0) ? ' (¡doble!)' : ''}</div>
+        <p class="tocar">Toca para continuar</p>`;
       $('#dados').hidden = false; sonar('dados');
-      await esperaSaltable(1000);
+      await esperaSaltable(2000);
       $('#dados').hidden = true;
       break;
     }
@@ -791,9 +792,10 @@ async function animar(ev) {
         <div class="tira">${atk.map((c) => dadoHTML(c, c === 'calavera')).join('') || '<span class="tira-et">—</span>'}</div>
         <div class="tira-et">Defensa: ${paradas} ${ev.defiende === 'heroe' ? (paradas === 1 ? 'escudo blanco' : 'escudos blancos') : (paradas === 1 ? 'escudo negro' : 'escudos negros')}</div>
         <div class="tira">${def.map((c) => dadoHTML(c, c === cuentaDef)).join('') || '<span class="tira-et">Sin defensa</span>'}</div>
-        <div class="resultado-dados ${ev.dano ? '' : 'nada'}">${ev.dano ? '¡' + ev.dano + ' de daño!' : 'Sin daño'}</div>`;
+        <div class="resultado-dados ${ev.dano ? '' : 'nada'}">${ev.dano ? '¡' + ev.dano + ' de daño!' : 'Sin daño'}</div>
+        <p class="tocar">Toca para continuar</p>`;
       $('#dados').hidden = false; sonar('dados');
-      await esperaSaltable(ev.defiende === 'heroe' ? 1500 : 1300);
+      await esperaSaltable(ev.defiende === "heroe" ? 2800 : 2500);
       $('#dados').hidden = true;
       const p = posDe(ev.defensor);
       if (p && ev.dano) { tablero.texto(p[0], p[1], '−' + ev.dano, ev.defiende === 'heroe' ? '#ff6a50' : '#ffd36a'); tablero.destello(p[0], p[1], 'rgba(255,60,40,A)'); sonar('golpe'); }
