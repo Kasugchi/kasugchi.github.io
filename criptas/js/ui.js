@@ -113,8 +113,80 @@ const listas = Promise.all(D.CAMPANA.map((id) => fetch('misiones/' + id + '.json
 $('#nombre').value = leer('criptas_nombre') || '';
 const miNombre = () => ($('#nombre').value.trim() || 'Aventurero').slice(0, 20);
 $('#nombre').addEventListener('change', () => guardar('criptas_nombre', $('#nombre').value.trim()));
-const guardado = () => { try { return JSON.parse(leer('criptas_partida')); } catch { return null; } };
-$('#b-continuar').hidden = !guardado();
+// =============================================================
+//  PARTIDAS GUARDADAS
+//  Varias a la vez en localStorage ('criptas_partidas'):
+//    { [id]: { id, modo, codigo, estado, actualizada } }
+//  - En solitario: id 'solo-<fecha>', guarda el estado entero.
+//  - Multijugador: id 'sala-<código>'. El anfitrión guarda el estado;
+//    el invitado solo apunta el código para volver a entrar.
+// =============================================================
+function leerPartidas() {
+  let todas = {};
+  try { todas = JSON.parse(leer('criptas_partidas')) || {}; } catch { todas = {}; }
+  // Migrar la partida única de versiones anteriores.
+  try {
+    const vieja = JSON.parse(leer('criptas_partida'));
+    if (vieja?.estado) {
+      const id = vieja.codigo ? 'sala-' + vieja.codigo : 'solo-' + Date.now();
+      todas[id] = { id, modo: vieja.codigo ? vieja.modo : 'local', codigo: vieja.codigo || null, estado: vieja.estado, actualizada: Date.now() };
+      escribirPartidas(todas);
+    }
+    borrar('criptas_partida');
+  } catch { /* nada que migrar */ }
+  return todas;
+}
+let avisoEspacio = false;
+function escribirPartidas(todas) {
+  try { localStorage.setItem('criptas_partidas', JSON.stringify(todas)); return true; }
+  catch {
+    if (!avisoEspacio) { avisoEspacio = true; toast('No queda espacio para guardar. Borra alguna partida antigua desde la portada.', 'peligro'); }
+    return false;
+  }
+}
+function guardarPartida(estado) {
+  if (!app.partidaId) return;
+  const todas = leerPartidas();
+  // Los eventos solo sirven para animar: no hace falta guardarlos.
+  todas[app.partidaId] = {
+    id: app.partidaId, modo: app.modo, codigo: app.red?.codigo || null,
+    estado: app.modo === 'invitado' ? null : { ...estado, eventos: [] },
+    resumen: resumenPartida(estado), actualizada: Date.now()
+  };
+  escribirPartidas(todas);
+}
+function resumenPartida(e) {
+  const heroes = e.orden.map((t) => e.heroes[t].nombre).join(', ');
+  const fin = e.fase === 'final';
+  const idx = Math.min(e.misionIdx, e.campana.length - 1);
+  const mision = fin ? 'Campaña completada' : 'Misión ' + (idx + 1) + ' de ' + e.campana.length + ': ' + (app.misiones[e.campana[idx]]?.titulo || '');
+  const oro = e.orden.reduce((s, t) => s + e.heroes[t].oro, 0);
+  return { heroes, mision, oro, fin };
+}
+function borrarPartida(id) { const todas = leerPartidas(); delete todas[id]; escribirPartidas(todas); }
+
+function pintarPartidas() {
+  const todas = Object.values(leerPartidas()).filter((p) => p.resumen).sort((a, b) => b.actualizada - a.actualizada);
+  const fecha = (t) => new Date(t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const fila = (p) => `<li class="partida">
+      <div><strong>${esc(p.resumen.heroes)}</strong>
+      <span>${esc(p.resumen.mision)}</span>
+      <small>${p.codigo ? 'Sala ' + esc(p.codigo) + (p.modo === 'invitado' ? ' · como invitado' : ' · como anfitrión') + ' · ' : ''}${fecha(p.actualizada)}</small></div>
+      <button class="btn" data-seguir="${esc(p.id)}">${p.resumen.fin ? 'Ver' : p.modo === 'invitado' ? 'Volver a entrar' : 'Continuar'}</button>
+      <button class="icono-btn borrar" data-borrar="${esc(p.id)}" aria-label="Borrar partida">${'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" fill="none"/></svg>'}</button>
+    </li>`;
+  const solo = todas.filter((p) => p.modo === 'local'), multi = todas.filter((p) => p.modo !== 'local');
+  $('#partidas').hidden = !todas.length;
+  $('#partidas').innerHTML = (solo.length ? `<h2>En solitario</h2><ul>${solo.map(fila).join('')}</ul>` : '')
+    + (multi.length ? `<h2>Multijugador</h2><ul>${multi.map(fila).join('')}</ul>` : '');
+  $('#partidas').querySelectorAll('[data-seguir]').forEach((b) => b.addEventListener('click', () => continuarPartida(b.dataset.seguir)));
+  $('#partidas').querySelectorAll('[data-borrar]').forEach((b) => b.addEventListener('click', async () => {
+    app.cerrarModalFuera = () => {};
+    const i = await modal('<h2>¿Borrar esta partida?</h2><p>Se perderá el progreso guardado en este dispositivo.</p>', [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Borrar' }]);
+    if (i === 1) { borrarPartida(b.dataset.borrar); pintarPartidas(); }
+  }));
+}
+listas.then(pintarPartidas);
 
 $('#b-local').addEventListener('click', () => {
   app.modo = 'local';
@@ -143,6 +215,7 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
 
 async function unirseComoInvitado(codigo) {
   app.modo = 'invitado';
+  app.partidaId = 'sala-' + codigo;
   app.red = await (await Red()).unirseSala(codigo, miId, miNombre(), {
     alMensaje: mensajeDelAnfitrion,
     alAnfitrion: (online) => anfitrionCambia(online)
@@ -150,10 +223,17 @@ async function unirseComoInvitado(codigo) {
   if (!app.red.anfitrionOnline) anfitrionCambia(false);
 }
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-$('#b-continuar').addEventListener('click', async () => {
-  const g = guardado();
+async function continuarPartida(id) {
+  const g = leerPartidas()[id];
   if (!g) return;
   await listas;
+  app.partidaId = id;
+  if (g.modo === 'invitado') {
+    avisoPortada('Entrando en la sala ' + g.codigo + '…');
+    try { await unirseComoInvitado(g.codigo); avisoPortada(''); }
+    catch (e) { app.modo = null; avisoPortada(e.message); }
+    return;
+  }
   if (g.modo === 'anfitrion' && g.codigo) {
     avisoPortada('Reabriendo la sala ' + g.codigo + '…');
     try { await retomarComoAnfitrion(g.codigo, g.estado); avisoPortada(''); }
@@ -168,7 +248,7 @@ $('#b-continuar').addEventListener('click', async () => {
   app.modo = 'local';
   app.visto = 0; app.estado = null; app.cola = [];
   publicar(g.estado);
-});
+}
 
 // Seguir una partida como anfitrión (tras recargar, o si el anfitrión se fue).
 async function retomarComoAnfitrion(codigo, estado, forzar = false) {
@@ -182,6 +262,7 @@ async function retomarComoAnfitrion(codigo, estado, forzar = false) {
   app.sala = { codigo, jugadores: estado.jugadores, eleccion: {}, misionIdx: estado.misionIdx };
   app.visto = 0; app.estado = null; app.cola = [];
   app.estadoReal = estado; // antes de abrir la sala, para que los que se reconectan se apunten bien
+  app.partidaId = 'sala-' + codigo;
   try {
     app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo, forzar });
   } catch (e) { app.modo = null; app.estadoReal = null; throw e; }
@@ -239,6 +320,7 @@ function mostrarReglas() {
     <p>Las salas y pasillos se descubren al verlos. Abrir una puerta revela la sala entera… y lo que hay dentro.</p>
     <p><b>Combate:</b> el atacante tira dados blancos y cuenta calaveras. El héroe se defiende con escudos blancos; el monstruo, con escudos negros. Cada calavera no parada quita un punto de cuerpo.</p>
     <p>Tras el último héroe mueven los monstruos. Algunos te persiguen, otros guardan su sala y otros esperan a que pase algo.</p>
+    <p><b>Equipo:</b> lo que no lleve nadie se queda en el almacén del grupo. Se reparte en la armería entre misiones o, dentro de la mazmorra, desde la mochila de un cargador contratado: hay que ponerse a su lado y gastar 1 casilla.</p>
     <p class="nota">Busca trampas antes de cruzar pasillos sospechosos y no busques tesoro con monstruos a la vista.</p>`, [{ texto: 'Entendido' }]);
 }
 
@@ -346,6 +428,7 @@ $('#b-empezar').addEventListener('click', async () => {
   if (!elegidos.length) return;
   const e = M.crearPartida(elegidos, s.jugadores);
   e.anfitrion = miId;
+  app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
   e.misionIdx = s.misionIdx;
   M.iniciarMision(e, app.misiones[D.CAMPANA[s.misionIdx]]);
   app.visto = 0; app.estado = null; app.cola = [];
@@ -355,7 +438,7 @@ $('#b-empezar').addEventListener('click', async () => {
 function salirAPortada() {
   clearTimeout(avisoCaida); ocultarAvisoAnfitrion();
   app.red?.cerrar(); app.red = null; app.modo = null; app.estado = null; app.estadoReal = null; app.sala = null; app.cola = [];
-  $('#b-continuar').hidden = !guardado();
+  pintarPartidas();
   $('#registro').hidden = true;
   mostrar('portada');
 }
@@ -403,7 +486,7 @@ function mensajeDelAnfitrion(msg) {
   if (msg.t === 'sala') {
     app.sala = msg.sala;
     if (!app.estado) { pintarSala(); mostrar('sala'); }
-  } else if (msg.t === 'estado') recibirEstado(msg.estado);
+  } else if (msg.t === 'estado') { recibirEstado(msg.estado); guardarPartida(msg.estado); }
   else if (msg.t === 'error') toast(msg.texto, 'peligro');
 }
 
@@ -411,7 +494,7 @@ function mensajeDelAnfitrion(msg) {
 //  ESTADO Y ACCIONES
 // =============================================================
 function publicar(estado) {
-  guardar('criptas_partida', { modo: app.modo, codigo: app.red?.codigo || null, estado });
+  guardarPartida(estado);
   if (app.modo === 'anfitrion') app.red?.difundir({ t: 'estado', estado });
   recibirEstado(JSON.parse(JSON.stringify(estado)), estado);
 }
@@ -454,7 +537,7 @@ function irAFase() {
     $('#j-titulo').textContent = e.mision.titulo;
     tablero.estado = e;
     pintarJuego();
-  } else if (e.fase === 'armeria') { if (!app.cola.length) { pintarArmeria(); mostrar('armeria'); } }
+  } else if (e.fase === 'armeria') { app.mochilaAbierta = null; if (!app.cola.length) { pintarArmeria(); mostrar('armeria'); } }
   else if (e.fase === 'final') { if (!app.cola.length) { pintarFinal(); mostrar('final'); } }
 }
 
@@ -546,14 +629,23 @@ function pintarJuego() {
       <strong>${esc(h.nombre)}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span>
       ${app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
   }).join('');
+  const c = e.cargador;
+  if (c) {
+    const vida = Array.from({ length: c.cuerpoMax }, (_, i) => `<i class="${i < c.cuerpo ? '' : 'vacio'}"></i>`).join('');
+    const patron = e.heroes[c.patron];
+    $('#hojas').insertAdjacentHTML('beforeend', `<button class="hoja cargador ${c.vivo ? '' : 'muerto'}" id="hoja-cargador"><span class="ret" style="background:${D.CARGADOR.color}">${svg('cargador')}</span>
+      <strong>Cargador</strong><span class="vida" aria-label="Cuerpo ${c.cuerpo} de ${c.cuerpoMax}">${vida}</span><span class="jug">${esc(patron ? 'Lo guía ' + art(patron) : '')}</span></button>`);
+    $('#hoja-cargador').addEventListener('click', () => verMochila(false));
+  }
   $('#hojas').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => fichaHeroe(b.dataset.heroe)));
   pintarAcciones();
+  if (app.mochilaAbierta) pintarMochila();
 }
 
 function pintarAcciones() {
   const e = app.estado;
   const et = $('#estado-turno'), bot = $('#botonera');
-  tablero.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [] };
+  tablero.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {} };
   if (e.fase !== 'mision' || !e.turno) { et.innerHTML = ''; bot.innerHTML = ''; return; }
   const h = e.heroes[e.turno.heroe];
   const mio = miHeroeEnTurno();
@@ -570,10 +662,13 @@ function pintarAcciones() {
   if (t.accion && t.movTirada && t.movRestante > 0) info = `Acción hecha. Te quedan ${t.movRestante} casillas.`;
   if (app.seleccion?.tipo === 'hechizo') info = 'Toca el objetivo de ' + D.HECHIZOS[app.seleccion.hechizo].nombre + '.';
   if (app.seleccion?.tipo === 'atacar') info = 'Toca el monstruo al que quieres atacar.';
+  if (app.moverCargador && !d.cargador) app.moverCargador = false;
+  if (app.moverCargador) info = d.cargador.restante > 0 ? `Cargador: ${d.cargador.restante} casillas. Toca dónde llevarlo.` : 'El cargador ya no puede moverse este turno.';
   et.innerHTML = `<b>${esc(h.nombre)}</b><span>${esc(info)}</span>`;
 
   if (!app.reproduciendo) {
     if (app.seleccion?.tipo === 'hechizo') tablero.resaltes.magia = app.seleccion.objetivos;
+    else if (app.moverCargador) tablero.resaltes.cargador = d.cargador.destinos;
     else {
       tablero.resaltes.destinos = d.destinos || {};
       tablero.resaltes.ataque = d.atacables || [];
@@ -589,6 +684,11 @@ function pintarAcciones() {
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
+  if (d.cargador) {
+    boton('cargador', 'cargador', app.moverCargador ? 'Mover a tu héroe' : 'Cargador', { clase: app.moverCargador ? 'activo' : '', n: d.cargador.puedeTirar ? 'tirar y mover' : d.cargador.restante + ' casillas', off: !d.cargador.puedeTirar && d.cargador.restante <= 0 && !app.moverCargador });
+    boton('seguir', 'mover', 'Que me siga', { off: !d.cargador.puedeTirar && d.cargador.restante <= 0 });
+  }
+  if (d.cercaCargador) boton('mochila', 'mochila', 'Mochila', { off: !d.mochila, titulo: d.mochila ? '' : d.motivoMochila, n: t.mochila ? 'abierta' : '1 casilla' });
   if (d.salir) boton('salir', 'escalera', 'Salir', { clase: 'principal' });
   else if (enLaEscalera(e, h)) boton('salir', 'escalera', 'Salir', { off: true, n: 'Aún no', titulo: motivoNoSalir(e) });
   boton('fin', 'reloj', 'Fin del turno');
@@ -617,6 +717,13 @@ async function accionBoton(acc, h, d) {
     case 'desarmar': return enviar({ ...base, tipo: 'desarmar', trampa: d.desarmables[0] });
     case 'pocion': return elegirPocion(h, d);
     case 'salir': return enviar({ ...base, tipo: 'salir' });
+    case 'cargador':
+      if (app.moverCargador) { app.moverCargador = false; return pintarAcciones(); }
+      app.moverCargador = true;
+      if (d.cargador.puedeTirar) return enviar({ ...base, tipo: 'tirarCargador' });
+      return pintarAcciones();
+    case 'seguir': app.moverCargador = false; return enviar({ ...base, tipo: 'seguir' });
+    case 'mochila': return abrirMochila(h);
     case 'fin': {
       const t = app.estado.turno;
       if (!t.accion && !t.movTirada) {
@@ -657,6 +764,65 @@ async function elegirPocion(h, d) {
   await pr;
 }
 
+// =============================================================
+//  MOCHILA DEL CARGADOR (almacén del grupo durante la misión)
+// =============================================================
+function abrirMochila(h) {
+  if (!app.estado.turno.mochila) enviar({ heroe: h.id, tipo: 'mochila', op: 'abrir' });
+  app.mochilaAbierta = h.id;
+  pintarMochila();
+}
+// Solo consulta (tocando la hoja del cargador): sin coste ni cambios.
+function verMochila() {
+  app.mochilaAbierta = '__ver';
+  pintarMochila();
+}
+function filaItem(item, boton, motivo) {
+  const def = D.ARMAS[item] || D.ARMADURAS[item] || D.POCIONES[item];
+  const desc = def.ataque ? def.ataque + ' dados de ataque' : def.defensa ? '+' + def.defensa + ' de defensa' : def.desc || '';
+  return `<div class="item">${svg(def.icono)}<strong>${esc(def.nombre)}</strong>${boton || ''}<span>${esc(motivo || desc)}</span></div>`;
+}
+function contenidoAlmacen(e) {
+  const alm = e.almacen || { armas: [], armaduras: [], objetos: {} };
+  const items = [...alm.armas, ...alm.armaduras];
+  for (const [k, n] of Object.entries(alm.objetos)) for (let i = 0; i < n; i++) items.push(k);
+  return items;
+}
+function pintarMochila() {
+  const e = app.estado;
+  const soloVer = app.mochilaAbierta === '__ver';
+  const h = soloVer ? null : e.heroes[app.mochilaAbierta];
+  const t = e.turno;
+  const sigue = h && e.fase === 'mision' && t?.heroe === h.id && M.disponibles(e, h.id).mochila;
+  const items = contenidoAlmacen(e);
+  let html = `<h2>Mochila del cargador</h2>`;
+  if (h) {
+    html += `<p class="nota">${sigue ? 'Coge o deja lo que quieras: ya has pagado la casilla de este turno.' : 'Ya no estás junto al cargador.'}</p>
+      <h3 class="sec">Lo que lleva ${esc(art(h))}</h3><div class="armeria-grid">
+      ${filaItem(h.arma, '', 'Arma equipada: cámbiala cogiendo otra')}
+      ${h.armaduras.map((a) => filaItem(a, `<button class="btn claro" data-guardar="${a}" ${sigue ? '' : 'disabled'}>Dejar</button>`)).join('')}
+      ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${sigue ? '' : 'disabled'}>Dejar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
+      </div>`;
+  }
+  html += `<h3 class="sec">En la mochila</h3>`;
+  if (!items.length) html += '<p class="nota">Está vacía.</p>';
+  else {
+    const vistos = new Set();
+    html += '<div class="armeria-grid">' + items.filter((i) => !vistos.has(i) && vistos.add(i)).map((i) => {
+      const n = items.filter((x) => x === i).length;
+      const motivo = h ? M.motivoNoEquipar(h, i) : null;
+      const btn = h ? `<button class="btn" data-coger="${i}" ${sigue && !motivo ? '' : 'disabled'} title="${esc(motivo || '')}">Coger</button>` : '';
+      return filaItem(i, btn, motivo || (n > 1 ? '×' + n : ''));
+    }).join('') + '</div>';
+  }
+  $('#modal-cuerpo').innerHTML = html + `<div class="fila" style="margin-top:14px"><button class="btn" id="b-cerrar-mochila">Cerrar</button></div>`;
+  $('#modal').hidden = false;
+  app.cerrarModalFuera = () => { app.mochilaAbierta = null; };
+  $('#b-cerrar-mochila').addEventListener('click', () => { $('#modal').hidden = true; app.mochilaAbierta = null; });
+  $('#modal-cuerpo').querySelectorAll('[data-coger]').forEach((b) => b.addEventListener('click', () => enviar({ heroe: h.id, tipo: 'mochila', op: 'equipar', item: b.dataset.coger })));
+  $('#modal-cuerpo').querySelectorAll('[data-guardar]').forEach((b) => b.addEventListener('click', () => enviar({ heroe: h.id, tipo: 'mochila', op: 'guardar', item: b.dataset.guardar })));
+}
+
 function fichaHeroe(t) {
   const e = app.estado, h = e.heroes[t], def = D.HEROES[t];
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
@@ -675,6 +841,10 @@ function alTocar(x, y) {
   const k = T.clave(x, y);
   if (h) {
     const d = M.disponibles(e, h.id);
+    if (app.moverCargador && d.cargador) {
+      if (d.cargador.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverCargador', x, y });
+      if (f?.id !== 'cargador') { app.moverCargador = false; pintarAcciones(); }
+    }
     if (app.seleccion?.tipo === 'hechizo') {
       if (f && app.seleccion.objetivos.includes(f.id)) return enviar({ heroe: h.id, tipo: 'hechizo', hechizo: app.seleccion.hechizo, objetivo: f.id });
       app.seleccion = null; return pintarAcciones();
@@ -688,6 +858,7 @@ function alTocar(x, y) {
   // Información de lo que hay en la casilla.
   if (!e.revelado[k]) return toast('Aún no habéis visto esta zona.');
   if (f && e.heroes[f.id]) return fichaHeroe(f.id);
+  if (f?.id === 'cargador') return toast(`Cargador: cuerpo ${f.cuerpo}/${f.cuerpoMax}, defensa ${D.CARGADOR.defensa}. Lleva el almacén del grupo.`);
   if (f) {
     const extra = f.efectos.dormido ? ' Duerme.' : '';
     return toast(`${f.nombre}: ataque ${f.ataque}, defensa ${f.defensa}, cuerpo ${f.cuerpo}/${f.cuerpoMax}, movimiento ${f.mov}.${extra}`);
@@ -731,11 +902,11 @@ async function reproducir() {
 
 const posDe = (id) => {
   const e = app.estado;
-  const f = e.heroes[id] || e.monstruos.find((m) => m.id === id);
+  const f = e.heroes[id] || (id === 'cargador' ? e.cargador : null) || e.monstruos.find((m) => m.id === id);
   return f ? (tablero.vista.pos[id] || [f.x, f.y]) : null;
 };
 const nombre = (id) => M.nombreDe(app.estado, id);
-const conArticulo = (id) => (app.estado.heroes[id] ? art(app.estado.heroes[id]) : nombre(id));
+const conArticulo = (id) => (app.estado.heroes[id] ? art(app.estado.heroes[id]) : id === 'cargador' ? 'el cargador' : nombre(id));
 
 function esperaSaltable(ms) {
   return new Promise((ok) => {
@@ -758,6 +929,8 @@ async function animar(ev) {
   const e = app.estado;
   switch (ev.tipo) {
     case 'turno': {
+      app.moverCargador = false;
+      if (app.mochilaAbierta && app.mochilaAbierta !== '__ver') { app.mochilaAbierta = null; $('#modal').hidden = true; }
       const h = e.heroes[ev.heroe];
       const mio = M.puedeControlar(e, miId, ev.heroe);
       cartel(mio && app.modo !== 'local' ? 'Tu turno: ' + h.nombre : 'Turno ' + del(h));
@@ -921,27 +1094,65 @@ function pintarArmeria() {
   const misHeroes = e.orden.filter((t) => M.puedeControlar(e, miId, t));
   if (!misHeroes.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
   const siguiente = app.misiones[e.campana[e.misionIdx]];
-  $('#arm-sub').textContent = 'Gastad el oro antes de bajar. Siguiente misión: ' + (siguiente?.titulo || '');
+  $('#arm-sub').textContent = 'Preparad el equipo antes de bajar. Siguiente misión: ' + (siguiente?.titulo || '');
   $('#arm-pestanas').innerHTML = e.orden.map((t) => `<button aria-pressed="${t === app.pestana}" data-t="${t}">${esc(e.heroes[t].nombre)}</button>`).join('');
   $('#arm-pestanas').querySelectorAll('[data-t]').forEach((b) => b.addEventListener('click', () => { app.pestana = b.dataset.t; pintarArmeria(); }));
   const h = e.heroes[app.pestana];
   const mio = M.puedeControlar(e, miId, h.id);
+  const off = mio ? '' : 'disabled';
+  const descDe = (def) => def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}`
+    : def.defensa ? `+${def.defensa} de defensa${def.lenta ? ', mueves con 1 dado' : ''}` : def.desc;
+
+  // Equipo puesto
+  const puesto = `<h3 class="sec">Lo que lleva</h3><div class="armeria-grid">
+    ${filaItem(h.arma, '', 'Arma · ' + descDe(D.ARMAS[h.arma]))}
+    ${h.armaduras.map((x) => filaItem(x, `<button class="btn claro" data-guardar="${x}" ${off}>Guardar</button>`, 'Armadura · ' + descDe(D.ARMADURAS[x]))).join('')}
+    ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${off}>Guardar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
+  </div>`;
+
+  // Almacén del grupo
+  const items = contenidoAlmacen(e);
+  const vistos = new Set();
+  const almacen = `<h3 class="sec">Almacén del grupo</h3>` + (items.length ? '<div class="armeria-grid">' + items.filter((i) => !vistos.has(i) && vistos.add(i)).map((i) => {
+    const n = items.filter((x) => x === i).length;
+    const motivo = M.motivoNoEquipar(h, i);
+    const def = D.ARMAS[i] || D.ARMADURAS[i] || D.POCIONES[i];
+    const venta = Math.floor((def.precio || 100) / 2);
+    return filaItem(i, `<span class="botones"><button class="btn" data-equipar="${i}" ${mio && !motivo ? '' : 'disabled'} title="${esc(motivo || '')}">Equipar</button><button class="btn claro" data-vender="${i}" ${off}>Vender ${venta}</button></span>`,
+      (motivo ? motivo : descDe(def)) + (n > 1 ? ' · ×' + n : ''));
+  }).join('') + '</div>' : '<p class="nota">Vacío. Las armas que cambiéis o encontréis y no uséis acabarán aquí.</p>');
+
+  // Cargador
+  const con = e.contrato;
+  const patron = con && e.heroes[con.patron];
+  const cargador = `<h3 class="sec">Cargador</h3><div class="item">${svg('cargador')}<strong>Cargador · ${D.CARGADOR.precio} monedas</strong>
+    ${con ? (con.patron === h.id ? `<button class="btn claro" data-despedir ${off}>Cancelar</button>` : '<button class="btn" disabled>Contratado</button>')
+      : `<button class="btn" data-contratar ${mio && h.oro >= D.CARGADOR.precio ? '' : 'disabled'}>Contratar</button>`}
+    <span>${con ? 'Contratado por ' + esc(patron?.nombre || '') + ' para la próxima misión.' : 'Lleva el almacén a la mazmorra. Lo mueve quien lo paga; para usar la mochila hay que estar a su lado y gastar 1 casilla. Tiene 2 de cuerpo.'}</span></div>`;
+
+  // Tienda
   const fila = (id, def, tipoTxt) => {
     const motivo = M.puedeComprar(e, h, id);
-    const tengo = h.arma === id || h.armaduras.includes(id) || (id === 'kit' && h.kit);
-    const desc = def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', ataca en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}` : def.defensa ? `+${def.defensa} dado${def.defensa > 1 ? 's' : ''} de defensa${def.lenta ? ', mueves con 1 dado' : ''}` : def.desc;
+    const usable = D.OBJETOS_TIENDA[id] || !M.motivoNoEquipar(h, id);
     return `<div class="item">${svg(def.icono)}<strong>${esc(def.nombre)}</strong>
-      <button class="btn ${tengo ? 'claro' : ''}" data-comprar="${id}" ${!mio || motivo ? 'disabled' : ''} title="${esc(motivo || '')}">${tengo ? 'Lo tienes' : def.precio + ' oro'}</button>
-      <span>${esc(tipoTxt + ' · ' + desc)}</span></div>`;
+      <button class="btn" data-comprar="${id}" ${!mio || motivo ? 'disabled' : ''} title="${esc(motivo || '')}">${def.precio} oro</button>
+      <span>${esc(tipoTxt + ' · ' + descDe(def) + (usable ? '' : ' · irá al almacén'))}</span></div>`;
   };
   $('#arm-cuerpo').innerHTML = `<div class="monedas">${svg('oro')}${h.oro} monedas</div>
-    <p class="nota">Lleva: ${esc(D.ARMAS[h.arma].nombre)}${h.armaduras.length ? ', ' + esc(h.armaduras.map((a) => D.ARMADURAS[a].nombre).join(', ')) : ''}.${mio ? '' : ' Este héroe lo equipa otro jugador.'}</p>
-    <div class="armeria-grid">
+    ${mio ? '' : '<p class="nota">Este héroe lo equipa otro jugador.</p>'}
+    ${puesto}${almacen}${cargador}
+    <h3 class="sec">Tienda</h3><div class="armeria-grid">
       ${Object.entries(D.ARMAS).filter(([id]) => id !== 'daga').map(([id, d]) => fila(id, d, 'Arma')).join('')}
       ${Object.entries(D.ARMADURAS).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
       ${Object.entries(D.OBJETOS_TIENDA).map(([id, d]) => fila(id, d, 'Objeto')).join('')}
     </div>`;
-  $('#arm-cuerpo').querySelectorAll('[data-comprar]').forEach((b) => b.addEventListener('click', () => enviar({ tipo: 'comprar', heroe: h.id, item: b.dataset.comprar })));
+  const q = (sel, fn) => $('#arm-cuerpo').querySelectorAll(sel).forEach((b) => b.addEventListener('click', () => fn(b)));
+  q('[data-comprar]', (b) => enviar({ tipo: 'comprar', heroe: h.id, item: b.dataset.comprar }));
+  q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
+  q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
+  q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));
+  q('[data-contratar]', () => enviar({ tipo: 'contratar', heroe: h.id }));
+  q('[data-despedir]', () => enviar({ tipo: 'despedir', heroe: h.id }));
   $('#b-siguiente').hidden = !manda;
   $('#arm-espera').hidden = manda;
 }
@@ -951,16 +1162,16 @@ function pintarFinal() {
   const e = app.estado;
   $('#final-heroes').innerHTML = `<p class="nota">${e.orden.map((t) => esc(e.heroes[t].nombre) + ' · ' + e.heroes[t].oro + ' monedas').join('<br>')}</p>`;
 }
-$('#b-nueva').addEventListener('click', () => { borrar('criptas_partida'); salirAPortada(); });
+$('#b-nueva').addEventListener('click', () => salirAPortada());
 
 // Avisar antes de cerrar si eres anfitrión con gente conectada.
 window.addEventListener('beforeunload', (e) => { if (app.modo === 'anfitrion' && app.estado) { e.preventDefault(); e.returnValue = ''; } });
 
 // Acceso desde la consola del navegador, útil para depurar.
-window.criptas = { app, enviar, M, D };
+window.criptas = { app, enviar, publicar, M, D };
 
 // Acceso desde la consola del navegador, útil para depurar.
-window.criptas = { app, enviar, M, D };
+window.criptas = { app, enviar, publicar, M, D };
 
 // =============================================================
 //  TRUCOS (consola del navegador, F12)

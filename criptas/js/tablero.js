@@ -64,8 +64,13 @@ function vistaBloqueada(estado, p, q) {
 export function figuraEn(estado, x, y) {
   for (const h of Object.values(estado.heroes)) if (h.vivo && !h.fuera && h.x === x && h.y === y) return h;
   for (const m of estado.monstruos) if (m.vivo && m.x === x && m.y === y) return m;
+  const c = estado.cargador;
+  if (c && c.vivo && c.x === x && c.y === y) return c;
   return null;
 }
+
+// Héroes y cargador: se pueden cruzar entre ellos, pero no con monstruos.
+export const esAliado = (estado, f) => !!f && (!!estado.heroes[f.id] || f.id === 'cargador');
 
 // Línea de visión entre centros de casilla.
 // conFiguras: si true, las figuras intermedias tapan la vista (para ataques a distancia).

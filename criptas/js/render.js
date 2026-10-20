@@ -312,7 +312,7 @@ function dibujarPuerta(g, p) {
 
 function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   const cx = x * TS + TS / 2, cy = y * TS + TS / 2, rad = TS * 0.4;
-  const def = esHeroe ? D.HEROES[f.tipo] : D.MONSTRUOS[f.tipo];
+  const def = f.id === 'cargador' ? D.CARGADOR : esHeroe ? D.HEROES[f.tipo] : D.MONSTRUOS[f.tipo];
   g.save();
   g.globalAlpha = opciones.alfa ?? 1;
   // peana
@@ -336,7 +336,7 @@ function dibujarFicha(g, f, x, y, esHeroe, t, opciones) {
   if (ef.niebla) marca('agua', '#a8d0f0');
   if (ef.coraje || ef.fuerza) marca('fuego', '#ff9a50');
   // vida de monstruos con más de 1 punto
-  if (!esHeroe && f.cuerpoMax > 1) {
+  if ((!esHeroe || f.id === 'cargador') && f.cuerpoMax > 1) {
     const w = rad * 1.6, px = cx - w / 2, py = cy + rad + 4;
     g.fillStyle = '#1c1612'; g.fillRect(px - 1, py - 1, w + 2, 7);
     g.fillStyle = '#c43a2a'; g.fillRect(px, py, (w * f.cuerpo) / f.cuerpoMax, 5);
@@ -362,7 +362,7 @@ export class Tablero {
     this.alTocar = alTocar;
     this.estado = null;
     this.vista = { pos: {}, ocultos: new Set(), vivos: new Set() };
-    this.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [] };
+    this.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {} };
     this.textos = [];
     this.destellos = [];
     this.cam = { x: W / 2, y: H / 2, z: 0.5 };
@@ -521,6 +521,11 @@ export class Tablero {
       g.fillStyle = `rgba(255,214,120,${0.16 + pulso * 0.1})`; g.fillRect(x * TS + 3, y * TS + 3, TS - 6, TS - 6);
       g.strokeStyle = 'rgba(255,214,120,0.55)'; g.lineWidth = 2; g.strokeRect(x * TS + 4, y * TS + 4, TS - 8, TS - 8);
     }
+    for (const k of Object.keys(this.resaltes.cargador || {})) {
+      const [x, y] = k.split(',').map(Number);
+      g.fillStyle = `rgba(120,200,255,${0.14 + pulso * 0.1})`; g.fillRect(x * TS + 3, y * TS + 3, TS - 6, TS - 6);
+      g.strokeStyle = 'rgba(120,200,255,0.6)'; g.lineWidth = 2; g.strokeRect(x * TS + 4, y * TS + 4, TS - 8, TS - 8);
+    }
     for (const id of this.resaltes.trampas) {
       const tr = e.trampas.find((x) => x.id === id);
       if (tr) { g.strokeStyle = `rgba(120,220,255,${0.5 + pulso * 0.5})`; g.lineWidth = 4; g.strokeRect(tr.x * TS + 4, tr.y * TS + 4, TS - 8, TS - 8); }
@@ -539,6 +544,11 @@ export class Tablero {
       if ((!h.vivo && !this.vista.vivos.has(h.id)) || h.fuera) continue;
       const [x, y] = this.vista.pos[h.id] || [h.x, h.y];
       dibujarFicha(g, h, x, y, true, t, { activo: h.id === turno && e.fase === 'mision' });
+    }
+    const c = e.cargador;
+    if (c && (c.vivo || this.vista.vivos.has('cargador'))) {
+      const [x, y] = this.vista.pos.cargador || [c.x, c.y];
+      dibujarFicha(g, c, x, y, true, t, { alfa: c.vivo ? 1 : 0.6 });
     }
     // Objetivos de ataque y de magia.
     const anillo = (id, color) => {

@@ -119,6 +119,10 @@ export const OBJETOS_TIENDA = {
 };
 export const MAGO_ARMAS = ['daga', 'baston'];
 
+// ---------- Cargador ----------
+// Se contrata en la armería para una misión. Lleva el almacén del grupo.
+export const CARGADOR = { precio: 100, cuerpo: 2, defensa: 2, dados: 2, color: '#7a5a34', icono: 'cargador' };
+
 // ---------- Pociones y objetos ----------
 export const POCIONES = {
   pocionCurar:     { nombre: 'Poción curativa',  icono: 'pocion',  desc: 'Recupera 1D6 de cuerpo. Se bebe sola si vas a morir.' },

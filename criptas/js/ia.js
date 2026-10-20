@@ -10,7 +10,11 @@
 import * as T from './tablero.js';
 const { clave } = T;
 
-const objetivosDe = (estado) => Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla);
+const objetivosDe = (estado) => {
+  const lista = Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla);
+  if (estado.cargador?.vivo) lista.push(estado.cargador); // el cargador también es una presa
+  return lista;
+};
 const masDebil = (lista) => lista.slice().sort((a, b) => a.cuerpo - b.cuerpo)[0];
 
 // Busca el camino más corto hasta una casilla pegada a algún héroe.

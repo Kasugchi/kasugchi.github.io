@@ -20,9 +20,11 @@ const copia = (o) => JSON.parse(JSON.stringify(o));
 
 // ---------- Estadísticas de héroe ----------
 export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque;
-export const defensaHeroe = (h) => D.HEROES[h.tipo].defensa + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0);
+export const defensaHeroe = (h) => (h.id === 'cargador' ? D.CARGADOR.defensa
+  : D.HEROES[h.tipo].defensa + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
 export const dadosMovimiento = (h) => (h.armaduras.includes('placas') ? 1 : 2);
 export const nombreDe = (estado, id) => {
+  if (id === 'cargador') return 'Cargador';
   if (estado.heroes[id]) return estado.heroes[id].nombre;
   const m = estado.monstruos.find((x) => x.id === id);
   return m ? m.nombre : id;
@@ -64,7 +66,9 @@ export function crearPartida(elegidos, jugadores = {}) {
     v: 1, seq: 0, eventos: [], log: [], jugadores,
     fase: 'cargando', misionIdx: 0, campana: D.CAMPANA.slice(),
     heroes, orden: D.ORDEN_HEROES.filter((t) => heroes[t]),
-    mision: null, resultado: null
+    mision: null, resultado: null,
+    almacen: { armas: [], armaduras: [], objetos: {} }, // equipo del grupo que no lleva nadie encima
+    contrato: null, cargador: null
   };
 }
 
@@ -115,6 +119,20 @@ export function iniciarMision(estado, def) {
   estado.mazo = barajar(D.CARTAS_TESORO.map((c) => ({ ...c })));
   estado.turno = null;
   estado.ronda = 0;
+  // Cargador contratado para esta misión.
+  estado.cargador = null;
+  if (estado.contrato && estado.heroes[estado.contrato.patron]) {
+    const c = D.CARGADOR;
+    estado.cargador = {
+      id: 'cargador', tipo: 'cargador', nombre: 'Cargador', patron: estado.contrato.patron,
+      x: 0, y: 0, cuerpo: c.cuerpo, cuerpoMax: c.cuerpo, vivo: true, fuera: false, efectos: {}, objetos: {}, armaduras: []
+    };
+    const libre = (x, y) => T.dentro(x, y) && !T.esRoca(estado, x, y) && !T.muebleEn(estado, x, y) && !T.figuraEn(estado, x, y);
+    const mapa = T.explorar(estado.escalera[0], 12, (a, b) => !T.esRoca(estado, b[0], b[1]) && T.borde(estado, a, b) === 'libre');
+    const sitio = Object.values(mapa).filter((c2) => libre(c2.x, c2.y) && !estado.monstruos.some((m) => m.x === c2.x && m.y === c2.y)).sort((p, q) => p.d - q.d)[0];
+    if (sitio) { estado.cargador.x = sitio.x; estado.cargador.y = sitio.y; } else estado.cargador = null;
+  }
+  estado.contrato = null;
   log(estado, 'Misión ' + m.numero + ': ' + m.titulo, 'titulo');
   return estado;
 }
@@ -249,6 +267,10 @@ export function danarHeroe(estado, h, n) {
     }
     h.cuerpo = 0; h.vivo = false;
     ev(estado, { tipo: 'muerte', id: h.id });
+    if (h.id === 'cargador') {
+      avisar(estado, 'El cargador ha caído. Su mochila no se podrá usar hasta el final de la misión.', 'peligro');
+      return;
+    }
     log(estado, h.nombre + ' ha caído.', 'peligro');
     disparar(estado, 'heroe_muerto', { id: h.id });
   }
@@ -368,7 +390,7 @@ function moverHeroe(estado, h, x, y) {
   for (let i = 1; i < ruta.length; i++) {
     const prev = ruta[i - 1], n = ruta[i];
     const f = T.figuraEn(estado, n[0], n[1]);
-    if (f && !estado.heroes[f.id]) { volcar(); avisar(estado, '¡Algo bloquea el paso!', 'peligro'); revelar(estado); break; }
+    if (f && !T.esAliado(estado, f)) { volcar(); avisar(estado, '¡Algo bloquea el paso!', 'peligro'); revelar(estado); break; }
     const b = T.borde(estado, prev, n);
     if (b === 'puerta') {
       const p = T.puertaEntre(estado, prev, n);
@@ -379,7 +401,7 @@ function moverHeroe(estado, h, x, y) {
       disparar(estado, 'puerta_abierta', { puerta: p.id });
       revelar(estado);
       const f2 = T.figuraEn(estado, n[0], n[1]);
-      if (f2 && !estado.heroes[f2.id]) { avisar(estado, 'Hay alguien al otro lado de la puerta.', 'peligro'); break; }
+      if (f2 && !T.esAliado(estado, f2)) { avisar(estado, 'Hay alguien al otro lado de la puerta.', 'peligro'); break; }
     }
     h.x = n[0]; h.y = n[1];
     t.movRestante--;
@@ -398,7 +420,7 @@ function moverHeroe(estado, h, x, y) {
   }
   volcar();
   // Nunca acabar encima de otro héroe.
-  const otro = Object.values(estado.heroes).find((o) => o !== h && o.vivo && !o.fuera && o.x === h.x && o.y === h.y);
+  const otro = [...Object.values(estado.heroes), estado.cargador].find((o) => o && o !== h && o.vivo && !o.fuera && o.x === h.x && o.y === h.y);
   if (otro) {
     for (let i = ruta.length - 1; i >= 0; i--) {
       const [rx, ry] = ruta[i];
@@ -455,22 +477,190 @@ export function disponibles(estado, id) {
     ? estado.trampas.filter((tr) => tr.activa && tr.descubierta && (Math.abs(tr.x - h.x) + Math.abs(tr.y - h.y) <= 1)).map((tr) => tr.id) : [];
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
+  // Cargador: lo mueve el héroe que lo contrató, en su turno.
+  const c = estado.cargador;
+  if (c?.vivo && c.patron === id) {
+    r.cargador = { puedeTirar: !t.cargTirada, restante: t.cargRestante || 0, destinos: destinosCargador(estado).out };
+  }
+  // Mochila: pegado al cargador y pagando 1 casilla de movimiento (una vez por turno).
+  if (c?.vivo) {
+    const pegado = T.puedeTocar(estado, h, c);
+    r.mochila = pegado && (t.mochila || (t.movTirada && t.movRestante >= 1));
+    r.motivoMochila = !pegado ? 'Ponte al lado del cargador.' : (!t.movTirada ? 'Tira los dados primero: abrir la mochila cuesta 1 casilla.' : 'No te queda movimiento para abrir la mochila.');
+    r.cercaCargador = pegado;
+  }
   return r;
 }
+
+// =============================================================
+//  CARGADOR: movimiento
+// =============================================================
+function alcanceCargador(estado) {
+  const c = estado.cargador, t = estado.turno;
+  if (!c?.vivo || !t || !t.cargTirada || t.cargRestante <= 0) return {};
+  const visible = (x, y) => !!estado.revelado[clave(x, y)];
+  return T.explorar([c.x, c.y], t.cargRestante, (a, n) => {
+    const [x, y] = n;
+    if (!visible(x, y) || T.esRoca(estado, x, y) || T.muebleEn(estado, x, y)) return false;
+    if (T.borde(estado, a, n) !== 'libre') return false; // no abre puertas
+    const f = T.figuraEn(estado, x, y);
+    if (f && !T.esAliado(estado, f)) return false;
+    const tr = trampaEn(estado, x, y);
+    return !(tr && tr.descubierta);
+  });
+}
+
+export function destinosCargador(estado) {
+  const mapa = alcanceCargador(estado);
+  const out = {};
+  for (const [k, c] of Object.entries(mapa)) if (c.d > 0 && !T.figuraEn(estado, c.x, c.y)) out[k] = c.d;
+  return { mapa, out };
+}
+
+function tirarCargador(estado) {
+  const t = estado.turno;
+  const valores = Array.from({ length: D.CARGADOR.dados }, d6);
+  const total = valores.reduce((s, v) => s + v, 0);
+  t.cargTirada = total; t.cargRestante = total;
+  ev(estado, { tipo: 'tirada', heroe: 'cargador', valores, total });
+}
+
+function moverCargador(estado, x, y) {
+  const c = estado.cargador, t = estado.turno;
+  const { mapa, out } = destinosCargador(estado);
+  const k = clave(x, y);
+  if (!out[k]) return 'El cargador no llega ahí.';
+  const ruta = T.reconstruir(mapa, k);
+  let tramo = [[c.x, c.y]];
+  for (let i = 1; i < ruta.length; i++) {
+    const prev = ruta[i - 1], n = ruta[i];
+    c.x = n[0]; c.y = n[1];
+    t.cargRestante--;
+    tramo.push(n);
+    const tr = trampaEn(estado, c.x, c.y);
+    if (tr && !tr.descubierta) {
+      ev(estado, { tipo: 'mover', id: 'cargador', ruta: tramo }); tramo = [[c.x, c.y]];
+      activarTrampa(estado, c, tr, prev);
+      t.cargRestante = 0;
+      break;
+    }
+  }
+  if (tramo.length > 1) ev(estado, { tipo: 'mover', id: 'cargador', ruta: tramo });
+  // No acabar encima de otra figura (puede pasar si una trampa lo hace retroceder).
+  return null;
+}
+
+// "Que me siga": tira si hace falta y se acerca todo lo posible al patrón.
+function seguir(estado, h) {
+  const t = estado.turno;
+  if (!t.cargTirada) tirarCargador(estado);
+  if (t.cargRestante <= 0) return null;
+  const { out } = destinosCargador(estado);
+  const c = estado.cargador;
+  const dist = (x, y) => Math.abs(x - h.x) + Math.abs(y - h.y);
+  let mejor = null;
+  for (const [k, d] of Object.entries(out)) {
+    const [x, y] = k.split(',').map(Number);
+    const puntos = dist(x, y) * 100 + d;
+    if (!mejor || puntos < mejor.p) mejor = { x, y, p: puntos };
+  }
+  if (!mejor || dist(mejor.x, mejor.y) >= dist(c.x, c.y)) { avisar(estado, 'El cargador no puede acercarse más.'); return null; }
+  return moverCargador(estado, mejor.x, mejor.y);
+}
+
+// =============================================================
+//  INVENTARIO: almacén del grupo
+//  Las armas y armaduras que no lleva nadie se guardan aquí.
+//  En la armería se gestiona libremente; en la misión, solo con el cargador.
+// =============================================================
+export const almacenDe = (estado) => (estado.almacen ||= { armas: [], armaduras: [], objetos: {} });
+
+// ¿Puede este héroe equiparse este objeto? Devuelve el motivo si no.
+export function motivoNoEquipar(h, item) {
+  const tipoH = D.HEROES[h.tipo];
+  const arma = D.ARMAS[item], arm = D.ARMADURAS[item];
+  if (arma) {
+    if (h.arma === item) return 'Ya la llevas.';
+    if (tipoH.sinArmadura && !D.MAGO_ARMAS.includes(item)) return 'El ' + tipoH.nombre.toLowerCase() + ' solo usa daga o bastón.';
+    if (arma.dosManos && h.armaduras.includes('escudo')) return 'Va a dos manos: guarda antes el escudo.';
+  } else if (arm) {
+    if (tipoH.sinArmadura) return 'La armadura estorba al lanzar hechizos.';
+    if (h.armaduras.includes(item)) return 'Ya la llevas puesta.';
+    if (item === 'escudo' && D.ARMAS[h.arma].dosManos) return 'Tu arma va a dos manos.';
+  } else if (!D.POCIONES[item]) return 'No existe.';
+  return null;
+}
+
+function ponerEquipo(estado, h, item) {
+  const alm = almacenDe(estado);
+  if (D.ARMAS[item]) {
+    alm.armas.push(h.arma);
+    h.arma = item;
+  } else if (D.ARMADURAS[item]) {
+    // Cota y placas no se llevan a la vez: la otra vuelve al almacén.
+    const choca = item === 'placas' ? 'cota' : item === 'cota' ? 'placas' : null;
+    if (choca && h.armaduras.includes(choca)) { h.armaduras = h.armaduras.filter((a) => a !== choca); alm.armaduras.push(choca); }
+    h.armaduras.push(item);
+  } else h.objetos[item] = (h.objetos[item] || 0) + 1;
+}
+
+function sacarDelAlmacen(estado, item) {
+  const alm = almacenDe(estado);
+  const lista = D.ARMAS[item] ? alm.armas : D.ARMADURAS[item] ? alm.armaduras : null;
+  if (lista) { const i = lista.indexOf(item); if (i < 0) return false; lista.splice(i, 1); return true; }
+  if (!(alm.objetos[item] > 0)) return false;
+  alm.objetos[item]--;
+  return true;
+}
+
+function equipar(estado, h, item) {
+  const motivo = motivoNoEquipar(h, item);
+  if (motivo) return motivo;
+  if (!sacarDelAlmacen(estado, item)) return 'No está en el almacén.';
+  ponerEquipo(estado, h, item);
+  log(estado, h.nombre + ' coge ' + nombreItem(item) + '.');
+  return null;
+}
+
+function guardar(estado, h, item) {
+  const alm = almacenDe(estado);
+  if (D.ARMADURAS[item]) {
+    if (!h.armaduras.includes(item)) return 'No la llevas puesta.';
+    h.armaduras = h.armaduras.filter((a) => a !== item);
+    alm.armaduras.push(item);
+  } else if (D.POCIONES[item]) {
+    if (!(h.objetos[item] > 0)) return 'No la llevas.';
+    h.objetos[item]--;
+    alm.objetos[item] = (alm.objetos[item] || 0) + 1;
+  } else return 'Las armas se cambian cogiendo otra del almacén.';
+  log(estado, h.nombre + ' guarda ' + nombreItem(item) + '.');
+  return null;
+}
+
+function vender(estado, h, item) {
+  const def = D.ARMAS[item] || D.ARMADURAS[item] || D.POCIONES[item];
+  if (!def) return 'No existe.';
+  if (!sacarDelAlmacen(estado, item)) return 'No está en el almacén.';
+  const oro = Math.floor((def.precio || 100) / 2);
+  h.oro += oro;
+  log(estado, h.nombre + ' vende ' + nombreItem(item) + ' por ' + oro + ' monedas.');
+  return null;
+}
+
+export const nombreItem = (item) => (D.ARMAS[item] || D.ARMADURAS[item] || D.POCIONES[item] || D.OBJETOS_TIENDA[item] || { nombre: item }).nombre;
 
 // =============================================================
 //  TESORO Y BÚSQUEDAS
 // =============================================================
 function darArma(estado, h, armaId) {
   const arma = D.ARMAS[armaId];
-  const permitido = !(D.HEROES[h.tipo].sinArmadura && !D.MAGO_ARMAS.includes(armaId)) && !(arma.dosManos && h.armaduras.includes('escudo'));
-  if (permitido && arma.ataque >= D.ARMAS[h.arma].ataque) {
+  if (!motivoNoEquipar(h, armaId) && arma.ataque >= D.ARMAS[h.arma].ataque) {
+    almacenDe(estado).armas.push(h.arma);
     h.arma = armaId;
-    return 'Ahora empuñas: ' + arma.nombre + '.';
+    return 'Ahora empuñas: ' + arma.nombre + '. Tu arma anterior va al almacén del grupo.';
   }
-  const oro = Math.floor(arma.precio / 2);
-  h.oro += oro;
-  return 'No te sirve, pero valdrá ' + oro + ' monedas en la armería.';
+  almacenDe(estado).armas.push(armaId);
+  return 'Va al almacén del grupo: podréis equipárosla en la armería' + (estado.cargador?.vivo ? ' o desde la mochila del cargador.' : '.');
 }
 
 function robarCarta(estado) {
@@ -608,7 +798,7 @@ function lanzar(estado, h, id, objetivo) {
 function empezarTurno(estado, id) {
   const h = estado.heroes[id];
   delete h.efectos.niebla;
-  estado.turno = { heroe: id, movTirada: null, movRestante: 0, movido: false, accion: false };
+  estado.turno = { heroe: id, movTirada: null, movRestante: 0, movido: false, accion: false, cargTirada: null, cargRestante: 0, mochila: false };
   ev(estado, { tipo: 'turno', heroe: id });
 }
 
@@ -672,24 +862,13 @@ function comprobarFin(estado) {
 // =============================================================
 //  ARMERÍA
 // =============================================================
+// Comprar ya no exige poder usarlo: si el héroe no puede equipárselo,
+// va al almacén del grupo para otro compañero.
 export function puedeComprar(estado, h, item) {
-  const tipoH = D.HEROES[h.tipo];
-  const arma = D.ARMAS[item], arm = D.ARMADURAS[item], obj = D.OBJETOS_TIENDA[item];
-  const precio = (arma || arm || obj)?.precio;
-  if (!precio) return 'No existe.';
-  if (h.oro < precio) return 'No tienes oro suficiente.';
-  if (arma) {
-    if (h.arma === item) return 'Ya la llevas.';
-    if (tipoH.sinArmadura && !D.MAGO_ARMAS.includes(item)) return 'El mago solo usa daga o bastón.';
-    if (arma.dosManos && h.armaduras.includes('escudo')) return 'Necesita las dos manos (llevas escudo).';
-  }
-  if (arm) {
-    if (tipoH.sinArmadura) return 'La armadura estorba al lanzar hechizos.';
-    if (h.armaduras.includes(item)) return 'Ya la tienes.';
-    if (item === 'escudo' && D.ARMAS[h.arma].dosManos) return 'Tu arma necesita las dos manos.';
-    if (item === 'cota' && h.armaduras.includes('placas')) return 'Ya llevas placas.';
-  }
-  if (item === 'kit' && (h.kit || tipoH.desarmaSiempre)) return 'No lo necesitas.';
+  const def = D.ARMAS[item] || D.ARMADURAS[item] || D.OBJETOS_TIENDA[item];
+  if (!def?.precio) return 'No existe.';
+  if (h.oro < def.precio) return 'No tienes oro suficiente.';
+  if (item === 'kit' && (h.kit || D.HEROES[h.tipo].desarmaSiempre)) return 'No lo necesitas.';
   return null;
 }
 
@@ -698,14 +877,33 @@ function comprar(estado, h, item) {
   if (motivo) return motivo;
   const def = D.ARMAS[item] || D.ARMADURAS[item] || D.OBJETOS_TIENDA[item];
   h.oro -= def.precio;
-  if (D.ARMAS[item]) h.arma = item;
-  else if (D.ARMADURAS[item]) {
-    if (item === 'placas') h.armaduras = h.armaduras.filter((a) => a !== 'cota');
-    h.armaduras.push(item);
-  } else if (item === 'kit') h.kit = true;
-  else h.objetos[item] = (h.objetos[item] || 0) + 1;
+  let destino = '';
+  if (item === 'kit') h.kit = true;
+  else if (D.OBJETOS_TIENDA[item]) h.objetos[item] = (h.objetos[item] || 0) + 1;
+  else if (!motivoNoEquipar(h, item)) ponerEquipo(estado, h, item);
+  else {
+    (D.ARMAS[item] ? almacenDe(estado).armas : almacenDe(estado).armaduras).push(item);
+    destino = ' (al almacén del grupo)';
+  }
   ev(estado, { tipo: 'compra', heroe: h.id, item });
-  log(estado, h.nombre + ' compra ' + def.nombre + '.');
+  log(estado, h.nombre + ' compra ' + def.nombre + destino + '.');
+  return null;
+}
+
+function contratar(estado, h) {
+  if (estado.contrato) return estado.contrato.patron === h.id ? 'Ya lo has contratado.' : 'Ya hay un cargador contratado.';
+  if (h.oro < D.CARGADOR.precio) return 'No tienes oro suficiente.';
+  h.oro -= D.CARGADOR.precio;
+  estado.contrato = { patron: h.id };
+  log(estado, h.nombre + ' contrata un cargador para la próxima misión.');
+  return null;
+}
+
+function despedir(estado, h) {
+  if (estado.contrato?.patron !== h.id) return 'No has contratado ningún cargador.';
+  h.oro += D.CARGADOR.precio;
+  estado.contrato = null;
+  log(estado, h.nombre + ' cancela el cargador.');
   return null;
 }
 
@@ -738,6 +936,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       estado.fase = estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
     for (const h of Object.values(estado.heroes)) { h.vivo = true; h.cuerpo = h.cuerpoMax; }
+    estado.cargador = null;
     ev(estado, { tipo: 'pantalla', fase: estado.fase });
     return null;
   }
@@ -753,10 +952,17 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (!a.heroe || !puedeControlar(estado, jugador, a.heroe)) return 'Ese héroe no es tuyo.';
   const h = estado.heroes[a.heroe];
 
-  if (a.tipo === 'comprar') {
-    if (estado.fase !== 'armeria') return 'La armería está cerrada.';
-    return comprar(estado, h, a.item);
+  if (estado.fase === 'armeria') {
+    switch (a.tipo) {
+      case 'comprar': return comprar(estado, h, a.item);
+      case 'equipar': return equipar(estado, h, a.item);
+      case 'guardar': return guardar(estado, h, a.item);
+      case 'vender': return vender(estado, h, a.item);
+      case 'contratar': return contratar(estado, h);
+      case 'despedir': return despedir(estado, h);
+    }
   }
+  if (['comprar', 'equipar', 'guardar', 'vender', 'contratar', 'despedir'].includes(a.tipo)) return 'La armería está cerrada.';
 
   if (estado.fase !== 'mision' || estado.resultado) return 'No es momento de eso.';
   const t = estado.turno;
@@ -812,6 +1018,33 @@ export function aplicar(estado, a, jugador, cargarMision) {
       else if (a.objeto === 'pocionFuerza') { h.efectos.fuerza = 2; avisar(estado, h.nombre + ' bebe ' + n + ': +2 dados en su próximo ataque.', 'bueno'); }
       else if (a.objeto === 'pocionVelocidad') { if (t.movTirada) { t.movRestante += t.movTirada; } else h.efectos.veloz = true; avisar(estado, h.nombre + ' bebe ' + n + '.', 'bueno'); }
       else if (a.objeto === 'pocionPiedra') { h.efectos.piel = true; avisar(estado, h.nombre + ' bebe ' + n + ': su piel se vuelve gris.', 'bueno'); }
+      break;
+    }
+    case 'tirarCargador':
+      if (!disp.cargador?.puedeTirar) return 'Ya has movido al cargador.';
+      tirarCargador(estado);
+      break;
+    case 'moverCargador': {
+      if (!disp.cargador) return 'No controlas al cargador.';
+      const err = moverCargador(estado, a.x, a.y);
+      if (err) return err;
+      break;
+    }
+    case 'seguir': {
+      if (!disp.cargador) return 'No controlas al cargador.';
+      if (!disp.cargador.puedeTirar && disp.cargador.restante <= 0) return 'El cargador ya no puede moverse este turno.';
+      const err = seguir(estado, h);
+      if (err) return err;
+      break;
+    }
+    case 'mochila': {
+      if (!disp.mochila) return disp.motivoMochila || 'No puedes abrir la mochila.';
+      if (a.op === 'equipar') { const m = motivoNoEquipar(h, a.item); if (m) return m; }
+      // Abrirla cuesta 1 casilla, una vez por turno.
+      if (!t.mochila) { t.mochila = true; t.movRestante--; }
+      if (a.op === 'abrir') break;
+      const err = a.op === 'equipar' ? equipar(estado, h, a.item) : a.op === 'guardar' ? guardar(estado, h, a.item) : 'Operación desconocida.';
+      if (err) return err;
       break;
     }
     case 'salir':
