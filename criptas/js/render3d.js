@@ -258,7 +258,7 @@ export class Escena3D {
     const mat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85 });
     const malla = new THREE.InstancedMesh(geo, mat, tramos.length);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), giro = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
-    const claro = hex('#e6e0d2'), oscuro = hex('#4a423a');
+    const claro = hex({ cuevas: '#d8c6a6', catacumbas: '#c8ccd6', fortaleza: '#cfaaa2', abismo: '#bcb0d4' }[e.mision?.zona] || '#e6e0d2'), oscuro = hex('#4a423a');
     tramos.forEach((p, i) => {
       m4.compose(new THREE.Vector3(p.x, ALTO_PARED / 2, p.z), p.vert ? giro : q, new THREE.Vector3(1, 1, 1));
       malla.setMatrixAt(i, m4);

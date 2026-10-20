@@ -41,6 +41,45 @@ const app = {
 //  SONIDO (sintetizado, sin archivos)
 // =============================================================
 let audio = null;
+// Ambiente de fondo por zona: sonidos sueltos de vez en cuando, muy bajitos.
+let ambiente = { zona: null, temporizador: null };
+function actualizarAmbiente() {
+  const e = app.estado;
+  const zona = app.sonido && e?.fase === 'mision' && !$('#juego').hidden ? e.mision?.zona : null;
+  if (zona === ambiente.zona) return;
+  clearTimeout(ambiente.temporizador);
+  ambiente = { zona, temporizador: null };
+  if (!zona) return;
+  const siguiente = () => {
+    ambiente.temporizador = setTimeout(() => { if (ambiente.zona === zona) { sonarAmbiente(zona); siguiente(); } }, 2500 + Math.random() * 5000);
+  };
+  siguiente();
+}
+function sonarAmbiente(zona) {
+  try {
+    audio ||= new (window.AudioContext || window.webkitAudioContext)();
+    const a = audio, t = a.currentTime;
+    const tono = (f1, f2, dur, vol, forma = 'sine') => {
+      const o = a.createOscillator(); o.type = forma;
+      o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      const g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur);
+    };
+    const soplo = (dur, vol, frec) => {
+      const b = a.createBuffer(1, a.sampleRate * dur, a.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin((i / d.length) * Math.PI);
+      const s = a.createBufferSource(); s.buffer = b;
+      const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = frec;
+      const g = a.createGain(); g.gain.value = vol;
+      s.connect(f).connect(g).connect(a.destination); s.start(t);
+    };
+    if (zona === 'cuevas') { const f = 1200 + Math.random() * 900; tono(f, f * 0.55, 0.18, 0.04); }          // gota
+    if (zona === 'catacumbas') { if (Math.random() < 0.4) tono(196, 190, 3.5, 0.03, 'triangle'); else soplo(2.5, 0.05, 300); } // campana lejana / aire
+    if (zona === 'fortaleza') { soplo(1.8, 0.07, 140); if (Math.random() < 0.3) tono(70, 50, 1.2, 0.05, 'sawtooth'); } // retumbo
+    if (zona === 'abismo') soplo(4, 0.06, 500 + Math.random() * 400);                                         // viento
+  } catch { /* sin audio */ }
+}
+
 function sonar(tipo) {
   if (!app.sonido) return;
   try {
@@ -77,7 +116,7 @@ function sonar(tipo) {
 //  PANTALLAS
 // =============================================================
 const PANTALLAS = ['portada', 'sala', 'briefing', 'juego', 'armeria', 'final'];
-function mostrar(id) { for (const p of PANTALLAS) $('#' + p).hidden = p !== id; }
+function mostrar(id) { for (const p of PANTALLAS) $("#" + p).hidden = p !== id; if (typeof actualizarAmbiente === "function") actualizarAmbiente(); }
 
 function toast(texto, tono = '') {
   const el = document.createElement('div');
@@ -692,7 +731,7 @@ function irAFase() {
   const manda = app.modo !== 'invitado';
   if (e.fase === 'briefing') {
     const m = e.mision;
-    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Infinita · piso ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
+    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Infinita · piso ' + m.numero + (m.nombreZona ? ' · ' + m.nombreZona : '') + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
@@ -816,7 +855,7 @@ $('#b-al-campamento').addEventListener('click', async () => {
   enviar({ tipo: 'volverCampamento' });
 });
 $('#b-cerrar-registro').addEventListener('click', () => ($('#registro').hidden = true));
-$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
+$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); actualizarAmbiente();
 // Figuras: ilustraciones propias (criptas/sprites), miniaturas pintadas o de plástico.
 tablero.modoFiguras = leer('criptas_figuras') || 'auto';
 $('#sel-figuras').value = tablero.modoFiguras;
@@ -894,6 +933,7 @@ const miHeroeEnTurno = () => {
 };
 
 function pintarJuego() {
+  actualizarAmbiente();
   const e = app.estado;
   // Hojas de personaje.
   $('#hojas').innerHTML = e.orden.map((t) => {

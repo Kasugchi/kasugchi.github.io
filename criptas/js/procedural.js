@@ -70,6 +70,14 @@ const TEMAS = {
   mixto:   { nombre: ['la Mazmorra', 'las Ruinas', 'las Galerías', 'los Sótanos'], monstruos: { trasgo: 3, orco: 3, esqueleto: 3, zombi: 2, guerrero: 1, ilusionista: 1, ojo: 1 }, errante: 'orco', salas: ['cuartel', 'cripta', 'biblioteca', 'alquimia', 'guardia', 'tesoro'] },
   oscuro:  { nombre: ['el Santuario', 'la Torre Hundida', 'el Templo', 'el Abismo'], monstruos: { esqueleto: 2, guerrero: 3, momia: 2, gargola: 1, orco: 2, ojo: 1, golem: 1, ilusionista: 1 }, errante: 'guerrero', salas: ['capilla', 'alquimia', 'biblioteca', 'cripta', 'tortura'] }
 };
+// Zonas por profundidad: cambian qué mazmorras salen, el color del suelo y el ambiente.
+export const ZONAS = [
+  { id: 'cuevas', nombre: 'Cuevas de los orcos', desde: 1, temas: { orcos: 6, mixto: 2 } },
+  { id: 'catacumbas', nombre: 'Catacumbas', desde: 6, temas: { muertos: 6, mixto: 2 } },
+  { id: 'fortaleza', nombre: 'Fortaleza del caos', desde: 11, temas: { oscuro: 6, mixto: 1 } },
+  { id: 'abismo', nombre: 'El Abismo', desde: 16, temas: { oscuro: 3, muertos: 2, orcos: 2 } }
+];
+export const zonaDe = (nivel) => ZONAS.filter((z) => nivel >= z.desde).pop();
 const COSTE = { trasgo: 1, esqueleto: 1, orco: 2, zombi: 2, momia: 3, guerrero: 3, gargola: 4, chaman: 3, bestias: 4, sacerdotisa: 3, bruja: 3, ilusionista: 3, ojo: 2, golem: 5 };
 // Los de poder solo salen a partir de cierta profundidad.
 const NIVEL_MIN = { chaman: 2, bestias: 3, sacerdotisa: 2, bruja: 3, ilusionista: 3, ojo: 2, golem: 5 };
@@ -111,7 +119,8 @@ export function generarMision(semilla, nivel = 1) {
 }
 
 function intentar(r, semilla, nivel) {
-  const nombreTema = nivel <= 1 ? r.de(['orcos', 'muertos', 'mixto']) : r.pesos({ orcos: 3, muertos: 3, mixto: 3, oscuro: nivel >= 3 ? 2 : 0 });
+  const zona = zonaDe(nivel);
+  const nombreTema = r.pesos(zona.temas);
   const tema = TEMAS[nombreTema];
   const objetivoTipo = nivel <= 1 ? r.de(['jefe', 'reliquia']) : r.pesos({ jefe: 3, reliquia: 2, rescate: 2, sellos: nivel >= 2 ? 2 : 0, escapar: 2 });
 
@@ -360,7 +369,7 @@ function intentar(r, semilla, nivel) {
 
   return {
     id: 'perdida-' + semilla, numero: nivel, titulo, intro, objetivo, tareas, semilla, generada: true,
-    recompensa: 40 + nivel * 20, errante: tema.errante, tema: nombreTema,
+    recompensa: 40 + nivel * 20, errante: tema.errante, tema: nombreTema, zona: zona.id, nombreZona: zona.nombre,
     escalera: [ex, ey], rocas, puertas, muebles, monstruos, trampas, tesoros, disparadores,
     _salas: elegidas, _salaObjetivo: salaObj
   };

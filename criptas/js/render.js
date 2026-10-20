@@ -615,6 +615,9 @@ export class Tablero {
   dibujarMundo(g, t, plano) {
     const e = this.estado;
     g.drawImage(this.base, 0, 0);
+    // Tinte de la zona (Mazmorra Infinita): cada profundidad tiene su color.
+    const tinte = { cuevas: '#ecd6b0', catacumbas: '#b9c6da', fortaleza: '#dca49a', abismo: '#b4a2d6' }[e.mision?.zona];
+    if (tinte) { g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = tinte; g.fillRect(0, 0, W, H); g.restore(); }
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
 
     dibujarEscalera(g, e.escalera);
