@@ -62,8 +62,10 @@ export const muebleEn = (estado, x, y) => {
 };
 
 // ¿Bloquea la vista el paso de p a q (ortogonales)?
-function vistaBloqueada(estado, p, q) {
-  if (esRoca(estado, q[0], q[1])) return true;
+// destino: la casilla que se quiere ver. Un derrumbe tapa lo que hay detrás,
+// pero el propio derrumbe sí se ve.
+function vistaBloqueada(estado, p, q, destino = false) {
+  if (!destino && esRoca(estado, q[0], q[1])) return true;
   return borde(estado, p, q) !== 'libre';
 }
 
@@ -95,10 +97,11 @@ export function lineaVision(estado, ax, ay, bx, by, conFiguras = false) {
     if (nx !== cx && ny !== cy) {
       // Paso diagonal: vale si alguno de los dos caminos en L está libre.
       const via1 = [nx, cy], via2 = [cx, ny];
-      const ok1 = !vistaBloqueada(estado, [cx, cy], via1) && !vistaBloqueada(estado, via1, [nx, ny]);
-      const ok2 = !vistaBloqueada(estado, [cx, cy], via2) && !vistaBloqueada(estado, via2, [nx, ny]);
+      const fin = nx === bx && ny === by;
+      const ok1 = !vistaBloqueada(estado, [cx, cy], via1) && !vistaBloqueada(estado, via1, [nx, ny], fin);
+      const ok2 = !vistaBloqueada(estado, [cx, cy], via2) && !vistaBloqueada(estado, via2, [nx, ny], fin);
       if (!ok1 && !ok2) return false;
-    } else if (vistaBloqueada(estado, [cx, cy], [nx, ny])) return false;
+    } else if (vistaBloqueada(estado, [cx, cy], [nx, ny], nx === bx && ny === by)) return false;
     cx = nx; cy = ny;
     if (conFiguras && !(cx === bx && cy === by) && figuraEn(estado, cx, cy)) return false;
   }
