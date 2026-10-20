@@ -1012,6 +1012,9 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (a.tipo === 'empezar') {
     if (!esAnfitrion || estado.fase !== 'briefing') return 'Solo el anfitrión empieza la misión.';
     estado.fase = 'mision';
+    // Orden de turno al azar en cada misión.
+    barajar(estado.orden);
+    avisar(estado, 'Orden de turno: ' + estado.orden.map((t) => estado.heroes[t].nombre).join(', ') + '.');
     revelar(estado);
     empezarTurno(estado, estado.orden.find((t) => estado.heroes[t].vivo));
     return null;
