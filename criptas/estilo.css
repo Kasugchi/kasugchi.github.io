@@ -405,3 +405,6 @@ input.semilla { height: 48px; border-radius: 6px; border: 2px solid var(--pergam
 
 #b-pantalla { color: var(--pergamino); }
 #b-pantalla svg { fill: none; }
+
+.fase-def .tira { min-height: 58px; }
+.resultado-dados.espera { visibility: hidden; }

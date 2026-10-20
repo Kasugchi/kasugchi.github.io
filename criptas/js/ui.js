@@ -1132,16 +1132,25 @@ async function animar(ev) {
       const cuentaDef = ev.defiende === 'heroe' ? 'escudo' : 'escudoNegro';
       const golpes = atk.filter((c) => c === 'calavera').length;
       const paradas = def.filter((c) => c === cuentaDef).length;
-      $('#mesa-dados').innerHTML = `<h3>${esc(nombre(ev.atacante))} ataca a ${esc(conArticulo(ev.defensor))}</h3>
+      // En dos tiempos, como en la mesa: primero tira el atacante y luego se defiende el otro.
+      const mesa = $('#mesa-dados');
+      mesa.innerHTML = `<h3>${esc(nombre(ev.atacante))} ataca a ${esc(conArticulo(ev.defensor))}</h3>
         <p class="sub">${esc(ev.etiqueta || '')}</p>
         <div class="tira-et">Ataque: ${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}</div>
         <div class="tira">${atk.map((c) => dadoHTML(c, c === 'calavera')).join('') || '<span class="tira-et">—</span>'}</div>
-        <div class="tira-et">Defensa: ${paradas} ${ev.defiende === 'heroe' ? (paradas === 1 ? 'escudo blanco' : 'escudos blancos') : (paradas === 1 ? 'escudo negro' : 'escudos negros')}</div>
-        <div class="tira">${def.map((c) => dadoHTML(c, c === cuentaDef)).join('') || '<span class="tira-et">Sin defensa</span>'}</div>
-        <div class="resultado-dados ${ev.dano ? '' : 'nada'}">${ev.dano ? '¡' + ev.dano + ' de daño!' : 'Sin daño'}</div>
+        <div class="fase-def"><div class="tira-et">${esc(nombre(ev.defensor))} se defiende…</div><div class="tira"></div></div>
+        <div class="resultado-dados espera">&nbsp;</div>
         <p class="tocar">Toca para continuar</p>`;
       $('#dados').hidden = false; sonar('dados');
-      await esperaSaltable(ev.defiende === "heroe" ? 2800 : 2500);
+      await esperaSaltable(1300);
+      mesa.querySelector('.fase-def').innerHTML = `<div class="tira-et">Defensa: ${paradas} ${ev.defiende === 'heroe' ? (paradas === 1 ? 'escudo blanco' : 'escudos blancos') : (paradas === 1 ? 'escudo negro' : 'escudos negros')}</div>
+        <div class="tira">${def.map((c) => dadoHTML(c, c === cuentaDef)).join('') || '<span class="tira-et">Sin defensa</span>'}</div>`;
+      sonar('dados');
+      await esperaSaltable(1100);
+      const res = mesa.querySelector('.resultado-dados');
+      res.className = 'resultado-dados ' + (ev.dano ? '' : 'nada');
+      res.textContent = ev.dano ? '¡' + ev.dano + ' de daño!' : 'Sin daño';
+      await esperaSaltable(ev.defiende === 'heroe' ? 1900 : 1600);
       $('#dados').hidden = true;
       const p = posDe(ev.defensor);
       if (p && ev.dano) { tablero.texto(p[0], p[1], '−' + ev.dano, ev.defiende === 'heroe' ? '#ff6a50' : '#ffd36a'); tablero.destello(p[0], p[1], 'rgba(255,60,40,A)'); sonar('golpe'); }
