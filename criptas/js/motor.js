@@ -122,6 +122,7 @@ export function iniciarMision(estado, def) {
   estado.revelado = {};
   estado.regiones = {};
   estado.buscado = {};
+  estado.bebido = {};
   estado.tesoroTomado = {};
   estado.cofreSeguro = {};
   estado.rocas = {};
@@ -553,6 +554,12 @@ export function disponibles(estado, id) {
   r.motivoBusqueda = aLaVista ? 'Hay monstruos a la vista' : (sala === '.' ? 'El tesoro solo se busca en salas' : (estado.buscado[id + ':' + sala] ? 'Ya buscaste tesoro aquí' : ''));
   r.desarmables = libre && (D.HEROES[id].desarmaSiempre || h.kit)
     ? estado.trampas.filter((tr) => tr.activa && tr.descubierta && (Math.abs(tr.x - h.x) + Math.abs(tr.y - h.y) <= 1)).map((tr) => tr.id) : [];
+  // Calderos: un trago por héroe y caldero en cada misión, estando al lado.
+  r.calderos = libre ? estado.muebles.map((u, i) => i).filter((i) => {
+    const u = estado.muebles[i];
+    return u.tipo === 'caldero' && !(estado.bebido || {})[h.id + ':' + i] && T.region(u.x, u.y) === sala
+      && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h;
+  }) : [];
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
   // Cargador: lo mueve el héroe que lo contrató, en su turno.
@@ -828,6 +835,25 @@ function apuntarTesoro(estado, h, oro, objeto) {
   const c = cron(estado), ch = cronH(estado, h.id);
   sumar(c, 'tesoros'); sumar(ch, 'tesoros');
   sumar(c, 'oro', oro || 0); sumar(ch, 'oro', oro || 0);
+}
+
+// El caldero: un trago y que sea lo que el dado quiera.
+function beberCaldero(estado, h, i) {
+  (estado.bebido ||= {})[h.id + ':' + i] = 1;
+  sumar(cronH(estado, h.id), 'pociones');
+  const dado = d6();
+  const n = h.nombre;
+  let texto, tono = 'bueno';
+  switch (dado) {
+    case 1: h.cuerpo = Math.max(1, h.cuerpo - 1); texto = `¡Puaj! ${n} bebe del caldero y es veneno: pierde 1 de cuerpo.`; tono = 'peligro'; break;
+    case 2: texto = `${n} bebe del caldero. Sabe a calcetín hervido… y no pasa nada.`; tono = ''; break;
+    case 3: h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + 2); texto = `${n} bebe del caldero: un caldo reconfortante (+2 de cuerpo).`; break;
+    case 4: h.efectos.fuerza = 2; texto = `${n} bebe del caldero y siente una fuerza salvaje: +2 dados en su próximo ataque.`; break;
+    case 5: h.efectos.piel = true; texto = `${n} bebe del caldero y su piel se vuelve gris como la roca.`; break;
+    default: h.cuerpo = h.cuerpoMax; texto = `¡${n} bebe del caldero y todas sus heridas se cierran! Cuerpo al máximo.`;
+  }
+  ev(estado, { tipo: 'caldero', heroe: h.id, dado, texto, tono });
+  log(estado, texto, tono);
 }
 
 function buscarTesoro(estado, h) {
@@ -1228,6 +1254,10 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
     case 'desarmar':
       if (!disp.desarmables.includes(a.trampa)) return 'No puedes desarmar eso.';
       usarAccion(); desarmar(estado, h, a.trampa); break;
+    case 'caldero': {
+      if (!disp.calderos.includes(a.caldero)) return 'No puedes beber de ese caldero.';
+      usarAccion(); beberCaldero(estado, h, a.caldero); break;
+    }
     case 'pocion': {
       if (!(h.objetos[a.objeto] > 0)) return 'No tienes esa poción.';
       h.objetos[a.objeto]--;

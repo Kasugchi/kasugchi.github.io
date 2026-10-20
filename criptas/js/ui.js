@@ -764,6 +764,7 @@ function pintarAcciones() {
   boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda });
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
+  if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
   if (d.pociones.length) boton('pocion', 'pocion', 'Poción', { n: d.pociones.reduce((s, p) => s + h.objetos[p], 0) + '' });
   if (d.cargador) {
     boton('cargador', 'cargador', app.moverCargador ? 'Mover a tu héroe' : 'Cargador', { clase: app.moverCargador ? 'activo' : '', n: d.cargador.puedeTirar ? 'tirar y mover' : d.cargador.restante + ' casillas', off: !d.cargador.puedeTirar && d.cargador.restante <= 0 && !app.moverCargador });
@@ -797,6 +798,7 @@ async function accionBoton(acc, h, d) {
     case 'trampas': return enviar({ ...base, tipo: 'buscarTrampas' });
     case 'desarmar': return enviar({ ...base, tipo: 'desarmar', trampa: d.desarmables[0] });
     case 'pocion': return elegirPocion(h, d);
+    case 'caldero': return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
     case 'salir': return enviar({ ...base, tipo: 'salir' });
     case 'cargador':
       if (app.moverCargador) { app.moverCargador = false; return pintarAcciones(); }
@@ -972,6 +974,11 @@ function alTocar(x, y) {
   if (f?.id === 'cargador') return toast(`Cargador: cuerpo ${f.cuerpo}/${f.cuerpoMax}, defensa ${D.CARGADOR.defensa}. Lleva el almacén del grupo.`);
   if (f) return fichaMonstruo(f);
   const u = T.muebleEn(e, x, y);
+  if (u?.tipo === 'caldero') {
+    const i = e.muebles.indexOf(u);
+    if (h && M.disponibles(e, h.id).calderos?.includes(i)) return enviar({ heroe: h.id, tipo: 'caldero', caldero: i });
+    return toast('Caldero burbujeante. Ponte al lado para beber (gasta la acción del turno, una vez por héroe).');
+  }
   if (u) return toast(D.MUEBLES[u.tipo].nombre + '.');
   const tr = e.trampas.find((t) => t.x === x && t.y === y && t.descubierta);
   if (tr) return toast(D.TRAMPAS[tr.tipo].nombre + (tr.activa ? '. Rodéala o desármala.' : ', desarmada.'));
@@ -1168,6 +1175,7 @@ async function animar(ev) {
       break;
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
+    case 'caldero': toast('🎲 ' + ev.dado + ' · ' + ev.texto, ev.tono); await espera(900); break;
     case 'historia':
       app.cerrarModalFuera = null;
       await modal(`<div class="historia"><p>${esc(ev.texto)}</p></div>`, [{ texto: 'Continuar' }]);
