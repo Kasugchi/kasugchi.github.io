@@ -160,7 +160,7 @@ function resumenPartida(e) {
   const heroes = e.orden.map((t) => e.heroes[t].nombre).join(', ');
   const fin = e.fase === 'final';
   const idx = Math.min(e.misionIdx, e.campana.length - 1);
-  const mision = e.aleatorio ? 'Mazmorra Perdida · nivel ' + (e.misionIdx + 1) + (e.mision?.generada ? ': ' + e.mision.titulo : '')
+  const mision = e.aleatorio ? 'Mazmorra Infinita · piso ' + (e.misionIdx + 1) + (e.mision?.generada ? ': ' + e.mision.titulo : '')
     : fin ? 'Campaña completada' : 'Misión ' + (idx + 1) + ' de ' + e.campana.length + ': ' + (app.misiones[e.campana[idx]]?.titulo || '');
   const oro = e.orden.reduce((s, t) => s + e.heroes[t].oro, 0);
   return { heroes, mision, oro, fin };
@@ -190,22 +190,26 @@ function pintarPartidas() {
 }
 listas.then(pintarPartidas);
 
-$('#b-local').addEventListener('click', () => {
-  app.modo = 'local';
-  app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0 };
-  pintarSala(); mostrar('sala');
-});
-$('#b-crear').addEventListener('click', async () => {
+// Dos modos de juego; en los dos se juega solo o con sala.
+document.querySelectorAll('#portada [data-modo]').forEach((b) => b.addEventListener('click', () => {
+  const infinita = b.dataset.modo === 'infinita';
+  if (b.dataset.donde === 'local') {
+    app.modo = 'local';
+    app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: infinita };
+    pintarSala(); mostrar('sala');
+  } else crearSala(infinita);
+}));
+async function crearSala(infinita) {
   avisoPortada('Abriendo la sala…');
   try {
     app.modo = 'anfitrion';
-    app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0 };
+    app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: infinita };
     app.red = await (await Red()).crearSala(miId, eventosAnfitrion());
     app.sala.codigo = app.red.codigo;
     avisoPortada('');
     pintarSala(); mostrar('sala');
   } catch (e) { app.modo = null; avisoPortada(e.message); }
-});
+}
 $('#f-unirse').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const codigo = $('#codigo').value.trim().toUpperCase();
@@ -389,9 +393,10 @@ function pintarSala() {
   $('#lista-jugadores').innerHTML = Object.entries(s.jugadores).map(([id, j]) => `<li class="${j.desconectado ? 'fuera' : ''}">${esc(j.nombre)}${id === miId ? ' (tú)' : ''}</li>`).join('');
   const sel = $('#sel-mision');
   sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
-    + '<option value="perdida">★ Mazmorra Perdida (aleatoria)</option>'
     + '<option value="pruebas">⚙ Zona de pruebas (5000 monedas, para probar cosas)</option>';
-  sel.value = s.pruebas ? 'pruebas' : s.perdida ? 'perdida' : String(s.misionIdx);
+  sel.value = s.pruebas ? 'pruebas' : String(s.misionIdx);
+  $('#campo-mision').hidden = !!s.perdida;
+  $('#sala-titulo').textContent = s.perdida ? 'Mazmorra Infinita: elige tus héroes' : 'Elige tus héroes';
   sel.disabled = !manda;
   $('#campo-semilla').hidden = !s.perdida;
   $('#semilla').value = s.semilla || '';
@@ -399,7 +404,7 @@ function pintarSala() {
   $('#b-empezar').hidden = !manda;
   $('#sala-espera').hidden = manda;
   $('#b-empezar').disabled = !Object.keys(s.eleccion).length;
-  $('#b-empezar').textContent = s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Perdida' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
+  $('#b-empezar').textContent = s.perdida ? 'Bajar a la Mazmorra Infinita' : s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
 }
 listas.then(() => { if (app.sala && !$('#sala').hidden) pintarSala(); });
 
@@ -429,9 +434,8 @@ function difundirSala() {
   if (app.modo === 'anfitrion') app.red?.difundir({ t: 'sala', sala: app.sala });
 }
 $('#sel-mision').addEventListener('change', (e) => {
-  app.sala.perdida = e.target.value === 'perdida';
   app.sala.pruebas = e.target.value === 'pruebas';
-  if (!app.sala.perdida && !app.sala.pruebas) app.sala.misionIdx = +e.target.value;
+  if (!app.sala.pruebas) app.sala.misionIdx = +e.target.value;
   difundirSala();
 });
 $('#semilla').addEventListener('change', (e) => {
@@ -469,6 +473,7 @@ $('#b-empezar').addEventListener('click', async () => {
 });
 
 function salirAPortada() {
+  pintarRecord();
   clearTimeout(avisoCaida); ocultarAvisoAnfitrion();
   app.red?.cerrar(); app.red = null; app.modo = null; app.estado = null; app.estadoReal = null; app.sala = null; app.cola = [];
   pintarPartidas();
@@ -558,7 +563,7 @@ function irAFase() {
   const manda = app.modo !== 'invitado';
   if (e.fase === 'briefing') {
     const m = e.mision;
-    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Perdida · nivel ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
+    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Infinita · piso ' + m.numero + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
@@ -695,6 +700,21 @@ $('#b-abandonar').addEventListener('click', async () => {
 });
 
 // Lo que hay que hacer en la misión, con lo ya cumplido tachado.
+function htmlNivel(h, mio) {
+  const n = h.nivel || 1, xp = h.xp || 0;
+  const desde = D.xpParaNivel(n), hasta = D.xpParaNivel(n + 1);
+  const pct = Math.round(((xp - desde) / (hasta - desde)) * 100);
+  const hab = D.HABILIDADES[h.tipo];
+  const mejoras = Object.entries(D.MEJORAS).map(([k, m]) => {
+    const tiene = h.mejoras?.[k] || 0;
+    return `<button class="btn madera" data-mejora="${k}" ${!mio || !(h.puntos > 0) || tiene >= m.max ? 'disabled' : ''}>${esc(m.nombre)} (${tiene}/${m.max})</button>`;
+  }).join('');
+  return `<div class="nivel-heroe"><b>Nivel ${n}</b> · ${xp} de experiencia (siguiente nivel a ${hasta})
+    <div class="barra-xp"><i style="width:${Math.max(0, Math.min(100, pct))}%"></i></div>
+    ${h.puntos > 0 ? `<p><b>Tienes ${h.puntos} ${h.puntos === 1 ? 'mejora' : 'mejoras'} por elegir:</b></p>` : '<p class="nota">Al subir de nivel podrás elegir una mejora.</p>'}
+    <div class="mejoras">${mejoras}</div>
+    <p style="margin-top:10px"><b>${esc(hab.nombre)}</b> ${n >= D.NIVEL_HABILIDAD ? '' : `<span class="nota">(se desbloquea en el nivel ${D.NIVEL_HABILIDAD})</span>`}: ${esc(hab.desc)}</p></div>`;
+}
 function htmlReliquias(e) {
   const r = e.reliquias || {};
   if (!Object.keys(r).length) return '';
@@ -745,7 +765,7 @@ function pintarJuego() {
     const quien = e.jugadores?.[h.jugador]?.nombre || '';
     const clase = [e.turno?.heroe === t && e.fase === 'mision' ? 'activa' : '', h.vivo ? '' : 'muerto', h.fuera ? 'fuera' : ''].join(' ');
     return `<button class="hoja ${clase}" data-heroe="${t}"><span class="ret" style="background:${def.color}">${svg(h.icono)}</span>
-      <strong>${esc(h.nombre)}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span>
+      <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span>
       ${app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
   }).join('');
   const c = e.cargador;
@@ -789,6 +809,9 @@ function pintarAcciones() {
   if (app.seleccion?.tipo === 'atacar') info = 'Toca el monstruo al que quieres atacar.';
   if (app.moverCargador && !d.cargador) app.moverCargador = false;
   if (app.moverCargador) info = d.cargador.restante > 0 ? `Cargador: ${d.cargador.restante} casillas. Toca dónde llevarlo.` : 'El cargador ya no puede moverse este turno.';
+  if (app.moverPoseido && !d.poseido) app.moverPoseido = false;
+  if (app.moverPoseido) info = `Controlas a ${nombre(d.poseido.id)}: ${d.poseido.restante} casillas. Toca dónde llevarlo o a quién atacar.`;
+  if (app.seleccion?.tipo === 'habilidad') info = 'Toca el objetivo de ' + D.HABILIDADES[h.tipo].nombre + '.';
   if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
   if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
   if (app.seleccion?.tipo === 'reliquias') return pintarReliquias(e, h, d, et, bot);
@@ -797,7 +820,8 @@ function pintarAcciones() {
   et.innerHTML = `<b>${esc(h.nombre)}</b><span>${esc(info)}</span>`;
 
   if (!app.reproduciendo) {
-    if (app.seleccion?.tipo === 'hechizo') tablero.resaltes.magia = app.seleccion.objetivos;
+    if (app.seleccion?.tipo === 'hechizo' || app.seleccion?.tipo === 'habilidad') tablero.resaltes.magia = app.seleccion.objetivos;
+    else if (app.moverPoseido) { tablero.resaltes.cargador = d.poseido.destinos; tablero.resaltes.ataque = d.poseido.atacables; }
     else if (app.moverCargador) tablero.resaltes.cargador = d.cargador.destinos;
     else {
       tablero.resaltes.destinos = d.destinos || {};
@@ -814,6 +838,8 @@ function pintarAcciones() {
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
+  if (d.habilidad) { const hb = D.HABILIDADES[h.tipo]; boton('habilidad', hb.icono, hb.nombre, { off: !d.habilidad.ok, clase: app.seleccion?.tipo === 'habilidad' ? 'activo' : '', n: d.habilidad.ok ? 'una vez por piso' : d.habilidad.motivo }); }
+  if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : '', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') });
   const usables = d.reliquias.filter((r) => r.ok).length + (d.trompa?.apoyos.length ? 1 : 0);
   if (d.reliquias.length || d.trompa || e.reliquias?.jerico) boton('reliquias', 'corona', 'Reliquias', { n: usables ? usables + ' disponibles' : 'ninguna ahora' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
@@ -925,6 +951,16 @@ async function accionBoton(acc, h, d) {
     case 'pocion': return elegirPocion(h, d);
     case 'puerta': return enviar({ ...base, tipo: 'abrirPuerta', puerta: (d.puertas.find((p) => !p.bloqueada) || d.puertas[0]).id });
     case 'reliquias': app.seleccion = { tipo: 'reliquias' }; return pintarAcciones();
+    case 'poseido': app.moverPoseido = !app.moverPoseido; app.moverCargador = false; app.seleccion = null; return pintarAcciones();
+    case 'habilidad': {
+      const objs = d.habilidad.objetivos;
+      if (objs.length === 1) return enviar({ ...base, tipo: 'habilidad', objetivo: objs[0] });
+      if (D.HABILIDADES[h.tipo].id === 'rompepiedras') {
+        const i = await modal('<h2>Rompepiedras</h2><p>¿Qué revientas?</p>', [{ texto: 'Nada', clase: 'claro' }, ...objs.map((o) => ({ texto: o.startsWith('roca') ? 'El derrumbe de ' + o.split(':')[1] : 'El muro frágil' }))]);
+        return i > 0 ? enviar({ ...base, tipo: 'habilidad', objetivo: objs[i - 1] }) : null;
+      }
+      app.seleccion = { tipo: 'habilidad', objetivos: objs }; return pintarAcciones();
+    }
     case 'caldero':
       if (app.estado.reliquias?.caliz) { app.seleccion = { tipo: 'caliz' }; return pintarAcciones(); }
       return enviar({ ...base, tipo: 'caldero', caldero: d.calderos[0] });
@@ -1044,11 +1080,11 @@ function fichaMonstruo(m) {
   const base = D.MONSTRUOS[m.tipo];
   const vida = Array.from({ length: m.cuerpoMax }, (_, i) => `<i class="${i < m.cuerpo ? '' : 'vacio'}"></i>`).join('');
   const ef = m.efectos || {};
-  const estados = [ef.dormido && 'Dormido', ef.aturdido && 'Aturdido', ef.raices > 0 && 'Atrapado por raíces'].filter(Boolean);
+  const estados = [ef.dormido && 'Dormido', ef.aturdido && 'Aturdido', ef.raices > 0 && 'Atrapado por raíces', ef.poseido && 'Poseído'].filter(Boolean);
   app.cerrarModalFuera = () => {};
   modal(`<div class="tarjeta monstruo">
       <div class="estandarte">${esc(m.nombre)}</div>
-      ${m.jefe ? '<div class="sello-jefe">Jefe</div>' : ''}
+      ${m.jefe ? '<div class="sello-jefe">Jefe</div>' : m.elite ? '<div class="sello-jefe">Élite</div>' : ''}
       <div class="retrato" style="--c:${base.color}">${svg(base.icono)}</div>
       <div class="vida-m" aria-label="Cuerpo ${m.cuerpo} de ${m.cuerpoMax}">${vida}<span>${m.cuerpo} / ${m.cuerpoMax}</span></div>
       <div class="stats4">
@@ -1070,7 +1106,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1087,6 +1123,14 @@ function alTocar(x, y) {
     if (app.moverCargador && d.cargador) {
       if (d.cargador.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverCargador', x, y });
       if (f?.id !== 'cargador') { app.moverCargador = false; pintarAcciones(); }
+    }
+    if (app.moverPoseido && d.poseido) {
+      if (d.poseido.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverPoseido', x, y });
+      if (f && d.poseido.atacables.includes(f.id)) return enviar({ heroe: h.id, tipo: 'atacarPoseido', objetivo: f.id });
+    }
+    if (app.seleccion?.tipo === 'habilidad') {
+      if (f && app.seleccion.objetivos.includes(f.id)) { app.seleccion = null; return enviar({ heroe: h.id, tipo: 'habilidad', objetivo: f.id }); }
+      app.seleccion = null; return pintarAcciones();
     }
     if (app.seleccion?.tipo === 'hechizo') {
       if (f && app.seleccion.objetivos.includes(f.id)) return enviar({ heroe: h.id, tipo: 'hechizo', hechizo: app.seleccion.hechizo, objetivo: f.id });
@@ -1318,6 +1362,7 @@ async function animar(ev) {
       break;
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
+    case 'nivel': { const p = posDe(ev.heroe); if (p) tablero.destello(p[0], p[1], 'rgba(190,140,255,A)'); sonar('aparece'); break; }
     case 'reliquia': {
       sonar(ev.reliquia === 'campana' ? 'trampa' : 'aparece');
       const p = posDe(ev.heroe);
@@ -1496,7 +1541,7 @@ function pintarArmeria() {
   const misHeroes = e.orden.filter((t) => M.puedeControlar(e, miId, t));
   if (!e.orden.includes(app.pestana)) app.pestana = misHeroes[0] || e.orden[0];
   app.sub ||= 'heroe';
-  const siguiente = e.aleatorio ? { titulo: 'Mazmorra Perdida, nivel ' + (e.misionIdx + 1) + ' (semilla ' + e.aleatorio.semilla + ')' } : app.misiones[e.campana[e.misionIdx]];
+  const siguiente = e.aleatorio ? { titulo: 'Mazmorra Infinita, piso ' + (e.misionIdx + 1) + ' (semilla ' + e.aleatorio.semilla + ')' } : app.misiones[e.campana[e.misionIdx]];
   $('#arm-sub').innerHTML = esc('Siguiente misión: ' + (e.misionIdx + 1) + '. ' + (siguiente?.titulo || ''))
     + (e.cronica?.campana ? ' · <button class="enlace" id="b-cronica">Ver la crónica</button>' : '');
   $('#b-cronica')?.addEventListener('click', verCronica);
@@ -1517,6 +1562,7 @@ function pintarArmeria() {
     cuerpo = `<div class="campamento-heroe">${tarjetaHTML(h.id, h.fem, h)}</div>
       <p class="nota" style="margin-top:12px">${esc(D.HEROES[h.tipo].lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
       ${hz ? `<p><b>Hechizos:</b> ${esc(hz)}</p>` : ''}
+      ${e.aleatorio || h.nivel > 1 ? htmlNivel(h, mio) : ''}
       ${mio ? '' : '<p class="nota">Este héroe lo lleva otro jugador.</p>'}`;
   }
 
@@ -1546,8 +1592,8 @@ function pintarArmeria() {
         <span>${esc(tipoTxt + ' · ' + (motivo && motivo !== 'No tienes oro suficiente en la bolsa.' ? motivo : descDe(def) + (aInv ? ' · irá a tu inventario' : '')))}</span></div>`;
     };
     cuerpo = `<p class="nota">Se paga con el dinero de la bolsa.</p><div class="armeria-grid">
-      ${Object.entries(D.ARMAS).filter(([id]) => id !== 'daga').map(([id, d]) => fila(id, d, 'Arma')).join('')}
-      ${Object.entries(D.ARMADURAS).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
+      ${Object.entries(D.ARMAS).filter(([id, d]) => id !== 'daga' && (!d.minPiso || e.aleatorio)).map(([id, d]) => fila(id, d, 'Arma')).join('')}
+      ${Object.entries(D.ARMADURAS).filter(([, d]) => !d.minPiso || e.aleatorio).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
       ${Object.entries(D.OBJETOS_TIENDA).map(([id, d]) => fila(id, d, 'Objeto')).join('')}
     </div>`;
   }
@@ -1591,6 +1637,7 @@ function pintarArmeria() {
   const q = (sel, fn) => $('#arm-cuerpo').querySelectorAll(sel).forEach((b) => b.addEventListener('click', () => fn(b)));
   q('[data-sub]', (b) => { app.sub = b.dataset.sub; pintarArmeria(); });
   q('[data-comprar]', (b) => enviar({ tipo: 'comprar', heroe: h.id, item: b.dataset.comprar }));
+  q('[data-mejora]', (b) => enviar({ tipo: 'mejorar', heroe: h.id, mejora: b.dataset.mejora }));
   q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
   q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
   q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));
@@ -1616,8 +1663,33 @@ $('#b-siguiente').addEventListener('click', () => enviar({ tipo: 'siguienteMisio
 
 function pintarFinal() {
   const e = app.estado;
+  if (e.caida) {
+    guardarRecord(e);
+    $('#final-titulo').innerHTML = 'Habéis caído<small>Piso ' + e.caida.piso + ' de la Mazmorra Infinita</small>';
+    const mejor = mejorRecord();
+    $('#final-texto').textContent = 'La mazmorra se ha tragado al grupo en el piso ' + e.caida.piso + '. '
+      + (mejor && mejor.piso > e.caida.piso ? 'Vuestro récord sigue en el piso ' + mejor.piso + '.' : '¡Es vuestro mejor récord!');
+  } else {
+    $('#final-titulo').innerHTML = 'Victoria<small>Las criptas duermen</small>';
+    $('#final-texto').textContent = 'Velmor el Pálido ha caído y sus huesos no volverán a levantarse. La Hermandad grabará vuestros nombres en la piedra.';
+  }
+  $('#b-nueva').textContent = e.caida ? 'Volver al inicio' : 'Nueva campaña';
   $('#final-heroes').innerHTML = htmlCampana(e);
 }
+// Récords de la Mazmorra Infinita (en este dispositivo).
+function leerRecords() { try { return JSON.parse(localStorage.getItem('criptas_records') || '[]'); } catch { return []; } }
+function guardarRecord(e) {
+  const lista = leerRecords().filter((r) => r.id !== app.partidaId);
+  lista.push({ id: app.partidaId, piso: e.caida.piso, heroes: e.orden.map((t) => e.heroes[t].nombre).join(', '), fecha: Date.now() });
+  try { localStorage.setItem('criptas_records', JSON.stringify(lista.sort((a, b) => b.piso - a.piso).slice(0, 20))); } catch {}
+}
+const mejorRecord = () => leerRecords()[0] || null;
+function pintarRecord() {
+  const r = mejorRecord();
+  $('#record-infinita').hidden = !r;
+  if (r) $('#record-infinita').textContent = 'Récord: piso ' + r.piso + ' (' + r.heroes + ')';
+}
+pintarRecord();
 $('#b-nueva').addEventListener('click', () => salirAPortada());
 
 // Avisar antes de cerrar si eres anfitrión con gente conectada.

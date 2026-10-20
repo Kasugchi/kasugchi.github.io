@@ -107,19 +107,43 @@ export const ARMAS = {
   ballesta:    { nombre: 'Ballesta',      ataque: 3, precio: 350, icono: 'ballesta', distancia: true },
   hacha:       { nombre: 'Hacha de guerra', ataque: 4, precio: 450, icono: 'hacha', dosManos: true },
   // pesada: hay que plantarla para disparar, así que no se puede mover y atacar en el mismo turno.
-  ballestaPesada: { nombre: 'Ballesta pesada', ataque: 4, precio: 600, icono: 'ballesta', distancia: true, dosManos: true, pesada: true }
+  ballestaPesada: { nombre: 'Ballesta pesada', ataque: 4, precio: 600, icono: 'ballesta', distancia: true, dosManos: true, pesada: true },
+  // minPiso: solo en la Mazmorra Infinita, a partir de ese piso.
+  espadaRunica: { nombre: 'Espada rúnica', ataque: 5, precio: 1100, icono: 'espada', diagonal: true, minPiso: 5 }
 };
 export const ARMADURAS = {
   casco:   { nombre: 'Casco',           defensa: 1, precio: 125, icono: 'casco' },
   escudo:  { nombre: 'Escudo',          defensa: 1, precio: 150, icono: 'rodela', manos: true },
   cota:    { nombre: 'Cota de malla',   defensa: 1, precio: 450, icono: 'armadura' },
-  placas:  { nombre: 'Armadura de placas', defensa: 2, precio: 850, icono: 'armadura', lenta: true }
+  placas:  { nombre: 'Armadura de placas', defensa: 2, precio: 850, icono: 'armadura', lenta: true },
+  cotaElfica: { nombre: 'Cota élfica',    defensa: 2, precio: 1200, icono: 'armadura', minPiso: 4 }
 };
 export const OBJETOS_TIENDA = {
   kit:         { nombre: 'Herramientas', precio: 250, icono: 'llave', desc: 'Permite desarmar trampas.' },
   pocionCurar: { nombre: 'Poción curativa', precio: 150, icono: 'pocion', desc: 'Recupera hasta 6 de cuerpo.' }
 };
 export const MAGO_ARMAS = ['daga', 'baston'];
+
+// ---------- Mazmorra Infinita: niveles y habilidades ----------
+// Experiencia total para llegar a cada nivel: 10, 25, 45, 70, 100…
+export const xpParaNivel = (n) => (5 * (n - 1) * (n + 2)) / 2;
+export const NIVEL_HABILIDAD = 3;
+export const MEJORAS = {
+  cuerpo:  { nombre: '+1 de cuerpo',            max: 4 },
+  ataque:  { nombre: '+1 dado de ataque',       max: 2 },
+  defensa: { nombre: '+1 dado de defensa',      max: 2 }
+};
+export const HABILIDADES = {
+  barbaro: { id: 'furia', nombre: 'Furia', icono: 'hacha',
+    desc: 'Una vez por piso: ataca dos veces seguidas. Hasta tu próximo turno no tiras defensa.' },
+  enano:   { id: 'rompepiedras', nombre: 'Rompepiedras', icono: 'derrumbe',
+    desc: 'Una vez por piso: revienta un derrumbe o un muro frágil pegado a ti.' },
+  elfo:    { id: 'disparo', nombre: 'Disparo certero', icono: 'ballesta',
+    desc: 'Una vez por piso: dispara 3 dados de ataque a cualquier enemigo a la vista que no esté pegado a ti.' },
+  mago:    { id: 'posesion', nombre: 'Posesión', icono: 'mente',
+    desc: 'Una vez por piso: toma el cuerpo de un enemigo a la vista (no un jefe) y lo controlas en tus dos próximos turnos: lo mueves y ataca a los suyos.' }
+};
+export const EPITETOS = ['Rabioso', 'Viejo', 'Tuerto', 'Sanguinario', 'de Hierro', 'Maldito', 'Despiadado', 'Hambriento'];
 
 // ---------- Reliquias (del grupo, se guardan toda la campaña) ----------
 // Cada reliquia se forma al juntar dos piezas. Las piezas se encuentran como

@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261020202407">
+<meta name="version" content="20261020203417">
+
 
 
 
@@ -48,23 +49,23 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261020202407",
-    "./js/ia.js": "./js/ia.js?v=20261020202407",
-    "./js/iconos.js": "./js/iconos.js?v=20261020202407",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020202407",
-    "./js/motor.js": "./js/motor.js?v=20261020202407",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020202407",
-    "./js/procedural.js": "./js/procedural.js?v=20261020202407",
-    "./js/red.js": "./js/red.js?v=20261020202407",
-    "./js/render.js": "./js/render.js?v=20261020202407",
-    "./js/render3d.js": "./js/render3d.js?v=20261020202407",
-    "./js/sprites.js": "./js/sprites.js?v=20261020202407",
-    "./js/tablero.js": "./js/tablero.js?v=20261020202407",
-    "./js/ui.js": "./js/ui.js?v=20261020202407"
+    "./js/datos.js": "./js/datos.js?v=20261020203417",
+    "./js/ia.js": "./js/ia.js?v=20261020203417",
+    "./js/iconos.js": "./js/iconos.js?v=20261020203417",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261020203417",
+    "./js/motor.js": "./js/motor.js?v=20261020203417",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261020203417",
+    "./js/procedural.js": "./js/procedural.js?v=20261020203417",
+    "./js/red.js": "./js/red.js?v=20261020203417",
+    "./js/render.js": "./js/render.js?v=20261020203417",
+    "./js/render3d.js": "./js/render3d.js?v=20261020203417",
+    "./js/sprites.js": "./js/sprites.js?v=20261020203417",
+    "./js/tablero.js": "./js/tablero.js?v=20261020203417",
+    "./js/ui.js": "./js/ui.js?v=20261020203417"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261020202407">
+<link rel="stylesheet" href="estilo.css?v=20261020203417">
 </head>
 <body>
 
@@ -75,13 +76,28 @@
       <h1>Criptas<small>de Velmor</small></h1>
       <p>Cuatro héroes, una mazmorra y un nigromante que espera al fondo.</p>
     </div>
+
     <div class="pergamino menu">
       <label class="campo">Tu nombre
         <input id="nombre" class="nombre" maxlength="20" autocomplete="nickname" placeholder="Aventurero" style="height:48px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta);font:600 18px var(--f-texto);padding:0 12px">
       </label>
-
-      <button class="btn" id="b-local">Jugar en este dispositivo</button>
-      <button class="btn madera" id="b-crear">Crear sala para jugar con amigos</button>
+    </div>
+    <div class="modos">
+      <div class="pergamino modo">
+        <h2>Modo Historia</h2>
+        <p class="nota">La campaña de Velmor: cinco misiones con su guion, de los túneles al trono.</p>
+        <button class="btn" data-modo="historia" data-donde="local">Jugar en este dispositivo</button>
+        <button class="btn madera" data-modo="historia" data-donde="sala">Crear sala con amigos</button>
+      </div>
+      <div class="pergamino modo infinita">
+        <h2>Mazmorra Infinita</h2>
+        <p class="nota">Pisos aleatorios sin fin, cada vez más duros. Subid de nivel, buscad reliquias… y si caéis todos, se acabó.</p>
+        <p class="record" id="record-infinita" hidden></p>
+        <button class="btn" data-modo="infinita" data-donde="local">Jugar en este dispositivo</button>
+        <button class="btn madera" data-modo="infinita" data-donde="sala">Crear sala con amigos</button>
+      </div>
+    </div>
+    <div class="pergamino menu">
       <form class="unirse" id="f-unirse">
         <input id="codigo" maxlength="4" autocomplete="off" autocapitalize="characters" placeholder="CÓDIGO" aria-label="Código de sala">
         <button class="btn madera" id="b-unirse" type="submit">Unirse</button>
@@ -189,9 +205,9 @@
 <!-- ============ FINAL ============ -->
 <section id="final" class="pantalla" hidden>
   <div class="centro">
-    <div class="titulo"><h1>Victoria<small>Las criptas duermen</small></h1></div>
+    <div class="titulo"><h1 id="final-titulo">Victoria<small>Las criptas duermen</small></h1></div>
     <div class="pergamino">
-      <p style="font-size:19px">Velmor el Pálido ha caído y sus huesos no volverán a levantarse. La Hermandad grabará vuestros nombres en la piedra.</p>
+      <p style="font-size:19px" id="final-texto">Velmor el Pálido ha caído y sus huesos no volverán a levantarse. La Hermandad grabará vuestros nombres en la piedra.</p>
       <div id="final-heroes"></div>
       <div class="fila"><button class="btn" id="b-nueva">Nueva campaña</button></div>
     </div>
@@ -226,6 +242,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261020202407"></script>
+<script type="module" src="js/ui.js?v=20261020203417"></script>
 </body>
 </html>

@@ -20,9 +20,9 @@ const barajar = (arr) => { for (let i = arr.length - 1; i > 0; i--) { const j = 
 const copia = (o) => JSON.parse(JSON.stringify(o));
 
 // ---------- Estadísticas de héroe ----------
-export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque;
+export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque || 0);
 export const defensaHeroe = (h) => (h.id === 'cargador' ? D.CARGADOR.defensa
-  : D.HEROES[h.tipo].defensa + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
+  : D.HEROES[h.tipo].defensa + (h.mejoras?.defensa || 0) + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
 export const dadosMovimiento = (h) => (h.armaduras.includes('placas') ? 1 : 2);
 export const nombreDe = (estado, id) => {
   if (id === 'cargador') return 'Cargador';
@@ -99,7 +99,8 @@ export function crearPartida(elegidos, jugadores = {}) {
       arma: base.arma, armaduras: [], objetos: {}, kit: false, oro: 0,
       cuerpoMax: base.cuerpo, mente: base.mente, cuerpo: base.cuerpo,
       x: 0, y: 0, vivo: true, fuera: false, efectos: {}, hechizos: [],
-      inventario: { armas: [], armaduras: [], objetos: {} }, banco: 0, transferido: false
+      inventario: { armas: [], armaduras: [], objetos: {} }, banco: 0, transferido: false,
+      nivel: 1, xp: 0, puntos: 0, mejoras: {}
     };
   }
   return {
@@ -136,9 +137,10 @@ export function iniciarMision(estado, def) {
   estado.murosPorBorde = {};
   estado.muros.forEach((w, i) => { estado.murosPorBorde[T.claveBorde(w.a, w.b)] = i; });
   estado.reliquiasUsadas = {};
+  estado.habUsada = {};
   estado.farol = null; estado.cadena = null; estado.escudo = null;
   for (const h of Object.values(estado.heroes)) {
-    for (const k of ['farol', 'cadena', 'muro', 'tiron', 'sordo']) delete h.efectos[k];
+    for (const k of ['farol', 'cadena', 'muro', 'tiron', 'sordo', 'furia']) delete h.efectos[k];
     restaurarCaliz(h);
   }
   estado.puertasPorBorde = {};
@@ -205,6 +207,16 @@ function crearMonstruo(estado, spec, visible) {
     nomuerto: !!base.nomuerto, ia: spec.ia || 'agresivo', activo: spec.ia !== 'centinela',
     hechizos: (spec.hechizos || []).slice(), visto: !!visible, vivo: true, efectos: {}
   };
+  // Mazmorra Infinita: cuanto más hondo, más duros (y algunos de élite).
+  if (estado.aleatorio) {
+    const piso = estado.misionIdx + 1;
+    m.cuerpo += Math.floor((piso - 1) / 3); m.ataque += Math.floor((piso - 1) / 4); m.defensa += Math.floor((piso - 1) / 6);
+    if (!m.jefe && piso >= 2 && rnd(100) < Math.min(35, (piso - 1) * 5)) {
+      m.elite = true; m.nombre += ' ' + D.EPITETOS[rnd(D.EPITETOS.length)];
+      m.cuerpo += 1; m.ataque += 1;
+    }
+    m.cuerpoMax = m.cuerpo;
+  }
   estado.monstruos.push(m);
   return m;
 }
@@ -358,6 +370,8 @@ export function danarMonstruo(estado, m, n) {
     if (m.jefe) cron(estado)?.jefes.push(m.nombre);
     const autor = cronH(estado, estado._autor);
     if (autor) { sumar(autor.muertes, m.tipo); if (m.jefe) sumar(autor, 'jefes'); }
+    if (estado.aleatorio && estado.heroes[estado._autor]) ganarXP(estado, estado.heroes[estado._autor], 1 + m.cuerpoMax + (m.elite ? 3 : 0) + (m.jefe ? 6 : 0));
+    if (m.efectos.poseido) liberarPosesion(estado, m, true);
     log(estado, m.nombre + ' muere.', 'bueno');
     disparar(estado, 'monstruo_muerto', { id: m.id });
   }
@@ -380,7 +394,7 @@ export function golpearHeroe(estado, m, h, dados, etiqueta) {
   const ataque = tirarCombate(dados);
   const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0);
   delete h.efectos.calderoDef; delete h.efectos.sordo;
-  const defensa = tirarCombate(Math.max(0, defensaHeroe(h) + extra));
+  const defensa = tirarCombate(h.efectos?.furia ? 0 : Math.max(0, defensaHeroe(h) + extra));
   const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
   log(estado, m.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + h.nombre + ': ' + dano + ' de daño.', dano ? 'peligro' : '');
@@ -613,6 +627,8 @@ export function disponibles(estado, id) {
     r.trompa = { apoyos, motivo: !libre ? 'Ya has hecho tu acción este turno.' : !apoyos.length ? 'Necesitas a alguien pegado delante de ti (no en diagonal) que la sujete: sola se te caería.' : '' };
   }
   r.reliquias = reliquiasDe(estado, h, t, libre);
+  r.habilidad = habilidadDe(estado, h, t, libre);
+  if (t.poseido) r.poseido = poseidoDe(estado, t);
   if (t.tiron) r.motivoTiron = 'La cadena te dio un tirón: este turno no puedes moverte.';
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
@@ -896,6 +912,147 @@ function apuntarTesoro(estado, h, oro, objeto) {
 //  El mago la sopla apoyada en un aliado pegado a él; suena en la
 //  dirección del aliado hasta la primera pared.
 // =============================================================
+// =============================================================
+//  MAZMORRA INFINITA: experiencia, mejoras y habilidades
+// =============================================================
+export function ganarXP(estado, h, n) {
+  h.nivel ||= 1; h.xp ||= 0; h.puntos ||= 0;
+  h.xp += n;
+  while (h.xp >= D.xpParaNivel(h.nivel + 1)) {
+    h.nivel++; h.puntos++;
+    const hab = h.nivel === D.NIVEL_HABILIDAD ? ' ¡Desbloquea ' + D.HABILIDADES[h.tipo].nombre + '!' : '';
+    ev(estado, { tipo: 'nivel', heroe: h.id, nivel: h.nivel });
+    avisar(estado, '¡' + h.nombre + ' sube a nivel ' + h.nivel + '! Elige una mejora en el campamento.' + hab, 'bueno');
+  }
+}
+
+function mejorar(estado, h, mejora) {
+  const def = D.MEJORAS[mejora];
+  if (!def) return 'Esa mejora no existe.';
+  if (!(h.puntos > 0)) return 'No tienes puntos de mejora.';
+  h.mejoras ||= {};
+  if ((h.mejoras[mejora] || 0) >= def.max) return 'Ya tienes esa mejora al máximo.';
+  h.mejoras[mejora] = (h.mejoras[mejora] || 0) + 1;
+  h.puntos--;
+  if (mejora === 'cuerpo') { h.cuerpoMax++; h.cuerpo = h.cuerpoMax; }
+  log(estado, h.nombre + ' mejora: ' + def.nombre + '.', 'bueno');
+  return null;
+}
+
+// Muros frágiles entre una sala y el pasillo (para la trompa y el enano).
+function ponerMurosFragiles(def) {
+  const salas = [...new Set((def.puertas || []).flatMap((p) => [T.region(...p.a), T.region(...p.b)]))].filter((s) => s !== '.');
+  const conPuerta = new Set((def.puertas || []).map((p) => T.claveBorde(p.a, p.b)));
+  const rocas = new Set((def.rocas || []).map(([x, y]) => clave(x, y)));
+  const cands = [];
+  for (const s of salas) for (const [x, y] of T.casillasDe(s)) for (const [dx, dy] of T.DIRS) {
+    const n = [x + dx, y + dy];
+    if (!T.dentro(...n) || T.region(...n) !== '.' || rocas.has(clave(...n))) continue;
+    if (!conPuerta.has(T.claveBorde([x, y], n))) cands.push({ a: [x, y], b: n });
+  }
+  def.muros = [];
+  const n = Math.min(cands.length, 1 + (def.numero >= 3 ? 1 : 0) + rnd(2));
+  for (let i = 0; i < n; i++) def.muros.push({ id: 'mf' + (i + 1), ...cands.splice(rnd(cands.length), 1)[0] });
+}
+
+function habilidadDe(estado, h, t, libre) {
+  if (!estado.aleatorio && !estado.pruebas) return null;
+  const hab = D.HABILIDADES[h.tipo];
+  if (!hab || (h.nivel || 1) < D.NIVEL_HABILIDAD) return null;
+  const r = { id: hab.id, ok: false, motivo: '', objetivos: [] };
+  if ((estado.habUsada || {})[h.id]) { r.motivo = 'Ya la has usado en este piso.'; return r; }
+  if (!libre) { r.motivo = 'Ya has hecho tu acción este turno.'; return r; }
+  const visibles = estado.monstruos.filter((m) => m.vivo && m.visto && T.lineaVision(estado, h.x, h.y, m.x, m.y));
+  if (hab.id === 'furia') r.objetivos = objetivosAtaque(estado, h);
+  else if (hab.id === 'disparo') r.objetivos = visibles.filter((m) => !T.adyacentes(h, m) && T.lineaVision(estado, h.x, h.y, m.x, m.y, true)).map((m) => m.id);
+  else if (hab.id === 'posesion') r.objetivos = visibles.filter((m) => !m.jefe && !m.efectos.poseido).map((m) => m.id);
+  else if (hab.id === 'rompepiedras') {
+    for (const [dx, dy] of T.DIRS) {
+      const n = [h.x + dx, h.y + dy];
+      if (T.esRoca(estado, ...n)) r.objetivos.push('roca:' + clave(...n));
+      const mu = T.muroEntre(estado, [h.x, h.y], n);
+      if (mu && !mu.roto) r.objetivos.push('muro:' + mu.id);
+    }
+  }
+  r.ok = r.objetivos.length > 0;
+  if (!r.ok) r.motivo = { furia: 'No hay nadie a tu alcance.', disparo: 'No ves a ningún enemigo lejos de ti.', posesion: 'No ves a ningún enemigo que puedas poseer.', rompepiedras: 'No hay derrumbes ni muros frágiles pegados a ti.' }[hab.id];
+  return r;
+}
+
+function usarHabilidad(estado, h, id, objetivo) {
+  (estado.habUsada ||= {})[h.id] = 1;
+  const m = estado.monstruos.find((x) => x.id === objetivo);
+  if (id === 'furia') {
+    avisar(estado, '¡' + h.nombre + ' entra en Furia!', 'peligro');
+    golpearMonstruo(estado, h, m, ataqueHeroe(h), 'Furia');
+    const otro = m.vivo ? m : estado.monstruos.find((x) => objetivosAtaque(estado, h).includes(x.id));
+    if (otro) golpearMonstruo(estado, h, otro, ataqueHeroe(h), 'Furia (segundo golpe)');
+    h.efectos.furia = true;
+  } else if (id === 'disparo') {
+    golpearMonstruo(estado, h, m, 3 + (h.mejoras?.ataque || 0), 'Disparo certero');
+  } else if (id === 'rompepiedras') {
+    const [tipo, ref] = objetivo.split(':');
+    if (tipo === 'roca') delete estado.rocas[ref];
+    else T.muroEntre(estado, ...(() => { const w = estado.muros.find((x) => x.id === ref); return [w.a, w.b]; })()).roto = true;
+    ev(estado, { tipo: 'temblor' });
+    avisar(estado, h.nombre + ' descarga el martillo: ¡' + (tipo === 'roca' ? 'el derrumbe salta en pedazos' : 'el muro se viene abajo') + '!', 'bueno');
+    revelar(estado);
+    if (tipo === 'muro') disparar(estado, 'muro_roto', { muro: ref });
+  } else if (id === 'posesion') {
+    m.efectos.poseido = { por: h.id, rondas: 2 };
+    delete m.efectos.dormido;
+    estado.turno.poseido = { id: m.id, restante: m.mov, ataco: false };
+    ev(estado, { tipo: 'reliquia', reliquia: 'posesion', heroe: h.id, texto: h.nombre + ' clava la mirada en ' + m.nombre + ' y toma su cuerpo. Durante sus dos próximos turnos, ese ' + m.nombre.toLowerCase() + ' es suyo.' });
+  }
+  return null;
+}
+
+// --- Posesión: el mago mueve al monstruo y le hace atacar a los suyos ---
+function alcancePoseido(estado, m, pasos) {
+  return T.explorar([m.x, m.y], pasos, (c, n) => {
+    const [x, y] = n;
+    if (T.esRoca(estado, x, y) || T.muebleEn(estado, x, y)) return false;
+    if (T.borde(estado, c, n) !== 'libre') return false;
+    return !T.figuraEn(estado, x, y);
+  });
+}
+function poseidoDe(estado, t) {
+  const m = estado.monstruos.find((x) => x.id === t.poseido.id && x.vivo && x.efectos.poseido);
+  if (!m) { delete t.poseido; return undefined; }
+  const destinos = {};
+  if (t.poseido.restante > 0) for (const [k, c] of Object.entries(alcancePoseido(estado, m, t.poseido.restante))) if (c.d > 0) destinos[k] = c.d;
+  const atacables = t.poseido.ataco ? [] : estado.monstruos.filter((o) => o !== m && o.vivo && o.visto && T.puedeTocar(estado, m, o)).map((o) => o.id);
+  return { id: m.id, restante: t.poseido.restante, destinos, atacables };
+}
+function moverPoseido(estado, t, x, y) {
+  const m = estado.monstruos.find((o) => o.id === t.poseido.id);
+  const mapa = alcancePoseido(estado, m, t.poseido.restante);
+  const k = clave(x, y);
+  if (!mapa[k] || mapa[k].d === 0) return 'No puede llegar ahí.';
+  const ruta = T.reconstruir(mapa, k);
+  t.poseido.restante -= mapa[k].d;
+  m.x = x; m.y = y; m.region = T.region(x, y);
+  ev(estado, { tipo: 'mover', id: m.id, ruta });
+  return null;
+}
+function atacarPoseido(estado, h, t, objetivo) {
+  const m = estado.monstruos.find((o) => o.id === t.poseido.id);
+  const o = estado.monstruos.find((x) => x.id === objetivo);
+  t.poseido.ataco = true;
+  const ataque = tirarCombate(m.ataque);
+  const defensa = tirarCombate(o.efectos.dormido ? 0 : o.defensa);
+  const dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
+  ev(estado, { tipo: 'dados', atacante: m.id, defensor: o.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta: 'Poseído por ' + h.nombre });
+  log(estado, m.nombre + ' (poseído) → ' + o.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
+  danarMonstruo(estado, o, dano);
+  return null;
+}
+function liberarPosesion(estado, m, muerto = false) {
+  delete m.efectos.poseido;
+  if (estado.turno?.poseido?.id === m.id) delete estado.turno.poseido;
+  if (!muerto) avisar(estado, m.nombre + ' recupera el control de su cuerpo.', 'peligro');
+}
+
 // =============================================================
 //  RELIQUIAS
 // =============================================================
@@ -1322,6 +1479,9 @@ function empezarTurno(estado, id) {
   if (estado.escudo?.heroe === id) { estado.escudo = null; delete h.efectos.muro; }
   estado.turno = { heroe: id, movTirada: null, movRestante: 0, movido: false, accion: false, cargTirada: null, cargRestante: 0, mochila: false };
   if (h.efectos.tiron) { delete h.efectos.tiron; estado.turno.plantado = true; estado.turno.tiron = true; }
+  delete h.efectos.furia;
+  const pos = estado.monstruos.find((m) => m.vivo && m.efectos.poseido?.por === id);
+  if (pos) estado.turno.poseido = { id: pos.id, restante: pos.mov, ataco: false };
   ev(estado, { tipo: 'turno', heroe: id });
 }
 
@@ -1356,6 +1516,10 @@ function turnoMonstruos(estado) {
   for (const m of lista) {
     if (!m.vivo || !m.visto || !m.activo) continue;
     if (!Object.values(estado.heroes).some((h) => h.vivo && !h.fuera)) break;
+    if (m.efectos.poseido) {
+      if (--m.efectos.poseido.rondas <= 0) liberarPosesion(estado, m);
+      continue;
+    }
     turnoMonstruo(estado, m, ctxIA);
   }
   ev(estado, { tipo: 'fase', fase: 'heroes' });
@@ -1396,6 +1560,7 @@ function comprobarFin(estado) {
 export function puedeComprar(estado, h, item) {
   const def = D.ARMAS[item] || D.ARMADURAS[item] || D.OBJETOS_TIENDA[item];
   if (!def?.precio) return 'No existe.';
+  if (def.minPiso && !(estado.aleatorio && estado.misionIdx + 1 >= def.minPiso)) return 'Aún no está a la venta: baja hasta el piso ' + def.minPiso + '.';
   if (item === 'kit' && (h.kit || D.HEROES[h.tipo].desarmaSiempre)) return 'No lo necesitas.';
   if (!D.OBJETOS_TIENDA[item]) {
     const m = motivoNoEquipar(h, item);
@@ -1467,7 +1632,19 @@ export function aplicar(estado, a, jugador, cargarMision) {
   }
   if (a.tipo === 'continuar') {
     if (!esAnfitrion || estado.fase !== 'resultado') return 'Solo el anfitrión.';
-    if (estado.resultado === 'victoria') {
+    const todos = Object.values(estado.heroes);
+    if (estado.aleatorio) {
+      // Mazmorra Infinita: quien cae pierde la bolsa (el banco se salva); los demás ganan experiencia.
+      for (const h of todos) {
+        if (!h.vivo && h.oro > 0) { log(estado, h.nombre + ' cayó y pierde las ' + h.oro + ' monedas que llevaba encima.', 'peligro'); h.oro = 0; }
+        if (h.vivo && estado.resultado === 'victoria') ganarXP(estado, h, 5 + estado.misionIdx);
+      }
+    }
+    if (estado.aleatorio && !todos.some((h) => h.vivo)) {
+      // Han caído todos: se acaba la partida.
+      estado.fase = 'final';
+      estado.caida = { piso: estado.misionIdx + 1 };
+    } else if (estado.resultado === 'victoria') {
       if (!estado.pruebas) estado.misionIdx++; // la zona de pruebas se repite
       estado.fase = !estado.aleatorio && estado.misionIdx >= estado.campana.length ? 'final' : 'armeria';
     } else estado.fase = 'armeria';
@@ -1501,7 +1678,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
       ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
-    if (estado.aleatorio) esconderPieza(estado, def);
+    if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); }
     iniciarMision(estado, def);
     ev(estado, { tipo: 'pantalla', fase: 'briefing' });
     return null;
@@ -1513,6 +1690,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (estado.fase === 'armeria') {
     switch (a.tipo) {
       case 'comprar': return comprar(estado, h, a.item);
+      case 'mejorar': return mejorar(estado, h, a.mejora);
       case 'equipar': return equipar(estado, h, a.item);
       case 'guardar': return guardar(estado, h, a.item);
       case 'vender': return vender(estado, h, a.item);
@@ -1586,6 +1764,22 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       if (q.bloqueada) { avisar(estado, 'La puerta está cerrada a cal y canto. Habrá que encontrar la forma de abrirla.', 'peligro'); break; }
       abrirPuerta(estado, h, estado.puertas.find((x) => x.id === q.id));
       break;
+    }
+    case 'habilidad': {
+      const hb = disp.habilidad;
+      if (!hb) return 'Todavía no tienes habilidad (nivel ' + D.NIVEL_HABILIDAD + ').';
+      if (!hb.ok) return hb.motivo;
+      if (!hb.objetivos.some((o) => o === a.objetivo)) return 'Ese objetivo no vale.';
+      usarAccion();
+      return usarHabilidad(estado, h, hb.id, a.objetivo);
+    }
+    case 'moverPoseido': {
+      if (!disp.poseido) return 'No controlas a ningún enemigo.';
+      return moverPoseido(estado, t, a.x, a.y);
+    }
+    case 'atacarPoseido': {
+      if (!disp.poseido?.atacables.includes(a.objetivo)) return 'No puede atacar a ese.';
+      return atacarPoseido(estado, h, t, a.objetivo);
     }
     case 'reliquia': {
       const rq = disp.reliquias.find((x) => x.id === a.reliquia);
