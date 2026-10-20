@@ -623,8 +623,9 @@ $('#b-abandonar').addEventListener('click', async () => {
 
 function pintarDiario() {
   const e = app.estado;
-  $('#diario-sala').hidden = !app.red;
-  $('#diario-sala').innerHTML = app.red ? 'Código de la sala: <b>' + esc(app.red.codigo) + '</b>' : '';
+  const version = document.querySelector('meta[name="version"]')?.content || '';
+  $('#diario-sala').hidden = false;
+  $('#diario-sala').innerHTML = (app.red ? 'Código de la sala: <b>' + esc(app.red.codigo) + '</b><br>' : '') + '<small>Versión ' + esc(version) + '</small>';
   $('#diario').innerHTML = (e?.log || []).slice().reverse().map((l) => `<li class="${l.tono}">${esc(l.texto)}</li>`).join('');
 }
 

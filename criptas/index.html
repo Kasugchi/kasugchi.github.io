@@ -2,6 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta name="version" content="20261020110920">
+
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Criptas de Velmor</title>
 <meta name="description" content="Juego de mazmorras por turnos para 1 a 4 jugadores en el navegador. Crea una sala, comparte el código y bajad juntos a las criptas.">
@@ -10,7 +12,21 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Grenze+Gotisch:wght@600;700;900&display=swap">
-<link rel="stylesheet" href="estilo.css">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/datos.js": "./js/datos.js?v=20261020110920",
+    "./js/ia.js": "./js/ia.js?v=20261020110920",
+    "./js/iconos.js": "./js/iconos.js?v=20261020110920",
+    "./js/motor.js": "./js/motor.js?v=20261020110920",
+    "./js/red.js": "./js/red.js?v=20261020110920",
+    "./js/render.js": "./js/render.js?v=20261020110920",
+    "./js/tablero.js": "./js/tablero.js?v=20261020110920",
+    "./js/ui.js": "./js/ui.js?v=20261020110920"
+  }
+}
+</script>
+<link rel="stylesheet" href="estilo.css?v=20261020110920">
 </head>
 <body>
 
@@ -152,6 +168,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js"></script>
+<script type="module" src="js/ui.js?v=20261020110920"></script>
 </body>
 </html>
