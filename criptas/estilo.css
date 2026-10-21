@@ -455,3 +455,9 @@ details.guia p { margin: 6px 0 10px; }
   .hoja .vida { order: 2; gap: 1px; flex-wrap: nowrap; }
   .hoja .vida i { flex: 1; width: auto; height: 5px; border-radius: 1px; }
 }
+
+/* Desglose de la ficha: de dónde sale cada número */
+.tarjeta .desglose { margin-top: 8px; border-top: 1px dashed rgba(80,50,20,0.35); padding-top: 6px; font-size: 13px; line-height: 1.35; color: var(--tinta); }
+.tarjeta .desglose p { margin: 3px 0; }
+.tarjeta .desglose .pro { color: #2f6b3a; }
+.tarjeta .desglose .contra { color: var(--lacre); }

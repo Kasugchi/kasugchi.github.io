@@ -543,7 +543,23 @@ function tarjetaHTML(tipo, fem, h) {
       ${magia ? `<dt>Magia</dt><dd>${esc(magia)}</dd>` : ''}
       ${h ? `<dt>Bolsa</dt><dd>${h.oro} monedas</dd><dt>Banco</dt><dd>${h.banco || 0} monedas</dd>` : ''}
     </dl>
+    ${h ? desgloseHTML(h) : ''}
   </div>`;
+}
+// De dónde sale cada número, y lo bueno y lo malo de la especialización y del arma.
+function desgloseHTML(h) {
+  const suma = (l) => l.map(([n, v], i) => (i === 0 ? '' : v < 0 ? ' − ' : ' + ') + esc(n) + ' ' + Math.abs(v)).join('');
+  const total = (l) => l.reduce((t, [, v]) => t + v, 0);
+  const at = M.desgloseAtaque(h), df = M.desgloseDefensa(h);
+  const lineas = [`<b>Ataque ${total(at)}</b> = ${suma(at)}`, `<b>Defensa ${total(df)}</b> = ${suma(df)}`];
+  const lento = [h.armaduras.includes('placas') && 'Armadura de placas', h.efectos?.agotado && 'Agotado', h.subclase && M.modSub(h, 'movimiento') && D.SUBCLASES[h.tipo][h.subclase].nombre].filter(Boolean);
+  if (lento.length) lineas.push(`<b>Movimiento 1 dado</b> por: ${esc(lento.join(', '))}`);
+  const sc = h.subclase && D.SUBCLASES[h.tipo]?.[h.subclase];
+  if (sc) lineas.push(`<b>${esc(sc.nombre)}</b>: <span class="pro">✔ ${esc(sc.bueno)}</span> <span class="contra">✘ ${esc(sc.malo)}</span>`);
+  const arma = D.ARMAS[h.arma];
+  if (arma.mercader) lineas.push(`<b>${esc(arma.nombre)}</b>: <span class="pro">✔ ${esc(arma.bueno)}</span> <span class="contra">✘ ${esc(arma.malo)}</span>`);
+  for (const a of h.armaduras) { const d = D.ARMADURAS[a]; if (d.mercader) lineas.push(`<b>${esc(d.nombre)}</b>: <span class="pro">✔ ${esc(d.bueno)}</span> <span class="contra">✘ ${esc(d.malo)}</span>`); }
+  return `<div class="desglose">${lineas.map((l) => `<p>${l}</p>`).join('')}</div>`;
 }
 
 // =============================================================

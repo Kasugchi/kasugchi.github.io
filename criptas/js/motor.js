@@ -23,6 +23,24 @@ const copia = (o) => JSON.parse(JSON.stringify(o));
 export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque || 0) + (h.efectos?.guerraAtq ? 1 : 0) + (h.subclase ? modSub(h, 'ataque') : 0) + (h.efectos?.oso ? 2 : 0);
 export const defensaHeroe = (h) => (h.id === 'cargador' ? D.CARGADOR.defensa
   : D.HEROES[h.tipo].defensa + (h.mejoras?.defensa || 0) + (h.efectos?.guerraDef ? 1 : 0) - (h.efectos?.malaSuerte ? 1 : 0) + (h.subclase ? modSub(h, 'defensa') : 0) + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
+// De dónde sale cada dado (para enseñarlo en la ficha). Suma lo mismo que ataqueHeroe y defensaHeroe.
+export function desgloseAtaque(h) {
+  const sc = subclaseDe(h), l = [[D.ARMAS[h.arma].nombre, D.ARMAS[h.arma].ataque]];
+  if (h.mejoras?.ataque) l.push(['Mejoras', h.mejoras.ataque]);
+  if (sc && modSub(h, 'ataque')) l.push([sc.nombre, modSub(h, 'ataque')]);
+  if (h.efectos?.guerraAtq) l.push(['Dios de la guerra', 1]);
+  if (h.efectos?.oso) l.push(['Forma de oso', 2]);
+  return l;
+}
+export function desgloseDefensa(h) {
+  const sc = subclaseDe(h), l = [['Base', D.HEROES[h.tipo].defensa]];
+  for (const a of h.armaduras) l.push([D.ARMADURAS[a].nombre, D.ARMADURAS[a].defensa]);
+  if (h.mejoras?.defensa) l.push(['Mejoras', h.mejoras.defensa]);
+  if (sc && modSub(h, 'defensa')) l.push([sc.nombre, modSub(h, 'defensa')]);
+  if (h.efectos?.guerraDef) l.push(['Dios de la guerra', 1]);
+  if (h.efectos?.malaSuerte) l.push(['Mala suerte', -1]);
+  return l;
+}
 export const dadosMovimiento = (h) => (h.armaduras.includes('placas') || h.efectos?.agotado || (h.subclase && modSub(h, 'movimiento')) ? 1 : 2);
 // Armas y objetos raros del mercader: ventajas y pegas que dependen de lo que lleva el héroe.
 export const armaDe = (h) => D.ARMAS[h?.arma] || {};
