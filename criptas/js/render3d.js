@@ -50,7 +50,14 @@ export class Escena3D {
     sol.shadow.mapSize.set(2048, 2048);
     Object.assign(sol.shadow.camera, { left: -18, right: 18, top: 15, bottom: -15, near: 1, far: 50 });
     sol.shadow.bias = -0.0008;
+    sol.shadow.normalBias = 0.03; // sin rayas de sombra sobre las paredes y las figuras
     this.escena.add(sol, sol.target);
+    // Luz de relleno desde el lado contrario, sin sombras: al girar la cámara, las caras
+    // que no ven el foco ya no se quedan negras.
+    const relleno = new THREE.DirectionalLight(0xd8c8ff, 0.45);
+    relleno.position.set(D.ANCHO + 6, 14, D.ALTO + 8);
+    relleno.target.position.set(D.ANCHO / 2, 0, D.ALTO / 2);
+    this.escena.add(relleno, relleno.target);
     this.antorcha = new THREE.PointLight(0xff9a40, 1.2, 6, 1.6);
     this.antorcha.position.y = 1.4;
     this.escena.add(this.antorcha);
@@ -134,8 +141,22 @@ export class Escena3D {
     const o = { x: D.ANCHO / 2, z: D.ALTO / 2, d: this.distanciaTodo() };
     if (ya) Object.assign(this.cam, o); else this.objetivo = o;
   }
+  // Centrar en una casilla. Si se ve todo el tablero, no se mueve (solo con zoom pedido);
+  // si la casilla ya está cerca del centro de la pantalla, tampoco.
   centrarEn(x, y, zoom) {
+    if (!zoom && this.estaLejos()) return;
+    if (!zoom) {
+      const [px, py] = this.pantallaDe(x, y), r = this.cv.getBoundingClientRect();
+      if (px > r.width * 0.25 && px < r.width * 0.75 && py > r.height * 0.25 && py < r.height * 0.75) return;
+    }
     this.objetivo = { x: x + 0.5, z: y + 0.5, d: zoom ? Math.min(this.cam.d, 11) : this.cam.d };
+  }
+  // Cuánto tablero se ve alrededor del punto al que mira la cámara (en casillas, por eje del mundo).
+  alcanceVista(d = this.cam.d) {
+    const t = Math.tan((this.camara.fov * Math.PI) / 360);
+    const ancho = d * t * (this.camara.aspect || 1), fondo = (d * t) / Math.max(0.4, Math.sin(this.cam.incl));
+    const cg = Math.abs(Math.cos(this.cam.giro)), sg = Math.abs(Math.sin(this.cam.giro));
+    return { ex: cg * ancho + sg * fondo, ez: sg * ancho + cg * fondo };
   }
   estaLejos() { return this.cam.d > this.distanciaTodo() * 0.9; }
   girar(rad) { this.objetivo = { ...(this.objetivo || {}), giro: this.cam.giro + rad }; }
@@ -151,9 +172,12 @@ export class Escena3D {
       if (fin) this.objetivo = null;
     }
     const c = this.cam;
-    c.x = Math.max(-2, Math.min(D.ANCHO + 2, c.x));
-    c.z = Math.max(-2, Math.min(D.ALTO + 2, c.z));
-    c.d = Math.max(5, Math.min(this.distanciaTodo() * 1.4, c.d));
+    c.d = Math.max(5, Math.min(this.distanciaTodo() * 1.15, c.d));
+    // Que la cámara no se vaya fuera del tablero: si cabe entero, al centro; si no, sin pasar de los bordes.
+    const { ex, ez } = this.alcanceVista(c.d), m = 1;
+    const sujetar = (v, alcance, tam) => (alcance * 2 >= tam + m * 2 ? tam / 2 : Math.max(alcance - m, Math.min(tam - alcance + m, v)));
+    c.x = sujetar(c.x, ex, D.ANCHO);
+    c.z = sujetar(c.z, ez, D.ALTO);
     let sx = 0, sz = 0;
     const dt = t - (this.tab.temblor || 0);
     if (dt < 350) { sx = Math.sin(dt / 18) * 0.15 * (1 - dt / 350); sz = Math.cos(dt / 23) * 0.1 * (1 - dt / 350); }
@@ -356,6 +380,10 @@ export class Escena3D {
     const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.04, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffd36a }));
     anillo.rotation.x = Math.PI / 2; anillo.position.y = 0.03; anillo.visible = false; g.add(anillo);
     g.userData.anillo = anillo;
+    // Materiales propios de cada ficha: las miniaturas comparten materiales, y al hacer
+    // transparente una (al aparecer o al morir) se volvían transparentes todas las del mismo tipo.
+    g.traverse((o) => { if (o.material && !Array.isArray(o.material)) o.material = o.material.clone(); });
+    g.userData.alfa = 1;
     this.gFichas.add(g);
     return g;
   }
@@ -375,7 +403,12 @@ export class Escena3D {
       if (x.activo) g.userData.anillo.scale.setScalar(1 + Math.sin(t / 220) * 0.06);
       const caida = !f.vivo;
       g.rotation.z = caida ? Math.PI / 2.4 : 0; // ficha tumbada al morir
-      g.traverse((o) => { if (o.material && !Array.isArray(o.material)) { o.material.transparent = true; o.material.opacity = x.alfa ?? 1; } });
+      const alfa = x.alfa ?? 1;
+      if (alfa !== g.userData.alfa) {
+        g.userData.alfa = alfa;
+        const trans = alfa < 1;
+        g.traverse((o) => { if (o.material && !Array.isArray(o.material)) { if (o.material.transparent !== trans) { o.material.transparent = trans; o.material.needsUpdate = true; } o.material.opacity = alfa; o.material.depthWrite = !trans; } });
+      }
     }
     for (const [id, g] of this.fichas) if (!vistos.has(id)) { this.gFichas.remove(g); this.fichas.delete(id); }
     // La antorcha sigue al héroe del turno.
