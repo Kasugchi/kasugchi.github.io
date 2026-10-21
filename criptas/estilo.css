@@ -461,3 +461,28 @@ details.guia p { margin: 6px 0 10px; }
 .tarjeta .desglose p { margin: 3px 0; }
 .tarjeta .desglose .pro { color: #2f6b3a; }
 .tarjeta .desglose .contra { color: var(--lacre); }
+
+/* ---------- Reacciones: sellos de lacre ---------- */
+.capa-sellos { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 4; }
+.sello { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  animation: sello-entra .35s cubic-bezier(.2,1.6,.4,1) both; transition: opacity .45s; will-change: transform; }
+.sello.fuera { opacity: 0; }
+.sello .cera { --c1: #c4342a; --c2: #7c1510; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle at 35% 30%, var(--c1), var(--c2) 70%);
+  box-shadow: 0 0 0 3px #d9b45a, 0 0 0 5px rgba(60,30,10,.55), 0 6px 14px rgba(0,0,0,.55), inset 0 -4px 8px rgba(0,0,0,.35), inset 0 3px 6px rgba(255,255,255,.18); }
+.sello .cera svg { width: 30px; height: 30px; fill: #f6e7c5; filter: drop-shadow(0 1px 0 rgba(0,0,0,.45)); }
+.sello .lema { font: 700 14px/1.1 var(--f-titulo); color: var(--tinta); background: var(--pergamino); padding: 3px 8px; border-radius: 3px;
+  box-shadow: 0 3px 8px rgba(0,0,0,.45); white-space: nowrap; }
+.sello.bueno .cera { --c1: #3f8a52; --c2: #1d4a2a; }
+.sello.presume .cera { --c1: #d8a93c; --c2: #8a5e12; }
+.sello.presume .cera svg { fill: #3a2408; }
+@keyframes sello-entra { from { opacity: 0; scale: 1.8; } to { opacity: 1; scale: 1; } }
+
+.panel-reacciones { position: absolute; right: 8px; top: 8px; z-index: 6; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 6px;
+  background: var(--pergamino); padding: 12px 10px; border-radius: 8px; box-shadow: 0 10px 28px rgba(0,0,0,.6); max-width: min(360px, calc(100% - 16px)); }
+.panel-reacciones[hidden] { display: none; }
+.panel-reacciones .sello.mini { position: static; animation: none; border: 0; background: none; cursor: pointer; padding: 0; transform: none; }
+.panel-reacciones .sello.mini .cera { width: 44px; height: 44px; }
+.panel-reacciones .sello.mini .cera svg { width: 24px; height: 24px; }
+.panel-reacciones .sello.mini .lema { font-size: 11.5px; box-shadow: none; background: none; padding: 0; white-space: normal; text-align: center; }
+.panel-reacciones .sello.mini:active .cera { scale: .92; }

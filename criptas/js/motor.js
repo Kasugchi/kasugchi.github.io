@@ -2616,6 +2616,17 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (!a.heroe || !puedeControlar(estado, jugador, a.heroe)) return 'Ese héroe no es tuyo.';
   const h = estado.heroes[a.heroe];
 
+  // Reacción: un sello sobre el héroe que ven todos. No es una jugada ni hace falta que sea tu turno.
+  if (a.tipo === 'reaccion') {
+    if (estado.fase !== 'mision' || !D.REACCIONES[a.reaccion]) return 'Ahora no.';
+    const ahora = Date.now();
+    estado.ultReaccion ||= {};
+    if (ahora - (estado.ultReaccion[jugador] || 0) < 2500) return 'Espera un momento antes de otra reacción.';
+    estado.ultReaccion[jugador] = ahora;
+    ev(estado, { tipo: 'reaccion', heroe: h.id, reaccion: a.reaccion });
+    return null;
+  }
+
   if (estado.fase === 'armeria') {
     switch (a.tipo) {
       case 'comprar': return comprar(estado, h, a.item);

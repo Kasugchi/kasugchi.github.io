@@ -486,6 +486,12 @@ export class Tablero {
     this.objetivoCam = { x: x * TS + TS / 2, y: y * TS + TS / 2, z };
   }
 
+  // Punto de la pantalla (dentro de la zona del tablero) encima de una casilla.
+  pantallaDe(x, y) {
+    if (this.e3d) return this.e3d.pantallaDe(x, y);
+    const { ox, oy } = this.aPantalla();
+    return [ox + (x * TS + TS / 2) * this.cam.z, oy + y * TS * this.cam.z];
+  }
   aPantalla() {
     const r = this.cv.getBoundingClientRect();
     return { ox: r.width / 2 - this.cam.x * this.cam.z, oy: r.height / 2 - this.cam.y * this.cam.z };

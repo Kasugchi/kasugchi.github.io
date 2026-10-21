@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261021165107">
+<meta name="version" content="20261021165514">
+
 
 
 
@@ -72,26 +73,26 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261021165107",
-    "./js/firebase.js": "./js/firebase.js?v=20261021165107",
-    "./js/ia.js": "./js/ia.js?v=20261021165107",
-    "./js/iconos.js": "./js/iconos.js?v=20261021165107",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261021165107",
-    "./js/motor.js": "./js/motor.js?v=20261021165107",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261021165107",
-    "./js/nube.js": "./js/nube.js?v=20261021165107",
-    "./js/panel.js": "./js/panel.js?v=20261021165107",
-    "./js/procedural.js": "./js/procedural.js?v=20261021165107",
-    "./js/red.js": "./js/red.js?v=20261021165107",
-    "./js/render.js": "./js/render.js?v=20261021165107",
-    "./js/render3d.js": "./js/render3d.js?v=20261021165107",
-    "./js/sprites.js": "./js/sprites.js?v=20261021165107",
-    "./js/tablero.js": "./js/tablero.js?v=20261021165107",
-    "./js/ui.js": "./js/ui.js?v=20261021165107"
+    "./js/datos.js": "./js/datos.js?v=20261021165514",
+    "./js/firebase.js": "./js/firebase.js?v=20261021165514",
+    "./js/ia.js": "./js/ia.js?v=20261021165514",
+    "./js/iconos.js": "./js/iconos.js?v=20261021165514",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261021165514",
+    "./js/motor.js": "./js/motor.js?v=20261021165514",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261021165514",
+    "./js/nube.js": "./js/nube.js?v=20261021165514",
+    "./js/panel.js": "./js/panel.js?v=20261021165514",
+    "./js/procedural.js": "./js/procedural.js?v=20261021165514",
+    "./js/red.js": "./js/red.js?v=20261021165514",
+    "./js/render.js": "./js/render.js?v=20261021165514",
+    "./js/render3d.js": "./js/render3d.js?v=20261021165514",
+    "./js/sprites.js": "./js/sprites.js?v=20261021165514",
+    "./js/tablero.js": "./js/tablero.js?v=20261021165514",
+    "./js/ui.js": "./js/ui.js?v=20261021165514"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261021165107">
+<link rel="stylesheet" href="estilo.css?v=20261021165514">
 </head>
 <body>
 
@@ -200,6 +201,7 @@
     <button class="icono-btn texto" id="b-vista" aria-label="Cambiar a vista de mesa 3D">3D</button>
     <button class="icono-btn" id="b-pantalla" aria-label="Pantalla completa"></button>
     <button class="icono-btn" id="b-vertodo" aria-label="Ver todo el tablero"></button>
+    <button class="icono-btn" id="b-reaccion" aria-label="Reacciones" hidden></button>
     <button class="icono-btn" id="b-registro" aria-label="Diario y menú"></button>
   </header>
   <div class="hojas" id="hojas"></div>
@@ -207,6 +209,8 @@
     <canvas id="lienzo" aria-label="Tablero de juego"></canvas>
     <div class="cartel" id="cartel" style="opacity:0"></div>
     <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div class="capa-sellos" id="capa-sellos" aria-hidden="true"></div>
+    <div class="panel-reacciones" id="panel-reacciones" hidden></div>
     <div class="giro3d" id="giro3d" hidden>
       <button class="icono-btn" id="b-girar-izq" aria-label="Girar a la izquierda"><svg viewBox="0 0 24 24"><path d="M7 7h7a5 5 0 1 1-5 5" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M10 3L6 7l4 4" stroke="currentColor" stroke-width="2.4" fill="none"/></svg></button>
       <button class="icono-btn" id="b-girar-der" aria-label="Girar a la derecha"><svg viewBox="0 0 24 24"><path d="M17 7h-7a5 5 0 1 0 5 5" stroke="currentColor" stroke-width="2.4" fill="none"/><path d="M14 3l4 4-4 4" stroke="currentColor" stroke-width="2.4" fill="none"/></svg></button>
@@ -257,6 +261,7 @@
   <div class="ficha-detalle fila">
     <button class="btn madera" id="b-sonido" style="flex:1 1 120px;min-height:40px;font-size:15px">Sonido: sí</button>
     <button class="btn madera" id="b-velocidad" style="flex:1 1 120px;min-height:40px;font-size:15px">Velocidad: normal</button>
+    <button class="btn madera" id="b-auto-reac" style="flex:1 1 120px;min-height:40px;font-size:15px">Reacciones solas: sí</button>
     <button class="btn madera" id="b-al-campamento" style="flex:1 1 100%;min-height:40px;font-size:15px" hidden>Volver al campamento</button>
     <button class="btn claro" id="b-abandonar" style="flex:1 1 120px;min-height:40px;font-size:15px">Abandonar</button>
   </div>
@@ -277,6 +282,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261021165107"></script>
+<script type="module" src="js/ui.js?v=20261021165514"></script>
 </body>
 </html>

@@ -125,6 +125,11 @@ export class Escena3D {
     const ancho = Math.max(an / aspecto, al * 1.15);
     return ancho * 1.05 / (2 * Math.tan((this.camara.fov * Math.PI) / 360));
   }
+  pantallaDe(x, y) {
+    const v = new THREE.Vector3(x + 0.5, 1.15, y + 0.5).project(this.camara);
+    const r = this.cv.getBoundingClientRect();
+    return [((v.x + 1) / 2) * r.width, ((1 - v.y) / 2) * r.height];
+  }
   verTodo(ya) {
     const o = { x: D.ANCHO / 2, z: D.ALTO / 2, d: this.distanciaTodo() };
     if (ya) Object.assign(this.cam, o); else this.objetivo = o;

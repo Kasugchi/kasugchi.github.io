@@ -387,3 +387,25 @@ export const MUEBLES = {
 
 // Orden de las misiones de la campaña (archivos de /misiones).
 export const CAMPANA = ['01-tuneles-de-ceniza', '02-biblioteca-del-alquimista', '03-celdas-de-hierro', '04-los-tres-sellos', '03-trono-de-velmor'];
+
+// ---------- Reacciones (sellos de lacre sobre el héroe) ----------
+// tono: peligro (rojo), bueno (verde), presume (dorado).
+export const REACCIONES = {
+  muerto:  { icono: 'calavera', texto: '¡Muerto!', tono: 'peligro' },
+  tirada:  { icono: 'dados', texto: '¡Vaya tirada!', tono: 'presume' },
+  cubro:   { icono: 'rodela', texto: '¡Os cubro!', tono: 'bueno' },
+  curame:  { icono: 'pocion', texto: '¡Cúrame!', tono: 'peligro' },
+  botin:   { icono: 'oro', texto: '¡Botín!', tono: 'presume' },
+  cuidado: { icono: 'trampa', texto: '¡Cuidado!', tono: 'peligro' },
+  mira:    { icono: 'ojo', texto: 'Mira eso…', tono: 'bueno' },
+  tomaya:  { icono: 'corona', texto: '¡Toma ya!', tono: 'presume' },
+  prisa:   { icono: 'reloj', texto: '¡Daos prisa!', tono: 'peligro' },
+  plan:    { icono: 'mente', texto: 'Tengo un plan', tono: 'bueno' },
+  vamonos: { icono: 'escalera', texto: '¡Vámonos!', tono: 'bueno' },
+  atope:   { icono: 'fuego', texto: '¡A tope!', tono: 'presume' }
+};
+// Las que salen solas (cada jugador puede quitarlas).
+export const REACCIONES_AUTO = {
+  ay:     { icono: 'calavera', texto: '¡Ay!', tono: 'peligro' },
+  golpazo: { icono: 'corona', texto: '¡Toma ya!', tono: 'presume' }
+};

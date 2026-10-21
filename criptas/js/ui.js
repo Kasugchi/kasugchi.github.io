@@ -843,6 +843,7 @@ function pintarMapaMision(cv, e) {
 const tablero = new Tablero($('#lienzo'), alTocar);
 $('#b-vertodo').innerHTML = svg('ojo');
 $('#b-registro').innerHTML = svg('pergamino');
+$('#b-reaccion').innerHTML = svg('corona');
 $('#b-cerrar-registro').innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.5" fill="none"/></svg>';
 // ---------- Vista 2D / 3D (se recuerda en cada dispositivo) ----------
 async function cambiarVista(tres) {
@@ -988,6 +989,7 @@ const miHeroeEnTurno = () => {
 };
 
 function pintarJuego() {
+  actualizarBotonReaccion();
   actualizarAmbiente();
   const e = app.estado;
   // Hojas de personaje.
@@ -1640,7 +1642,18 @@ async function animar(ev) {
       await espera(550);
       break;
     }
+    case 'reaccion': {
+      const r = D.REACCIONES[ev.reaccion];
+      if (r) { sello(ev.heroe, r); sonar('puerta'); }
+      await espera(120);
+      break;
+    }
     case 'dados': {
+      // Reacciones solas: golpazo de un héroe, o un héroe que se lleva un buen golpe.
+      if (autoReac && ev.dano >= 2) {
+        if (app.estado.heroes[ev.atacante] && ev.ataque.filter((c) => c === 'calavera').length >= 3) setTimeout(() => sello(ev.atacante, D.REACCIONES_AUTO.golpazo), 1600 * velocidad);
+        else if (app.estado.heroes[ev.defensor]) setTimeout(() => sello(ev.defensor, D.REACCIONES_AUTO.ay), 1600 * velocidad);
+      }
       const atk = ev.ataque, def = ev.defensa;
       const cuentaDef = ev.defiende === 'heroe' ? 'escudo' : 'escudoNegro';
       const golpes = atk.filter((c) => c === 'calavera').length;
@@ -2137,3 +2150,64 @@ window.trucos = {
     return 'Hechizos recuperados.';
   })
 };
+
+// =============================================================
+//  REACCIONES: sellos de lacre que salen sobre el héroe
+// =============================================================
+let autoReac = leer('criptas_autoreac') !== 'no';
+const pintarAutoReac = () => { $('#b-auto-reac').textContent = 'Reacciones solas: ' + (autoReac ? 'sí' : 'no'); };
+$('#b-auto-reac').addEventListener('click', () => { autoReac = !autoReac; guardar('criptas_autoreac', autoReac ? 'si' : 'no'); pintarAutoReac(); });
+pintarAutoReac();
+
+const sellosVivos = [];
+function sello(heroe, r) {
+  const capa = $('#capa-sellos');
+  if (!capa || !posDe(heroe)) return;
+  const el = document.createElement('div');
+  el.className = 'sello ' + (r.tono || '');
+  el.innerHTML = `<span class="cera">${svg(r.icono)}</span><span class="lema">${esc(r.texto)}</span>`;
+  capa.appendChild(el);
+  // Si el mismo héroe ya tiene uno, el nuevo sale un poco más arriba.
+  const antes = sellosVivos.filter((s) => s.heroe === heroe).length;
+  const s = { el, heroe, t0: performance.now(), sube: antes * 34 };
+  sellosVivos.push(s);
+  colocarSellos();
+  setTimeout(() => { el.classList.add('fuera'); }, 2300);
+  setTimeout(() => { el.remove(); sellosVivos.splice(sellosVivos.indexOf(s), 1); }, 2800);
+  if (sellosVivos.length === 1) requestAnimationFrame(bucleSellos);
+}
+function colocarSellos() {
+  for (const s of sellosVivos) {
+    const p = posDe(s.heroe);
+    if (!p) continue;
+    const [x, y] = tablero.pantallaDe(p[0], p[1]);
+    const t = Math.min(1, (performance.now() - s.t0) / 2600);
+    s.el.style.transform = `translate(${x}px, ${y - s.sube - 18 * t}px) translate(-50%, -100%)`;
+  }
+}
+function bucleSellos() { if (!sellosVivos.length) return; colocarSellos(); requestAnimationFrame(bucleSellos); }
+
+// Botón y panel: elegir una reacción. Sale sobre tu héroe del turno o, si no es tu turno, sobre el primero tuyo.
+function heroeQueReacciona() {
+  const e = app.estado;
+  if (!e || e.fase !== 'mision') return null;
+  const mios = e.orden.filter((t) => M.puedeControlar(e, miId, t) && !e.heroes[t].ia);
+  if (e.turno && mios.includes(e.turno.heroe)) return e.turno.heroe;
+  return mios.find((t) => e.heroes[t].vivo && !e.heroes[t].fuera) || mios[0] || null;
+}
+function actualizarBotonReaccion() {
+  const b = $('#b-reaccion');
+  b.hidden = !heroeQueReacciona();
+  if (b.hidden) $('#panel-reacciones').hidden = true;
+}
+$('#panel-reacciones').innerHTML = Object.entries(D.REACCIONES).map(([id, r]) =>
+  `<button class="sello mini ${r.tono}" data-reac="${id}"><span class="cera">${svg(r.icono)}</span><span class="lema">${esc(r.texto)}</span></button>`).join('');
+$('#b-reaccion').addEventListener('click', (ev) => { ev.stopPropagation(); $('#panel-reacciones').hidden = !$('#panel-reacciones').hidden; });
+$('#panel-reacciones').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-reac]');
+  if (!b) return;
+  $('#panel-reacciones').hidden = true;
+  const h = heroeQueReacciona();
+  if (h) enviar({ tipo: 'reaccion', heroe: h, reaccion: b.dataset.reac });
+});
+document.addEventListener('click', (ev) => { if (!ev.target.closest('#panel-reacciones, #b-reaccion')) $('#panel-reacciones').hidden = true; });
