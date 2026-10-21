@@ -187,15 +187,21 @@ export const SUBCLASES = {
     campeon:   { nombre: 'Campeón', papel: 'Líder', mods: {}, cuerpoExtra: 1,
       bueno: '+1 de cuerpo máximo.', malo: 'Al gritar, 2 turnos con todos los monstruos a la vista yendo a por él y −1 de defensa.',
       hab: { id: 'grito', nombre: 'Grito de guerra', icono: 'fuego', objetivo: 'ninguno',
-        desc: 'Todo el grupo tira +1 dado de ataque durante 2 turnos.' } },
+        desc: 'Todo el grupo tira +1 dado de ataque durante 2 turnos.' },
+      extra: [{ id: 'estandarte', nombre: 'Estandarte', icono: 'corona', objetivo: 'ninguno', rabia: 3, sinLimite: true, sinAccion: true,
+        desc: '3 de rabia, sin gastar acción: los héroes de tu sala tiran +1 dado de defensa hasta su próximo turno.' }] },
     gemelas:   { nombre: 'Espadas gemelas', papel: 'Daño', mods: {}, gemelas: true,
       bueno: '+1 dado de ataque si no lleva escudo.', malo: 'Tras el Doble tajo, 2 turnos agotado (1 dado de movimiento y −1 defensa); si lo usa agotado, pierde 2 de cuerpo. Con escudo no puede usarlo.',
       hab: { id: 'dobleTajo', nombre: 'Doble tajo', icono: 'espada', objetivo: 'monstruo',
-        desc: 'Ataca dos veces; si el primero cae, el segundo golpe va a otro enemigo pegado.' } },
+        desc: 'Ataca dos veces; si el primero cae, el segundo golpe va a otro enemigo pegado.' },
+      extra: [{ id: 'torbellino', nombre: 'Torbellino', icono: 'remolino', objetivo: 'ninguno', rabia: 4, sinLimite: true,
+        desc: '4 de rabia: gira con las dos espadas y ataca a todos los enemigos pegados a ti.' }] },
     cazador:   { nombre: 'Cazador', papel: 'A distancia', mods: {}, arma: 'ballesta',
       bueno: 'Empieza con ballesta.', malo: 'El turno del Disparo doble ya no se mueve, y los 2 siguientes recarga (−1 dado a distancia).',
       hab: { id: 'disparoDoble', nombre: 'Disparo doble', icono: 'ballesta', objetivo: 'monstruo',
-        desc: 'Dos disparos de 3 dados a enemigos a la vista que no estén pegados.' } }
+        desc: 'Dos disparos de 3 dados a enemigos a la vista que no estén pegados.' },
+      extra: [{ id: 'certero', nombre: 'Tiro certero', icono: 'ojo', objetivo: 'ninguno', rabia: 2, sinLimite: true, sinAccion: true,
+        desc: '2 de rabia, sin gastar acción: tu próximo disparo a distancia no deja defenderse al monstruo.' }] }
   },
   elfo: {
     arquero:   { nombre: 'Arquero lunar', papel: 'Tirador', mods: {}, arquero: true,
@@ -415,4 +421,18 @@ export const REACCIONES = {
 export const REACCIONES_AUTO = {
   ay:     { icono: 'calavera', texto: '¡Ay!', tono: 'peligro' },
   golpazo: { icono: 'corona', texto: '¡Toma ya!', tono: 'presume' }
+};
+
+// ---------- Recursos y habilidades de clase (Mazmorra Infinita) ----------
+// Rabia del bárbaro: +1 al recibir un golpe que hace daño y al matar a un monstruo (máx. 5). Se pierde al acabar el piso.
+export const RABIA_MAX = 5;
+export const HAB_CLASE = {
+  barbaro: [
+    { id: 'golpeBrutal', nombre: 'Golpe brutal', icono: 'hacha', objetivo: 'ninguno', rabia: 2, sinLimite: true, sinAccion: true,
+      desc: '2 de rabia, sin gastar acción: tu próximo ataque tira +2 dados.' },
+    { id: 'aguantar', nombre: 'Aguantar', icono: 'rodela', objetivo: 'ninguno', rabia: 3, sinLimite: true, sinAccion: true,
+      desc: '3 de rabia, sin gastar acción: el próximo golpe que recibas antes de tu siguiente turno no te hace daño.' },
+    { id: 'rugido', nombre: 'Rugido', icono: 'fuego', objetivo: 'ninguno', rabia: 4, sinLimite: true,
+      desc: '4 de rabia: los enemigos pegados a ti retroceden una casilla y pierden su próximo turno si tienen poca mente (2 o menos).' }
+  ]
 };
