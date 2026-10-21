@@ -93,7 +93,7 @@ function intentarHechizo(estado, m, ctx) {
   m.hechizos.splice(j, 1);
   const h = masDebil(visibles);
   ctx.ev(estado, { tipo: 'hechizoMonstruo', id: m.id, hechizo: 'rayo', objetivo: h.id });
-  ctx.golpearHeroe(estado, m, h, 3, 'Rayo sombrío');
+  ctx.golpearHeroe(estado, m, h, 3, 'Rayo sombrío', { mental: true });
   return true;
 }
 

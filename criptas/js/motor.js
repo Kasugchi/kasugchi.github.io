@@ -21,7 +21,7 @@ const copia = (o) => JSON.parse(JSON.stringify(o));
 
 // ---------- Estadísticas de héroe ----------
 export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque || 0) + (h.efectos?.guerraAtq ? 1 : 0) + (h.subclase ? modSub(h, 'ataque') : 0) + (h.efectos?.oso ? 2 : 0)
-  + extraEspecialidad(h) - (h.efectos?.agotadoFuria ? 1 : 0) - (h.efectos?.recarga && D.ARMAS[h.arma].distancia ? 1 : 0);
+  + extraEspecialidad(h) - (h.efectos?.agotadoFuria ? 1 : 0) - (h.efectos?.aterrorizado ? 1 : 0) - (h.efectos?.recarga && D.ARMAS[h.arma].distancia ? 1 : 0);
 // Ventajas fijas de algunas especializaciones que dependen del equipo.
 function extraEspecialidad(h) {
   const sc = h?.subclase && D.SUBCLASES[h.tipo]?.[h.subclase];
@@ -31,7 +31,7 @@ function extraEspecialidad(h) {
   return 0;
 }
 // Pegas temporales que restan defensa (se suman a las de siempre al tirar).
-export const penalDefensa = (h) => ['agotado', 'aturdidoRuido', 'pechoDescubierto', 'marcado', 'mareo'].filter((k) => h.efectos?.[k]).length;
+export const penalDefensa = (h) => ['agotado', 'aturdidoRuido', 'pechoDescubierto', 'marcado', 'mareo', 'aterrorizado'].filter((k) => h.efectos?.[k]).length;
 // Efectos que duran N turnos del propio héroe (se descuentan al empezar su turno).
 const TEMPORALES = ['petrificado', 'brazosPiedra', 'aturdidoRuido', 'furiaB', 'agotadoFuria', 'grito', 'provoca', 'pechoDescubierto', 'agotado', 'recarga', 'marcado', 'bestia', 'mareo', 'ayuno'];
 // «Durante N turnos tuyos»: se pone N+1 porque el turno en curso también se descuenta al empezar el siguiente.
@@ -64,6 +64,18 @@ export const dadosMovimiento = (h) => (h.armaduras.includes('placas') || h.efect
 export const armaDe = (h) => D.ARMAS[h?.arma] || {};
 const llevaArmadura = (h, prop) => (h?.armaduras || []).some((a) => D.ARMADURAS[a]?.[prop]);
 export const menteHeroe = (h) => (h.mente || 0) + (armaDe(h).mente || 0) + (h.subclase ? modSub(h, 'mente') : 0);
+// Puntos de mente que le quedan (se gastan con el miedo, la magia oscura y los libros prohibidos; se recuperan en el campamento).
+export const menteAhora = (h) => Math.max(0, Math.min(h.menteActual ?? menteHeroe(h), menteHeroe(h)));
+export function perderMente(estado, h, n, motivo = '') {
+  if (n <= 0 || !estado.heroes[h.id]) return;
+  const antes = menteAhora(h);
+  h.menteActual = Math.max(0, antes - n);
+  log(estado, h.nombre + ' pierde ' + (antes - h.menteActual) + ' de mente' + (motivo ? ' (' + motivo + ')' : '') + ': le quedan ' + h.menteActual + '.', 'peligro');
+  if (h.menteActual === 0 && !h.efectos.aterrorizado) {
+    h.efectos.aterrorizado = true;
+    avisar(estado, '¡' + h.nombre + ' se queda sin mente y está aterrorizado! −1 de ataque y de defensa, y sin habilidades hasta el campamento.', 'peligro');
+  }
+}
 const sinCuras = (h) => !!armaDe(h).sinCuras;
 const POCIONES_GLOTON = 2;
 const pocionesEncima = (h) => Object.entries(h.objetos || {}).filter(([k]) => D.POCIONES[k]).reduce((n, [, v]) => n + v, 0);
@@ -217,6 +229,7 @@ export function iniciarMision(estado, def) {
     const base = D.HEROES[t];
     if (h.efectos?.oso) h.cuerpoMax -= 3;
     bonoEspecialidad(h);
+    h.menteActual = menteHeroe(h); // la mente se recupera en el campamento
     h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0; delete h.hallazgos;
     h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
@@ -533,20 +546,28 @@ function siguienteEnLinea(estado, h, m) {
 }
 
 // Ataque de monstruo a héroe.
-export function golpearHeroe(estado, m, h, dados, etiqueta) {
+// opciones.mental: se defiende con la mente (sin armadura); opciones.aMente: el daño se lo lleva la mente.
+export function golpearHeroe(estado, m, h, dados, etiqueta, opciones = {}) {
+  if (m.tipo === 'fantasma' && estado.heroes[h.id]) opciones = { mental: true, aMente: true }; // los fantasmas atraviesan la armadura y hielan la mente
   if (m.efectos?.tambor) { dados += 1; delete m.efectos.tambor; }
   if (estado.monstruos.some((o) => o.tipo === 'ojo' && o.vivo && !o.aliado && !o.efectos.poseido && o !== m && T.lineaVision(estado, o.x, o.y, m.x, m.y))) dados += 1;
   const ataque = tirarCombate(dados);
   const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0) + (h.efectos.bendicion ? 1 : 0) - penalDefensa(h);
   delete h.efectos.calderoDef; delete h.efectos.sordo;
   const base = h.efectos?.trance ? Math.floor(defensaHeroe(h) / 2) : defensaHeroe(h);
-  const defensa = tirarCombate(h.efectos?.furia || h.efectos?.furiaB ? 0 : Math.max(0, base + extra));
+  const defensa = tirarCombate(opciones.mental && estado.heroes[h.id] ? menteAhora(h) : h.efectos?.furia || h.efectos?.furiaB ? 0 : Math.max(0, base + extra));
+  if (opciones.mental) etiqueta = (etiqueta ? etiqueta + ' · ' : '') + 'se resiste con la mente';
   let dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   if (dano && h.efectos?.escudoTotal) { avisar(estado, 'El escudo de piedra para el golpe a ' + h.nombre + '.', 'bueno'); dano = 0; }
   if (dano && h.efectos?.escudoPiedra) { delete h.efectos.escudoPiedra; avisar(estado, 'El escudo de piedra para el golpe y se hace pedazos.', 'bueno'); dano = 0; }
-  if (dano && m.tipo === 'bruja' && estado.heroes[h.id] && !h.efectos.veneno) { h.efectos.veneno = true; avisar(estado, h.nombre + ' está envenenado: perderá 1 de cuerpo cada turno hasta curarse.', 'peligro'); }
+  if (dano && m.tipo === 'bruja' && estado.heroes[h.id] && !h.efectos.veneno) {
+    // La mente fuerte aguanta el veneno: con algún escudo en la tirada de mente, no le afecta.
+    if (cuenta(tirarCombate(menteAhora(h)), 'escudo')) avisar(estado, h.nombre + ' resiste el veneno con la mente.', 'bueno');
+    else { h.efectos.veneno = true; avisar(estado, h.nombre + ' está envenenado: perderá 1 de cuerpo cada turno hasta curarse.', 'peligro'); }
+  }
   ev(estado, { tipo: 'dados', atacante: m.id, defensor: h.id, ataque, defensa, dano, defiende: 'heroe', etiqueta });
   log(estado, m.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + h.nombre + ': ' + dano + ' de daño.', dano ? 'peligro' : '');
+  if (opciones.aMente && estado.heroes[h.id] && menteAhora(h) > 0) { perderMente(estado, h, dano, m.nombre); return; }
   sumar(cronH(estado, h.id), 'danoRecibido', dano);
   danarHeroe(estado, h, dano);
 }
@@ -1151,7 +1172,7 @@ function mejorar(estado, h, mejora) {
   h.mejoras[mejora] = (h.mejoras[mejora] || 0) + 1;
   h.puntos--;
   if (mejora === 'cuerpo') { h.cuerpoMax++; h.cuerpo = h.cuerpoMax; }
-  if (mejora === 'mente') h.mente++;
+  if (mejora === 'mente') { h.mente++; h.menteActual = menteHeroe(h); }
   log(estado, h.nombre + ' mejora: ' + def.nombre + '.', 'bueno');
   return null;
 }
@@ -1205,6 +1226,7 @@ function habilidadesDe(estado, h, t, libre) {
   for (const hab of listaHabilidades(sc)) {
     const r = { id: hab.id, nombre: hab.nombre, icono: hab.icono, objetivo: hab.objetivo, ok: false, motivo: '', objetivos: [] };
     out.push(r);
+    if (h.efectos.aterrorizado) { r.motivo = 'Estás aterrorizado: sin mente no hay habilidades.'; continue; }
     if (!hab.sinLimite && (estado.habUsada || {})[h.id + ':' + hab.id]) { r.motivo = 'Ya la has usado en este piso.'; continue; }
     if (!hab.sinAccion && !libre) { r.motivo = 'Ya has hecho tu acción este turno.'; continue; }
     if (hab.coste && (h.fragmentos || 0) < hab.coste) { r.motivo = 'Necesitas ' + hab.coste + ' fragmentos de alma (tienes ' + (h.fragmentos || 0) + ').'; continue; }
@@ -1356,7 +1378,8 @@ function usarHabilidad(estado, h, id, objetivo) {
       break;
     }
     case 'alzar': {
-      // Alzar a un muerto nunca es seguro: un dado decide qué vuelve.
+      // Alzar a un muerto nunca es seguro: un dado decide qué vuelve. Y cada descenso a los libros oscuros cuesta 1 de mente.
+      perderMente(estado, h, 1, 'los libros oscuros');
       if (T.figuraEn(estado, m.x, m.y)) { avisar(estado, 'No hay sitio para alzar a ese muerto.', 'peligro'); h.fragmentos += hab.coste; return null; }
       m.alzado = true;
       const dado = d6();
@@ -1379,6 +1402,7 @@ function usarHabilidad(estado, h, id, objetivo) {
       const o = estado.heroes[objetivo];
       const sitio = T.DIRS8.map(([dx, dy]) => [h.x + dx, h.y + dy]).find(([x, y]) => T.dentro(x, y) && !T.esRoca(estado, x, y) && !T.muebleEn(estado, x, y) && !T.figuraEn(estado, x, y) && T.region(x, y) === T.region(h.x, h.y));
       if (!sitio) { avisar(estado, 'No hay sitio junto al nigromante.', 'peligro'); h.fragmentos += hab.coste; delete estado.habUsada[h.id + ':tumba']; return null; }
+      perderMente(estado, h, 1, 'los libros oscuros');
       o.vivo = true; o.x = sitio[0]; o.y = sitio[1];
       o.calizPerdido = (o.calizPerdido || 0) + 1; o.cuerpoMax = Math.max(1, o.cuerpoMax - 1);
       o.cuerpo = Math.max(1, Math.ceil(o.cuerpoMax / 2));
@@ -1389,7 +1413,7 @@ function usarHabilidad(estado, h, id, objetivo) {
     }
     case 'posesion': {
       if ((m.mente || 0) >= 3) {
-        const a = d6() + menteHeroe(h), b = d6() + m.mente;
+        const a = d6() + menteAhora(h), b = d6() + m.mente;
         ev(estado, { tipo: 'duelo', heroe: h.id, monstruo: m.id, a, b });
         if (a <= b) {
           h.efectos.dominado = m.id;
