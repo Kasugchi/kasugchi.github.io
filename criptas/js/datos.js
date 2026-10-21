@@ -221,7 +221,7 @@ export const SUBCLASES = {
       hab: { id: 'alzar', nombre: 'Alzar muerto', icono: 'esqueleto', objetivo: 'cadaver', coste: 2, sinLimite: true,
         desc: '2 fragmentos: un enemigo muerto en tu sala se levanta como esqueleto aliado 3 turnos.' },
       extra: [
-        { id: 'cosecha', nombre: 'Cosecha', icono: 'curar', objetivo: 'ninguno', coste: 1, sinLimite: true, sinAccion: true, desc: '1 fragmento: recuperas 1 de cuerpo, sin gastar acción.' },
+        { id: 'cosecha', nombre: 'Cosecha', icono: 'curar', objetivo: 'ninguno', coste: 2, sinLimite: true, sinAccion: true, desc: '2 fragmentos: recuperas 1 de cuerpo, sin gastar acción.' },
         { id: 'tumba', nombre: 'Volver de la tumba', icono: 'calavera', objetivo: 'caido', coste: 5, desc: '5 fragmentos, una vez por piso: revive a un héroe caído con la mitad de su cuerpo (−1 de cuerpo máximo el resto del piso).' }
       ] },
     sacerdote: { nombre: 'Sacerdote', papel: 'Apoyo', mods: {}, sinArmas: true, luz: true,

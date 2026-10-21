@@ -1254,7 +1254,7 @@ function usarHabilidad(estado, h, id, objetivo) {
       break;
     case 'cosecha':
       h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + 1);
-      avisar(estado, h.nombre + ' consume un fragmento de alma (+1 de cuerpo).', 'bueno');
+      avisar(estado, h.nombre + ' consume dos fragmentos de alma (+1 de cuerpo).', 'bueno');
       break;
     case 'alzar': {
       m.alzado = true;
