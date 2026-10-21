@@ -217,7 +217,7 @@ export const SUBCLASES = {
       hab: { id: 'posesion', nombre: 'Posesión', icono: 'mente', objetivo: 'monstruo',
         desc: 'Mete su alma en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten con un duelo de mentes, y si pierdes, él te controla a ti. Si golpean tu cuerpo, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' } },
     nigromante: { nombre: 'Nigromante', papel: 'Muertos', mods: {}, almas: true,
-      bueno: 'Recoge fragmentos de alma de los enemigos que mueren en su misma sala (máx. 6).', malo: 'Si cae a 1 de cuerpo, sus esqueletos se vuelven contra él; revivir atrae a un monstruo errante; los fragmentos se pierden al acabar el piso.',
+      bueno: 'Recoge fragmentos de alma de los enemigos que mueren en su misma sala (máx. 6). Cambia sus 9 hechizos por 4 oscuros.', malo: 'Si cae a 1 de cuerpo, sus esqueletos se vuelven contra él; revivir atrae a un monstruo errante; los fragmentos se pierden al acabar el piso.',
       hab: { id: 'alzar', nombre: 'Alzar muerto', icono: 'esqueleto', objetivo: 'cadaver', coste: 2, sinLimite: true,
         desc: '2 fragmentos y un dado: 1, se levanta un esqueleto rebelde contra vosotros; 2, el alma se escapa; 3-4, esqueleto aliado 3 turnos; 5, esqueleto resistente 4 turnos; 6, vuelve el propio monstruo (al menos 3 de cuerpo) a vuestro servicio 4 turnos.' },
       extra: [
@@ -232,6 +232,8 @@ export const SUBCLASES = {
 };
 // Hechizos de luz del sacerdote (sustituyen a los elementales al especializarse).
 export const HECHIZOS_LUZ = ['purgatorio', 'purgatorio', 'luzSanadora', 'luzSanadora', 'bendicion'];
+// Hechizos oscuros del nigromante (sustituyen a los nueve elementales al especializarse).
+export const HECHIZOS_OSCUROS = ['toqueTumba', 'drenar', 'terror', 'pacto'];
 // Altares de la Mazmorra Infinita: cada uno de un dios con su carácter.
 export const DIOSES = {
   guerra:   { nombre: 'Dios de la guerra', desc: 'Pide sangre: 2 de cuerpo a cambio de +1 dado de ataque o de defensa el resto del piso.' },
@@ -319,7 +321,8 @@ export const ELEMENTOS = {
   aire:  { nombre: 'Aire',  icono: 'aire',  color: '#8fb3c9' },
   agua:  { nombre: 'Agua',  icono: 'agua',  color: '#3f86c9' },
   tierra:{ nombre: 'Tierra',icono: 'tierra',color: '#7a8f3a' },
-  luz:   { nombre: 'Luz',   icono: 'curar', color: '#e8c25a' }
+  luz:   { nombre: 'Luz',   icono: 'curar', color: '#e8c25a' },
+  oscuro: { nombre: 'Oscuridad', icono: 'calavera', color: '#7a4ab0' }
 };
 export const HECHIZOS = {
   bolaFuego:  { elemento: 'fuego',  nombre: 'Bola de fuego',  objetivo: 'monstruo', desc: '2 de daño. El monstruo tira 2 dados para salvarse.' },
@@ -336,7 +339,11 @@ export const HECHIZOS = {
   balsamo:    { elemento: 'tierra', nombre: 'Bálsamo de tierra', objetivo: 'heroe', desc: 'Recupera 4 de cuerpo.' },
   purgatorio: { elemento: 'luz', nombre: 'Purgatorio', objetivo: 'monstruo', desc: 'Un dado por cada enemigo a la vista: a los no muertos, una calavera quita 2; a los vivos, 1.' },
   luzSanadora:{ elemento: 'luz', nombre: 'Luz sanadora', objetivo: 'heroe', desc: 'Recupera 4 de cuerpo.' },
-  bendicion:  { elemento: 'luz', nombre: 'Bendición', objetivo: 'heroe', desc: '+1 dado de defensa hasta su próximo turno.' }
+  bendicion:  { elemento: 'luz', nombre: 'Bendición', objetivo: 'heroe', desc: '+1 dado de defensa hasta su próximo turno.' },
+  toqueTumba: { elemento: 'oscuro', nombre: 'Toque de la tumba', objetivo: 'monstruo', desc: 'Un ataque de 4 dados; si lo mata, su alma es tuya (+1 fragmento).' },
+  drenar:     { elemento: 'oscuro', nombre: 'Drenar vida', objetivo: 'monstruo', desc: 'Un ataque de 2 dados: recuperas tanto cuerpo como daño haga.' },
+  terror:     { elemento: 'oscuro', nombre: 'Mirada del abismo', objetivo: 'monstruo', desc: 'El monstruo tira su mente: si no saca ningún escudo negro, huye de miedo y pierde sus 2 próximos turnos. No afecta a jefes ni a no muertos.' },
+  pacto:      { elemento: 'oscuro', nombre: 'Pacto de sangre', objetivo: 'propio', desc: 'Pierdes 2 de cuerpo (nunca por debajo de 1) y ganas 3 fragmentos de alma.' }
 };
 export const HECHIZOS_POR_ELEMENTO = {
   fuego: ['bolaFuego', 'llamarada', 'coraje'],

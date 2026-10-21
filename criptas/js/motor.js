@@ -231,7 +231,7 @@ export function iniciarMision(estado, def) {
     bonoEspecialidad(h);
     h.menteActual = menteHeroe(h); // la mente se recupera en el campamento
     h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0; delete h.hallazgos;
-    h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
+    h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : subclaseDe(h)?.almas ? D.HECHIZOS_OSCUROS.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
     if (estado.aleatorio && armaDe(h).avaro && h.oro > 0) { const come = Math.ceil(h.oro / 10); h.oro -= come; log(estado, 'La Espada del avaro se come ' + come + ' monedas de la bolsa de ' + h.nombre + '.', 'peligro'); }
     if (llevaArmadura(h, 'capa')) h.efectos.capa = 2;
@@ -752,6 +752,7 @@ export function objetivosHechizo(estado, h, id) {
   if (hz.objetivo === 'monstruo') {
     return estado.monstruos.filter((m) => m.vivo && m.visto && !m.aliado && T.lineaVision(estado, h.x, h.y, m.x, m.y, true)).map((m) => m.id);
   }
+  if (hz.objetivo === 'propio') return id === 'pacto' && h.cuerpo <= 1 ? [] : [h.id];
   return Object.values(estado.heroes).filter((o) => o.vivo && !o.fuera && (o === h || T.lineaVision(estado, h.x, h.y, o.x, o.y, true))).map((o) => o.id);
 }
 
@@ -1212,6 +1213,7 @@ function elegirSubclase(estado, h, id) {
   const bolsa = inventarioDe(h);
   if (sc.arma && D.ARMAS[sc.arma] && h.arma !== sc.arma) { meter(bolsa, h.arma); h.arma = sc.arma; }
   if (sc.luz) h.hechizos = D.HECHIZOS_LUZ.slice();
+  if (sc.almas) h.hechizos = D.HECHIZOS_OSCUROS.slice();
   bonoEspecialidad(h);
   log(estado, h.nombre + ' se especializa: ' + sc.nombre + '.', 'bueno');
   return null;
@@ -2482,6 +2484,29 @@ function lanzar(estado, h, id, objetivo) {
       break;
     case 'pielRoca': o.efectos.piel = true; break;
     case 'raices': m.efectos.raices = 2 + (subclaseDe(h)?.raicesLargas ? 1 : 0); break;
+    // ---- Hechizos oscuros del nigromante ----
+    case 'toqueTumba':
+      golpearMonstruo(estado, h, m, 4, hz.nombre);
+      if (!m.vivo && subclaseDe(h)?.almas) { h.fragmentos = Math.min(6, (h.fragmentos || 0) + 1); log(estado, h.nombre + ' arranca el alma de ' + m.nombre + ' (+1 fragmento).', 'magia'); }
+      break;
+    case 'drenar': {
+      const c0 = m.cuerpo;
+      golpearMonstruo(estado, h, m, 2, hz.nombre);
+      const robado = Math.max(0, c0 - Math.max(0, m.cuerpo));
+      if (robado && !sinCuras(h)) { h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + robado); avisar(estado, h.nombre + ' bebe la vida de ' + m.nombre + ': +' + robado + ' de cuerpo.', 'magia'); }
+      break;
+    }
+    case 'terror':
+      if (m.jefe || m.nomuerto) avisar(estado, m.nombre + ' no conoce el miedo.', '');
+      else if (tirarCombate(m.mente).includes('escudoNegro')) avisar(estado, m.nombre + ' sostiene la mirada del abismo y no se inmuta.', '');
+      else { m.efectos.aturdido = true; m.efectos.miedo = 1; avisar(estado, m.nombre + ' mira al abismo y huye de terror: pierde sus 2 próximos turnos.', 'magia'); }
+      break;
+    case 'pacto': {
+      const antes = h.cuerpo; h.cuerpo = Math.max(1, h.cuerpo - 2);
+      h.fragmentos = Math.min(6, (h.fragmentos || 0) + 3);
+      avisar(estado, h.nombre + ' firma con su sangre (−' + (antes - h.cuerpo) + ' de cuerpo) y la oscuridad le paga: ' + h.fragmentos + '/6 fragmentos.', 'magia');
+      break;
+    }
   }
 }
 

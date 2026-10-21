@@ -1322,7 +1322,7 @@ async function elegirHechizo(h, d) {
   $('#modal-cuerpo').querySelectorAll('[data-hz]').forEach((b) => b.addEventListener('click', () => {
     $('#modal').hidden = true;
     const hz = d.hechizos.find((x) => x.id === b.dataset.hz);
-    if (D.HECHIZOS[hz.id].objetivo === 'heroe' && hz.objetivos.length === 1) return enviar({ heroe: h.id, tipo: 'hechizo', hechizo: hz.id, objetivo: hz.objetivos[0] });
+    if (D.HECHIZOS[hz.id].objetivo !== 'monstruo' && hz.objetivos.length === 1) return enviar({ heroe: h.id, tipo: 'hechizo', hechizo: hz.id, objetivo: hz.objetivos[0] });
     app.seleccion = { tipo: 'hechizo', hechizo: hz.id, objetivos: hz.objetivos };
     pintarAcciones();
   }));

@@ -121,7 +121,7 @@ export function turnoMonstruo(estado, m, ctx) {
   if (m.neutral) return; // el mercader no pelea… mientras nadie le moleste
   const ef = m.efectos;
   if (ef.dormido) return;
-  if (ef.aturdido) { delete ef.aturdido; ctx.avisar(estado, m.nombre + ' sigue aturdido y pierde el turno.'); return; }
+  if (ef.aturdido) { delete ef.aturdido; if (ef.miedo) { delete ef.miedo; ef.aturdido = true; } ctx.avisar(estado, m.nombre + ' sigue aturdido y pierde el turno.'); return; }
   const inmovil = ef.raices > 0;
   if (inmovil) ef.raices--;
 
