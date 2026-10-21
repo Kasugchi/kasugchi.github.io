@@ -8,10 +8,11 @@
 //  El motor le pasa "ctx" con las funciones de combate.
 // =============================================================
 import * as T from './tablero.js';
+import * as D from './datos.js';
 const { clave } = T;
 
 const objetivosDe = (estado) => {
-  const lista = Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla && !h.efectos.sombras);
+  const lista = Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && !h.efectos.niebla && !h.efectos.sombras && !h.efectos.capa);
   if (estado.cargador?.vivo) lista.push(estado.cargador); // el cargador también es una presa
   // Los aliados del grupo (muertos alzados, invocaciones) también son presas.
   for (const m of estado.monstruos) if (m.vivo && m.aliado) lista.push(m);
@@ -24,7 +25,9 @@ const protegido = (estado, h) => {
   return s.region !== '.' ? h.region === s.region || (T.region(h.x, h.y) === s.region) : Math.max(Math.abs(h.x - s.x), Math.abs(h.y - s.y)) <= 1;
 };
 // Quien llama la atención (farol encendido o grito de guerra) es el primer objetivo.
-const llamativo = (estado, lista) => lista.find((h) => h.id === estado.farol || h.efectos?.provoca);
+// Y a los no muertos les atrae quien lleva el Arco de hueso.
+const llamativo = (estado, lista, m) => lista.find((h) => h.id === estado.farol || h.efectos?.provoca)
+  || (m?.nomuerto ? lista.find((h) => D.ARMAS[h.arma]?.cebo === 'nomuertos') : undefined);
 const masDebil = (lista) => lista.slice().sort((a, b) => a.cuerpo - b.cuerpo)[0];
 
 // Busca el camino más corto hasta una casilla pegada a algún héroe.
@@ -59,7 +62,7 @@ function moverPor(estado, m, ruta, pasos, ctx) {
 function atacarSiPuede(estado, m, ctx) {
   const pegados = objetivosDe(estado).filter((h) => T.puedeTocar(estado, m, h) && !protegido(estado, h));
   if (!pegados.length) return false;
-  const v = llamativo(estado, pegados) || masDebil(pegados);
+  const v = llamativo(estado, pegados, m) || masDebil(pegados);
   if (v.aliado) ctx.golpeEntreMonstruos(estado, m, v);
   else ctx.golpearHeroe(estado, m, v, m.ataque);
   return true;
@@ -136,7 +139,7 @@ export function turnoMonstruo(estado, m, ctx) {
   if (inmovil) return;
   const soloSala = m.ia === 'guardian' || m.ia === 'lanzador';
   // Farol de los Ahogados o grito de guerra: si lo ve, va a por él.
-  const farol = llamativo(estado, objetivos);
+  const farol = llamativo(estado, objetivos, m);
   const haciaFarol = farol && T.lineaVision(estado, m.x, m.y, farol.x, farol.y) && caminoHaciaHeroe(estado, m, [farol], soloSala);
   const ruta = haciaFarol || caminoHaciaHeroe(estado, m, objetivos, soloSala);
   if (!ruta) return;

@@ -121,20 +121,40 @@ export const ARMAS = {
   // pesada: hay que plantarla para disparar, así que no se puede mover y atacar en el mismo turno.
   ballestaPesada: { nombre: 'Ballesta pesada', ataque: 4, precio: 600, icono: 'ballesta', distancia: true, dosManos: true, pesada: true },
   // minPiso: solo en la Mazmorra Infinita, a partir de ese piso.
-  espadaRunica: { nombre: 'Espada rúnica', ataque: 5, precio: 1100, icono: 'espada', diagonal: true, minPiso: 5 }
+  espadaRunica: { nombre: 'Espada rúnica', ataque: 5, precio: 1100, icono: 'espada', diagonal: true, minPiso: 5 },
+  // ---- Solo las vende el mercader errante (Mazmorra Infinita). Cada una con su ventaja y su pega. ----
+  hachaSedienta: { nombre: 'Hacha sedienta', ataque: 5, precio: 1200, icono: 'hacha', dosManos: true, mercader: true, sed: true,
+    bueno: 'Cada monstruo que matas te cura 1 de cuerpo.', malo: 'Si acabas el turno con monstruos a la vista sin haber atacado, pierdes 1 de cuerpo (nunca por debajo de 1).' },
+  espadaAvaro: { nombre: 'Espada del avaro', ataque: 4, precio: 900, icono: 'espada', mercader: true, avaro: true,
+    bueno: 'Cada monstruo que matas te da 15 monedas.', malo: 'Al entrar en cada piso se come el 10 % de tu bolsa.' },
+  dagaSusurrante: { nombre: 'Daga susurrante', ataque: 3, precio: 800, icono: 'espada', mercader: true, perfora: 1, mente: -1,
+    bueno: 'El enemigo defiende con un dado menos. El mago también la puede llevar.', malo: '−1 de mente: pierdes más fácil los duelos de mentes.' },
+  martilloTrueno: { nombre: 'Martillo del trueno', ataque: 4, precio: 1000, icono: 'hacha', dosManos: true, mercader: true, empuja: true, ruido: true,
+    bueno: 'Si el enemigo sobrevive, el golpe lo empuja una casilla hacia atrás.', malo: 'Cada golpe tiene 1 entre 6 de atraer a un monstruo errante.' },
+  arcoHueso: { nombre: 'Arco de hueso', ataque: 3, precio: 900, icono: 'ballesta', distancia: true, dosManos: true, mercader: true, atraviesa: true, cebo: 'nomuertos',
+    bueno: 'Dispara a distancia y la flecha sigue hasta el siguiente enemigo en línea recta.', malo: 'Los no muertos van a por ti antes que a por nadie.' },
+  lanzaMartir: { nombre: 'Lanza del mártir', ataque: 4, precio: 1000, icono: 'lanza', diagonal: true, alcance: 2, mercader: true, sinCuras: true,
+    bueno: 'Alcanza a 2 casillas en línea recta, y también en diagonal.', malo: 'Nadie te puede curar en la mazmorra: ni hechizos, ni altares, ni compañeros. Solo pociones.' },
+  hojaReyCaido: { nombre: 'Hoja del rey caído', ataque: 6, precio: 1600, icono: 'espadaAltar', dosManos: true, mercader: true, maldita: true, cuerpoMax: -2,
+    bueno: 'La más fuerte del juego.', malo: 'Maldita: −2 de cuerpo máximo mientras la llevas, y no te la puedes quitar hasta purificarla (Diosa de la suerte o un sacerdote).' }
 };
 export const ARMADURAS = {
   casco:   { nombre: 'Casco',           defensa: 1, precio: 125, icono: 'casco' },
   escudo:  { nombre: 'Escudo',          defensa: 1, precio: 150, icono: 'rodela', manos: true },
   cota:    { nombre: 'Cota de malla',   defensa: 1, precio: 450, icono: 'armadura' },
   placas:  { nombre: 'Armadura de placas', defensa: 2, precio: 850, icono: 'armadura', lenta: true },
-  cotaElfica: { nombre: 'Cota élfica',    defensa: 2, precio: 1200, icono: 'armadura', minPiso: 4 }
+  cotaElfica: { nombre: 'Cota élfica',    defensa: 2, precio: 1200, icono: 'armadura', minPiso: 4 },
+  // Solo las vende el mercader. «ligera»: también el mago puede llevarla.
+  capaSombras: { nombre: 'Capa de sombras', defensa: -1, precio: 700, icono: 'fantasma', mercader: true, ligera: true, capa: true,
+    bueno: 'Empiezas cada piso invisible durante la primera ronda.', malo: '−1 dado de defensa.' },
+  amuletoGloton: { nombre: 'Amuleto del glotón', defensa: 0, precio: 600, icono: 'pocion', mercader: true, ligera: true, gloton: true,
+    bueno: 'Las pociones curativas curan el doble.', malo: 'Solo puedes llevar 2 pociones encima.' }
 };
 export const OBJETOS_TIENDA = {
   kit:         { nombre: 'Herramientas', precio: 250, icono: 'llave', desc: 'Permite desarmar trampas.' },
   pocionCurar: { nombre: 'Poción curativa', precio: 150, icono: 'pocion', desc: 'Recupera hasta 6 de cuerpo.' }
 };
-export const MAGO_ARMAS = ['daga', 'baston'];
+export const MAGO_ARMAS = ['daga', 'baston', 'dagaSusurrante'];
 
 // ---------- Mazmorra Infinita: niveles y habilidades ----------
 // Experiencia total para llegar a cada nivel: 10, 25, 45, 70, 100…

@@ -1212,13 +1212,13 @@ async function accionBoton(acc, h, d) {
       const dios = D.DIOSES[d.altar.dios];
       app.cerrarModalFuera = () => {};
       const ops = { guerra: [['ataque', '+1 dado de ataque (−2 cuerpo)'], ['defensa', '+1 dado de defensa (−2 cuerpo)']],
-        suerte: [['ruleta', 'Tentar a la suerte']], avaricia: [['poco', 'Ofrecer 50 monedas'], ['bastante', 'Ofrecer 150 monedas'], ['mucho', 'Ofrecer 350 monedas']] }[d.altar.dios];
+        suerte: [['ruleta', 'Tentar a la suerte'], ...(M.malditaPuesta(h) ? [['purificar', 'Purificar el arma maldita (200 monedas)']] : [])], avaricia: [['poco', 'Ofrecer 50 monedas'], ['bastante', 'Ofrecer 150 monedas'], ['mucho', 'Ofrecer 350 monedas']] }[d.altar.dios];
       const i = await modal(`<h2>${esc(dios.nombre)}</h2><p>${esc(dios.desc)}</p><p class="nota">Rezar gasta tu acción. Cada altar responde una sola vez.</p>`, [{ texto: 'Irse', clase: 'claro' }, ...ops.map(([, t]) => ({ texto: t }))]);
       return i > 0 ? enviar({ ...base, tipo: 'rezar', opcion: ops[i - 1][0] }) : null;
     }
     case 'mercader': {
       const nombreIt = (it) => D.MERCANCIA[it]?.nombre || D.ARMAS[it]?.nombre || D.ARMADURAS[it]?.nombre || D.POCIONES[it]?.nombre || it;
-      const descIt = (it) => D.MERCANCIA[it]?.desc || D.POCIONES[it]?.desc || (D.ARMAS[it] ? D.ARMAS[it].ataque + ' dados de ataque' : D.ARMADURAS[it] ? '+' + D.ARMADURAS[it].defensa + ' de defensa' : '');
+      const descIt = (it) => ((D.ARMAS[it] || D.ARMADURAS[it])?.mercader ? '★ Solo la vende él. ' + ((D.ARMAS[it]?.ataque ? D.ARMAS[it].ataque + ' dados de ataque. ' : '') + '✔ ' + (D.ARMAS[it] || D.ARMADURAS[it]).bueno + ' ✘ ' + (D.ARMAS[it] || D.ARMADURAS[it]).malo) : '') || D.MERCANCIA[it]?.desc || D.POCIONES[it]?.desc || (D.ARMAS[it] ? D.ARMAS[it].ataque + ' dados de ataque' : D.ARMADURAS[it] ? '+' + D.ARMADURAS[it].defensa + ' de defensa' : '');
       const items = d.mercader.items;
       app.cerrarModalFuera = () => {};
       const lista = items.map((it) => `<li><b>${esc(nombreIt(it))}</b> — ${M.precioMercader(app.estado, it)} monedas <span class="nota">${esc(descIt(it))}</span></li>`).join('');
@@ -1407,7 +1407,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', guerraAtq: '+1 ataque (Dios de la guerra)', guerraDef: '+1 defensa (Dios de la guerra)', malaSuerte: 'Mala suerte: −1 defensa', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado en el próximo ataque', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', capa: 'Invisible bajo la capa de sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', guerraAtq: '+1 ataque (Dios de la guerra)', guerraDef: '+1 defensa (Dios de la guerra)', malaSuerte: 'Mala suerte: −1 defensa', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
@@ -1866,7 +1866,7 @@ function pintarArmeria() {
   M.inventarioDe(h);
   const mio = M.puedeControlar(e, miId, h.id);
   const off = mio ? '' : 'disabled';
-  const descDe = (def) => def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}${def.pesada ? '; no se puede mover y disparar en el mismo turno' : ''}`
+  const descDe = (def) => def.mercader ? `${def.ataque ? def.ataque + ' dados de ataque' + (def.dosManos ? ', a dos manos' : '') : (def.defensa ? (def.defensa > 0 ? '+' : '') + def.defensa + ' de defensa' : 'Objeto')}. ✔ ${def.bueno} ✘ ${def.malo}` : def.ataque ? `${def.ataque} dados de ataque${def.diagonal ? ', en diagonal' : ''}${def.distancia ? ', a distancia' : ''}${def.dosManos ? ', a dos manos' : ''}${def.pesada ? '; no se puede mover y disparar en el mismo turno' : ''}`
     : def.defensa ? `+${def.defensa} de defensa${def.lenta ? ', mueves con 1 dado' : ''}` : def.desc;
   const con = e.contrato;
   const monedas = `<div class="monedas-fila"><span class="monedas">${svg('oro')}${h.oro} <small>en la bolsa</small></span><span class="monedas banco">${svg('corona')}${h.banco || 0} <small>en el banco</small></span></div>`;
@@ -1884,7 +1884,7 @@ function pintarArmeria() {
   if (app.sub === 'equipo') {
     const inv = M.contenido(h.inventario);
     cuerpo = `<h3 class="sec">Lo que lleva</h3><div class="armeria-grid">
-      ${filaItem(h.arma, '', 'Arma · ' + descDe(D.ARMAS[h.arma]))}
+      ${filaItem(h.arma, M.malditaPuesta(h) ? `<button class="btn" data-purificar ${off} title="Hace falta un sacerdote en el grupo">Purificar</button>` : '', 'Arma · ' + descDe(D.ARMAS[h.arma]) + (M.malditaPuesta(h) ? ' · Un sacerdote del grupo la purifica gratis aquí; si no, la Diosa de la suerte por 200 monedas.' : h.purificada ? ' · Purificada: ya te la puedes quitar.' : ''))}
       ${h.armaduras.map((x) => filaItem(x, `<button class="btn claro" data-guardar="${x}" ${off}>Guardar</button>`, 'Armadura · ' + descDe(D.ARMADURAS[x]))).join('')}
       ${Object.entries(h.objetos).filter(([k, n]) => n > 0 && D.POCIONES[k]).map(([k, n]) => filaItem(k, `<button class="btn claro" data-guardar="${k}" ${off}>Guardar</button>`, D.POCIONES[k].nombre + ' ×' + n)).join('')}
     </div>
@@ -1907,8 +1907,8 @@ function pintarArmeria() {
         <span>${esc(tipoTxt + ' · ' + (motivo && motivo !== 'No tienes oro suficiente en la bolsa.' ? motivo : descDe(def) + (aInv ? ' · irá a tu inventario' : '')))}</span></div>`;
     };
     cuerpo = `<p class="nota">Se paga con el dinero de la bolsa.</p><div class="armeria-grid">
-      ${Object.entries(D.ARMAS).filter(([id, d]) => id !== 'daga' && (!d.minPiso || e.aleatorio)).map(([id, d]) => fila(id, d, 'Arma')).join('')}
-      ${Object.entries(D.ARMADURAS).filter(([, d]) => !d.minPiso || e.aleatorio).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
+      ${Object.entries(D.ARMAS).filter(([id, d]) => id !== 'daga' && !d.mercader && (!d.minPiso || e.aleatorio)).map(([id, d]) => fila(id, d, 'Arma')).join('')}
+      ${Object.entries(D.ARMADURAS).filter(([, d]) => !d.mercader && (!d.minPiso || e.aleatorio)).map(([id, d]) => fila(id, d, 'Armadura')).join('')}
       ${Object.entries(D.OBJETOS_TIENDA).map(([id, d]) => fila(id, d, 'Objeto')).join('')}
     </div>`;
   }
@@ -1955,6 +1955,7 @@ function pintarArmeria() {
   q('[data-mejora]', (b) => enviar({ tipo: 'mejorar', heroe: h.id, mejora: b.dataset.mejora }));
   q('[data-subclase]', (b) => enviar({ tipo: 'subclase', heroe: h.id, subclase: b.dataset.subclase }));
   q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
+  q('[data-purificar]', () => enviar({ tipo: 'purificar', heroe: h.id }));
   q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
   q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));
   q('[data-cargar]', (b) => enviar({ tipo: 'cargar', heroe: h.id, item: b.dataset.cargar }));

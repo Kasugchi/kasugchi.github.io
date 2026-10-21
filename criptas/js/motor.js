@@ -24,6 +24,21 @@ export const ataqueHeroe = (h) => D.ARMAS[h.arma].ataque + (h.mejoras?.ataque ||
 export const defensaHeroe = (h) => (h.id === 'cargador' ? D.CARGADOR.defensa
   : D.HEROES[h.tipo].defensa + (h.mejoras?.defensa || 0) + (h.efectos?.guerraDef ? 1 : 0) - (h.efectos?.malaSuerte ? 1 : 0) + (h.subclase ? modSub(h, 'defensa') : 0) + h.armaduras.reduce((s, a) => s + D.ARMADURAS[a].defensa, 0));
 export const dadosMovimiento = (h) => (h.armaduras.includes('placas') || h.efectos?.agotado || (h.subclase && modSub(h, 'movimiento')) ? 1 : 2);
+// Armas y objetos raros del mercader: ventajas y pegas que dependen de lo que lleva el héroe.
+export const armaDe = (h) => D.ARMAS[h?.arma] || {};
+const llevaArmadura = (h, prop) => (h?.armaduras || []).some((a) => D.ARMADURAS[a]?.[prop]);
+export const menteHeroe = (h) => (h.mente || 0) + (armaDe(h).mente || 0);
+const sinCuras = (h) => !!armaDe(h).sinCuras;
+const POCIONES_GLOTON = 2;
+const pocionesEncima = (h) => Object.entries(h.objetos || {}).filter(([k]) => D.POCIONES[k]).reduce((n, [, v]) => n + v, 0);
+const glotonLleno = (h) => llevaArmadura(h, 'gloton') && pocionesEncima(h) >= POCIONES_GLOTON;
+// Da una poción; con el Amuleto del glotón lleno, va al inventario.
+function darPocion(estado, h, k) {
+  if (glotonLleno(h)) { meter(inventarioDe(h), k); log(estado, h.nombre + ' no puede llevar más pociones (Amuleto del glotón): va a su inventario.'); return; }
+  h.objetos[k] = (h.objetos[k] || 0) + 1;
+}
+// Hoja maldita puesta y sin purificar.
+export const malditaPuesta = (h) => !!armaDe(h).maldita && !h.purificada;
 export const nombreDe = (estado, id) => {
   if (id === 'cargador') return 'Cargador';
   if (estado.heroes[id]) return estado.heroes[id].nombre;
@@ -168,6 +183,8 @@ export function iniciarMision(estado, def) {
     h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0;
     h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
+    if (estado.aleatorio && armaDe(h).avaro && h.oro > 0) { const come = Math.ceil(h.oro / 10); h.oro -= come; log(estado, 'La Espada del avaro se come ' + come + ' monedas de la bolsa de ' + h.nombre + '.', 'peligro'); }
+    if (llevaArmadura(h, 'capa')) h.efectos.capa = 2;
   }
   estado.mazo = barajar(D.CARTAS_TESORO.map((c) => ({ ...c })));
   estado.turno = null;
@@ -355,7 +372,7 @@ export function danarHeroe(estado, h, n, sinCadena = false) {
   if (h.cuerpo <= 0) {
     if (h.objetos.pocionCurar > 0) {
       h.objetos.pocionCurar--;
-      const cura = d6();
+      const cura = d6() * (llevaArmadura(h, 'gloton') ? 2 : 1);
       h.cuerpo = Math.min(h.cuerpoMax, cura);
       avisar(estado, h.nombre + ' bebe su poción curativa en el último aliento (+' + cura + ').', 'bueno');
       return;
@@ -390,6 +407,11 @@ export function danarMonstruo(estado, m, n) {
     if (m.jefe) cron(estado)?.jefes.push(m.nombre);
     const autor = cronH(estado, estado._autor);
     if (autor) { sumar(autor.muertes, m.tipo); if (m.jefe) sumar(autor, 'jefes'); }
+    const asesino = estado.heroes[estado._autor];
+    if (asesino?.vivo && !m.aliado) {
+      if (armaDe(asesino).sed && asesino.cuerpo < asesino.cuerpoMax) { asesino.cuerpo++; log(estado, 'El Hacha sedienta bebe: ' + asesino.nombre + ' recupera 1 de cuerpo.', 'bueno'); }
+      if (armaDe(asesino).avaro) { asesino.oro += 15; log(estado, 'La Espada del avaro tintinea: +15 monedas para ' + asesino.nombre + '.', 'tesoro'); }
+    }
     if (estado.aleatorio && estado.heroes[estado._autor]) ganarXP(estado, estado.heroes[estado._autor], 1 + m.cuerpoMax + (m.elite ? 3 : 0) + (m.jefe ? 6 : 0));
     if (m.efectos.poseido) liberarPosesion(estado, m, true);
     // Lo que llevaba (el mercader, un fantasma) pasa a quien lo mató.
@@ -416,12 +438,13 @@ export function danarMonstruo(estado, m, n) {
 }
 
 // Ataque de héroe a monstruo (arma o hechizo de ataque).
-function golpearMonstruo(estado, h, m, dados, etiqueta) {
+function golpearMonstruo(estado, h, m, dados, etiqueta, conArma = false) {
   if (m.neutral) enfadarMercader(estado, m, h.nombre + ' ataca al mercader.');
   if (estado.monstruos.some((o) => o.tipo === 'ojo' && o.vivo && o.efectos.poseido && T.lineaVision(estado, o.x, o.y, h.x, h.y))) dados += 1;
   const ataque = tirarCombate(dados);
   const dormido = !!m.efectos.dormido;
-  const defensa = tirarCombate(dormido ? 0 : m.defensa);
+  const arma = conArma ? armaDe(h) : {};
+  const defensa = tirarCombate(dormido ? 0 : Math.max(0, m.defensa - (arma.perfora || 0)));
   let dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
   if (m.ilusion && dano === 0 && cuenta(ataque, 'calavera')) dano = 1;
   if (h.efectos?.sombras) {
@@ -433,6 +456,29 @@ function golpearMonstruo(estado, h, m, dados, etiqueta) {
   log(estado, h.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + m.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
   sumar(cronH(estado, h.id), 'danoHecho', Math.min(dano, m.cuerpo));
   danarMonstruo(estado, m, dano);
+  if (arma.empuja && m.vivo && dano > 0) empujar(estado, h, m);
+  if (arma.ruido && d6() === 1) { avisar(estado, 'El trueno del martillo retumba por los pasillos… algo viene.', 'peligro'); aparecerErrante(estado, h); }
+}
+// Martillo del trueno: el monstruo sale despedido una casilla, si hay sitio detrás.
+function empujar(estado, h, m) {
+  const dx = Math.sign(m.x - h.x), dy = Math.sign(m.y - h.y);
+  const x = m.x + dx, y = m.y + dy;
+  if ((dx && dy) || !T.dentro(x, y) || T.figuraEn(estado, x, y) || T.muebleEn(estado, x, y) || T.esRoca(estado, x, y) || !T.puedeTocar(estado, m, { x, y })) return;
+  ev(estado, { tipo: 'mover', id: m.id, ruta: [[m.x, m.y], [x, y]] });
+  m.x = x; m.y = y; m.region = T.region(x, y);
+  log(estado, m.nombre + ' sale despedido hacia atrás.');
+}
+// Arco de hueso: la flecha sigue en línea recta hasta el siguiente enemigo.
+function siguienteEnLinea(estado, h, m) {
+  const dx = m.x - h.x, dy = m.y - h.y;
+  if (dx && dy) return null;
+  const sx = Math.sign(dx), sy = Math.sign(dy);
+  for (let x = m.x + sx, y = m.y + sy; T.dentro(x, y); x += sx, y += sy) {
+    if (!T.lineaVision(estado, m.x, m.y, x, y, true)) return null;
+    const o = estado.monstruos.find((k) => k.vivo && k.visto && !k.aliado && !k.neutral && k.x === x && k.y === y);
+    if (o) return o;
+  }
+  return null;
 }
 
 // Ataque de monstruo a héroe.
@@ -610,6 +656,10 @@ export function objetivosAtaque(estado, h) {
     if (!m.vivo || !m.visto || m.aliado) return false;
     if (arma.distancia) return !T.adyacentes(h, m) && T.lineaVision(estado, h.x, h.y, m.x, m.y, true);
     if (T.puedeTocar(estado, h, m)) return true;
+    if (arma.alcance === 2 && ((h.x === m.x && Math.abs(h.y - m.y) === 2) || (h.y === m.y && Math.abs(h.x - m.x) === 2))) {
+      const mx = (h.x + m.x) / 2, my = (h.y + m.y) / 2;
+      if (!T.figuraEn(estado, mx, my) && T.lineaVision(estado, h.x, h.y, m.x, m.y, true)) return true;
+    }
     return arma.diagonal && T.diagonales(h, m) && T.diagonalLibre(estado, h, m);
   }).map((m) => m.id);
 }
@@ -855,25 +905,34 @@ export function cargaDe(estado, id) {
 export function motivoNoEquipar(h, item) {
   const tipoH = D.HEROES[h.tipo];
   const arma = D.ARMAS[item], arm = D.ARMADURAS[item];
+  if (malditaPuesta(h) && arma) return D.ARMAS[h.arma].nombre + ' está maldita: no te la puedes quitar hasta purificarla.';
   if (arma) {
     if (h.arma === item) return 'Ya la llevas.';
     if (tipoH.sinArmadura && !D.MAGO_ARMAS.includes(item)) return 'Solo puede usar daga o bastón.';
     if (arma.dosManos && h.armaduras.includes('escudo')) return 'Va a dos manos: guarda antes el escudo.';
   } else if (arm) {
-    if (tipoH.sinArmadura) return 'La armadura estorba al lanzar hechizos.';
+    if (tipoH.sinArmadura && !arm.ligera) return 'La armadura estorba al lanzar hechizos.';
     if (h.armaduras.includes(item)) return 'Ya la llevas puesta.';
     if (item === 'escudo' && D.ARMAS[h.arma].dosManos) return 'Tu arma va a dos manos.';
   } else if (!D.POCIONES[item]) return 'No existe.';
+  else if (glotonLleno(h)) return 'Con el Amuleto del glotón solo llevas ' + POCIONES_GLOTON + ' pociones encima.';
   return null;
 }
 
 // Equipa un objeto; lo que se quita va a la bolsa indicada.
 function ponerEquipo(h, item, bolsa) {
-  if (D.ARMAS[item]) { meter(bolsa, h.arma); h.arma = item; }
+  if (D.ARMAS[item]) {
+    // Lo que el arma quita o da de cuerpo máximo cambia con ella.
+    const antes = D.ARMAS[h.arma].cuerpoMax || 0, despues = D.ARMAS[item].cuerpoMax || 0;
+    if (antes !== despues) { h.cuerpoMax = Math.max(1, h.cuerpoMax - antes + despues); h.cuerpo = Math.max(1, Math.min(h.cuerpo - antes + despues, h.cuerpoMax)); }
+    meter(bolsa, h.arma); h.arma = item; delete h.purificada;
+  }
   else if (D.ARMADURAS[item]) {
     const choca = item === 'placas' ? 'cota' : item === 'cota' ? 'placas' : null;
     if (choca && h.armaduras.includes(choca)) { h.armaduras = h.armaduras.filter((x) => x !== choca); meter(bolsa, choca); }
     h.armaduras.push(item);
+    // Al ponerse el Amuleto del glotón, las pociones de más van a la bolsa.
+    if (D.ARMADURAS[item].gloton) for (const k of Object.keys(h.objetos)) while (D.POCIONES[k] && h.objetos[k] > 0 && pocionesEncima(h) > POCIONES_GLOTON) { h.objetos[k]--; meter(bolsa, k); }
   } else h.objetos[item] = (h.objetos[item] || 0) + 1;
 }
 
@@ -1193,7 +1252,7 @@ function usarHabilidad(estado, h, id, objetivo) {
     }
     case 'posesion': {
       if ((m.mente || 0) >= 3) {
-        const a = d6() + h.mente, b = d6() + m.mente;
+        const a = d6() + menteHeroe(h), b = d6() + m.mente;
         ev(estado, { tipo: 'duelo', heroe: h.id, monstruo: m.id, a, b });
         if (a <= b) {
           h.efectos.dominado = m.id;
@@ -1633,7 +1692,7 @@ function poderPoseido(estado, h, m) {
 function usarPoderPoseido(estado, h, m, objetivo) {
   const id = D.MONSTRUOS[m.tipo].poder;
   switch (id) {
-    case 'curar': { const o = estado.heroes[objetivo]; o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 2); delete o.efectos.veneno; avisar(estado, m.nombre + ' (poseído) cura a ' + o.nombre + ' (+2).', 'bueno'); break; }
+    case 'curar': { const o = estado.heroes[objetivo]; if (!sinCuras(o)) o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 2); delete o.efectos.veneno; avisar(estado, m.nombre + ' (poseído) cura a ' + o.nombre + ' (+2).', 'bueno'); break; }
     case 'alzar': { const o = estado.monstruos.find((x) => x.id === objetivo); o.alzado = true; const a = invocarAliado(estado, 'esqueleto', o.x, o.y, h.id, 2); if (a) avisar(estado, m.nombre + ' (poseído) levanta un esqueleto que lucha por vosotros.', 'bueno'); break; }
     case 'senuelo': { const a = invocarAliado(estado, 'ilusionista', m.x, m.y, h.id, 2, { ilusion: true, ataque: 0, cuerpo: 1, cuerpoMax: 1 }); if (a) avisar(estado, 'Aparece un señuelo: los monstruos irán a por él.', 'bueno'); break; }
     case 'vision': {
@@ -1728,7 +1787,9 @@ function ponerExtrasInfinita(estado, def) {
     const s = salas[rnd(salas.length)], p = sitioLibre(def, s);
     if (p) {
       const todo = Object.keys(D.MERCANCIA);
-      const mercancia = [];
+      // Siempre trae una rareza que solo vende él, y dos cosas más.
+      const raras = [...Object.keys(D.ARMAS), ...Object.keys(D.ARMADURAS)].filter((k) => (D.ARMAS[k] || D.ARMADURAS[k]).mercader);
+      const mercancia = [raras[rnd(raras.length)]];
       while (mercancia.length < 3) { const it = todo[rnd(todo.length)]; if (!mercancia.includes(it)) mercancia.push(it); }
       const hostil = estado.ladron && rnd(2) === 0;
       def.monstruos.push({ id: 'mercader', tipo: 'mercader', x: p[0], y: p[1], ia: hostil ? 'agresivo' : 'neutral', noEscalar: true,
@@ -1754,7 +1815,7 @@ const nombreMercancia = (it) => D.MERCANCIA[it]?.nombre || D.ARMAS[it]?.nombre |
 export const precioMercader = (estado, it) => Math.round((D.MERCANCIA[it]?.precio || D.ARMAS[it]?.precio || D.ARMADURAS[it]?.precio || 100) * (estado.ladron ? 3 : 1));
 function entregarItem(estado, h, it) {
   const def = D.MERCANCIA[it];
-  if (D.POCIONES[it]) h.objetos[it] = (h.objetos[it] || 0) + 1;
+  if (D.POCIONES[it]) darPocion(estado, h, it);
   else if (it === 'pergamino') ganarXP(estado, h, 15);
   else if (it === 'pieza') {
     const r = estado.reliquias || {};
@@ -1803,6 +1864,13 @@ function rezar(estado, h, altar, opcion) {
     avisar(estado, h.nombre + ' ofrece su sangre al Dios de la guerra: +1 dado de ' + opcion + ' el resto del piso.', 'bueno');
     return null;
   }
+  if (dios === 'suerte' && opcion === 'purificar') {
+    if (!malditaPuesta(h)) return 'No llevas nada maldito.';
+    if (h.oro < 200) return 'La diosa pide 200 monedas por romper la maldición.';
+    altar.usado = true; h.oro -= 200; h.purificada = true;
+    avisar(estado, 'La Diosa de la suerte acepta 200 monedas y rompe la maldición de ' + D.ARMAS[h.arma].nombre + '. Ya puedes quitártela.', 'bueno');
+    return null;
+  }
   if (dios === 'suerte') {
     altar.usado = true;
     const dado = d6();
@@ -1810,8 +1878,8 @@ function rezar(estado, h, altar, opcion) {
       1: () => { h.efectos.malaSuerte = true; return 'Mala suerte: −1 dado de defensa el resto del piso.'; },
       2: () => { aparecerErrante(estado, h); return '¡La diosa se ríe y aparece un monstruo!'; },
       3: () => { const oro = 40 + (estado.misionIdx + 1) * 20; h.oro += oro; return '+' + oro + ' monedas.'; },
-      4: () => { h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; return 'Una poción curativa.'; },
-      5: () => { for (const o of Object.values(estado.heroes)) if (o.vivo) o.cuerpo = o.cuerpoMax; return '¡Todo el grupo se cura por completo!'; },
+      4: () => { darPocion(estado, h, 'pocionCurar'); return 'Una poción curativa.'; },
+      5: () => { for (const o of Object.values(estado.heroes)) if (o.vivo && !sinCuras(o)) o.cuerpo = o.cuerpoMax; return '¡Todo el grupo se cura por completo!'; },
       6: () => { entregarItem(estado, h, 'pieza'); return '¡Una pieza de reliquia!'; }
     };
     ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado });
@@ -1824,8 +1892,8 @@ function rezar(estado, h, altar, opcion) {
     if (h.oro < ofrenda) return 'No llevas tanto oro en la bolsa.';
     altar.usado = true;
     h.oro -= ofrenda;
-    if (ofrenda === 50) { h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; avisar(estado, 'El Dios de la avaricia acepta la ofrenda con desdén: una poción curativa.', 'bueno'); }
-    if (ofrenda === 150) { for (const o of Object.values(estado.heroes)) if (o.vivo) o.cuerpo = o.cuerpoMax; h.objetos.pocionFuerza = (h.objetos.pocionFuerza || 0) + 1; avisar(estado, 'El Dios de la avaricia sonríe: el grupo se cura y recibes una poción de fuerza.', 'bueno'); }
+    if (ofrenda === 50) { darPocion(estado, h, 'pocionCurar'); avisar(estado, 'El Dios de la avaricia acepta la ofrenda con desdén: una poción curativa.', 'bueno'); }
+    if (ofrenda === 150) { for (const o of Object.values(estado.heroes)) if (o.vivo && !sinCuras(o)) o.cuerpo = o.cuerpoMax; darPocion(estado, h, 'pocionFuerza'); avisar(estado, 'El Dios de la avaricia sonríe: el grupo se cura y recibes una poción de fuerza.', 'bueno'); }
     if (ofrenda === 350) { entregarItem(estado, h, 'pieza'); h.puntos = (h.puntos || 0) + 1; avisar(estado, '¡El Dios de la avaricia se deshace en oro! Una pieza de reliquia y un punto de mejora.', 'bueno'); }
     return null;
   }
@@ -2082,7 +2150,7 @@ function buscarTesoro(estado, h) {
     }
     let texto = fijo.texto;
     if (fijo.oro) h.oro += fijo.oro;
-    if (fijo.objeto) h.objetos[fijo.objeto] = (h.objetos[fijo.objeto] || 0) + 1;
+    if (fijo.objeto) darPocion(estado, h, fijo.objeto);
     if (fijo.arma) texto += ' ' + darArma(estado, h, fijo.arma);
     if (fijo.reliquia) texto += ' ' + ganarReliquia(estado, fijo.reliquia);
     ev(estado, { tipo: 'tesoro', heroe: h.id, texto, oro: fijo.oro || 0, objeto: fijo.objeto || fijo.arma || null, especial: !!(fijo.flag || fijo.reliquia) });
@@ -2098,7 +2166,7 @@ function buscarTesoro(estado, h) {
   log(estado, h.nombre + ' busca tesoro: ' + c.texto, c.peligro ? 'peligro' : 'tesoro');
   if (c.tipo === 'oro' || c.tipo === 'pocion') apuntarTesoro(estado, h, c.oro, c.objeto);
   if (c.tipo === 'oro') h.oro += c.oro * (estado.mision.maldicion === 'fiebreOro' ? 2 : 1);
-  else if (c.tipo === 'pocion') h.objetos[c.objeto] = (h.objetos[c.objeto] || 0) + 1;
+  else if (c.tipo === 'pocion') darPocion(estado, h, c.objeto);
   else if (c.tipo === 'flecha' || c.tipo === 'derrumbe') danarHeroe(estado, h, 1);
   else if (c.tipo === 'errante') aparecerErrante(estado, h);
 
@@ -2199,12 +2267,12 @@ function lanzar(estado, h, id, objetivo) {
       }
       break;
     }
-    case 'luzSanadora': o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 4); delete o.efectos.veneno; break;
+    case 'luzSanadora': if (sinCuras(o)) { avisar(estado, 'La Lanza del mártir rechaza la curación de ' + o.nombre + '.', ''); break; } o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 4); delete o.efectos.veneno; break;
     case 'bendicion': o.efectos.bendicion = true; break;
     case 'vendaval': m.efectos.aturdido = true; break;
     case 'vientoVeloz': o.efectos.veloz = true; break;
     case 'espiritu': golpearMonstruo(estado, h, m, 5, hz.nombre); break;
-    case 'sanar': case 'balsamo': o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 4); delete o.efectos.veneno; break;
+    case 'sanar': case 'balsamo': if (sinCuras(o)) { avisar(estado, 'La Lanza del mártir rechaza la curación de ' + o.nombre + '.', ''); break; } o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 4); delete o.efectos.veneno; break;
     case 'niebla': o.efectos.niebla = true; break;
     case 'sueno':
       if (m.nomuerto) avisar(estado, 'Los muertos no duermen: el hechizo no tiene efecto.');
@@ -2231,6 +2299,7 @@ function empezarTurno(estado, id) {
   delete h.efectos.provoca; delete h.efectos.bendicion;
   if (estado.santuario?.heroe === id) estado.santuario = null;
   if (h.efectos.agotado) { if (--h.efectos.agotado <= 0) delete h.efectos.agotado; else avisar(estado, h.nombre + ' está agotado tras el Doble tajo: 1 dado de movimiento y −1 de defensa este turno.', ''); }
+  if (h.efectos.capa && --h.efectos.capa <= 0) { delete h.efectos.capa; avisar(estado, 'La capa de sombras de ' + h.nombre + ' se desvanece: ya le ven.', ''); }
   if (h.efectos.sombras && --h.efectos.sombras <= 0) { delete h.efectos.sombras; avisar(estado, h.nombre + ' sale de las sombras.', ''); }
   if (h.efectos.oso && --h.efectos.oso <= 0) {
     delete h.efectos.oso; h.cuerpoMax -= 3; h.cuerpo = Math.max(1, Math.min(h.cuerpo, h.cuerpoMax));
@@ -2332,6 +2401,7 @@ function comprobarFin(estado) {
 export function puedeComprar(estado, h, item) {
   const def = D.ARMAS[item] || D.ARMADURAS[item] || D.OBJETOS_TIENDA[item];
   if (!def?.precio) return 'No existe.';
+  if (def.mercader) return 'Esto solo lo vende el mercader errante.';
   if (def.minPiso && !(estado.aleatorio && estado.misionIdx + 1 >= def.minPiso)) return 'Aún no está a la venta: baja hasta el piso ' + def.minPiso + '.';
   if (item === 'kit' && (h.kit || D.HEROES[h.tipo].desarmaSiempre)) return 'No lo necesitas.';
   if (!D.OBJETOS_TIENDA[item]) {
@@ -2349,7 +2419,7 @@ function comprar(estado, h, item) {
   h.oro -= def.precio;
   let destino = '';
   if (item === 'kit') h.kit = true;
-  else if (D.OBJETOS_TIENDA[item]) h.objetos[item] = (h.objetos[item] || 0) + 1;
+  else if (D.OBJETOS_TIENDA[item]) darPocion(estado, h, item);
   else if (!motivoNoEquipar(h, item)) ponerEquipo(h, item, inventarioDe(h));
   else { meter(inventarioDe(h), item); destino = ' (a su inventario)'; }
   ev(estado, { tipo: 'compra', heroe: h.id, item });
@@ -2486,6 +2556,14 @@ export function aplicar(estado, a, jugador, cargarMision) {
       case 'mejorar': return mejorar(estado, h, a.mejora);
       case 'subclase': return elegirSubclase(estado, h, a.subclase);
       case 'descansar': return votarDescanso(estado, jugador);
+      case 'purificar': {
+        if (!malditaPuesta(h)) return 'No llevas nada maldito.';
+        const cura = Object.values(estado.heroes).find((o) => !o.caido && subclaseDe(o)?.luz);
+        if (!cura) return 'Hace falta un sacerdote en el grupo (o un altar de la Diosa de la suerte).';
+        h.purificada = true;
+        avisar(estado, cura.nombre + ' reza sobre ' + D.ARMAS[h.arma].nombre + ': la maldición se rompe. Ya puede quitársela (los −2 de cuerpo siguen mientras la lleve).', 'bueno');
+        return null;
+      }
       case 'equipar': return equipar(estado, h, a.item);
       case 'guardar': return guardar(estado, h, a.item);
       case 'vender': return vender(estado, h, a.item);
@@ -2536,7 +2614,9 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0) + (h.efectos.calderoAtq || 0) + (h.efectos.grito || 0) + torpe;
       delete h.efectos.coraje; delete h.efectos.fuerza; delete h.efectos.calderoAtq; delete h.efectos.grito;
       if (D.ARMAS[h.arma].pesada) { t.plantado = true; t.movRestante = 0; }
-      golpearMonstruo(estado, h, m, Math.max(1, ataqueHeroe(h) + extra), D.ARMAS[h.arma].nombre);
+      t.ataco = true;
+      golpearMonstruo(estado, h, m, Math.max(1, ataqueHeroe(h) + extra), D.ARMAS[h.arma].nombre, true);
+      if (armaDe(h).atraviesa) { const otro = siguienteEnLinea(estado, h, m); if (otro) golpearMonstruo(estado, h, otro, Math.max(1, ataqueHeroe(h) + extra), 'la flecha sigue', true); }
       break;
     }
     case 'hechizo': {
@@ -2622,7 +2702,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       sumar(cronH(estado, h.id), 'pociones');
       const n = D.POCIONES[a.objeto].nombre;
       delete h.efectos.veneno;
-      if (a.objeto === 'pocionCurar') { const c = d6(); h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + c); avisar(estado, h.nombre + ' bebe ' + n + ' (+' + c + ' de cuerpo).', 'bueno'); }
+      if (a.objeto === 'pocionCurar') { const c = d6() * (llevaArmadura(h, 'gloton') ? 2 : 1); h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + c); avisar(estado, h.nombre + ' bebe ' + n + ' (+' + c + ' de cuerpo).', 'bueno'); }
       else if (a.objeto === 'pocionFuerza') { h.efectos.fuerza = 2; avisar(estado, h.nombre + ' bebe ' + n + ': +2 dados en su próximo ataque.', 'bueno'); }
       else if (a.objeto === 'pocionVelocidad') { if (t.movTirada) { t.movRestante += t.movTirada; } else h.efectos.veloz = true; avisar(estado, h.nombre + ' bebe ' + n + '.', 'bueno'); }
       else if (a.objeto === 'pocionPiedra') { h.efectos.piel = true; avisar(estado, h.nombre + ' bebe ' + n + ': su piel se vuelve gris.', 'bueno'); }
@@ -2666,6 +2746,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       return null;
     case 'finTurno':
       if (!t.movido && !t.accion) sumar(cronH(estado, h.id), 'turnosVacios');
+      if (armaDe(h).sed && !t.ataco && h.cuerpo > 1 && monstruosALaVista(estado, h).length) { h.cuerpo--; avisar(estado, 'El Hacha sedienta tiene sed: ' + h.nombre + ' pierde 1 de cuerpo.', 'peligro'); }
       siguienteTurno(estado);
       return null;
     default:
