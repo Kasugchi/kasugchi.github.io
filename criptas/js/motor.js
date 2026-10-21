@@ -475,7 +475,9 @@ export function danarMonstruo(estado, m, n) {
     // Nigromantes cerca: recogen fragmentos de alma.
     if (!m.aliado) for (const n of Object.values(estado.heroes)) {
       if (!n.vivo || n.fuera || !subclaseDe(n)?.almas) continue;
-      const cerca = (T.region(n.x, n.y) !== '.' && T.region(n.x, n.y) === m.region) || T.lineaVision(estado, n.x, n.y, m.x, m.y);
+      // Solo las almas de los que mueren en la misma sala en la que está él (en un pasillo, a la vista y en el pasillo).
+      const suSala = T.region(n.x, n.y), donde = T.region(m.x, m.y);
+      const cerca = suSala === donde && (suSala !== '.' || T.lineaVision(estado, n.x, n.y, m.x, m.y));
       if (!cerca) continue;
       const antes = n.fragmentos || 0;
       n.fragmentos = Math.min(6, antes + (m.jefe || m.elite ? 2 : 1));
@@ -1231,6 +1233,14 @@ function habilidadesDe(estado, h, t, libre) {
         break;
       }
       case 'tumba': r.objetivos = Object.values(estado.heroes).filter((o) => !o.vivo && !o.alma && !o.fuera).map((o) => o.id); break;
+      case 'cosecha': {
+        // A sí mismo o a un compañero herido de su sala (o a la vista, en un pasillo).
+        const sala = T.region(h.x, h.y);
+        r.objetivos = Object.values(estado.heroes).filter((o) => o.vivo && !o.fuera && o.cuerpo < o.cuerpoMax && !armaDe(o).sinCuras
+          && (o === h || (sala !== '.' ? T.region(o.x, o.y) === sala : T.lineaVision(estado, h.x, h.y, o.x, o.y)))).map((o) => o.id);
+        if (!r.objetivos.length) { r.motivo = 'Nadie está herido cerca de ti.'; continue; }
+        break;
+      }
       case 'oso': if (h.efectos.oso) { r.motivo = 'Ya eres un oso.'; continue; } r.objetivos = ['yo']; break;
       default: r.objetivos = ['yo'];
     }
@@ -1333,20 +1343,33 @@ function usarHabilidad(estado, h, id, objetivo) {
       estado.santuario = { heroe: h.id, region: T.region(h.x, h.y), x: h.x, y: h.y };
       ev(estado, { tipo: 'reliquia', reliquia: 'santuario', heroe: h.id, texto: h.nombre + ' consagra el lugar: hasta su próximo turno, ningún monstruo puede atacar aquí.' });
       { const dado = d6(); const antes = h.cuerpo; h.cuerpo = Math.max(1, h.cuerpo - dado); durante(h, 'ayuno', 2);
-        ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado });
+        ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado, titulo: 'Ayuno sagrado', resultado: '−' + dado + ' de cuerpo' });
         avisar(estado, 'Ayuno sagrado: el ritual le cuesta ' + dado + ' de cuerpo a ' + h.nombre + (antes - h.cuerpo < dado ? ' (se queda a 1)' : '') + ', y 2 turnos sin atacar ni lanzar hechizos.', 'peligro'); }
       break;
-    case 'cosecha':
-      h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + 1);
-      avisar(estado, h.nombre + ' consume dos fragmentos de alma (+1 de cuerpo).', 'bueno');
+    case 'cosecha': {
+      const o = estado.heroes[objetivo] || h;
+      o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 1);
+      avisar(estado, h.nombre + ' consume dos fragmentos de alma: ' + (o === h ? 'recupera' : o.nombre + ' recupera') + ' 1 de cuerpo.', 'bueno');
       break;
+    }
     case 'alzar': {
+      // Alzar a un muerto nunca es seguro: un dado decide qué vuelve.
+      if (T.figuraEn(estado, m.x, m.y)) { avisar(estado, 'No hay sitio para alzar a ese muerto.', 'peligro'); h.fragmentos += hab.coste; return null; }
       m.alzado = true;
-      const s = aparecer(estado, { tipo: 'esqueleto', x: m.x, y: m.y, ia: 'agresivo', nombre: 'Esqueleto alzado' }, false);
+      const dado = d6();
+      ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado, titulo: h.nombre + ' alza a ' + m.nombre,
+        resultado: { 1: 'Se levanta… contra vosotros', 2: 'El alma se escapa', 3: 'Esqueleto aliado', 4: 'Esqueleto aliado', 5: 'Esqueleto resistente', 6: '¡Vuelve tal y como era!' }[dado] });
+      if (dado === 2) { avisar(estado, '🎲 2 · El alma de ' + m.nombre + ' se escapa entre los dedos de ' + h.nombre + '. Los fragmentos se pierden.', 'peligro'); break; }
+      const tipo = dado === 6 ? m.tipo : 'esqueleto';
+      const s = aparecer(estado, { tipo, x: m.x, y: m.y, ia: 'agresivo', nombre: dado === 1 ? 'Esqueleto rebelde' : dado === 6 ? m.nombre.replace(/ .*/, '') + ' alzado' : 'Esqueleto alzado' }, false);
       if (!s) { avisar(estado, 'No hay sitio para alzar a ese muerto.', 'peligro'); h.fragmentos += hab.coste; return null; }
-      s.visto = true; s.aliado = { de: h.id, turnos: 3, controlable: true }; s.cuerpo = s.cuerpoMax = 2; delete s.elite;
+      s.visto = true; delete s.elite;
       ev(estado, { tipo: 'aparece', id: s.id });
-      avisar(estado, h.nombre + ' susurra un nombre olvidado: ¡' + m.nombre + ' se levanta como esqueleto a vuestro servicio!', 'bueno');
+      if (dado === 1) { s.cuerpo = s.cuerpoMax = 2; avisar(estado, '🎲 1 · ' + m.nombre + ' se levanta… pero no obedece a nadie. ¡Un esqueleto rebelde!', 'peligro'); break; }
+      if (dado === 5) { s.cuerpo = s.cuerpoMax = 4; s.ataque += 1; s.aliado = { de: h.id, turnos: 4, controlable: true }; avisar(estado, '🎲 5 · ¡' + m.nombre + ' vuelve con fuerza: esqueleto resistente (4 de cuerpo, +1 ataque) durante 4 turnos!', 'bueno'); break; }
+      if (dado === 6) { s.cuerpo = s.cuerpoMax = Math.max(s.cuerpoMax, 3); s.aliado = { de: h.id, turnos: 4, controlable: true }; avisar(estado, '🎲 6 · ¡' + m.nombre + ' vuelve tal y como era, con su fuerza intacta, a vuestro servicio durante 4 turnos!', 'bueno'); break; }
+      s.cuerpo = s.cuerpoMax = 2; s.aliado = { de: h.id, turnos: 3, controlable: true };
+      avisar(estado, '🎲 ' + dado + ' · ' + h.nombre + ' susurra un nombre olvidado: ¡' + m.nombre + ' se levanta como esqueleto a vuestro servicio!', 'bueno');
       break;
     }
     case 'tumba': {
@@ -2033,7 +2056,7 @@ function rezar(estado, h, altar, opcion) {
       5: () => { for (const o of Object.values(estado.heroes)) if (o.vivo && !sinCuras(o)) o.cuerpo = o.cuerpoMax; return '¡Todo el grupo se cura por completo!'; },
       6: () => { entregarItem(estado, h, 'pieza'); return '¡Una pieza de reliquia!'; }
     };
-    ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado });
+    ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado, titulo: 'La Diosa de la suerte tira el dado' });
     avisar(estado, 'La Diosa de la suerte tira el dado (' + dado + '): ' + textos[dado](), dado <= 2 ? 'peligro' : 'bueno');
     return null;
   }

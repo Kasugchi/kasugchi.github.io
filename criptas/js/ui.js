@@ -1599,8 +1599,8 @@ async function animar(ev) {
       if (ev.fase === 'monstruos') { cartel('Mueven los monstruos'); await espera(500); }
       break;
     case 'tirada': {
-      $('#mesa-dados').innerHTML = `<h3>${esc(nombre(ev.heroe))} se mueve</h3><div class="tira">${ev.valores.map(dadoRojo).join('')}</div>
-        <div class="resultado-dados">${ev.total} casillas${ev.total > ev.valores.reduce((a, b) => a + b, 0) ? ' (¡doble!)' : ''}</div>
+      $('#mesa-dados').innerHTML = `<h3>${esc(ev.titulo || nombre(ev.heroe) + ' se mueve')}</h3><div class="tira">${ev.valores.map(dadoRojo).join('')}</div>
+        <div class="resultado-dados">${ev.titulo ? esc(ev.resultado || '') : ev.total + ' casillas' + (ev.total > ev.valores.reduce((a, b) => a + b, 0) ? ' (¡doble!)' : '')}</div>
         <p class="tocar">Toca para continuar</p>`;
       $('#dados').hidden = false; sonar('dados');
       await esperaSaltable(2000);

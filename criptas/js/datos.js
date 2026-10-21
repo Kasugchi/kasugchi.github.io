@@ -217,11 +217,11 @@ export const SUBCLASES = {
       hab: { id: 'posesion', nombre: 'Posesión', icono: 'mente', objetivo: 'monstruo',
         desc: 'Mete su alma en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten con un duelo de mentes, y si pierdes, él te controla a ti. Si golpean tu cuerpo, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' } },
     nigromante: { nombre: 'Nigromante', papel: 'Muertos', mods: {}, almas: true,
-      bueno: 'Recoge fragmentos de alma de los enemigos que mueren cerca (máx. 6).', malo: 'Si cae a 1 de cuerpo, sus esqueletos se vuelven contra él; revivir atrae a un monstruo errante; los fragmentos se pierden al acabar el piso.',
+      bueno: 'Recoge fragmentos de alma de los enemigos que mueren en su misma sala (máx. 6).', malo: 'Si cae a 1 de cuerpo, sus esqueletos se vuelven contra él; revivir atrae a un monstruo errante; los fragmentos se pierden al acabar el piso.',
       hab: { id: 'alzar', nombre: 'Alzar muerto', icono: 'esqueleto', objetivo: 'cadaver', coste: 2, sinLimite: true,
-        desc: '2 fragmentos: un enemigo muerto en tu sala se levanta como esqueleto aliado 3 turnos.' },
+        desc: '2 fragmentos y un dado: 1, se levanta un esqueleto rebelde contra vosotros; 2, el alma se escapa; 3-4, esqueleto aliado 3 turnos; 5, esqueleto resistente 4 turnos; 6, vuelve el propio monstruo (al menos 3 de cuerpo) a vuestro servicio 4 turnos.' },
       extra: [
-        { id: 'cosecha', nombre: 'Cosecha', icono: 'curar', objetivo: 'ninguno', coste: 2, sinLimite: true, sinAccion: true, desc: '2 fragmentos: recuperas 1 de cuerpo, sin gastar acción.' },
+        { id: 'cosecha', nombre: 'Cosecha', icono: 'curar', objetivo: 'heroe', coste: 2, sinLimite: true, sinAccion: true, desc: '2 fragmentos: tú o un compañero de tu sala recupera 1 de cuerpo, sin gastar acción.' },
         { id: 'tumba', nombre: 'Volver de la tumba', icono: 'calavera', objetivo: 'caido', coste: 5, desc: '5 fragmentos, una vez por piso: revive a un héroe caído con la mitad de su cuerpo (−1 de cuerpo máximo el resto del piso).' }
       ] },
     sacerdote: { nombre: 'Sacerdote', papel: 'Apoyo', mods: {}, luz: true,
