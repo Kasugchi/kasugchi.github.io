@@ -291,8 +291,9 @@ export function revelar(estado) {
   return nuevos;
 }
 
+// El mercader tranquilo y los aliados no cuentan como «monstruos a la vista».
 export const monstruosALaVista = (estado, h) =>
-  estado.monstruos.filter((m) => m.vivo && m.visto && T.lineaVision(estado, h.x, h.y, m.x, m.y));
+  estado.monstruos.filter((m) => m.vivo && m.visto && !m.neutral && !m.aliado && T.lineaVision(estado, h.x, h.y, m.x, m.y));
 
 // =============================================================
 //  DISPARADORES (el "guion" de cada misión)
@@ -666,8 +667,12 @@ export function disponibles(estado, id) {
   // Armas pesadas: plantarla y disparar ocupa todo el turno, así que no se combina con moverse.
   const pesada = !!D.ARMAS[h.arma]?.pesada;
   r.atacables = libre && !(pesada && t.movido) ? objetivosAtaque(estado, h) : [];
+  // Al mercader tranquilo no se le ataca por accidente: solo desde su menú.
+  const esNeutral = (mid) => estado.monstruos.find((x) => x.id === mid)?.neutral;
+  r.atacablesNeutros = r.atacables.filter(esNeutral);
+  r.atacables = r.atacables.filter((mid) => !esNeutral(mid));
   if (libre && pesada && t.movido) r.motivoAtaque = 'Con la ' + D.ARMAS[h.arma].nombre.toLowerCase() + ' no puedes atacar después de moverte.';
-  r.hechizos = libre ? h.hechizos.map((hz) => ({ id: hz, objetivos: objetivosHechizo(estado, h, hz) })).filter((x) => x.objetivos.length) : [];
+  r.hechizos = libre ? h.hechizos.map((hz) => ({ id: hz, objetivos: objetivosHechizo(estado, h, hz).filter((o) => !esNeutral(o)) })).filter((x) => x.objetivos.length) : [];
   r.buscarTesoro = libre && sala !== '.' && !aLaVista && !estado.buscado[id + ':' + sala];
   r.buscarTrampas = libre && !aLaVista;
   r.motivoBusqueda = aLaVista ? 'Hay monstruos a la vista' : (sala === '.' ? 'El tesoro solo se busca en salas' : (estado.buscado[id + ':' + sala] ? 'Ya buscaste tesoro aquí' : ''));
@@ -689,7 +694,7 @@ export function disponibles(estado, id) {
   const altar = estado.muebles.find((u) => u.dios && !u.usado && h.x >= u.x - 1 && h.x <= u.x + u.w && h.y >= u.y - 1 && h.y <= u.y + u.h && T.region(u.x, u.y) === T.region(h.x, h.y));
   if (altar && libre) r.altar = { dios: altar.dios, idx: estado.muebles.indexOf(altar) };
   const merc = estado.monstruos.find((m) => m.vivo && m.neutral && T.puedeTocar(estado, h, m));
-  if (merc) r.mercader = { id: merc.id, items: merc.mercancia || [] };
+  if (merc) r.mercader = { id: merc.id, items: merc.mercancia || [], puedeAtacar: r.atacablesNeutros.includes(merc.id) };
   r.habilidades = habilidadesDe(estado, h, t, libre);
   const scH = subclaseDe(h);
   if (scH?.sinArmas) { r.atacables = []; r.motivoAtaque = 'El sacerdote no ataca con armas.'; }
@@ -1765,6 +1770,12 @@ function enfadarMercader(estado, m, motivo) {
   estado.ladron = true;
   avisar(estado, motivo + ' ¡El mercader saca un hacha enorme! A partir de ahora, ningún mercader os tratará igual.', 'peligro');
 }
+// El mercader recoge sus cosas y se va del piso (deja de estar en el tablero).
+function despedirMercader(estado, m, motivo) {
+  if (!m?.neutral) return;
+  estado.monstruos.splice(estado.monstruos.indexOf(m), 1);
+  avisar(estado, motivo + ' «Otra vez será, amigo.» Se echa la mochila al hombro y desaparece por un pasadizo que nadie había visto.', 'bueno');
+}
 function tratoMercader(estado, h, m, it, robar) {
   if (!m.mercancia?.includes(it)) return 'El mercader no tiene eso.';
   const precio = precioMercader(estado, it);
@@ -2518,7 +2529,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       break;
     }
     case 'atacar': {
-      if (!disp.atacables.includes(a.objetivo)) return 'No puedes atacar a ese objetivo.';
+      if (!disp.atacables.includes(a.objetivo) && !(a.alMercader && disp.atacablesNeutros.includes(a.objetivo))) return 'No puedes atacar a ese objetivo.';
       const m = estado.monstruos.find((x) => x.id === a.objetivo);
       usarAccion();
       const torpe = subclaseDe(h)?.torpe && T.adyacentes(h, m) ? -1 : 0;
@@ -2582,7 +2593,11 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
     }
     case 'mercader': {
       if (!disp.mercader) return 'No hay ningún mercader a tu lado.';
-      return tratoMercader(estado, h, estado.monstruos.find((m) => m.id === disp.mercader.id), a.item, a.robar);
+      const merc = estado.monstruos.find((m) => m.id === disp.mercader.id);
+      if (a.despedir) { despedirMercader(estado, merc, h.nombre + ' le dice al mercader que no le interesa nada.'); return null; }
+      const r = tratoMercader(estado, h, merc, a.item, a.robar);
+      if (!r && merc.neutral && !merc.mercancia.length) despedirMercader(estado, merc, 'El mercader ha vendido todo.');
+      return r;
     }
     case 'reliquia': {
       const rq = disp.reliquias.find((x) => x.id === a.reliquia);

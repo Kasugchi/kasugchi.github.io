@@ -1068,7 +1068,7 @@ function pintarAcciones() {
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
   if (d.altar) boton('altar', 'altar', 'Rezar', { n: D.DIOSES[d.altar.dios].nombre });
-  if (d.mercader?.items.length) boton('mercader', 'mochila', 'Comerciar', { n: d.mercader.items.length + ' cosas a la venta' });
+  if (d.mercader) boton('mercader', 'mochila', 'Comerciar', { n: d.mercader.items.length + ' cosas a la venta' });
   if (d.calderos?.length) boton('caldero', 'caldero', 'Beber del caldero', { n: '¿suerte?' });
   boton('tesoro', 'cofreAbierto', 'Buscar tesoro', { off: !d.buscarTesoro, titulo: d.motivoBusqueda, n: d.buscarTesoro ? '' : d.motivoBusqueda });
   boton('trampas', 'buscar', 'Buscar trampas', { off: !d.buscarTrampas, n: 'y puertas secretas' });
@@ -1222,12 +1222,21 @@ async function accionBoton(acc, h, d) {
       const items = d.mercader.items;
       app.cerrarModalFuera = () => {};
       const lista = items.map((it) => `<li><b>${esc(nombreIt(it))}</b> — ${M.precioMercader(app.estado, it)} monedas <span class="nota">${esc(descIt(it))}</span></li>`).join('');
-      const i = await modal(`<h2>Mercader errante</h2><p>«Cosas raras, amigo. Todo tiene un precio… y yo nunca olvido una cara.»</p><ul>${lista}</ul><p class="nota">Llevas ${h.oro} monedas en la bolsa.</p>`,
-        [{ texto: 'Nada', clase: 'claro' }, ...items.map((it) => ({ texto: 'Comprar ' + nombreIt(it) })), ...items.map((it) => ({ texto: 'Robar ' + nombreIt(it), clase: 'claro' }))]);
-      if (i <= 0) return null;
-      const robar = i > items.length;
-      const it = items[(i - 1) % items.length];
-      return enviar({ ...base, tipo: 'mercader', item: it, robar });
+      const ops = [{ texto: 'Ahora no', clase: 'claro', id: 'cerrar' }, { texto: 'No me interesa (que se vaya)', clase: 'claro', id: 'despedir' },
+        ...items.map((it) => ({ texto: 'Comprar ' + nombreIt(it) + ' · ' + M.precioMercader(app.estado, it), id: 'comprar', it })),
+        ...items.map((it) => ({ texto: 'Robar ' + nombreIt(it), clase: 'claro', id: 'robar', it })),
+        ...(d.mercader.puedeAtacar ? [{ texto: 'Atacar al mercader', clase: 'claro', id: 'atacar' }] : [])];
+      const i = await modal(`<h2>Mercader errante</h2><p>«Cosas raras, amigo. Todo tiene un precio… y yo nunca olvido una cara.»</p><ul>${lista}</ul><p class="nota">Llevas ${h.oro} monedas en la bolsa. Comprar no gasta tu acción.</p>`, ops);
+      const op = ops[i];
+      if (!op || op.id === 'cerrar') return null;
+      if (op.id === 'despedir') return enviar({ ...base, tipo: 'mercader', despedir: true });
+      if (op.id === 'comprar') return enviar({ ...base, tipo: 'mercader', item: op.it });
+      // Robar o atacar lo vuelve hostil: mejor confirmarlo.
+      const seguro = await modal(`<h2>¿Seguro?</h2><p>Si ${op.id === 'robar' ? 'le robas' : 'le atacas'}, el mercader saca su hacha: es de lo más duro del piso, y el resto de la partida los mercaderes os cobrarán el triple o irán a por vosotros.</p>`,
+        [{ texto: 'Mejor no', clase: 'claro' }, { texto: op.id === 'robar' ? 'Robar' : 'Atacar' }]);
+      if (seguro !== 1) return null;
+      if (op.id === 'robar') return enviar({ ...base, tipo: 'mercader', item: op.it, robar: true });
+      return enviar({ ...base, tipo: 'atacar', objetivo: d.mercader.id, alMercader: true });
     }
     case 'poder': {
       const pd = d.poseido.poder;
@@ -1433,6 +1442,8 @@ function alTocar(x, y) {
       app.seleccion = null; return pintarAcciones();
     }
     if (f && d.atacables.includes(f.id)) { app.seleccion = null; return enviar({ heroe: h.id, tipo: 'atacar', objetivo: f.id }); }
+    // Tocar al mercader tranquilo abre su tienda (si estás a su lado), nunca le ataca.
+    if (f?.neutral) { app.seleccion = null; if (d.mercader?.id === f.id) return accionBoton('mercader', h, d); return toast('Ponte al lado del mercader para comerciar con él.'); }
     if (app.seleccion) { app.seleccion = null; pintarAcciones(); }
     if (d.destinos[k]) return enviar({ heroe: h.id, tipo: 'mover', x, y });
     const tr = e.trampas.find((t) => t.x === x && t.y === y && d.desarmables.includes(t.id));
