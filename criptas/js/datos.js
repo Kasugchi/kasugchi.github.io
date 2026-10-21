@@ -66,7 +66,7 @@ export const HEROES = {
   },
   enano: {
     nombre: 'Enano', icono: 'enano', color: '#b07a2a', fem: { nombre: 'Enana', icono: 'enano' },
-    defensa: 2, cuerpo: 7, mente: 3, arma: 'espadaCorta', elementos: [],
+    defensa: 3, cuerpo: 7, mente: 3, arma: 'espadaCorta', elementos: [],
     lema: 'Duro como la roca. Desarma trampas sin riesgo.', desarmaSiempre: true
   },
   elfo: {
