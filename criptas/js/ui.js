@@ -884,12 +884,12 @@ $('#b-al-campamento').addEventListener('click', async () => {
   enviar({ tipo: 'volverCampamento' });
 });
 $('#b-cerrar-registro').addEventListener('click', () => ($('#registro').hidden = true));
-$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); actualizarAmbiente();
+$('#b-sonido').addEventListener('click', () => { app.sonido = !app.sonido; guardar('criptas_sonido', app.sonido ? 'si' : 'no'); $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no'); actualizarAmbiente(); });
 // Figuras: ilustraciones propias (criptas/sprites), miniaturas pintadas o de plástico.
 tablero.modoFiguras = leer('criptas_figuras') || 'auto';
 $('#sel-figuras').value = tablero.modoFiguras;
 $('#sel-figuras').addEventListener('change', (e) => { tablero.modoFiguras = e.target.value; guardar('criptas_figuras', e.target.value); tablero.e3d?.rehacerFichas(); });
-cargarSprites(document.querySelector('meta[name="version"]')?.content).then(() => tablero.e3d?.rehacerFichas()); });
+cargarSprites(document.querySelector('meta[name="version"]')?.content).then(() => { tablero.e3d?.rehacerFichas(); tablero.dibujar?.(); });
 $('#b-sonido').textContent = 'Sonido: ' + (app.sonido ? 'sí' : 'no');
 const pintarVelocidad = () => { $('#b-velocidad').textContent = 'Velocidad: ' + (VELOCIDADES.find((v) => v[0] === velocidad) || VELOCIDADES[0])[1]; };
 $('#b-velocidad').addEventListener('click', () => {

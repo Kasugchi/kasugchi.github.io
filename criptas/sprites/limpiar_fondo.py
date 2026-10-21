@@ -30,6 +30,14 @@ def limpiar(entrada, salida, lado=512):
     etiquetas, _ = ndimage.label(fondo_posible, structure=np.ones((3, 3)))
     bordes = set(np.unique(np.concatenate([etiquetas[0], etiquetas[-1], etiquetas[:, 0], etiquetas[:, -1]]))) - {0}
     fondo = np.isin(etiquetas, list(bordes))
+    # Huecos encerrados (entre las piernas, detrás de un brazo): si tienen casi
+    # exactamente el color del fondo del borde, también son fondo.
+    color_borde = np.median(np.concatenate([rgb[0], rgb[-1], rgb[:, 0], rgb[:, -1]]), axis=0)
+    igual = np.abs(rgb - color_borde).max(axis=2) < 10
+    et2, n2 = ndimage.label(igual)
+    if n2:
+        tam = ndimage.sum(np.ones_like(et2), et2, range(n2 + 1))
+        fondo |= np.isin(et2, [i for i in range(1, n2 + 1) if tam[i] > 40])
     # Suaviza el borde para que no quede un halo blanco.
     fondo = ndimage.binary_dilation(fondo, iterations=1)
     alfa = np.where(fondo, 0, 255).astype(np.uint8)

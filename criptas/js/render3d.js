@@ -410,11 +410,12 @@ export class Escena3D {
     this.texSprites ||= new Map();
     let tex = this.texSprites.get(img.src);
     if (!tex) { tex = new THREE.Texture(img); tex.needsUpdate = true; tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; this.texSprites.set(img.src, tex); }
-    const alto = jefe ? 1.15 : 0.95;
+    const alto = jefe ? 1.35 : 1.12;
     const ancho = alto * (img.naturalWidth / img.naturalHeight);
     const geo = new THREE.PlaneGeometry(ancho, alto); geo.translate(0, alto / 2, 0);
-    const lamina = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.75 }));
+    const lamina = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, roughness: 0.75, emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.55 }));
     lamina.castShadow = true;
+    lamina.rotation.x = -0.28; // un poco inclinada hacia la cámara, que mira desde arriba
     lamina.customDepthMaterial = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, map: tex, alphaTest: 0.5 });
     const g = new THREE.Group(); g.add(lamina);
     return g;
