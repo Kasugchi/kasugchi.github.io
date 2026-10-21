@@ -1028,6 +1028,9 @@ function pintarAcciones() {
   if (d.trance && d.poseido) app.moverPoseido = true;
   if (d.trance) info = h.alma ? 'Tu cuerpo ha caído: tu alma vive dentro del monstruo.' : 'Tu cuerpo está en trance: controla al poseído.';
   if (app.moverPoseido && !d.poseido) app.moverPoseido = false;
+  const aliadoCtrl = app.moverAliado && d.aliados?.find((x) => x.id === app.moverAliado);
+  if (app.moverAliado && !aliadoCtrl) app.moverAliado = null;
+  if (aliadoCtrl) info = `Diriges a ${aliadoCtrl.nombre}: ${aliadoCtrl.restante} casillas${aliadoCtrl.atacables.length ? ', puede atacar' : ''}. Toca dónde llevarlo o a quién atacar.`;
   if (app.moverPoseido) info = `Controlas a ${nombre(d.poseido.id)}: ${d.poseido.restante} casillas. Toca dónde llevarlo o a quién atacar.`;
   if (app.seleccion?.tipo === 'habilidad' || app.seleccion?.tipo === 'poder') info = 'Toca el objetivo de ' + app.seleccion.nombre + '.';
   if (h.fragmentos) info += ' · Almas: ' + h.fragmentos + '/6';
@@ -1041,6 +1044,7 @@ function pintarAcciones() {
   if (!app.reproduciendo) {
     if (['hechizo', 'habilidad', 'poder'].includes(app.seleccion?.tipo)) tablero.resaltes.magia = app.seleccion.objetivos;
     else if (app.moverPoseido) { tablero.resaltes.cargador = d.poseido.destinos; tablero.resaltes.ataque = d.poseido.atacables; }
+    else if (aliadoCtrl) { tablero.resaltes.cargador = aliadoCtrl.destinos; tablero.resaltes.ataque = aliadoCtrl.atacables; }
     else if (app.moverCargador) tablero.resaltes.cargador = d.cargador.destinos;
     else {
       tablero.resaltes.destinos = d.destinos || {};
@@ -1063,6 +1067,8 @@ function pintarAcciones() {
   boton('atacar', 'atacar', 'Atacar', { off: !d.atacables.length, n: D.ARMAS[h.arma].nombre, titulo: d.motivoAtaque, clase: app.seleccion?.tipo === 'atacar' ? 'activo' : '' }, 'fijo');
   if (h.hechizos.length) boton('hechizo', 'hechizo', 'Hechizo', { off: !d.hechizos.length, n: h.hechizos.length + ' restantes', clase: app.seleccion?.tipo === 'hechizo' ? 'activo' : '' }, 'fijo');
   if (d.poseido) boton('poseido', 'mente', app.moverPoseido ? 'Volver a tu héroe' : 'Controlar a ' + nombre(d.poseido.id), { clase: app.moverPoseido ? 'activo' : 'principal', n: d.poseido.restante + ' casillas' + (d.poseido.atacables.length ? ' · puede atacar' : '') }, 'fijo');
+  for (const al of d.aliados || []) boton('aliado:' + al.id, 'calavera', app.moverAliado === al.id ? 'Volver a tu héroe' : 'Dirigir ' + al.nombre.toLowerCase(),
+    { clase: app.moverAliado === al.id ? 'activo' : '', n: al.restante + ' casillas' + (al.atacables.length ? ' · puede atacar' : '') + ' · ' + (al.turnos + 1) + (al.turnos ? ' rondas' : ' ronda'), off: !al.restante && !al.atacables.length && app.moverAliado !== al.id }, 'aqui');
   if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
   for (const hb of d.habilidades || []) boton(hb.id, hb.icono, hb.nombre, { hab: true, off: !hb.ok, n: hb.ok ? 'habilidad' : hb.motivo, clase: app.seleccion?.habilidad === hb.id ? 'activo' : '' });
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
@@ -1194,6 +1200,7 @@ const dadosTxt = (h) => (M.dadosMovimiento(h) === 1 ? '1 dado' : '2 dados');
 
 async function accionBoton(acc, h, d) {
   const base = { heroe: h.id };
+  if (acc.startsWith('aliado:')) { const id = acc.slice(7); app.moverAliado = app.moverAliado === id ? null : id; app.moverPoseido = false; app.moverCargador = false; app.seleccion = null; app.verMas = false; return pintarAcciones(); }
   if (acc === 'mas' || acc === 'menos') { app.verMas = acc === 'mas'; app.verMasDe = h.id + ':' + app.estado.ronda; return pintarAcciones(); }
   app.verMas = false;
   switch (acc) {
@@ -1252,7 +1259,7 @@ async function accionBoton(acc, h, d) {
       }
       app.seleccion = { tipo: 'poder', objetivos: pd.objetivos, nombre: pd.nombre }; return pintarAcciones();
     }
-    case 'poseido': app.moverPoseido = !app.moverPoseido; app.moverCargador = false; app.seleccion = null; return pintarAcciones();
+    case 'poseido': app.moverAliado = null; app.moverPoseido = !app.moverPoseido; app.moverCargador = false; app.seleccion = null; return pintarAcciones();
     case 'habilidadVieja': {
       const objs = d.habilidad.objetivos;
       if (objs.length === 1) return enviar({ ...base, tipo: 'habilidad', objetivo: objs[0] });
@@ -1424,6 +1431,12 @@ function alTocar(x, y) {
     if (app.moverCargador && d.cargador) {
       if (d.cargador.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverCargador', x, y });
       if (f?.id !== 'cargador') { app.moverCargador = false; pintarAcciones(); }
+    }
+    const al = app.moverAliado && d.aliados?.find((x) => x.id === app.moverAliado);
+    if (al) {
+      if (al.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverAliado', aliado: al.id, x, y });
+      if (f && al.atacables.includes(f.id)) return enviar({ heroe: h.id, tipo: 'atacarAliado', aliado: al.id, objetivo: f.id });
+      if (f?.id !== al.id) { app.moverAliado = null; pintarAcciones(); }
     }
     if (app.moverPoseido && d.poseido) {
       if (d.poseido.destinos[k]) return enviar({ heroe: h.id, tipo: 'moverPoseido', x, y });

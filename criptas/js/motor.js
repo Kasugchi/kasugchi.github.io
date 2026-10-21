@@ -708,6 +708,7 @@ export function disponibles(estado, id) {
       desarmables: [], pociones: [], salir: false, puertas: [], calderos: [], reliquias: [], habilidades: [], trance: true,
       motivoBusqueda: 'Tu alma está en otro cuerpo.' });
     if (t.poseido) r.poseido = poseidoDe(estado, t);
+    r.aliados = aliadosDe(estado, h, t);
     return r;
   }
   r.puedeTirar = !t.movTirada && !t.plantado;
@@ -751,6 +752,7 @@ export function disponibles(estado, id) {
   if (scH?.sinArmas) { r.atacables = []; r.motivoAtaque = 'El sacerdote no ataca con armas.'; }
   if (h.efectos.oso) { r.hechizos = []; r.pociones = []; }
   if (t.poseido) r.poseido = poseidoDe(estado, t);
+  r.aliados = aliadosDe(estado, h, t);
   if (t.tiron) r.motivoTiron = 'La cadena te dio un tirón: este turno no puedes moverte.';
   r.pociones = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k]) => k);
   r.salir = enEscalera(estado, h) && requisitosSalida(estado);
@@ -1240,7 +1242,7 @@ function usarHabilidad(estado, h, id, objetivo) {
       m.alzado = true;
       const s = aparecer(estado, { tipo: 'esqueleto', x: m.x, y: m.y, ia: 'agresivo', nombre: 'Esqueleto alzado' }, false);
       if (!s) { avisar(estado, 'No hay sitio para alzar a ese muerto.', 'peligro'); h.fragmentos += hab.coste; return null; }
-      s.visto = true; s.aliado = { de: h.id, turnos: 3 }; s.cuerpo = s.cuerpoMax = 2; delete s.elite;
+      s.visto = true; s.aliado = { de: h.id, turnos: 3, controlable: true }; s.cuerpo = s.cuerpoMax = 2; delete s.elite;
       ev(estado, { tipo: 'aparece', id: s.id });
       avisar(estado, h.nombre + ' susurra un nombre olvidado: ¡' + m.nombre + ' se levanta como esqueleto a vuestro servicio!', 'bueno');
       break;
@@ -1299,6 +1301,38 @@ function poseidoDe(estado, t) {
   const atacables = t.poseido.ataco ? [] : estado.monstruos.filter((o) => o !== m && o.vivo && o.visto && (T.puedeTocar(estado, m, o) || (rayo && T.lineaVision(estado, m.x, m.y, o.x, o.y, true)))).map((o) => o.id);
   const poder = t.poseido.poder ? null : poderPoseido(estado, estado.heroes[m.efectos.poseido.por], m);
   return { id: m.id, restante: t.poseido.restante, destinos, atacables, poder: poder && poder.objetivos.length ? poder : null };
+}
+// Muertos alzados por el nigromante: en su turno puede moverlos y atacar con ellos.
+// Si no los dirige, actúan solos en la fase de los monstruos.
+function aliadosDe(estado, h, t) {
+  return estado.monstruos.filter((m) => m.vivo && m.aliado?.de === h.id && m.aliado.controlable).map((m) => {
+    const c = ((t.aliados ||= {})[m.id] ||= { restante: m.mov, ataco: false });
+    const destinos = {};
+    if (c.restante > 0) for (const [k, v] of Object.entries(alcancePoseido(estado, m, c.restante))) if (v.d > 0) destinos[k] = v.d;
+    const atacables = c.ataco ? [] : estado.monstruos.filter((o) => o.vivo && o.visto && !o.aliado && !o.neutral && T.puedeTocar(estado, m, o)).map((o) => o.id);
+    return { id: m.id, nombre: m.nombre, restante: c.restante, destinos, atacables, turnos: m.aliado.turnos };
+  });
+}
+function dirigirAliado(estado, h, t, a, disp) {
+  const al = disp.aliados.find((x) => x.id === a.aliado);
+  if (!al) return 'No controlas a ese aliado.';
+  const m = estado.monstruos.find((o) => o.id === al.id);
+  const c = t.aliados[m.id];
+  m.aliado.dirigido = estado.ronda; // este turno ya no actúa solo
+  if (a.tipo === 'moverAliado') {
+    const mapa = alcancePoseido(estado, m, c.restante);
+    const k = clave(a.x, a.y);
+    if (!mapa[k] || mapa[k].d === 0) return 'No puede llegar ahí.';
+    const ruta = T.reconstruir(mapa, k);
+    c.restante -= mapa[k].d;
+    m.x = a.x; m.y = a.y; m.region = T.region(a.x, a.y);
+    ev(estado, { tipo: 'mover', id: m.id, ruta });
+    return null;
+  }
+  if (!al.atacables.includes(a.objetivo)) return 'No puede atacar a ese.';
+  c.ataco = true; c.restante = 0;
+  golpeEntreMonstruos(estado, m, estado.monstruos.find((o) => o.id === a.objetivo), 'A las órdenes de ' + h.nombre);
+  return null;
 }
 function moverPoseido(estado, t, x, y) {
   const m = estado.monstruos.find((o) => o.id === t.poseido.id);
@@ -2676,6 +2710,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       t.poseido.poder = true;
       return usarPoderPoseido(estado, h, estado.monstruos.find((x) => x.id === t.poseido.id), a.objetivo);
     }
+    case 'moverAliado': case 'atacarAliado': return dirigirAliado(estado, h, t, a, disp);
     case 'atacarPoseido': {
       if (!disp.poseido?.atacables.includes(a.objetivo)) return 'No puede atacar a ese.';
       return atacarPoseido(estado, h, t, a.objetivo);

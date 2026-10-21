@@ -105,7 +105,9 @@ export function turnoAliado(estado, m, ctx) {
     ctx.avisar(estado, m.nombre + ' se deshace en polvo.', '');
     return;
   }
-  const enemigos = estado.monstruos.filter((o) => o.vivo && o.visto && !o.aliado);
+  // Si su amo ya lo ha dirigido esta ronda, no actúa por su cuenta.
+  if (m.aliado.dirigido === estado.ronda) return;
+  const enemigos = estado.monstruos.filter((o) => o.vivo && o.visto && !o.aliado && !o.neutral);
   const pegado = enemigos.find((o) => T.puedeTocar(estado, m, o));
   if (pegado) return ctx.golpeEntreMonstruos(estado, m, pegado);
   const ruta = caminoHaciaHeroe(estado, m, enemigos, false);
