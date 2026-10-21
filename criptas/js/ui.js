@@ -981,7 +981,7 @@ function pintarJuego() {
     const quien = e.jugadores?.[h.jugador]?.nombre || '';
     const clase = [e.turno?.heroe === t && e.fase === 'mision' ? 'activa' : '', h.vivo ? '' : 'muerto', h.fuera ? 'fuera' : ''].join(' ');
     return `<button class="hoja ${clase}" data-heroe="${t}"><span class="ret" style="background:${def.color}">${svg(h.icono)}</span>
-      <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span>
+      <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span><span class="pv">${h.cuerpo}<small>/${h.cuerpoMax}</small></span>
       ${h.ia ? '<span class="jug">Compañero IA</span>' : app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
   }).join('');
   const c = e.cargador;
@@ -989,7 +989,7 @@ function pintarJuego() {
     const vida = Array.from({ length: c.cuerpoMax }, (_, i) => `<i class="${i < c.cuerpo ? '' : 'vacio'}"></i>`).join('');
     const patron = e.heroes[c.patron];
     $('#hojas').insertAdjacentHTML('beforeend', `<button class="hoja cargador ${c.vivo ? '' : 'muerto'}" id="hoja-cargador"><span class="ret" style="background:${D.CARGADOR.color}">${svg('cargador')}</span>
-      <strong>Cargador</strong><span class="vida" aria-label="Cuerpo ${c.cuerpo} de ${c.cuerpoMax}">${vida}</span><span class="jug">${esc(patron ? 'Lo guía ' + art(patron) : '')}</span></button>`);
+      <strong>Cargador</strong><span class="vida" aria-label="Cuerpo ${c.cuerpo} de ${c.cuerpoMax}">${vida}</span><span class="pv">${c.cuerpo}<small>/${c.cuerpoMax}</small></span><span class="jug">${esc(patron ? 'Lo guía ' + art(patron) : '')}</span></button>`);
     $('#hoja-cargador').addEventListener('click', () => verMochila(false));
   }
   $('#hojas').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => fichaHeroe(b.dataset.heroe)));
