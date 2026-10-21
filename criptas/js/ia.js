@@ -26,7 +26,7 @@ const protegido = (estado, h) => {
 };
 // Quien llama la atención (farol encendido o grito de guerra) es el primer objetivo.
 // Y a los no muertos les atrae quien lleva el Arco de hueso.
-const llamativo = (estado, lista, m) => lista.find((h) => h.id === estado.farol || h.efectos?.provoca)
+const llamativo = (estado, lista, m) => lista.find((h) => h.id === estado.farol || h.efectos?.provoca || h.efectos?.marcado)
   || (m?.nomuerto ? lista.find((h) => D.ARMAS[h.arma]?.cebo === 'nomuertos') : undefined);
 const masDebil = (lista) => lista.slice().sort((a, b) => a.cuerpo - b.cuerpo)[0];
 
