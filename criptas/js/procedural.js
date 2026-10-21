@@ -127,7 +127,8 @@ function intentar(r, semilla, nivel) {
   // ---------- Salas ----------
   const todas = Object.keys(SALAS);
   const inicio = r.de(todas.filter((s) => SALAS[s].area <= 20 && SALAS[s].x1 - SALAS[s].x0 >= 1 && SALAS[s].y1 - SALAS[s].y0 >= 1));
-  const nSalas = Math.min(todas.length - 1, 6 + Math.min(3, Math.floor(nivel / 2)) + r.int(2));
+  // La huida contrarreloj va en un mapa más pequeño: con malas tiradas no se hace imposible.
+  const nSalas = objetivoTipo === 'escapar' ? 4 + r.int(2) : Math.min(todas.length - 1, 6 + Math.min(3, Math.floor(nivel / 2)) + r.int(2));
   const elegidas = [inicio, ...r.barajar(todas.filter((s) => s !== inicio)).slice(0, nSalas - 1)];
   const usadas = new Set(elegidas);
 
@@ -306,11 +307,13 @@ function intentar(r, semilla, nivel) {
         intro = `${reliquia.replace(/^./, (c) => c.toUpperCase())} desapareció hace un siglo. Un mapa robado lo sitúa en ${enTexto}. Bajad, encontradlo y traedlo de vuelta antes de que caiga en otras manos.`;
         disparadores.push({ cuando: 'flag', nombre: 'reliquia', acciones: [salida, { tipo: 'historia', texto: 'Se oyen pasos por los pasillos: alguien más quería la reliquia. ¡Volved a la escalera!' }] });
       } else {
-        // Calibrado con bots que van directos al objetivo: holgura de ~40 %.
-        const rondas = Math.ceil((distSala[salaObj] * 2) / 5) + 11 - Math.min(3, Math.floor(nivel / 2));
-        objetivo = { tipo: 'escapar', rondas, requiere: ['reliquia'], texto: `Coge ${reliquia} y sal por la escalera antes de ${rondas} rondas: la mazmorra se derrumba.` };
-        intro = `${mayus(enTexto)} ${/^(las|los) /.test(lugar) ? 'se están hundiendo' : 'se está hundiendo'}. Bajo sus piedras queda ${reliquia}, y en cuanto pongáis el pie dentro el techo empezará a ceder. Tenéis ${rondas} rondas para cogerlo y salir.`;
-        disparadores.push({ cuando: 'flag', nombre: 'reliquia', acciones: [salida, { tipo: 'historia', texto: 'Las columnas tiemblan y cae polvo del techo. ¡Corred a la escalera!' }] });
+        // Dos tramos: unas rondas para llegar (contando con tiradas flojas, ~4 casillas por ronda)
+        // y, al coger la reliquia, unas 10 más para volver.
+        const rondas = Math.ceil(distSala[salaObj] / 4) + 6;
+        const extra = 8 + r.int(5);
+        objetivo = { tipo: 'escapar', rondas, requiere: ['reliquia'], texto: `Coge ${reliquia} antes de ${rondas} rondas; al cogerlo ganaréis tiempo para volver a la escalera.` };
+        intro = `${mayus(enTexto)} ${/^(las|los) /.test(lugar) ? 'se están hundiendo' : 'se está hundiendo'}. Bajo sus piedras queda ${reliquia}, y en cuanto pongáis el pie dentro el techo empezará a ceder. Tenéis ${rondas} rondas para llegar hasta él; dicen que su magia sostiene el techo un rato más.`;
+        disparadores.push({ cuando: 'flag', nombre: 'reliquia', acciones: [salida, { tipo: 'rondasExtra', n: extra }, { tipo: 'historia', texto: `Al levantar ${reliquia}, su luz sostiene el techo: ¡${extra} rondas más! Las columnas tiemblan igualmente… ¡Corred a la escalera!` }] });
       }
       break;
     }

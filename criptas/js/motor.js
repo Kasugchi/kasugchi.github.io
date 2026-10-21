@@ -336,6 +336,7 @@ function ejecutarAccionGuion(estado, a) {
   switch (a.tipo) {
     case 'historia': ev(estado, { tipo: 'historia', texto: a.texto }); log(estado, a.texto, 'historia'); break;
     case 'mensaje': avisar(estado, a.texto); break;
+    case 'rondasExtra': if (estado.mision.objetivo?.tipo === 'escapar') estado.mision.objetivo.rondas += a.n; break;
     case 'flag': ponerFlag(estado, a.nombre); break;
     case 'activar':
       for (const m of estado.monstruos) if (a.ids.includes(m.id)) { m.activo = true; if (m.ia === 'centinela') m.ia = 'agresivo'; }
@@ -1598,8 +1599,15 @@ const ORCOS = ['orco', 'trasgo', 'chaman', 'bestias', 'lobo'];
 const NOMUERTOS_COMBO = ['esqueleto', 'zombi'];
 const NOMUERTOS = ['esqueleto', 'zombi', 'momia'];
 const enemigoVisible = (estado, a, b) => b.vivo && !b.aliado && T.lineaVision(estado, a.x, a.y, b.x, b.y);
-function sitioJunto(estado, x, y) {
-  return T.DIRS8.map(([dx, dy]) => [x + dx, y + dy]).find(([a, b]) => T.dentro(a, b) && !T.esRoca(estado, a, b) && !T.muebleEn(estado, a, b) && !T.figuraEn(estado, a, b) && T.region(a, b) === T.region(x, y));
+// Casilla libre lo más cerca posible (misma sala), buscando en anillos de hasta 3 casillas.
+function sitioJunto(estado, x, y, radio = 1) {
+  const libre = (a, b) => T.dentro(a, b) && !T.esRoca(estado, a, b) && !T.muebleEn(estado, a, b) && !T.figuraEn(estado, a, b) && T.region(a, b) === T.region(x, y);
+  for (let r = 1; r <= radio; r++) {
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
+      if (Math.max(Math.abs(dx), Math.abs(dy)) === r && libre(x + dx, y + dy)) return [x + dx, y + dy];
+    }
+  }
+  return undefined;
 }
 function invocarAliado(estado, tipo, x, y, de, turnos, extra = {}) {
   const p = sitioJunto(estado, x, y);
@@ -1975,7 +1983,7 @@ function faseJefe(estado, m) {
     if (f.hecha || m.cuerpo > m.cuerpoMax * f.umbral) continue;
     f.hecha = true;
     let n = 0;
-    for (let i = 0; i < f.n; i++) { const p = sitioJunto(estado, m.x, m.y); if (!p) break; const r = aparecer(estado, { tipo: f.invoca, x: p[0], y: p[1], ia: 'agresivo' }, false); if (r) { r.visto = true; ev(estado, { tipo: 'aparece', id: r.id }); n++; } }
+    for (let i = 0; i < f.n; i++) { const p = sitioJunto(estado, m.x, m.y, 3); if (!p) break; const r = aparecer(estado, { tipo: f.invoca, x: p[0], y: p[1], ia: 'agresivo' }, false); if (r) { r.visto = true; ev(estado, { tipo: 'aparece', id: r.id }); n++; } }
     ev(estado, { tipo: 'historia', texto: m.nombre + ' ruge de dolor y la mazmorra responde: ¡' + (n === 1 ? 'un refuerzo aparece' : n + ' refuerzos aparecen') + ' a su lado!' });
   }
 }
