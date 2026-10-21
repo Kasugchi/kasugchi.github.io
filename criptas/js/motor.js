@@ -416,6 +416,8 @@ export function danarMonstruo(estado, m, n) {
   if (m.ilusion && n > 0) { m.vivo = false; ev(estado, { tipo: 'muerte', id: m.id }); avisar(estado, '¡Era una ilusión! Se deshace en el aire.', ''); return; }
   if (m.efectos.dormido) delete m.efectos.dormido;
   if (n <= 0) return;
+  // Quién le ha hecho daño y cuánto, para repartir la experiencia al morir.
+  if (estado.heroes[estado._autor]) { m.danos ||= {}; m.danos[estado._autor] = (m.danos[estado._autor] || 0) + Math.min(n, m.cuerpo); }
   m.cuerpo -= n;
   if (m.cuerpo > 0 && m.fases) faseJefe(estado, m);
   if (m.cuerpo <= 0) {
@@ -431,7 +433,7 @@ export function danarMonstruo(estado, m, n) {
       if (armaDe(asesino).sed && asesino.cuerpo < asesino.cuerpoMax) { asesino.cuerpo++; log(estado, 'El Hacha sedienta bebe: ' + asesino.nombre + ' recupera 1 de cuerpo.', 'bueno'); }
       if (armaDe(asesino).avaro) { asesino.oro += 15; log(estado, 'La Espada del avaro tintinea: +15 monedas para ' + asesino.nombre + '.', 'tesoro'); }
     }
-    if (estado.aleatorio && estado.heroes[estado._autor]) ganarXP(estado, estado.heroes[estado._autor], 1 + m.cuerpoMax + (m.elite ? 3 : 0) + (m.jefe ? 6 : 0));
+    if (estado.aleatorio) repartirXP(estado, m, 1 + m.cuerpoMax + (m.elite ? 3 : 0) + (m.jefe ? 6 : 0));
     if (m.efectos.poseido) liberarPosesion(estado, m, true);
     // Lo que llevaba (el mercader, un fantasma) pasa a quien lo mató.
     const ganador = estado.heroes[estado._autor];
@@ -1072,6 +1074,19 @@ function apuntarTesoro(estado, h, oro, objeto) {
 // =============================================================
 //  MAZMORRA INFINITA: experiencia, mejoras y habilidades
 // =============================================================
+// La experiencia de un monstruo se reparte según el daño que le hizo cada héroe;
+// quien da el golpe final se lleva lo que sobra del redondeo. Nadie que le haya herido se queda a cero.
+function repartirXP(estado, m, total) {
+  const danos = Object.entries(m.danos || {}).filter(([id]) => estado.heroes[id]);
+  if (!danos.length) { if (estado.heroes[estado._autor]) ganarXP(estado, estado.heroes[estado._autor], total); return; }
+  const suma = danos.reduce((t, [, d]) => t + d, 0) || 1;
+  const parte = Object.fromEntries(danos.map(([id, d]) => [id, Math.max(1, Math.floor((total * d) / suma))]));
+  const resto = total - Object.values(parte).reduce((t, v) => t + v, 0);
+  const final = estado.heroes[estado._autor] && parte[estado._autor] !== undefined ? estado._autor : danos.sort((a, b) => b[1] - a[1])[0][0];
+  if (resto > 0) parte[final] += resto;
+  for (const [id, n] of Object.entries(parte)) ganarXP(estado, estado.heroes[id], n);
+  if (danos.length > 1) log(estado, 'Experiencia de ' + m.nombre + ': ' + Object.entries(parte).map(([id, n]) => estado.heroes[id].nombre + ' ' + n).join(', ') + '.', '');
+}
 export function ganarXP(estado, h, n) {
   h.nivel ||= 1; h.xp ||= 0; h.puntos ||= 0;
   h.xp += n;
