@@ -1347,9 +1347,12 @@ function usarHabilidad(estado, h, id, objetivo) {
         avisar(estado, 'Ayuno sagrado: el ritual le cuesta ' + dado + ' de cuerpo a ' + h.nombre + (antes - h.cuerpo < dado ? ' (se queda a 1)' : '') + ', y 2 turnos sin atacar ni lanzar hechizos.', 'peligro'); }
       break;
     case 'cosecha': {
+      // Curar con almas no es seguro: 1-2, el alma se escapa; 3-5, +1; 6, +2.
       const o = estado.heroes[objetivo] || h;
-      o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + 1);
-      avisar(estado, h.nombre + ' consume dos fragmentos de alma: ' + (o === h ? 'recupera' : o.nombre + ' recupera') + ' 1 de cuerpo.', 'bueno');
+      const dado = d6(), cura = dado <= 2 ? 0 : dado === 6 ? 2 : 1;
+      ev(estado, { tipo: 'tirada', heroe: h.id, valores: [dado], total: dado, titulo: 'Cosecha' + (o === h ? '' : ' sobre ' + o.nombre), resultado: cura ? '+' + cura + ' de cuerpo' : 'El alma se escapa' });
+      o.cuerpo = Math.min(o.cuerpoMax, o.cuerpo + cura);
+      avisar(estado, cura ? h.nombre + ' consume dos fragmentos de alma: ' + (o === h ? 'recupera' : o.nombre + ' recupera') + ' ' + cura + ' de cuerpo.' : 'El alma se escapa entre los dedos de ' + h.nombre + ': los dos fragmentos se pierden sin curar.', cura ? 'bueno' : 'peligro');
       break;
     }
     case 'alzar': {
