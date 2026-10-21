@@ -230,7 +230,8 @@ export function iniciarMision(estado, def) {
     if (h.efectos?.oso) h.cuerpoMax -= 3;
     bonoEspecialidad(h);
     h.menteActual = menteHeroe(h); // la mente se recupera en el campamento
-    h.rabia = 0;
+    h.rabia = 0; h.armonia = 0; h.herido = false; h.gastados = [];
+    if (h.tipo === 'enano') h.runas = D.RUNAS_PISO;
     h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0; delete h.hallazgos;
     h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : subclaseDe(h)?.almas ? D.HECHIZOS_OSCUROS.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
@@ -423,6 +424,7 @@ export function danarHeroe(estado, h, n, sinCadena = false) {
   }
   if (h.efectos.piel) { delete h.efectos.piel; }
   ganarRabia(estado, h, 1);
+  if (h.tipo === 'elfo') h.herido = true;
   h.cuerpo -= n;
   // Nigromante a punto de caer: sus esqueletos huelen la debilidad y se vuelven contra él.
   if (h.cuerpo === 1 && subclaseDe(h)?.almas) {
@@ -516,6 +518,11 @@ function golpearMonstruo(estado, h, m, dados, etiqueta, conArma = false) {
   const defensa = tirarCombate(dormido || certero ? 0 : Math.max(0, m.defensa - (arma.perfora || 0)));
   let dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudoNegro'));
   if (m.ilusion && dano === 0 && cuenta(ataque, 'calavera')) dano = 1;
+  if (conArma && h.efectos?.traicion) {
+    delete h.efectos.traicion;
+    if (Object.values(estado.heroes).some((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, o, m))) { dano *= 2; etiqueta = (etiqueta || '') + ' · a traición (×2)'; }
+  }
+  if (conArma && dano > 0 && h.efectos?.runaFuego) { delete h.efectos.runaFuego; dano += 1; etiqueta = (etiqueta || '') + ' · runa de fuego (+1)'; }
   if (h.efectos?.sombras) {
     // Combo: si un Guardián enano tiene al monstruo entretenido (pegado a él), el golpe desde las sombras es triple.
     const tanque = Object.values(estado.heroes).some((o) => o.vivo && o.subclase === 'guardian' && T.puedeTocar(estado, o, m));
@@ -524,6 +531,7 @@ function golpearMonstruo(estado, h, m, dados, etiqueta, conArma = false) {
   ev(estado, { tipo: 'dados', atacante: h.id, defensor: m.id, ataque, defensa, dano, defiende: 'monstruo', etiqueta });
   log(estado, h.nombre + (etiqueta ? ' (' + etiqueta + ')' : '') + ' → ' + m.nombre + ': ' + dano + ' de daño.', dano ? 'golpe' : '');
   sumar(cronH(estado, h.id), 'danoHecho', Math.min(dano, m.cuerpo));
+  if (conArma && h.efectos?.runaSangre) { delete h.efectos.runaSangre; const cura = Math.min(dano, m.cuerpo); if (cura && !sinCuras(h)) { h.cuerpo = Math.min(h.cuerpoMax, h.cuerpo + cura); log(estado, 'La runa de sangre devuelve ' + cura + ' de cuerpo a ' + h.nombre + '.', 'bueno'); } }
   danarMonstruo(estado, m, dano);
   if (arma.empuja && m.vivo && dano > 0) empujar(estado, h, m);
   if (arma.ruido && d6() === 1) { avisar(estado, 'El trueno del martillo retumba por los pasillos… algo viene.', 'peligro'); aparecerErrante(estado, h); }
@@ -557,7 +565,8 @@ export function golpearHeroe(estado, m, h, dados, etiqueta, opciones = {}) {
   if (m.efectos?.tambor) { dados += 1; delete m.efectos.tambor; }
   if (estado.monstruos.some((o) => o.tipo === 'ojo' && o.vivo && !o.aliado && !o.efectos.poseido && o !== m && T.lineaVision(estado, o.x, o.y, m.x, m.y))) dados += 1;
   const ataque = tirarCombate(dados);
-  const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0) + (h.efectos.bendicion ? 1 : 0) - penalDefensa(h);
+  const extra = (h.efectos.piel ? 2 : 0) + (h.efectos.calderoDef || 0) - (h.efectos.sordo ? 1 : 0) + (h.efectos.bendicion ? 1 : 0) - penalDefensa(h)
+    + (h.efectos.runaHierro ? 2 : 0) + (h.efectos.runaPiedra ? 2 : 0) + (h.efectos.baluarte ? 1 : 0) + (h.efectos.esquiva ? 2 : 0);
   delete h.efectos.calderoDef; delete h.efectos.sordo;
   const base = h.efectos?.trance ? Math.floor(defensaHeroe(h) / 2) : defensaHeroe(h);
   const defensa = tirarCombate(opciones.mental && estado.heroes[h.id] ? menteAhora(h) : h.efectos?.furia || h.efectos?.furiaB ? 0 : Math.max(0, base + extra));
@@ -1241,12 +1250,16 @@ function habilidadesDe(estado, h, t, libre) {
   const out = [];
   const visibles = estado.monstruos.filter((m) => m.vivo && m.visto && !m.aliado && T.lineaVision(estado, h.x, h.y, m.x, m.y));
   for (const hab of habilidadesHeroe(h)) {
-    const r = { id: hab.id, nombre: hab.nombre, icono: hab.icono, objetivo: hab.objetivo, ok: false, motivo: '', objetivos: [] };
+    const recurso = hab.rabia ? 'rabia' : hab.runas ? 'runas' : hab.armonia ? 'armonia' : hab.menteCoste ? 'mente' : hab.coste ? 'almas' : null;
+    const r = { id: hab.id, nombre: hab.nombre, icono: hab.icono, objetivo: hab.objetivo, ok: false, motivo: '', objetivos: [], recurso, desc: hab.desc };
     out.push(r);
     if (h.efectos.aterrorizado) { r.motivo = 'Estás aterrorizado: sin mente no hay habilidades.'; continue; }
     if (!hab.sinLimite && (estado.habUsada || {})[h.id + ':' + hab.id]) { r.motivo = 'Ya la has usado en este piso.'; continue; }
     if (!hab.sinAccion && !libre) { r.motivo = 'Ya has hecho tu acción este turno.'; continue; }
     if (hab.rabia && (h.rabia || 0) < hab.rabia) { r.motivo = 'Necesitas ' + hab.rabia + ' de rabia (tienes ' + (h.rabia || 0) + ').'; continue; }
+    if (hab.runas && (h.runas || 0) < hab.runas) { r.motivo = 'Necesitas ' + hab.runas + (hab.runas === 1 ? ' runa' : ' runas') + ' (tienes ' + (h.runas || 0) + ').'; continue; }
+    if (hab.armonia && (h.armonia || 0) < hab.armonia) { r.motivo = 'Necesitas ' + hab.armonia + ' de armonía (tienes ' + (h.armonia || 0) + ').'; continue; }
+    if (hab.menteCoste && menteAhora(h) < hab.menteCoste) { r.motivo = 'Necesitas ' + hab.menteCoste + ' de mente (tienes ' + menteAhora(h) + ').'; continue; }
     if (hab.coste && (h.fragmentos || 0) < hab.coste) { r.motivo = 'Necesitas ' + hab.coste + ' fragmentos de alma (tienes ' + (h.fragmentos || 0) + ').'; continue; }
     switch (hab.id) {
       case 'furiaEnana': r.objetivos = h.efectos.brazosPiedra ? [] : objetivosAtaque(estado, h); break;
@@ -1257,6 +1270,19 @@ function habilidadesDe(estado, h, t, libre) {
       case 'flechaLuna':
         r.objetivos = visibles.filter((m) => (m.x === h.x || m.y === h.y) && T.lineaVision(estado, h.x, h.y, m.x, m.y)).map((m) => m.id); break;
       case 'posesion': r.objetivos = visibles.filter((m) => !m.jefe && !m.efectos.poseido).map((m) => m.id); break;
+      case 'runaPiedra': r.objetivos = Object.values(estado.heroes).filter((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, h, o)).map((o) => o.id); break;
+      case 'runaBaluarte': r.objetivos = Object.values(estado.heroes).some((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, h, o)) ? ['yo'] : []; if (!r.objetivos.length) r.motivo = 'No hay nadie pegado a ti.'; break;
+      case 'pasoViento': if (!t.movTirada || t.plantado) { r.motivo = 'Primero tira el movimiento.'; continue; } r.objetivos = ['yo']; break;
+      case 'canto': case 'recordar': {
+        const ya = [...new Set(h.gastados || [])];
+        r.objetivos = ya.map((x) => 'hz:' + x);
+        if (!r.objetivos.length) { r.motivo = 'Aún no has lanzado ningún hechizo.'; continue; }
+        break;
+      }
+      case 'ojoHalcon': if (!D.ARMAS[h.arma].distancia) { r.motivo = 'Necesitas un arma a distancia.'; continue; } r.objetivos = ['yo']; break;
+      case 'zarzas': r.objetivos = estado.monstruos.some((m) => m.vivo && !m.aliado && !m.neutral && T.puedeTocar(estado, h, m)) ? ['yo'] : []; if (!r.objetivos.length) r.motivo = 'No hay enemigos pegados a ti.'; break;
+      case 'orden': r.objetivos = visibles.filter((m) => !m.jefe && !m.neutral && estado.monstruos.some((o) => o !== m && o.vivo && !o.aliado && T.puedeTocar(estado, m, o))).map((m) => m.id); if (!r.objetivos.length) r.motivo = 'Ningún enemigo a la vista tiene a otro pegado.'; break;
+      case 'esperanza': r.objetivos = ['yo']; break;
       case 'rugido': case 'torbellino': r.objetivos = estado.monstruos.some((m) => m.vivo && !m.aliado && !m.neutral && T.puedeTocar(estado, h, m)) ? ['yo'] : []; break;
       case 'certero': if (!D.ARMAS[h.arma].distancia) { r.motivo = 'Necesitas un arma a distancia.'; continue; } r.objetivos = ['yo']; break;
       case 'santuario': if (h.efectos.ayuno) { r.motivo = 'Estás en ayuno sagrado.'; continue; } r.objetivos = ['yo']; break;
@@ -1289,7 +1315,7 @@ function habilidadesDe(estado, h, t, libre) {
     r.ok = r.objetivos.length > 0;
     if (!r.ok && !r.motivo) r.motivo = { furiaEnana: 'No hay nadie a tu alcance.', dobleTajo: 'No hay nadie a tu alcance.', disparoDoble: 'No ves a ningún enemigo lejos de ti.',
       flechaLuna: 'No hay enemigos en tu fila ni en tu columna.', posesion: 'No ves a ningún enemigo que puedas poseer.', escudoPiedra: 'No hay nadie pegado a ti.',
-      rompepiedras: 'No hay derrumbes ni muros frágiles pegados a ti.', rugido: 'No hay enemigos pegados a ti.', torbellino: 'No hay enemigos pegados a ti.', alzar: 'No hay ningún enemigo muerto en tu sala.', tumba: 'No ha caído nadie.' }[hab.id] || '';
+      rompepiedras: 'No hay derrumbes ni muros frágiles pegados a ti.', rugido: 'No hay enemigos pegados a ti.', torbellino: 'No hay enemigos pegados a ti.', runaPiedra: 'No hay nadie pegado a ti.', alzar: 'No hay ningún enemigo muerto en tu sala.', tumba: 'No ha caído nadie.' }[hab.id] || '';
   }
   return out;
 }
@@ -1297,6 +1323,9 @@ function habilidadesDe(estado, h, t, libre) {
 function usarHabilidad(estado, h, id, objetivo) {
   const hab = habilidadesHeroe(h).find((x) => x.id === id);
   if (hab.rabia) h.rabia -= hab.rabia;
+  if (hab.runas) h.runas -= hab.runas;
+  if (hab.armonia) h.armonia -= hab.armonia;
+  if (hab.menteCoste) perderMente(estado, h, hab.menteCoste, 'concentración');
   if (!hab.sinLimite) (estado.habUsada ||= {})[h.id + ':' + id] = 1;
   if (hab.coste) h.fragmentos -= hab.coste;
   const m = estado.monstruos.find((x) => x.id === objetivo);
@@ -1382,6 +1411,46 @@ function usarHabilidad(estado, h, id, objetivo) {
       h.efectos.oso = 3; h.cuerpoMax += 3; h.cuerpo += 3;
       ev(estado, { tipo: 'reliquia', reliquia: 'oso', heroe: h.id, texto: '¡' + h.nombre + ' se transforma en un oso enorme!' });
       break;
+    case 'runaHierro': h.efectos.runaHierro = true; avisar(estado, 'Una runa de hierro brilla en la armadura de ' + h.nombre + ': +2 dados de defensa hasta su turno.', 'bueno'); break;
+    case 'runaFuego': h.efectos.runaFuego = true; avisar(estado, 'La runa de fuego prende en el arma de ' + h.nombre + '.', 'bueno'); break;
+    case 'runaPiedra': { const o = estado.heroes[objetivo]; o.efectos.runaPiedra = h.id; avisar(estado, h.nombre + ' graba una runa de piedra sobre ' + o.nombre + ': +2 dados de defensa hasta su próximo turno.', 'bueno'); break; }
+    case 'runaBaluarte': for (const o of Object.values(estado.heroes)) if (o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, h, o)) o.efectos.baluarte = h.id; avisar(estado, 'La runa del baluarte protege a los que rodean a ' + h.nombre + '.', 'bueno'); break;
+    case 'runaBusqueda': {
+      const vistas = estado.trampas.filter((tr) => tr.activa && !tr.descubierta && T.lineaVision(estado, h.x, h.y, tr.x, tr.y));
+      for (const tr of vistas) tr.descubierta = true;
+      avisar(estado, 'La runa del rastro brilla: ' + (vistas.length ? vistas.length + (vistas.length === 1 ? ' trampa descubierta.' : ' trampas descubiertas.') : 'no hay trampas a la vista.'), vistas.length ? 'bueno' : '');
+      break;
+    }
+    case 'runaSangre': h.efectos.runaSangre = true; avisar(estado, 'La runa de sangre tiene sed: el próximo golpe de ' + h.nombre + ' le curará.', 'bueno'); break;
+    case 'pasoViento': { const t = estado.turno; t.movRestante += 3; avisar(estado, h.nombre + ' se mueve como el viento: +3 casillas.', 'bueno'); break; }
+    case 'esquiva': h.efectos.esquiva = true; avisar(estado, h.nombre + ' se prepara para esquivar: +2 dados de defensa hasta su turno.', 'bueno'); break;
+    case 'canto': case 'recordar': {
+      const hz = objetivo.slice(3);
+      h.gastados.splice(h.gastados.indexOf(hz), 1);
+      h.hechizos.push(hz);
+      avisar(estado, h.nombre + (id === 'canto' ? ' entona un canto élfico' : ' se concentra') + ' y recupera ' + D.HECHIZOS[hz].nombre + '.', 'magia');
+      break;
+    }
+    case 'ojoHalcon': h.efectos.halcon = true; avisar(estado, h.nombre + ' fija la vista como un halcón: su próximo disparo tira +2 dados.', 'bueno'); break;
+    case 'traicion': h.efectos.traicion = true; avisar(estado, h.nombre + ' espera su momento…', 'bueno'); break;
+    case 'zarzas': {
+      const pegados = estado.monstruos.filter((m) => m.vivo && !m.aliado && !m.neutral && T.puedeTocar(estado, h, m));
+      for (const m of pegados) m.efectos.raices = Math.max(m.efectos.raices || 0, 1);
+      avisar(estado, '¡Brotan zarzas alrededor de ' + h.nombre + '! ' + pegados.length + (pegados.length === 1 ? ' enemigo queda atrapado.' : ' enemigos quedan atrapados.'), 'bueno');
+      break;
+    }
+    case 'orden': {
+      const victima = estado.monstruos.find((o) => o !== m && o.vivo && !o.aliado && T.puedeTocar(estado, m, o));
+      avisar(estado, h.nombre + ' entra en la mente de ' + m.nombre + ' y le ordena atacar a ' + victima.nombre + '.', 'magia');
+      golpeEntreMonstruos(estado, m, victima, 'Orden mental de ' + h.nombre);
+      break;
+    }
+    case 'esperanza': {
+      const sala = T.region(h.x, h.y);
+      for (const o of Object.values(estado.heroes)) if (o !== h && o.vivo && !o.fuera && (sala !== '.' ? T.region(o.x, o.y) === sala : T.lineaVision(estado, h.x, h.y, o.x, o.y))) { o.menteActual = Math.min(menteHeroe(o), menteAhora(o) + 1); if (o.menteActual > 0) delete o.efectos.aterrorizado; delete o.efectos.veneno; }
+      avisar(estado, 'Una luz cálida llena la sala: los compañeros de ' + h.nombre + ' recuperan 1 de mente.', 'bueno');
+      break;
+    }
     case 'golpeBrutal': h.efectos.brutal = true; avisar(estado, h.nombre + ' aprieta los dientes: su próximo ataque tira +2 dados.', 'bueno'); break;
     case 'aguantar': h.efectos.aguante = true; avisar(estado, h.nombre + ' se prepara para encajar: el próximo golpe no le hará daño.', 'bueno'); break;
     case 'rugido': {
@@ -2452,6 +2521,7 @@ function buscarTrampas(estado, h) {
 
 function desarmar(estado, h, id) {
   const t = estado.trampas.find((x) => x.id === id);
+  if (h.tipo === 'enano' && (estado.aleatorio || estado.pruebas) && (h.runas || 0) < D.RUNAS_MAX) { h.runas = (h.runas || 0) + 1; log(estado, h.nombre + ' aprovecha el mecanismo para grabar una runa (' + h.runas + ').', 'bueno'); }
   if (D.HEROES[h.tipo].desarmaSiempre) {
     t.activa = false;
     sumar(cron(estado), 'desarmadas');
@@ -2477,6 +2547,7 @@ function lanzar(estado, h, id, objetivo) {
   const hz = D.HECHIZOS[id];
   sumar(cronH(estado, h.id), 'hechizos');
   h.hechizos.splice(h.hechizos.indexOf(id), 1);
+  (h.gastados ||= []).push(id);
   const m = estado.monstruos.find((x) => x.id === objetivo);
   const o = estado.heroes[objetivo];
   ev(estado, { tipo: 'hechizo', heroe: h.id, hechizo: id, objetivo, elemento: hz.elemento });
@@ -2563,7 +2634,10 @@ function empezarTurno(estado, id) {
   delete h.efectos.furia;
   if (h.efectos.veneno && h.vivo) { avisar(estado, 'El veneno hace efecto: ' + h.nombre + ' pierde 1 de cuerpo.', 'peligro'); danarHeroe(estado, h, 1); }
   // Efectos de subclase que duran «hasta su próximo turno».
-  delete h.efectos.bendicion; delete h.efectos.aguante;
+  delete h.efectos.bendicion; delete h.efectos.aguante; delete h.efectos.runaHierro; delete h.efectos.runaPiedra; delete h.efectos.esquiva;
+  for (const o of Object.values(estado.heroes)) if (o.efectos?.baluarte === id) delete o.efectos.baluarte;
+  // Armonía del elfo: un turno entero sin que le hieran le da 1.
+  if (h.tipo === 'elfo' && (estado.aleatorio || estado.pruebas)) { if (!h.herido && h.vivo) h.armonia = Math.min(D.ARMONIA_MAX, (h.armonia || 0) + 1); h.herido = false; }
   for (const o of Object.values(estado.heroes)) if (o.efectos?.escudoTotal === id) delete o.efectos.escudoTotal;
   for (const k of TEMPORALES) if (h.efectos[k] && --h.efectos[k] <= 0) { delete h.efectos[k]; finTemporal(estado, h, k); }
   if (estado.santuario?.heroe === id) estado.santuario = null;
@@ -2897,8 +2971,9 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       usarAccion();
       // Caminante de sombras: +1 contra un monstruo que está pegado a otro héroe.
       const sigilo = subclaseDe(h)?.sigilo && Object.values(estado.heroes).some((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, o, m)) ? 1 : 0;
-      const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0) + (h.efectos.calderoAtq || 0) + (h.efectos.grito ? 1 : 0) + sigilo + (h.efectos.brutal ? 2 : 0);
-      delete h.efectos.coraje; delete h.efectos.fuerza; delete h.efectos.calderoAtq; delete h.efectos.brutal;
+      const halcon = h.efectos.halcon && D.ARMAS[h.arma].distancia ? 2 : 0;
+      const extra = (h.efectos.coraje || 0) + (h.efectos.fuerza || 0) + (h.efectos.calderoAtq || 0) + (h.efectos.grito ? 1 : 0) + sigilo + (h.efectos.brutal ? 2 : 0) + halcon;
+      delete h.efectos.coraje; delete h.efectos.fuerza; delete h.efectos.calderoAtq; delete h.efectos.brutal; if (halcon) delete h.efectos.halcon;
       if (D.ARMAS[h.arma].pesada) { t.plantado = true; t.movRestante = 0; }
       t.ataco = true;
       golpearMonstruo(estado, h, m, Math.max(1, ataqueHeroe(h) + extra), D.ARMAS[h.arma].nombre, true);

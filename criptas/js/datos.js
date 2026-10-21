@@ -173,15 +173,21 @@ export const SUBCLASES = {
     guardian:  { nombre: 'Guardián', papel: 'Protege', mods: { defensa: 1 },
       bueno: '+1 dado de defensa siempre.', malo: 'Al usar el Escudo de piedra queda petrificado: 2 turnos moviendo con 1 dado, y el siguiente no puede atacar.',
       hab: { id: 'escudoPiedra', nombre: 'Escudo de piedra', icono: 'rodela', objetivo: 'heroe',
-        desc: 'Un compañero pegado a ti (o tú) no recibe ningún daño hasta tu próximo turno.' } },
+        desc: 'Un compañero pegado a ti (o tú) no recibe ningún daño hasta tu próximo turno.' },
+      extra: [{ id: 'runaBaluarte', nombre: 'Runa del baluarte', icono: 'rodela', objetivo: 'ninguno', runas: 2, sinLimite: true, sinAccion: true,
+        desc: '2 runas, sin gastar acción: los compañeros pegados a ti tiran +1 dado de defensa hasta tu próximo turno.' }] },
     minero:    { nombre: 'Minero', papel: 'Utilidad', mods: {}, ventrampas: true,
       bueno: 'Ve las trampas y las puertas secretas de cada sala al entrar.', malo: 'Rompepiedras hace ruido: atrae seguro a un monstruo errante y queda medio sordo 2 turnos (−1 defensa).',
       hab: { id: 'rompepiedras', nombre: 'Rompepiedras', icono: 'derrumbe', objetivo: 'lista',
-        desc: 'Revienta un derrumbe o un muro frágil pegado a ti; la metralla hace 1 de daño a los enemigos pegados.' } },
+        desc: 'Revienta un derrumbe o un muro frágil pegado a ti; la metralla hace 1 de daño a los enemigos pegados.' },
+      extra: [{ id: 'runaBusqueda', nombre: 'Runa del rastro', icono: 'buscar', objetivo: 'ninguno', runas: 1, sinLimite: true, sinAccion: true,
+        desc: '1 runa, sin gastar acción: descubre todas las trampas que tengas a la vista.' }] },
     berserker: { nombre: 'Berserker', papel: 'Daño', mods: {}, arma: 'hacha',
       bueno: 'Empieza con hacha de guerra.', malo: 'Durante la furia no tira defensa, no puede alejarse de los enemigos y a 1 de cuerpo ataca a lo que tenga al lado; al acabar, 2 turnos agotado (1 dado de movimiento y −1 de ataque).',
       hab: { id: 'furiaEnana', nombre: 'Furia enana', icono: 'hacha', objetivo: 'monstruo',
-        desc: 'Ataca dos veces ahora y durante 3 turnos cada ataque es doble.' } }
+        desc: 'Ataca dos veces ahora y durante 3 turnos cada ataque es doble.' },
+      extra: [{ id: 'runaSangre', nombre: 'Runa de sangre', icono: 'pocion', objetivo: 'ninguno', runas: 2, sinLimite: true, sinAccion: true,
+        desc: '2 runas, sin gastar acción: en tu próximo ataque recuperas 1 de cuerpo por cada punto de daño que hagas.' }] }
   },
   barbaro: {
     campeon:   { nombre: 'Campeón', papel: 'Líder', mods: {}, cuerpoExtra: 1,
@@ -207,21 +213,29 @@ export const SUBCLASES = {
     arquero:   { nombre: 'Arquero lunar', papel: 'Tirador', mods: {}, arquero: true,
       bueno: '+1 dado al atacar a distancia.', malo: 'La Flecha de luna se cobra un hechizo de su lista y el movimiento que le quede.',
       hab: { id: 'flechaLuna', nombre: 'Flecha de luna', icono: 'ballesta', objetivo: 'monstruo',
-        desc: 'Elige un enemigo en tu misma fila o columna: la flecha da a todos los de esa línea hasta la pared (3 dados cada uno).' } },
+        desc: 'Elige un enemigo en tu misma fila o columna: la flecha da a todos los de esa línea hasta la pared (3 dados cada uno).' },
+      extra: [{ id: 'ojoHalcon', nombre: 'Ojo de halcón', icono: 'ojo', objetivo: 'ninguno', armonia: 2, sinLimite: true, sinAccion: true,
+        desc: '2 de armonía, sin gastar acción: tu próximo ataque a distancia tira +2 dados.' }] },
     sombras:   { nombre: 'Caminante de sombras', papel: 'Sigilo', mods: {}, sigilo: true,
       bueno: '+1 dado contra monstruos pegados a otro héroe.', malo: 'Al salir de las sombras queda marcado 2 turnos: los monstruos van a por él y tiene −1 de defensa.',
       hab: { id: 'sombras', nombre: 'Fundirse en sombras', icono: 'fantasma', objetivo: 'ninguno',
-        desc: 'Invisible 2 turnos: los monstruos le ignoran. Su primer ataque desde las sombras hace el doble y le hace visible.' } },
+        desc: 'Invisible 2 turnos: los monstruos le ignoran. Su primer ataque desde las sombras hace el doble y le hace visible.' },
+      extra: [{ id: 'traicion', nombre: 'Golpe a traición', icono: 'espada', objetivo: 'ninguno', armonia: 2, sinLimite: true, sinAccion: true,
+        desc: '2 de armonía, sin gastar acción: si tu próximo ataque es contra un monstruo pegado a otro héroe, hace el doble de daño.' }] },
     bosque:    { nombre: 'Guardián del bosque', papel: 'Cambiaformas', mods: {}, raicesLargas: true,
       bueno: 'Sus Raíces duran un turno más.', malo: 'Como oso no lanza hechizos ni usa objetos; al volver pierde el turno y 2 turnos más sin hechizos.',
       hab: { id: 'oso', nombre: 'Forma de oso', icono: 'tierra', objetivo: 'ninguno',
-        desc: '3 turnos: +3 de cuerpo y +2 dados de ataque.' } }
+        desc: '3 turnos: +3 de cuerpo y +2 dados de ataque.' },
+      extra: [{ id: 'zarzas', nombre: 'Zarzas', icono: 'tierra', objetivo: 'ninguno', armonia: 2, sinLimite: true,
+        desc: '2 de armonía: brotan zarzas y los enemigos pegados a ti no pueden moverse en su próximo turno.' }] }
   },
   mago: {
     hechicero: { nombre: 'Hechicero', papel: 'Control', mods: { mente: 1 },
       bueno: '+1 de mente.', malo: 'Mientras posee, su cuerpo queda en trance; al volver, 2 turnos mareado (1 dado de movimiento y −1 defensa).',
       hab: { id: 'posesion', nombre: 'Posesión', icono: 'mente', objetivo: 'monstruo',
-        desc: 'Mete su alma en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten con un duelo de mentes, y si pierdes, él te controla a ti. Si golpean tu cuerpo, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' } },
+        desc: 'Mete su alma en un enemigo a la vista (no un jefe). Los de mente fuerte se resisten con un duelo de mentes, y si pierdes, él te controla a ti. Si golpean tu cuerpo, vuelves de golpe; si muere, tu alma queda atrapada en el monstruo.' },
+      extra: [{ id: 'orden', nombre: 'Orden mental', icono: 'mente', objetivo: 'monstruo', menteCoste: 2, sinLimite: true,
+        desc: '2 de mente: un enemigo a la vista (no un jefe) golpea a otro que tenga pegado.' }] },
     nigromante: { nombre: 'Nigromante', papel: 'Muertos', mods: {}, almas: true,
       bueno: 'Recoge fragmentos de alma de los enemigos que mueren en su misma sala (máx. 6). Cambia sus 9 hechizos por 4 oscuros.', malo: 'Si cae a 1 de cuerpo, sus esqueletos se vuelven contra él; revivir atrae a un monstruo errante; los fragmentos se pierden al acabar el piso.',
       hab: { id: 'alzar', nombre: 'Alzar muerto', icono: 'esqueleto', objetivo: 'cadaver', coste: 2, sinLimite: true,
@@ -233,7 +247,9 @@ export const SUBCLASES = {
     sacerdote: { nombre: 'Sacerdote', papel: 'Apoyo', mods: {}, luz: true,
       bueno: 'Magia de luz: Purgatorio, Luz sanadora y Bendición. Puede llevar daga o bastón.', malo: 'Tras el Santuario, Ayuno sagrado: pierde 1D6 de cuerpo (nunca por debajo de 1) y 2 turnos sin atacar ni lanzar hechizos. Contra vivos su luz hace la mitad.',
       hab: { id: 'santuario', nombre: 'Santuario', icono: 'altar', objetivo: 'ninguno',
-        desc: 'Hasta tu próximo turno, ningún monstruo puede atacar a los héroes de tu sala.' } }
+        desc: 'Hasta tu próximo turno, ningún monstruo puede atacar a los héroes de tu sala.' },
+      extra: [{ id: 'esperanza', nombre: 'Luz de esperanza', icono: 'curar', objetivo: 'ninguno', menteCoste: 2, sinLimite: true, sinAccion: true,
+        desc: '2 de tu mente, sin gastar acción: los demás héroes de tu sala recuperan 1 de mente y se les pasa el veneno.' }] }
   }
 };
 // Hechizos de luz del sacerdote (sustituyen a los elementales al especializarse).
@@ -426,7 +442,31 @@ export const REACCIONES_AUTO = {
 // ---------- Recursos y habilidades de clase (Mazmorra Infinita) ----------
 // Rabia del bárbaro: +1 al recibir un golpe que hace daño y al matar a un monstruo (máx. 5). Se pierde al acabar el piso.
 export const RABIA_MAX = 5;
+// Runas del enano: empieza cada piso con 3 grabadas y graba otra cada vez que desarma una trampa (máx. 4).
+export const RUNAS_PISO = 3, RUNAS_MAX = 4;
+// Armonía del elfo: +1 al empezar su turno si desde el anterior nadie le ha herido (máx. 3).
+export const ARMONIA_MAX = 3;
 export const HAB_CLASE = {
+  enano: [
+    { id: 'runaHierro', nombre: 'Runa de hierro', icono: 'armadura', objetivo: 'ninguno', runas: 1, sinLimite: true, sinAccion: true,
+      desc: '1 runa, sin gastar acción: +2 dados de defensa hasta tu próximo turno.' },
+    { id: 'runaFuego', nombre: 'Runa de fuego', icono: 'fuego', objetivo: 'ninguno', runas: 1, sinLimite: true, sinAccion: true,
+      desc: '1 runa, sin gastar acción: si tu próximo ataque hace daño, la runa quema 1 más.' },
+    { id: 'runaPiedra', nombre: 'Runa de piedra', icono: 'piedra', objetivo: 'heroe', runas: 2, sinLimite: true, sinAccion: true,
+      desc: '2 runas, sin gastar acción: un compañero pegado a ti tira +2 dados de defensa hasta su próximo turno.' }
+  ],
+  elfo: [
+    { id: 'pasoViento', nombre: 'Paso del viento', icono: 'viento', objetivo: 'ninguno', armonia: 1, sinLimite: true, sinAccion: true,
+      desc: '1 de armonía, sin gastar acción: 3 casillas más de movimiento este turno.' },
+    { id: 'esquiva', nombre: 'Esquiva élfica', icono: 'correr', objetivo: 'ninguno', armonia: 2, sinLimite: true, sinAccion: true,
+      desc: '2 de armonía, sin gastar acción: +2 dados de defensa hasta tu próximo turno.' },
+    { id: 'canto', nombre: 'Canto élfico', icono: 'hechizo', objetivo: 'lista', armonia: 3, sinLimite: true, sinAccion: true,
+      desc: '3 de armonía, sin gastar acción: recuperas un hechizo que ya hayas lanzado en esta misión.' }
+  ],
+  mago: [
+    { id: 'recordar', nombre: 'Concentración', icono: 'pergamino', objetivo: 'lista', menteCoste: 2, sinLimite: true, sinAccion: true,
+      desc: '2 de mente, sin gastar acción: recuperas un hechizo que ya hayas lanzado en esta misión. Cuidado: a 0 de mente quedas aterrorizado.' }
+  ],
   barbaro: [
     { id: 'golpeBrutal', nombre: 'Golpe brutal', icono: 'hacha', objetivo: 'ninguno', rabia: 2, sinLimite: true, sinAccion: true,
       desc: '2 de rabia, sin gastar acción: tu próximo ataque tira +2 dados.' },

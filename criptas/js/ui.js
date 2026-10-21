@@ -503,6 +503,9 @@ function mostrarReglas() {
     ${sec('Mazmorra Infinita', `
     <p>Pisos al azar, uno detrás de otro, y cada vez más duros. El equipo y las heridas se conservan entre pisos; después de cada piso hay campamento. Si caéis todos, se acaba la partida (en Aventurero volvéis al campamento).</p>
     <p><b>Rabia del bárbaro:</b> gana 1 cada vez que le hieren o mata a un monstruo (máximo 5, se pierde al acabar el piso). La gasta en Golpe brutal (2: +2 dados), Aguantar (3: ignora el próximo golpe) o Rugido (4: echa atrás a los que tiene pegados). Cada especialización suma una más.</p>
+    <p><b>Runas del enano:</b> empieza cada piso con 3 y graba otra al desarmar una trampa. Runa de hierro (1: +2 defensa), de fuego (1: +1 daño al próximo golpe) o de piedra (2: +2 defensa a un compañero pegado).</p>
+    <p><b>Armonía del elfo:</b> gana 1 cada turno en que nadie le ha herido (máximo 3). Paso del viento (1: +3 casillas), Esquiva (2: +2 defensa) o Canto élfico (3: recupera un hechizo ya lanzado).</p>
+    <p><b>Concentración del mago:</b> gastando 2 de mente recupera un hechizo ya lanzado. Si se queda a 0, aterrorizado.</p>
     <p><b>Niveles:</b> matar da experiencia. Cada nivel da una mejora, y en el <b>nivel 3</b> eliges especialización: tres por clase, cada una con su habilidad y su pega.</p>
     <p><b>Zonas:</b> Cuevas (1–5), Catacumbas (6–10), Fortaleza (11–15) y Abismo (16–20). Cada 5 pisos hay un <b>jefe de zona</b>, y en el 20 espera el <b>Corazón de la Mazmorra</b>. Si lo destruís empieza la Pesadilla.</p>
     <p><b>Maldiciones:</b> desde el piso 3 el Corazón puede maldecir un piso (oscuridad, inundado, fiebre del oro, sin descanso). Mira el Diario para saber cuál.</p>
@@ -1001,7 +1004,7 @@ function pintarJuego() {
     const quien = e.jugadores?.[h.jugador]?.nombre || '';
     const clase = [e.turno?.heroe === t && e.fase === 'mision' ? 'activa' : '', h.vivo ? '' : 'muerto', h.fuera ? 'fuera' : ''].join(' ');
     return `<button class="hoja ${clase}" data-heroe="${t}"><span class="ret" style="background:${def.color}">${svg(h.icono)}</span>
-      <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span><span class="pv">${h.cuerpo}<small>/${h.cuerpoMax}</small></span><span class="mt" title="Puntos de mente">Mente ${M.menteAhora(h)}/${M.menteHeroe(h)}${h.rabia ? ` · <span class="rabia">Rabia ${h.rabia}/${D.RABIA_MAX}</span>` : ''}</span>
+      <strong>${esc(h.nombre)}${e.aleatorio ? ` <span class="nv">Nv ${h.nivel || 1}</span>` : ''}</strong><span class="vida" aria-label="Cuerpo ${h.cuerpo} de ${h.cuerpoMax}">${vida}</span><span class="pv">${h.cuerpo}<small>/${h.cuerpoMax}</small></span><span class="mt" title="Puntos de mente">Mente ${M.menteAhora(h)}/${M.menteHeroe(h)}${h.rabia ? ` · <span class="rabia">Rabia ${h.rabia}/${D.RABIA_MAX}</span>` : ''}${h.runas ? ` · Runas ${h.runas}` : ''}${h.armonia ? ` · Armonía ${h.armonia}/${D.ARMONIA_MAX}` : ''}</span>
       ${h.ia ? '<span class="jug">Compañero IA</span>' : app.modo !== 'local' ? `<span class="jug">${esc(quien)}</span>` : ''}</button>`;
   }).join('');
   const c = e.cargador;
@@ -1055,6 +1058,8 @@ function pintarAcciones() {
   if (app.seleccion?.tipo === 'habilidad' || app.seleccion?.tipo === 'poder') info = 'Toca el objetivo de ' + app.seleccion.nombre + '.';
   if (h.fragmentos) info += ' · Almas: ' + h.fragmentos + '/6';
   if (h.rabia) info += ' · Rabia: ' + h.rabia + '/' + D.RABIA_MAX;
+  if (h.runas) info += ' · Runas: ' + h.runas;
+  if (h.armonia) info += ' · Armonía: ' + h.armonia + '/' + D.ARMONIA_MAX;
   if (app.seleccion?.tipo === 'trompa' && !d.trompa) app.seleccion = null;
   if (app.seleccion?.tipo === 'trompa') return pintarTrompa(e, h, d, et, bot);
   if (app.seleccion?.tipo === 'reliquias') return pintarReliquias(e, h, d, et, bot);
@@ -1091,7 +1096,14 @@ function pintarAcciones() {
   for (const al of d.aliados || []) boton('aliado:' + al.id, 'calavera', app.moverAliado === al.id ? 'Volver a tu héroe' : 'Dirigir ' + al.nombre.toLowerCase(),
     { clase: app.moverAliado === al.id ? 'activo' : '', n: al.restante + ' casillas' + (al.atacables.length ? ' · puede atacar' : '') + ' · ' + (al.turnos + 1) + (al.turnos ? ' rondas' : ' ronda'), off: !al.restante && !al.atacables.length && app.moverAliado !== al.id }, 'aqui');
   if (d.poseido?.poder) boton('poder', 'mente', d.poseido.poder.nombre, { n: 'poder del poseído', clase: app.seleccion?.tipo === 'poder' ? 'activo' : '' });
-  for (const hb of d.habilidades || []) boton(hb.id, hb.icono, hb.nombre, { hab: true, off: !hb.ok, n: hb.ok ? 'habilidad' : hb.motivo, clase: app.seleccion?.habilidad === hb.id ? 'activo' : '' });
+  // Las habilidades que gastan un recurso (rabia, runas, armonía, mente, almas) van juntas en un solo botón.
+  const conRecurso = (d.habilidades || []).filter((hb) => hb.recurso);
+  for (const hb of (d.habilidades || []).filter((x) => !x.recurso)) boton(hb.id, hb.icono, hb.nombre, { hab: true, off: !hb.ok, n: hb.ok ? 'habilidad' : hb.motivo, clase: app.seleccion?.habilidad === hb.id ? 'activo' : '' });
+  if (conRecurso.length) {
+    const rec = { rabia: ['fuego', 'Rabia', (h.rabia || 0) + '/' + D.RABIA_MAX], runas: ['piedra', 'Runas', String(h.runas || 0)], armonia: ['elfa', 'Armonía', (h.armonia || 0) + '/' + D.ARMONIA_MAX], mente: ['mente', 'Mente', M.menteAhora(h) + '/' + M.menteHeroe(h)], almas: ['calavera', 'Almas', (h.fragmentos || 0) + '/6'] }[conRecurso[0].recurso];
+    const usables = conRecurso.filter((x) => x.ok).length;
+    boton('recursos', rec[0], rec[1] + ' ' + rec[2], { n: usables ? usables + (usables === 1 ? ' habilidad lista' : ' habilidades listas') : 'nada aún', clase: app.verRecursos ? 'activo' : '' }, usables ? 'aqui' : 'mas');
+  }
   if (d.desarmables.length) boton('desarmar', 'llave', 'Desarmar');
   if (d.puertas?.length) boton('puerta', 'puerta', 'Abrir puerta', { n: d.puertas.every((p) => p.bloqueada) ? 'cerrada' : '' });
   if (d.altar) boton('altar', 'altar', 'Rezar', { n: D.DIOSES[d.altar.dios].nombre });
@@ -1110,6 +1122,15 @@ function pintarAcciones() {
   if (d.salir) boton('salir', 'escalera', 'Salir', { clase: 'principal' }, 'fijo');
   else if (enLaEscalera(e, h)) boton('salir', 'escalera', 'Salir', { off: true, n: 'Aún no', titulo: motivoNoSalir(e) }, 'fijo');
   const b = [...fijos, ...aqui];
+  if (app.verRecursos && (!conRecurso.length || app.verMasDe !== t.heroe + ':' + e.ronda)) app.verRecursos = false;
+  if (app.verRecursos) {
+    et.innerHTML = `<b>${esc(h.nombre)}</b><span>Elige en qué gastarlo.</span>`;
+    bot.innerHTML = [...conRecurso.map((hb) => html(hb.id, hb.icono, hb.nombre, { hab: true, off: !hb.ok, n: hb.ok ? hb.desc.split(':')[0] : hb.motivo, clase: app.seleccion?.habilidad === hb.id ? 'activo' : '', titulo: hb.desc })), html('menos', 'reloj', 'Volver')].join('');
+    bot.querySelectorAll('[data-acc]').forEach((x) => x.addEventListener('click', () => accionBoton(x.dataset.acc, h, d)));
+    bot.querySelectorAll('[data-hab]').forEach((x) => x.addEventListener('click', () => { app.verRecursos = false; usarHabilidadUI(x.dataset.hab, h, d); }));
+    if (app.reproduciendo) bot.querySelectorAll('button').forEach((x) => (x.disabled = true));
+    return;
+  }
   if (app.verMas && (!mas.length || app.verMasDe !== t.heroe + ':' + e.ronda)) app.verMas = false;
   if (app.verMas) {
     et.innerHTML = `<b>Más acciones</b><span>Lo que no se puede usar ahora sale apagado, con el motivo.</span>`;
@@ -1205,7 +1226,7 @@ async function usarHabilidadUI(id, h, d) {
   if (hb.objetivo === 'monstruo' || hb.objetivo === 'heroe') { app.seleccion = { tipo: 'habilidad', habilidad: id, nombre: hb.nombre, objetivos: hb.objetivos }; return pintarAcciones(); }
   // Elegir de una lista: derrumbes/muros, muertos para alzar, caídos para revivir.
   const e = app.estado;
-  const texto = (o) => o.startsWith('roca:') ? 'El derrumbe de ' + o.split(':')[1] : o.startsWith('muro:') ? 'El muro frágil'
+  const texto = (o) => o.startsWith('hz:') ? D.HECHIZOS[o.slice(3)].nombre : o.startsWith('roca:') ? 'El derrumbe de ' + o.split(':')[1] : o.startsWith('muro:') ? 'El muro frágil'
     : e.heroes[o] ? e.heroes[o].nombre : (e.monstruos.find((m) => m.id === o)?.nombre || o);
   app.cerrarModalFuera = () => {};
   const i = await modal('<h2>' + esc(hb.nombre) + '</h2><p>Elige:</p>', [{ texto: 'Nada', clase: 'claro' }, ...hb.objetivos.map((o) => ({ texto: texto(o) }))]);
@@ -1222,7 +1243,8 @@ const dadosTxt = (h) => (M.dadosMovimiento(h) === 1 ? '1 dado' : '2 dados');
 async function accionBoton(acc, h, d) {
   const base = { heroe: h.id };
   if (acc.startsWith('aliado:')) { const id = acc.slice(7); app.moverAliado = app.moverAliado === id ? null : id; app.moverPoseido = false; app.moverCargador = false; app.seleccion = null; app.verMas = false; return pintarAcciones(); }
-  if (acc === 'mas' || acc === 'menos') { app.verMas = acc === 'mas'; app.verMasDe = h.id + ':' + app.estado.ronda; return pintarAcciones(); }
+  if (acc === 'recursos') { app.verRecursos = true; app.verMas = false; app.verMasDe = h.id + ':' + app.estado.ronda; return pintarAcciones(); }
+  if (acc === 'mas' || acc === 'menos') { app.verRecursos = false; app.verMas = acc === 'mas'; app.verMasDe = h.id + ':' + app.estado.ronda; return pintarAcciones(); }
   app.verMas = false;
   switch (acc) {
     case 'tirar': return enviar({ ...base, tipo: 'tirar' });
@@ -1435,7 +1457,7 @@ function fichaHeroe(t) {
   const pots = Object.entries(h.objetos).filter(([, n]) => n > 0).map(([k, n]) => D.POCIONES[k]?.nombre + ' ×' + n).join(', ');
   const hz = h.hechizos.map((x) => D.HECHIZOS[x].nombre).join(', ');
   const ef = Object.entries(h.efectos).map(([k, v]) => ({ piel: 'Piel de roca', coraje: '+2 dados de ataque', fuerza: '+2 dados de ataque', veloz: 'Movimiento doble', niebla: 'Oculto en la niebla',
-    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado de ataque (grito de guerra)', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', escudoTotal: 'Tras un escudo de piedra: no recibe daño', petrificado: 'Petrificado: 1 dado de movimiento', brazosPiedra: 'Brazos de piedra: no puede atacar', aturdidoRuido: 'Medio sordo: −1 defensa', furiaB: 'Furia enana: golpes dobles, sin defensa, no retrocede', agotadoFuria: 'Agotado tras la furia: 1 dado de movimiento y −1 ataque', pechoDescubierto: 'Pecho descubierto: −1 defensa', recarga: 'Recargando: −1 dado a distancia', marcado: 'Marcado: los monstruos van a por él y −1 defensa', bestia: 'La bestia sigue dentro: sin hechizos', mareo: 'Mareado: 1 dado de movimiento y −1 defensa', ayuno: 'Ayuno sagrado: sin atacar ni hechizos', aterrorizado: 'Aterrorizado: sin mente, −1 ataque y defensa, sin habilidades', brutal: 'Golpe brutal: +2 dados en el próximo ataque', aguante: 'Aguantando: el próximo golpe no le hace daño', certero: 'Tiro certero: el próximo disparo no deja defenderse', capa: 'Invisible bajo la capa de sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', guerraAtq: '+1 ataque (Dios de la guerra)', guerraDef: '+1 defensa (Dios de la guerra)', malaSuerte: 'Mala suerte: −1 defensa', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
+    calderoAtq: v > 0 ? '+1 dado en el próximo ataque' : '−1 dado en el próximo ataque', calderoDef: v > 0 ? 'Robustez (+1 dado de defensa)' : 'Vulnerable (−1 dado de defensa)', sordo: 'Medio sordo (−1 dado de defensa)', farol: 'Lleva el farol encendido (los monstruos van a por él)', furia: 'En furia: no tira defensa hasta su turno', trance: 'En trance: su alma está en otro cuerpo', escudoPiedra: 'Escudo de piedra: el próximo golpe no le hace daño', grito: '+1 dado de ataque (grito de guerra)', provoca: 'Los monstruos van a por él', agotado: 'Agotado: 1 dado de movimiento y −1 defensa', sombras: 'Invisible entre las sombras', escudoTotal: 'Tras un escudo de piedra: no recibe daño', petrificado: 'Petrificado: 1 dado de movimiento', brazosPiedra: 'Brazos de piedra: no puede atacar', aturdidoRuido: 'Medio sordo: −1 defensa', furiaB: 'Furia enana: golpes dobles, sin defensa, no retrocede', agotadoFuria: 'Agotado tras la furia: 1 dado de movimiento y −1 ataque', pechoDescubierto: 'Pecho descubierto: −1 defensa', recarga: 'Recargando: −1 dado a distancia', marcado: 'Marcado: los monstruos van a por él y −1 defensa', bestia: 'La bestia sigue dentro: sin hechizos', mareo: 'Mareado: 1 dado de movimiento y −1 defensa', ayuno: 'Ayuno sagrado: sin atacar ni hechizos', aterrorizado: 'Aterrorizado: sin mente, −1 ataque y defensa, sin habilidades', brutal: 'Golpe brutal: +2 dados en el próximo ataque', runaHierro: 'Runa de hierro: +2 dados de defensa', runaPiedra: 'Runa de piedra: +2 dados de defensa', baluarte: 'Runa del baluarte: +1 dado de defensa', runaFuego: 'Runa de fuego: el próximo golpe quema 1 más', runaSangre: 'Runa de sangre: el próximo golpe le cura', esquiva: 'Esquiva élfica: +2 dados de defensa', halcon: 'Ojo de halcón: +2 dados en el próximo disparo', traicion: 'Golpe a traición preparado', aguante: 'Aguantando: el próximo golpe no le hace daño', certero: 'Tiro certero: el próximo disparo no deja defenderse', capa: 'Invisible bajo la capa de sombras', veneno: 'Envenenado: −1 de cuerpo cada turno hasta curarse', guerraAtq: '+1 ataque (Dios de la guerra)', guerraDef: '+1 defensa (Dios de la guerra)', malaSuerte: 'Mala suerte: −1 defensa', oso: 'En forma de oso', bendicion: 'Bendecido: +1 defensa', dominado: 'Dominado: el enemigo le controla en su próximo turno', cadena: 'Encadenado con su hermano de armas', muro: 'Plantado tras el escudo', tiron: 'Tirón de la cadena: no se mueve su próximo turno' }[k])).filter(Boolean).join(', ');
   app.cerrarModalFuera = () => {};
   modal(`${tarjetaHTML(t, h.fem, h)}<p class="nota" style="margin-top:12px">${esc(def.lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
     ${pots ? `<p><b>Pociones:</b> ${esc(pots)}</p>` : ''}${hz ? `<p><b>Hechizos que le quedan:</b> ${esc(hz)}</p>` : ''}${ef ? `<p><b>Efectos:</b> ${esc(ef)}</p>` : ''}`, [{ texto: 'Cerrar' }]);
