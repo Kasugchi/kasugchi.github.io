@@ -1498,6 +1498,31 @@ async function reproducir() {
   app.reproduciendo = false;
   irAFase();
   if (app.trasCola) { const a = app.trasCola; app.trasCola = null; enviar(a); }
+  preguntarHallazgo();
+}
+
+// Arma o armadura recién conseguida: ¿cambiarla ya por lo que llevas?
+let preguntando = false;
+async function preguntarHallazgo() {
+  const e = app.estado;
+  if (preguntando || e?.fase !== 'mision' || e.turno?.heroe == null) return;
+  const h = e.heroes[e.turno.heroe];
+  if (!h?.hallazgos?.length || !M.puedeControlar(e, miId, h.id)) return;
+  const item = h.hallazgos[0];
+  const nuevo = D.ARMAS[item] || D.ARMADURAS[item];
+  if (!nuevo) return;
+  const desc = (def) => (def.ataque ? def.ataque + ' dados de ataque' : def.defensa ? (def.defensa > 0 ? '+' : '') + def.defensa + ' de defensa' : 'Se lleva puesto')
+    + (def.dosManos ? ', a dos manos' : '') + (def.distancia ? ', a distancia' : '') + (def.diagonal ? ', en diagonal' : '')
+    + (def.mercader ? '. ✔ ' + def.bueno + ' ✘ ' + def.malo : '.');
+  const motivo = M.motivoNoEquipar(h, item);
+  const actual = D.ARMAS[item] ? `<p>Ahora llevas <b>${esc(D.ARMAS[h.arma].nombre)}</b>: ${esc(desc(D.ARMAS[h.arma]))}</p>` : '';
+  preguntando = true;
+  app.cerrarModalFuera = null;
+  const i = await modal(`<h2>${esc(h.nombre)} consigue: ${esc(nuevo.nombre)}</h2><p>${esc(desc(nuevo))}</p>${actual}`
+    + (motivo ? `<p class="nota">Ahora no te la puedes poner: ${esc(motivo)} Queda en tu inventario.</p>` : `<p class="nota">${D.ARMAS[item] ? 'Cambiar de arma' : 'Ponértela'} no gasta tu acción. Lo que te quites va al inventario.</p>`),
+    motivo ? [{ texto: 'Vale' }] : [{ texto: 'Guardarla', clase: 'claro' }, { texto: D.ARMAS[item] ? 'Empuñarla' : 'Ponérmela' }]);
+  preguntando = false;
+  enviar({ heroe: h.id, tipo: 'equiparHallazgo', item, no: motivo || i !== 1 });
 }
 
 const posDe = (id) => {

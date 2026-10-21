@@ -180,7 +180,7 @@ export function iniciarMision(estado, def) {
     const h = estado.heroes[t];
     const base = D.HEROES[t];
     if (h.efectos?.oso) h.cuerpoMax -= 3;
-    h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0;
+    h.cuerpo = estado.aleatorio && h.cuerpo > 0 ? Math.min(h.cuerpo, h.cuerpoMax) : h.cuerpoMax; h.vivo = true; h.fuera = false; h.efectos = {}; h.fragmentos = 0; delete h.hallazgos;
     h.hechizos = subclaseDe(h)?.luz ? D.HECHIZOS_LUZ.slice() : base.elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);
     [h.x, h.y] = estado.escalera[i++];
     if (estado.aleatorio && armaDe(h).avaro && h.oro > 0) { const come = Math.ceil(h.oro / 10); h.oro -= come; log(estado, 'La Espada del avaro se come ' + come + ' monedas de la bolsa de ' + h.nombre + '.', 'peligro'); }
@@ -1015,14 +1015,20 @@ export const nombreItem = (item) => (D.ARMAS[item] || D.ARMADURAS[item] || D.POC
 //  TESORO Y BÚSQUEDAS
 // =============================================================
 function darArma(estado, h, armaId) {
-  const arma = D.ARMAS[armaId];
-  if (!motivoNoEquipar(h, armaId) && arma.ataque >= D.ARMAS[h.arma].ataque) {
-    meter(inventarioDe(h), h.arma);
-    h.arma = armaId;
-    return 'Ahora empuñas: ' + arma.nombre + '. Tu arma anterior va a tu inventario.';
+  nuevoHallazgo(estado, h, armaId);
+  return 'Va a tu inventario.';
+}
+// Arma o armadura conseguida en la mazmorra: va al inventario y el jugador decide si se la pone ya.
+// (Los compañeros IA se la ponen solos si es mejor.)
+function nuevoHallazgo(estado, h, item) {
+  meter(inventarioDe(h), item);
+  if (h.ia) {
+    const mejor = D.ARMAS[item] ? D.ARMAS[item].ataque > D.ARMAS[h.arma].ataque : (D.ARMADURAS[item]?.defensa || 0) > 0;
+    if (mejor && !motivoNoEquipar(h, item)) equipar(estado, h, item);
+    return;
   }
-  meter(inventarioDe(h), armaId);
-  return 'Va a tu inventario: podrás equipártela o venderla en el campamento.';
+  (h.hallazgos ||= []).push(item);
+  ev(estado, { tipo: 'hallazgo', heroe: h.id, item });
 }
 
 function robarCarta(estado) {
@@ -1829,7 +1835,7 @@ function entregarItem(estado, h, it) {
     const r = estado.reliquias || {};
     const falta = Object.values(D.RELIQUIAS).flatMap((rq) => rq.piezas).find((p) => !r[p]);
     if (falta) avisar(estado, ganarReliquia(estado, falta), 'tesoro'); else h.oro += 300;
-  } else if (D.ARMAS[it] || D.ARMADURAS[it]) meter(inventarioDe(h), it);
+  } else if (D.ARMAS[it] || D.ARMADURAS[it]) nuevoHallazgo(estado, h, it);
   else if (def) h.oro += def.precio;
 }
 function enfadarMercader(estado, m, motivo) {
@@ -2678,6 +2684,13 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       if (!disp.altar) return 'No hay ningún altar a tu lado.';
       usarAccion();
       return rezar(estado, h, estado.muebles[disp.altar.idx], a.opcion);
+    }
+    case 'equiparHallazgo': {
+      // Ponerse lo que acaba de encontrar: no gasta la acción.
+      if (!(h.hallazgos || []).includes(a.item)) return 'No has encontrado eso ahora.';
+      h.hallazgos = h.hallazgos.filter((x) => x !== a.item);
+      if (a.no) return null;
+      return equipar(estado, h, a.item);
     }
     case 'mercader': {
       if (!disp.mercader) return 'No hay ningún mercader a tu lado.';
