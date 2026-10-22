@@ -6,7 +6,7 @@
 // =============================================================
 import { app } from './firebase.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import { getFirestore, collection, collectionGroup, getDocs, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { getFirestore, collection, collectionGroup, getDocs, getDoc, doc, setDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 import { getDatabase, ref, set, remove } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 const auth = getAuth(app);
@@ -33,10 +33,12 @@ async function onCambio(u) {
   // Cada lectura por separado: si una falla, se ve cuál y el resto se pinta igual.
   const fallos = [];
   const leerCol = (nombre, q) => getDocs(q).then((r) => r.docs).catch((e) => { fallos.push(nombre + ': ' + (e.code || e.message)); return []; });
-  const [usuarios, partidas, permitidos, solicitudes] = await Promise.all([
+  const [usuarios, partidas, permitidos, solicitudes, config] = await Promise.all([
     leerCol('usuarios', collection(db, 'usuarios')), leerCol('partidas', collectionGroup(db, 'partidas')),
-    leerCol('permitidos', collection(db, 'permitidos')), leerCol('solicitudes', collection(db, 'solicitudes'))]);
-  if (fallos.length === 4) {
+    leerCol('permitidos', collection(db, 'permitidos')), leerCol('solicitudes', collection(db, 'solicitudes')),
+    getDoc(doc(db, 'config', 'acceso')).then((d) => d.data() || {}).catch((e) => { fallos.push('config: ' + (e.code || e.message)); return {}; })]);
+  abierta = config.abierto === true;
+  if (fallos.length >= 4) {
     $('#contenido').innerHTML = `<section><p class="error">No tienes permiso para ver el panel con esta cuenta (${esc(fallos[0])}).</p></section>`;
     return;
   }
@@ -52,6 +54,7 @@ async function onCambio(u) {
   }
 }
 
+let abierta = false;
 function pintar(solicitudes, permitidos, usuarios, partidas) {
   const nombre = Object.fromEntries(usuarios.map((u) => [u.uid, u.nombre || u.email || u.uid.slice(0, 6)]));
   // Una partida multijugador aparece una vez por jugador: contar cada una solo una vez.
@@ -81,7 +84,12 @@ function pintar(solicitudes, permitidos, usuarios, partidas) {
       <table>${solicitudes.sort((a, b) => (b.fecha || 0) - (a.fecha || 0)).map((s) => `<tr><td><b>${esc(s.nombre || '')}</b> ${esc(s.email)}</td><td>${fecha(s.fecha)}</td><td class="num"><button data-aceptar="${esc(s.email)}">Aceptar</button> <button class="claro" style="color:var(--lacre);border-color:var(--lacre)" data-rechazar="${esc(s.email)}">Rechazar</button></td></tr>`).join('') || '<tr><td class="nota">No hay solicitudes pendientes.</td></tr>'}</table>
     </section>
     <section><h2>Acceso</h2>
-      <p class="nota">Solo estas cuentas de Google pueden jugar. Añade el correo con el que entra cada uno.</p>
+      <div class="interruptor">
+        <div><b>Lista de acceso: ${abierta ? 'abierta' : 'cerrada'}</b>
+          <p class="nota" style="margin:2px 0 0">${abierta ? 'Puede jugar cualquiera que entre con su cuenta de Google. La lista de abajo se guarda para cuando la vuelvas a cerrar.' : 'Solo pueden jugar las cuentas de la lista. Los demás pueden pedir acceso.'}</p></div>
+        <button id="b-abrir" class="${abierta ? 'claro' : ''}" style="${abierta ? 'color:var(--lacre);border-color:var(--lacre)' : ''}">${abierta ? 'Cerrar la lista' : 'Abrir a todos'}</button>
+      </div>
+      <p class="nota">${abierta ? 'Mientras está abierta, estas cuentas siguen apuntadas:' : 'Solo estas cuentas de Google pueden jugar. Añade el correo con el que entra cada uno.'}</p>
       <form id="f-permitir" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
         <input id="correo-nuevo" type="email" required placeholder="correo@gmail.com" style="flex:1 1 220px;padding:8px;border-radius:6px;border:1px solid var(--linea);font:inherit">
         <button>Dar acceso</button>
@@ -109,6 +117,15 @@ function pintar(solicitudes, permitidos, usuarios, partidas) {
       <tr><th>Nombre</th><th>Correo</th><th class="num">Partidas</th><th>Última vez</th></tr>
       ${usuarios.sort((a, b) => (b.ultimaVez || 0) - (a.ultimaVez || 0)).map((u) => `<tr><td>${esc(u.nombre)}</td><td>${esc(u.email)}</td><td class="num">${partidas.filter((p) => p.uid === u.uid).length}</td><td>${fecha(u.ultimaVez)}</td></tr>`).join('')}
     </table></section>`;
+  $('#b-abrir').addEventListener('click', async () => {
+    const nuevo = !abierta;
+    if (!confirm(nuevo ? '¿Abrir el juego a cualquiera con cuenta de Google?' : '¿Cerrar la lista? Solo podrán jugar las cuentas apuntadas.')) return;
+    try {
+      await setDoc(doc(db, 'config', 'acceso'), { abierto: nuevo, fecha: Date.now() });
+      await set(ref(rtdb, 'config/abierto'), nuevo);
+      recargar();
+    } catch (e) { alert('No se pudo cambiar (¿has publicado las reglas nuevas en Firebase?): ' + (e.code || e.message)); }
+  });
   const permitir = async (correo) => {
     await setDoc(doc(db, 'permitidos', correo), { fecha: Date.now() });
     await set(ref(rtdb, 'permitidos/' + claveCorreo(correo)), true);
