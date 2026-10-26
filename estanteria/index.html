@@ -154,9 +154,13 @@ td.wrap{white-space:normal;min-width:10em}
     <span class="sep" aria-hidden="true"></span>
     <div class="grp">
       <label class="lbl" for="colorBy">Ver por</label>
-      <select id="colorBy"><option value="real">Color caja y tapa</option><option value="CajaAlt">Caja alternativa</option><option value="Categoria">Categoría</option><option value="none">Sin color</option></select>
+      <select id="colorBy"><option value="real">Color caja y tapa</option><option value="Categoria">Uso</option><option value="CajaAlt">Localización alternativa</option><option value="none">Sin color</option></select>
     </div>
     <span class="sep" aria-hidden="true"></span>
+    <div class="grp" id="usoGrp">
+      <label class="lbl" for="uso">Uso</label>
+      <select id="uso"><option value="">Todos</option></select>
+    </div>
     <div class="grp" id="altGrp">
       <label class="lbl" for="alt">Llevar en</label>
       <select id="alt"><option value="">Todas</option></select>
@@ -203,7 +207,7 @@ td.wrap{white-space:normal;min-width:10em}
       <input type="search" id="q" placeholder="Buscar un objeto, etiqueta, lugar, color…" aria-label="Buscar" style="min-width:0;flex:1;max-width:320px">
     </div>
     <p class="altinfo" id="altInfo" hidden></p>
-    <div class="tablewrap"><table><thead><tr><th>Ubicación</th><th>Balda</th><th>Fila</th><th>Fondo</th><th>Altura</th><th>Etiqueta</th><th>Descripción</th><th>Color caja</th><th>Color tapa</th><th>Lugar</th><th>Caja alternativa</th><th>Notas</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="tablewrap"><table><thead><tr><th>Ubicación</th><th>Balda</th><th>Fila</th><th>Fondo</th><th>Altura</th><th>Etiqueta</th><th>Descripción</th><th>Color caja</th><th>Color tapa</th><th>Lugar</th><th>Uso</th><th>Localización alt.</th><th>Notas</th></tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </div>
 
@@ -1292,10 +1296,10 @@ const CAT = ['#2F7DBF','#D98E04','#3A9D6E','#C2483D','#7A5DC7','#B5651D','#1F9AA
 const KNOWN = {fondo:'Fondo',nivel:'Nivel',balda:'Estante',estante:'Estante',altura:'Altura',fila:'Posicion',posicion:'Posicion',pos:'Posicion',
   etiqueta:'Referencia',referencia:'Referencia',ref:'Referencia',descripcion:'Descripcion',contenido:'Descripcion',categoria:'Categoria',
   colorcaja:'ColorCaja',colortapa:'ColorTapa',estado:'Estado',notas:'Notas',observaciones:'Notas',lugar:'Lugar',
-  cajaalternativa:'CajaAlt',cajajysk:'CajaAlt'};
+  cajaalternativa:'CajaAlt',cajajysk:'CajaAlt',localizacionalternativa:'CajaAlt',ubicacionalternativa:'CajaAlt',uso:'Categoria',usos:'Categoria'};
 const SHELF = 'Estantería';
 let items = [], boxes = [], rows = [], mainDims = {W:6,H:9,D:2,P:3}, dims = mainDims, zone = SHELF, zoneNames = [SHELF],
-    selected = null, selItem = null, showLabels = true, query = '', altFilter = '', lastWarn = [], visitors = {};
+    selected = null, selItem = null, showLabels = true, query = '', altFilter = '', usoFilter = '', lastWarn = [], visitors = {};
 const filled = v => v !== '' && v != null && String(v).trim() !== '';
 
 /* ---------- datos ----------
@@ -1376,6 +1380,10 @@ function ingest(raw, source){
   $('#alt').innerHTML = '<option value="">Todas</option>' + alts.map(a => `<option ${a === altFilter ? 'selected' : ''}>${esc(a)}</option>`).join('');
   if (!alts.includes(altFilter)) altFilter = '';
   $('#altGrp').hidden = !alts.length;
+  const usos = [...new Set(items.flatMap(usosOf))].sort((a,b) => a.localeCompare(b, 'es'));
+  $('#uso').innerHTML = '<option value="">Todos</option>' + usos.map(u => `<option ${norm(u) === norm(usoFilter) ? 'selected' : ''}>${esc(u)}</option>`).join('');
+  if (!usos.some(u => norm(u) === norm(usoFilter))) usoFilter = '';
+  $('#usoGrp').hidden = !usos.length;
   const hasCat = items.some(i => filled(i.Categoria));
   $('#colorBy').querySelector('[value="Categoria"]').hidden = !hasCat;
   if (!hasCat && $('#colorBy').value === 'Categoria') $('#colorBy').value = 'real';
@@ -1409,9 +1417,11 @@ function renderAll(){ renderWarnings(lastWarn); rebuild(); renderTable(); render
 const key3 = o => `${o.Fondo}-${o.Nivel}-${o.Posicion}`;
 const est = o => Math.floor((o.Nivel-1)/dims.P) + 1, alt = o => (o.Nivel-1) % dims.P + 1;
 const loc = o => o.virtual ? o.zone : `${est(o)}-${o.Posicion}-${o.Fondo}-${alt(o)}`;
+const cap = w => w.charAt(0).toLocaleUpperCase('es') + w.slice(1).toLocaleLowerCase('es');
+const usosOf = i => String(i.Categoria ?? '').split(/\s+y\s+|,|\/|\+/i).map(x => x.trim()).filter(Boolean).map(cap);
 const itemText = i => norm([i.Referencia,i.Descripcion,i.Categoria,i.ColorCaja,i.ColorTapa,i.Lugar,i.CajaAlt,i.Notas,...Object.values(i.extra)].join(' '));
-const itemMatch = i => (!query || itemText(i).includes(norm(query))) && (!altFilter || String(i.CajaAlt ?? '') === altFilter);
-const boxMatches = b => (!query && !altFilter) || b.items.some(itemMatch);
+const itemMatch = i => (!query || itemText(i).includes(norm(query))) && (!altFilter || String(i.CajaAlt ?? '') === altFilter) && (!usoFilter || usosOf(i).some(u => norm(u) === norm(usoFilter)));
+const boxMatches = b => (!query && !altFilter && !usoFilter) || b.items.some(itemMatch);
 const hay = b => b.items.map(itemText).join(' ');
 
 /* Lee una hoja como filas sueltas: encuentra la cabecera (aunque haya filas antes)
@@ -1605,6 +1615,8 @@ function colorMap(){
   }
   const keyOf = by === 'CajaAlt'
     ? r => [...new Set(r.items.map(i => i.CajaAlt).filter(filled).map(String))].join(' + ') || '—'
+    : by === 'Categoria'
+    ? r => [...new Set(r.items.flatMap(usosOf))].sort((a,b) => a.localeCompare(b, 'es')).join(' + ') || '—'
     : r => r[by] || '—';
   const vals = [...new Set(rows.map(keyOf))];
   const m = new Map(vals.map((v,i) => [v, v === '—' ? '#B9B4AA' : CAT[i % CAT.length]]));
@@ -1771,10 +1783,11 @@ function renderDetail(){
   html += `<dt>Etiqueta</dt><dd style="font-family:var(--f-mono)">${esc(r.Referencia || '—')}</dd>`;
   html += `<dt>Color caja</dt><dd>${swatch(r.ColorCaja)}</dd><dt>Color tapa</dt><dd>${swatch(r.ColorTapa)}</dd>`;
   if (filled(r.Lugar)) html += `<dt>Lugar</dt><dd>${esc(r.Lugar)}</dd>`;
-  if (filled(r.Categoria)) html += `<dt>Categoría</dt><dd>${esc(r.Categoria)}</dd>`;
+  { const u = [...new Set(r.items.flatMap(usosOf))]; if (u.length) html += `<dt>Uso</dt><dd>${esc(u.join(", "))}</dd>`; }
   html += `</dl><h3 class="contents-h">Contenido <span>${r.items.length}</span></h3><ul class="contents">`;
-  html += r.items.map(i => `<li class="${i === selItem ? 'on' : ''} ${itemMatch(i) && (query || altFilter) ? 'hit' : ''}">`
+  html += r.items.map(i => `<li class="${i === selItem ? 'on' : ''} ${itemMatch(i) && (query || altFilter || usoFilter) ? 'hit' : ''}">`
     + `<span>${esc(i.Descripcion || '(sin descripción)')}</span>`
+    + (usosOf(i).length ? `<span class="alt">${esc(usosOf(i).join(' · '))}</span>` : '')
     + (filled(i.CajaAlt) ? `<span class="alt">→ ${esc(i.CajaAlt)}</span>` : '')
     + (filled(i.Notas) ? `<small>${esc(i.Notas)}</small>` : '')
     + Object.entries(i.extra).map(([k,v]) => `<small>${esc(k)}: ${esc(v)}</small>`).join('')
@@ -1806,7 +1819,7 @@ function renderLegend(items){
 /* El listado enseña OBJETOS. Con «Llevar en» elegido, enseña los de todas las zonas. */
 function renderTable(){
   const d = v => filled(v) ? esc(v) : '';
-  const pool = altFilter || query ? items : items.filter(i => i.box.zone === zone || (zone !== SHELF && norm(i.CajaAlt) === norm(zone)));  /* al buscar, se busca en todas partes */
+  const pool = altFilter || usoFilter || query ? items : items.filter(i => i.box.zone === zone || (zone !== SHELF && norm(i.CajaAlt) === norm(zone)));  /* al buscar, se busca en todas partes */
   const list = pool.filter(itemMatch).sort((a,b) => {
     const A = a.box, B = b.box, sa = A.zone === SHELF, sb = B.zone === SHELF;
     if (sa !== sb) return sa ? -1 : 1;
@@ -1825,8 +1838,8 @@ function renderTable(){
       + cells.map(c => `<td class="m">${c}</td>`).join('')
       + `<td class="m">${d(i.Referencia)}</td><td class="wrap">${d(i.Descripcion)}</td>`
       + `<td>${filled(i.ColorCaja) ? swatch(i.ColorCaja) : ''}</td><td>${filled(i.ColorTapa) ? swatch(i.ColorTapa) : ''}</td>`
-      + `<td>${d(i.Lugar)}</td><td>${d(i.CajaAlt)}</td><td class="wrap">${d(i.Notas)}</td></tr>`;
-  }).join('') || `<tr><td colspan="12" class="empty-note">${query || altFilter ? 'No hay objetos que coincidan.' : 'No hay objetos en esta zona.'}</td></tr>`;
+      + `<td>${d(i.Lugar)}</td><td>${esc(usosOf(i).join(', '))}</td><td>${d(i.CajaAlt)}</td><td class="wrap">${d(i.Notas)}</td></tr>`;
+  }).join('') || `<tr><td colspan="13" class="empty-note">${query || altFilter || usoFilter ? 'No hay objetos que coincidan.' : 'No hay objetos en esta zona.'}</td></tr>`;
 }
 function pickItem(line){
   const it = items.find(i => i.line === line); if (!it) return;
@@ -1844,6 +1857,7 @@ $('#btnLoad').onclick = () => $('#file').click();
 $('#file').onchange = e => { if (e.target.files[0]) readFile(e.target.files[0]); e.target.value = ''; };
 $('#btnSample').onclick = () => { $('#dimW').value = 6; $('#dimH').value = 9; $('#dimD').value = 2; $('#dimP').value = 3; mainDims.P = 3; ingest(SAMPLE, 'sample'); setView('persp'); };
 $('#alt').onchange = e => { altFilter = e.target.value; rebuild(); renderTable(); renderDetail(); };
+$('#uso').onchange = e => { usoFilter = e.target.value; rebuild(); renderTable(); renderDetail(); };
 ['dimW','dimH','dimD','dimP'].forEach(id => $('#'+id).addEventListener('change', () => {
   Object.assign(mainDims, {W: Math.max(1, +$('#dimW').value||1), H: Math.max(1, +$('#dimH').value||1), D: Math.max(1, +$('#dimD').value||1), P: Math.max(1, +$('#dimP').value||1)});
   applyZone(); renderAll(); setView('persp');
