@@ -1368,7 +1368,7 @@ function ingest(raw, source){
   visitors = {};
   for (const z of others) {
     const byBox = new Map();
-    for (const it of items) if (norm(it.CajaAlt) === norm(z) && it.box.zone !== z) {
+    for (const it of items) if (false && norm(it.CajaAlt) === norm(z) && it.box.zone !== z) {  /* desactivado: cada cosa sale solo en la caja de su etiqueta */
       if (!byBox.has(it.box)) byBox.set(it.box, {visitor:true, home: it.box, zone: z, line: 'v' + it.box.line, Referencia: it.box.Referencia,
         ColorCaja: it.box.ColorCaja, ColorTapa: it.box.ColorTapa, Lugar: it.box.Lugar, Categoria: it.box.Categoria, items: [], extra: {}});
       byBox.get(it.box).items.push(it);
@@ -1819,7 +1819,7 @@ function renderLegend(items){
 /* El listado enseña OBJETOS. Con «Llevar en» elegido, enseña los de todas las zonas. */
 function renderTable(){
   const d = v => filled(v) ? esc(v) : '';
-  const pool = altFilter || usoFilter || query ? items : items.filter(i => i.box.zone === zone || (zone !== SHELF && norm(i.CajaAlt) === norm(zone)));  /* al buscar, se busca en todas partes */
+  const pool = altFilter || usoFilter || query ? items : items.filter(i => i.box.zone === zone);  /* al buscar, se busca en todas partes */
   const list = pool.filter(itemMatch).sort((a,b) => {
     const A = a.box, B = b.box, sa = A.zone === SHELF, sb = B.zone === SHELF;
     if (sa !== sb) return sa ? -1 : 1;
