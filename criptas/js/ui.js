@@ -415,6 +415,9 @@ async function continuarPartida(id) {
     return;
   }
   app.modo = 'local';
+  // Partida local hecha en otro dispositivo (o importada): sus héroes pasan a este jugador.
+  for (const h of Object.values(g.estado.heroes || {})) if (!h.ia) h.jugador = miId;
+  g.estado.anfitrion = miId;
   app.visto = 0; app.estado = null; app.cola = [];
   publicar(g.estado);
 }
