@@ -1542,10 +1542,14 @@ async function readSheet(){
         const raw = await gvizJsonp(base + '0');
         const h = raw.body.findIndex(r => r.some(v => ['etiqueta','descripcion','balda'].includes(norm(v))));
         if (h < 0) continue;
-        const nxt = (raw.body[h+1] || []).filter(filled);
-        const n = h + 1 + (nxt.some(v => ['caja','tapa'].includes(norm(v))) && nxt.every(v => ['caja','tapa','x','y','z'].includes(norm(v))) ? 1 : 0);
-        /* 2ª lectura: Google trata esas filas como títulos, así no borra los de las columnas numéricas */
-        const res = await gvizJsonp(base + n);
+        /* Google se salta las filas vacías al dar los datos, pero «headers» cuenta filas de la hoja:
+           se prueba hasta dar con el número de filas de cabecera que incluye la fila con ETIQUETA */
+        let res = null, n = 0;
+        for (let k = h + 1; k <= h + 10; k++) {
+          const r = await gvizJsonp(base + k);
+          if (r.head.some(l => /(^|\s)etiqueta(\s|$)/i.test(String(l)))) { res = r; n = k; break; }
+        }
+        if (!res) continue;
         let head = res.head, body = res.body, first = n;
         /* Si una fila en blanco al principio descuadra la cuenta, la fila CAJA/TAPA llega como dato: se une a los títulos */
         const sub0 = (body[0] || []).filter(filled);
