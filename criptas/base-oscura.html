@@ -102,6 +102,7 @@
   .nav button { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #6a4a28; cursor: pointer; background: rgba(20,10,5,.6); color: #d9c79e; font: 26px 'IM Fell English SC', serif; }
   .nav button:disabled { opacity: .25; cursor: default; }
   .puntos { display: flex; gap: 7px; } .puntos i { width: 8px; height: 8px; transform: rotate(45deg); background: rgba(217,199,158,.25); } .puntos i.on { background: var(--sangre); }
+  @media (max-width: 760px) { .aviso { display: none; } }
   .aviso { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; color: rgba(217,199,158,.45); font: italic 13px 'IM Fell English', serif; }
 </style>
 </head>
@@ -157,11 +158,45 @@
     </div>
     <div class="nota-margen" style="left:8%; bottom:10%">¿alguien la ha buscado?</div>
   </section>
+
+  <section class="pagina oculta" data-pag="2">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Libro primero · De los desterrados</div>
+        <h1>La Borda del Anzuelo</h1>
+        <p class="capital">Junto a la barandilla de babor se sienta un viejo que nunca ha pescado un pez. Echa el anzuelo a la tinta y saca páginas: recetas, cartas sin firmar, mapas de criptas que todavía no existen.</p>
+        <p class="largo">A veces lo que sube no es una página. Así llegó Pip, un grumete arrancado de un cuento de piratas, que desde entonces friega una cubierta que nunca deja de mancharse.</p>
+        <ul class="lista">
+          <li><b>El Viejo Anzuelo</b> — pesca páginas sueltas (pistas y mapas)</li>
+          <li><b>Pip el grumete</b> — sabe todos los rumores del barco</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc2"></div>
+    </div>
+    <div class="nota-margen" style="right:10%; top:9%">lo que no se escribió tiene hambre</div>
+  </section>
+
+  <section class="pagina oculta" data-pag="3">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Libro primero · De los desterrados</div>
+        <h1>El Timón Ciego</h1>
+        <p class="capital">Nadie elige el rumbo de este barco. La Timonel lleva los ojos vendados desde que leyó la última página, y desde entonces gira el timón hacia donde el libro le susurra.</p>
+        <p class="largo">Su único consuelo es Tintero, un gato negro que apareció un día en cubierta con las patas manchadas de tinta. Duerme sobre los barriles y solo se despierta cuando se acerca una tormenta… o algo peor.</p>
+        <ul class="lista">
+          <li><b>La Timonel Ciega</b> — elige la siguiente historia del libro</li>
+          <li><b>Tintero</b> — huele el peligro antes que nadie</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc3"></div>
+    </div>
+    <div class="nota-margen" style="left:9%; bottom:9%">nadie debería leer la última página</div>
+  </section>
 </div>
 
 <div class="nav">
   <button id="ant" aria-label="Página anterior">‹</button>
-  <div class="puntos" id="puntos"><i class="on"></i><i></i></div>
+  <div class="puntos" id="puntos"></div>
   <button id="sig" aria-label="Página siguiente">›</button>
 </div>
 
@@ -252,13 +287,99 @@ const ESCENAS = {
         `<path d="M306 270 q-3 -34 10 -42 q12 -4 18 6 q6 12 2 36z" fill="${P2}" ${trazo(1.6)}/><path d="M306 270 q-3 -34 10 -42 q12 -4 18 6 q6 12 2 36z" fill="url(#r2)" opacity=".8"/><path d="M314 236 h18 v22 h-18z" fill="${T}" opacity=".6"/>`,
         `<ellipse cx="323" cy="220" rx="9" ry="10" fill="${P}" ${trazo(1.4)}/><path d="M316 216 q6 4 4 12" stroke="${S}" stroke-width="2.4" fill="none"/><path d="M314 214 q9 -12 18 0" fill="none" ${trazo(1.6)}/>`)}` },
     { prof: 1.0, svg: `<path d="M0 300 v-30 l18 -6 l10 10 l14 -4 v30z" fill="${P2}" ${trazo(1.6)}/><path d="M360 300 q10 -30 40 -26 v26z" fill="${P2}" ${trazo(1.6)}/><path d="M360 300 q10 -30 40 -26 v26z" fill="url(#r2)"/>` }
+  ],
+  borda: [
+    { prof: 0.04, fondo: true, svg: `
+      <rect width="400" height="300" fill="#1e1612"/>
+      <rect width="400" height="300" fill="url(#rh)" opacity=".7"/>
+      <circle cx="80" cy="60" r="20" fill="${P}" ${trazo(1.2)}/><circle cx="80" cy="60" r="20" fill="url(#r1)" opacity=".4"/>
+      <path d="M0 170 q50 -6 100 0 t100 0 t100 0 t100 0 V300 H0z" fill="#120c0a"/>
+      <path d="M60 175 q20 -3 40 0 M150 190 q30 -4 60 0 M260 182 q24 -3 48 0 M80 210 q30 -4 60 0" fill="none" stroke="${P}" stroke-opacity=".35" stroke-width="1.2"/>
+      <path d="M66 172 l14 40 l14 -40" fill="none" stroke="${P}" stroke-opacity=".18" stroke-width="6"/>` },
+    { prof: 0.18, svg: `
+      <!-- Isla de libros a lo lejos -->
+      <g transform="translate(250 128)">
+        <rect x="0" y="30" width="70" height="14" fill="${P2}" ${trazo(1.2)}/><rect x="6" y="18" width="58" height="12" fill="${P}" ${trazo(1.2)}/><rect x="0" y="6" width="64" height="12" fill="${P2}" ${trazo(1.2)}/>
+        <rect x="0" y="6" width="64" height="38" fill="url(#r1)" opacity=".6"/>
+        <path d="M26 6 v-26 h10 v26 M24 -20 l7 -12 l7 12z" fill="${P2}" ${trazo(1.2)}/><rect x="29" y="-12" width="4" height="5" fill="#e9b45a"/>
+      </g>
+      <!-- Páginas a la deriva -->
+      <g ${trazo(1)}><path d="M120 200 l18 -4 l4 10 l-18 4z" fill="${P}"/><path d="M200 220 l16 3 l-3 9 l-16 -3z" fill="${P}"/><path d="M330 205 l14 -2 l2 8 l-14 2z" fill="${P}"/></g>` },
+    { prof: 0.5, svg: `
+      <!-- La borda del barco: barandilla y tablas -->
+      <path d="M-10 236 L410 226 L410 300 L-10 300z" fill="${P2}" ${trazo(2)}/><path d="M-10 236 L410 226 L410 300 L-10 300z" fill="url(#r2)" opacity=".7"/>
+      <path d="M-10 206 L410 194" ${trazo(3)} fill="none"/>
+      ${[0,1,2,3,4,5,6,7,8].map((i) => `<line x1="${10 + i * 48}" y1="${205.5 - i * 1.4}" x2="${10 + i * 48}" y2="${235.5 - i * .3}" ${trazo(2.2)}/>`).join('')}
+      <!-- Cubo con páginas pescadas -->
+      <path d="M232 268 l4 -26 h30 l4 26z" fill="${P}" ${trazo(1.6)}/><path d="M232 268 l4 -26 h30 l4 26z" fill="url(#r1)"/>
+      <path d="M240 242 l6 -10 l8 6 l6 -9 l4 13" fill="${P}" ${trazo(1)}/>` },
+    { prof: 0.75, svg: `
+      <!-- El Viejo Anzuelo, sentado, con su caña sobre la borda -->
+      <path d="M150 196 L304 80" stroke="${P2}" stroke-width="2.6" stroke-linecap="round"/><path d="M304 80 Q318 140 322 196" fill="none" stroke="${P}" stroke-width="1" stroke-dasharray="3 2"/>
+      ${figura('pescador', 150, 270,
+        `<path d="M132 270 l3 -18 h30 l3 18z" fill="${P2}" ${trazo(1.4)}/><path d="M128 252 q-6 -36 20 -46 q26 -6 30 18 q3 18 -2 28z" fill="${P2}" ${trazo(1.6)}/><path d="M128 252 q-6 -36 20 -46 q26 -6 30 18 q3 18 -2 28z" fill="url(#r2)" opacity=".7"/>`,
+        `<ellipse cx="152" cy="196" rx="9" ry="10" fill="${P}" ${trazo(1.4)}/><path d="M132 190 q20 -12 40 0 q-6 2 -10 1 q-2 -12 -10 -12 q-8 0 -10 12 q-4 1 -10 -1z" fill="${T}"/><path d="M146 202 q6 8 12 0" fill="#e9e0cc" ${trazo(1)}/>`)}
+      <!-- Pip con su fregona -->
+      ${figura('grumete', 62, 270,
+        `<path d="M86 270 l-2 -70 M78 270 h14" ${trazo(2)} fill="none"/><path d="M52 270 l2 -34 q8 -8 16 0 l2 34z" fill="#3a2a40" ${trazo(1.5)}/><path d="M53 244 q9 -10 18 0 l-1 8 h-16z" fill="${S}" ${trazo(1.2)}/>`,
+        `<ellipse cx="62" cy="226" rx="8" ry="9" fill="${P}" ${trazo(1.3)}/><path d="M54 222 q8 -8 16 0z" fill="${S}" ${trazo(1)}/><circle cx="59" cy="227" r="1.3" fill="${T}"/><circle cx="66" cy="227" r="1.3" fill="${T}"/>`)}` },
+    { prof: 1.0, svg: `
+      <!-- Primer plano: cabo enrollado y una gaviota de papel -->
+      <g fill="none" ${trazo(2.2)}><ellipse cx="350" cy="288" rx="34" ry="10"/><ellipse cx="350" cy="284" rx="26" ry="7"/><ellipse cx="350" cy="280" rx="16" ry="4"/></g>
+      <path d="M20 300 q20 -40 50 -30" fill="none" ${trazo(2.4)}/>
+      <path d="M180 40 q10 -10 20 0 q10 -10 20 0" fill="none" ${trazo(1.8)}/>` }
+  ],
+  timon: [
+    { prof: 0.04, fondo: true, svg: `
+      <rect width="400" height="300" fill="#1a1414"/>
+      <rect width="400" height="300" fill="url(#rh)" opacity=".75"/>
+      <path d="M0 40 q60 -20 120 0 q60 20 120 0 q60 -20 160 0 V0 H0z" fill="${T}" opacity=".6"/>
+      <path d="M300 30 l-14 34 h12 l-16 40" fill="none" stroke="#d8c8ff" stroke-width="2.4" opacity=".8"/>` },
+    { prof: 0.2, svg: `
+      <!-- Palo de mesana y vela rota con el ojo pintado -->
+      <line x1="230" y1="0" x2="230" y2="250" ${trazo(3)}/>
+      <path d="M170 20 h120 l-6 120 l-16 -10 l-12 14 l-14 -12 l-18 16 l-14 -10 l-20 10 l-14 -12z" fill="${P}" ${trazo(1.8)}/>
+      <path d="M170 20 h120 l-6 120 l-16 -10 l-12 14 l-14 -12 l-18 16 l-14 -10 l-20 10 l-14 -12z" fill="url(#r1)" opacity=".6"/>
+      <ellipse cx="230" cy="70" rx="26" ry="14" fill="none" stroke="${S}" stroke-width="3"/><circle cx="230" cy="70" r="6" fill="${S}"/>
+      <path d="M240 98 a8 8 0 1 0 1 0z" fill="#1e1612" opacity=".7"/>` },
+    { prof: 0.45, svg: `
+      <!-- Cubierta de popa -->
+      <path d="M-10 246 L410 238 L410 300 L-10 300z" fill="${P2}" ${trazo(2)}/><path d="M-10 246 L410 238 L410 300 L-10 300z" fill="url(#r2)" opacity=".65"/>
+      <path d="M-10 262 L410 256 M-10 280 L410 276" stroke="${T}" stroke-opacity=".5" stroke-width="1"/>
+      <!-- Barriles -->
+      <g ${trazo(1.6)}><path d="M296 250 v-30 q14 -6 28 0 v30 q-14 6 -28 0z" fill="${P2}"/><path d="M326 252 v-26 q12 -5 24 0 v26 q-12 5 -24 0z" fill="${P}"/></g>
+      <path d="M296 250 v-30 q14 -6 28 0 v30 q-14 6 -28 0z" fill="url(#r2)" opacity=".7"/>
+      <path d="M296 228 q14 5 28 0 M296 242 q14 5 28 0" fill="none" ${trazo(1.2)}/>` },
+    { prof: 0.72, svg: `
+      <!-- El timón -->
+      <g transform="translate(150 196)">
+        <line x1="0" y1="10" x2="0" y2="52" stroke="${P2}" stroke-width="6"/><line x1="0" y1="10" x2="0" y2="52" stroke="${T}" stroke-width="1"/>
+        <circle r="34" fill="none" stroke="${P2}" stroke-width="5"/><circle r="34" fill="none" ${trazo(1)}/><circle r="7" fill="${P}" ${trazo(2)}/>
+        ${[0,1,2,3,4,5,6,7].map((i) => { const a = i * Math.PI / 4; return `<line x1="${Math.cos(a) * 7}" y1="${Math.sin(a) * 7}" x2="${Math.cos(a) * 44}" y2="${Math.sin(a) * 44}" stroke="${P2}" stroke-width="3.2" stroke-linecap="round"/><circle cx="${Math.cos(a) * 44}" cy="${Math.sin(a) * 44}" r="3" fill="${P2}" ${trazo(1)}/>`; }).join('')}
+      </g>
+      <!-- La Timonel, con los ojos vendados -->
+      ${figura('timonel', 104, 272,
+        `<path d="M86 272 l8 -56 q10 -10 20 0 l8 56 l-10 -8 l-8 8 l-8 -8z" fill="#2a2e38" ${trazo(1.6)}/><path d="M86 272 l8 -56 q10 -10 20 0 l8 56 l-10 -8 l-8 8 l-8 -8z" fill="url(#r3)" opacity=".6"/><path d="M114 226 l28 -14" ${trazo(2.4)}/>`,
+        `<ellipse cx="104" cy="200" rx="9" ry="11" fill="${P}" ${trazo(1.4)}/><path d="M95 194 q9 -14 18 0" fill="${T}"/><rect x="94" y="197" width="20" height="5" fill="#e6d6b0" ${trazo(1)}/><path d="M112 200 q10 14 4 26" fill="none" ${trazo(1.6)}/>`)}
+      <!-- Tintero dormido sobre el barril -->
+      ${figura('gato', 310, 219,
+        `<path d="M296 219 q2 -14 16 -14 q12 0 14 14z" fill="${T}"/><path d="M326 216 q12 -2 10 -12" fill="none" stroke="${T}" stroke-width="3"/>`,
+        `<path d="M296 214 q-2 -12 8 -12 q8 0 8 12z M297 204 l2 -6 l4 5 M305 203 l4 -5 l1 6" fill="${T}" stroke="${T}" stroke-width="1.5"/><path d="M299 209 q2 1 3 0 M305 209 q2 1 3 0" stroke="#e9b45a" stroke-width="1.2" fill="none"/>`)}` },
+    { prof: 1.0, svg: `
+      <!-- Farol en primer plano y cadena -->
+      <path d="M372 300 v-90 h-22" fill="none" ${trazo(3)}/><path d="M340 210 h20 l-3 24 h-14z" fill="${P}" ${trazo(1.6)}/><rect x="345" y="214" width="10" height="16" fill="#e9b45a" opacity=".9"/>
+      <path d="M0 230 q16 10 10 24 q-6 14 10 26 q16 12 6 20" fill="none" ${trazo(2.4)} stroke-dasharray="6 3"/>` }
   ]
 };
 
 const DIALOGOS = {
   tendero: ['Mordo el Tuerto', 'Todo lo que vendo lo saqué de alguien que ya no lo necesitaba. Pociones frescas. Casi.'],
   banquera: ['Madre Hiel', 'Guardo vuestro oro. Si no volvéis, también lo guardo.'],
-  herrera: ['Bruna la Quemada', 'Traedme hierro de las profundidades. O huesos. El hueso también templa.']
+  herrera: ['Bruna la Quemada', 'Traedme hierro de las profundidades. O huesos. El hueso también templa.'],
+  pescador: ['El Viejo Anzuelo', 'Hoy ha picado una carta de amor sin firmar. Mañana, quién sabe. A lo mejor tu nombre.'],
+  grumete: ['Pip el grumete', '¡Dicen que anoche el mar susurró nombres! El mío no. Creo.'],
+  timonel: ['La Timonel Ciega', 'No necesito ver el mar. Lo oigo pasar páginas.'],
+  gato: ['Tintero', 'Abre un ojo. Lo vuelve a cerrar. Te ha juzgado.']
 };
 
 function montar(id, capas) {
@@ -282,6 +403,8 @@ function ajustar() {
 }
 montar('esc0', ESCENAS.plaza);
 montar('esc1', ESCENAS.forja);
+montar('esc2', ESCENAS.borda);
+montar('esc3', ESCENAS.timon);
 
 const forja = document.getElementById('esc1');
 forja.classList.add('bloqueada');
@@ -332,6 +455,7 @@ document.addEventListener('click', (e) => {
 });
 
 const paginas = [...document.querySelectorAll('.pagina')];
+document.getElementById('puntos').innerHTML = paginas.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('');
 let pag = 0;
 function irA(n) {
   if (n < 0 || n >= paginas.length || n === pag) return;
