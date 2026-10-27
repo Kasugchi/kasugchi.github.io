@@ -2810,6 +2810,8 @@ export function puedeControlar(estado, jugador, heroe) {
 
 export function aplicar(estado, a, jugador, cargarMision) {
   if (estado.mision) T.usarPlano(estado.mision.plano);
+  // Identificador único de la partida (para la ficha del viajero: préstamos y registros).
+  estado.uid ||= 'p' + Date.now().toString(36) + rnd(1e6).toString(36);
   const esAnfitrion = jugador === estado.anfitrion;
   asegurarInventario(estado);
   if (a.tipo === 'empezar') {
@@ -2916,6 +2918,15 @@ export function aplicar(estado, a, jugador, cargarMision) {
       case 'comprar': return comprar(estado, h, a.item);
       case 'mejorar': return mejorar(estado, h, a.mejora);
       case 'subclase': return elegirSubclase(estado, h, a.subclase);
+      case 'vincularFicha': {
+        // El jugador se lleva este héroe a su ficha de viajero: desde ahora su progreso se copia allí.
+        if (!estado.aleatorio) return 'Solo en la Mazmorra Infinita.';
+        if (h.ia || h.caido) return 'Ese héroe no se puede llevar a la ficha.';
+        if (typeof a.fichaId !== 'string' || !a.fichaId) return 'Falta el héroe de la ficha.';
+        h.fichaId = a.fichaId;
+        log(estado, h.nombre + ' queda unido a la ficha de ' + (estado.jugadores?.[jugador]?.nombre || 'su viajero') + '.', 'bueno');
+        return null;
+      }
       case 'descansar': return votarDescanso(estado, jugador);
       case 'purificar': {
         if (!malditaPuesta(h)) return 'No llevas nada maldito.';

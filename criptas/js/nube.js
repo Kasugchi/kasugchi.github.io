@@ -3,6 +3,7 @@
 //
 //  usuarios/{uid}                 { nombre, email, ultimaVez }
 //  usuarios/{uid}/partidas/{id}   { id, modo, codigo, resumen, actualizada, estado (texto JSON) }
+//  usuarios/{uid}/viajero/ficha   { datos (texto JSON), actualizada }   — la ficha del viajero
 //
 //  El estado va como texto por lo mismo que en las salas: Firestore no
 //  guarda bien listas vacías ni objetos muy anidados, y el motor cuenta
@@ -100,4 +101,22 @@ export async function listar() {
 export async function borrarNube(id) {
   if (!usuario) return;
   try { await deleteDoc(doc(coleccion(), id)); } catch (e) { console.warn(e.message); }
+}
+
+// ---------- Ficha del viajero ----------
+const docFicha = () => doc(db, 'usuarios', usuario.uid, 'viajero', 'ficha');
+export async function leerFichaNube() {
+  if (!usuario) return null;
+  try { const r = await getDoc(docFicha()); return r.exists() ? JSON.parse(r.data().datos) : null; }
+  catch (e) { console.warn('No se pudo leer la ficha de la nube:', e.message); return null; }
+}
+let fichaPendiente = null, tFicha = null;
+export function subirFicha(f, ya = false) {
+  if (!usuario || !f) return;
+  fichaPendiente = f;
+  clearTimeout(tFicha);
+  tFicha = setTimeout(() => {
+    const x = fichaPendiente; fichaPendiente = null;
+    if (x && usuario) setDoc(docFicha(), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar la ficha:', e.message));
+  }, ya ? 0 : 4000);
 }

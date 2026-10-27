@@ -8,6 +8,7 @@ import * as D from './datos.js';
 import * as M from './motor.js';
 import * as T from './tablero.js';
 import { PLANOS } from './planos.js';
+import * as V from './viajero.js';
 // La red se carga solo al crear o unirse a una sala: así el modo local funciona sin conexión.
 let moduloRed = null;
 const Red = async () => {
@@ -34,6 +35,9 @@ const borrar = (k) => { try { localStorage.removeItem(k); } catch { /* nada */ }
 // ---------- Identidad del jugador ----------
 let miId = leer('criptas_id');
 if (!miId) { miId = 'j' + Math.random().toString(36).slice(2, 10); guardar('criptas_id', miId); }
+// Ficha del viajero: tus héroes, el banco de Madre Hiel, los trofeos y el diario (js/viajero.js).
+let ficha = V.fichaOCrear(leer('criptas_nombre') || 'Viajero');
+function fichaCambiada(ya = false) { V.guardarFicha(ficha); moduloNube?.subirFicha?.(ficha, ya); }
 
 const app = {
   modo: null, estado: null, sala: null, red: null, misiones: {},
@@ -218,7 +222,7 @@ function resumenPartida(e) {
   const oro = e.orden.reduce((s, t) => s + e.heroes[t].oro, 0);
   return { heroes, mision, oro, fin };
 }
-function borrarPartida(id) { const todas = leerPartidas(); delete todas[id]; escribirPartidas(todas); nube()?.borrarNube(id); }
+function borrarPartida(id) { const todas = leerPartidas(); const uid = todas[id]?.estado?.uid; if (uid && V.devolverDePartida(ficha, uid)) fichaCambiada(true); delete todas[id]; escribirPartidas(todas); nube()?.borrarNube(id); }
 // Lo local y lo de la nube juntos: gana la copia más reciente de cada partida.
 function todasLasPartidas() {
   const todas = leerPartidas();
@@ -306,6 +310,11 @@ import('./nube.js').then((m) => {
     guardar('criptas_acceso', u.email);
     ponerAcceso('ok'); pintarNube(u);
     if (!$('#nombre').value.trim() && u.displayName) $('#nombre').value = u.displayName.split(' ')[0];
+    try {
+      const enLaNube = await m.leerFichaNube();
+      ficha = V.fusionar(ficha, enLaNube);
+      V.guardarFicha(ficha); m.subirFicha(ficha, true);
+    } catch (e) { console.warn('Ficha de la nube no disponible:', e.message); }
     try {
       app.nubePartidas = await m.listar();
       // Lo que solo estaba en este dispositivo, a la nube.
@@ -593,7 +602,12 @@ function pintarSala() {
     const quien = esIA ? 'Compañero IA' : duenio ? (duenio === miId ? 'Lo llevas tú' : 'Lo lleva ' + (s.jugadores[duenio]?.nombre || '…')) : 'Llevar';
     const puedoCambiar = !duenio || duenio === miId;
     const otro = fem ? D.HEROES[t].nombre : D.HEROES[t].fem.nombre;
-    return `<div class="hsel ${clase}">${tarjetaHTML(t, fem)}
+    const foto = s.perdida ? s.fotos?.[t] : null;
+    const opcionesFicha = s.perdida && duenio === miId && !esIA ? V.libres(ficha, t) : [];
+    const selFicha = opcionesFicha.length || (foto && duenio === miId)
+      ? `<label class="campo ficha-sel">De tu ficha <select data-ficha="${t}"><option value="">Héroe nuevo (nivel 1)</option>${opcionesFicha.concat(foto && !opcionesFicha.some((x) => x.id === foto.id) ? [foto] : []).map((x) => `<option value="${x.id}" ${foto?.id === x.id ? 'selected' : ''}>${esc(x.nombre)} · Nv ${x.nivel || 1}</option>`).join('')}</select></label>`
+      : foto ? `<p class="nota ficha-sel">📜 ${esc(foto.nombre)} · Nv ${foto.nivel || 1}</p>` : '';
+    return `<div class="hsel ${clase}">${tarjetaHTML(t, foto ? foto.fem : fem, foto ? { ...foto, id: t, cuerpo: foto.cuerpoMax, efectos: {}, hechizos: [] } : undefined)}${selFicha}
       <div class="hsel-pie">
         <button class="btn ${duenio === miId ? '' : 'madera'}" data-heroe="${t}" ${duenio && duenio !== miId ? 'disabled' : ''}>${esc(quien)}</button>
         <button class="btn claro" data-variante="${t}" ${puedoCambiar ? '' : 'disabled'} title="Cambiar a ${esc(otro)}">${esc(otro)}</button>
@@ -601,6 +615,7 @@ function pintarSala() {
       </div></div>`;
   }).join('');
   $('#heroes-sel').querySelectorAll('[data-variante]').forEach((b) => b.addEventListener('click', () => cambiarVariante(b.dataset.variante)));
+  $('#heroes-sel').querySelectorAll('[data-ficha]').forEach((sel) => sel.addEventListener('change', () => elegirDeFicha(sel.dataset.ficha, sel.value)));
   $('#heroes-sel').querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => { if (s.ia?.[b.dataset.heroe]) delete s.ia[b.dataset.heroe]; elegirHeroe(b.dataset.heroe); }));
   $('#heroes-sel').querySelectorAll('[data-ia]').forEach((b) => b.addEventListener('click', () => {
     const t = b.dataset.ia;
@@ -641,13 +656,27 @@ function alternarVariante(jugador, t) {
   s.variante[t] = s.variante[t] === 'f' ? 'm' : 'f';
   difundirSala();
 }
+// Llevar a la partida un héroe de tu ficha (o uno nuevo). El anfitrión guarda su «foto».
+function elegirDeFicha(t, id) {
+  const fh = id && ficha.heroes[id];
+  const foto = fh ? { ...V.fotoHeroe(fh), id: fh.id } : null;
+  if (app.modo === 'invitado') return app.red.enviar({ t: 'ficha', heroe: t, foto });
+  ponerFoto(miId, t, foto);
+}
+function ponerFoto(jugador, t, foto) {
+  const s = app.sala;
+  if (s.eleccion[t] !== jugador) return;
+  s.fotos ||= {};
+  if (foto && typeof foto === 'object' && foto.tipo === t) s.fotos[t] = foto; else delete s.fotos[t];
+  difundirSala();
+}
 function elegirHeroe(t) {
   if (app.modo === 'invitado') return app.red.enviar({ t: 'elegir', heroe: t });
   alternarHeroe(miId, t);
 }
 function alternarHeroe(jugador, t) {
   const s = app.sala;
-  if (s.eleccion[t] === jugador) delete s.eleccion[t];
+  if (s.eleccion[t] === jugador) { delete s.eleccion[t]; if (s.fotos) delete s.fotos[t]; }
   else if (!s.eleccion[t]) s.eleccion[t] = jugador;
   difundirSala();
 }
@@ -674,6 +703,8 @@ $('#b-empezar').addEventListener('click', async () => {
   if (elegidos.every((x) => x.ia)) return toast('Tiene que haber al menos un héroe que lleve una persona.', 'peligro');
   const e = M.crearPartida(elegidos, s.jugadores);
   e.anfitrion = miId;
+  e.uid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  if (s.perdida) for (const [t, foto] of Object.entries(s.fotos || {})) if (e.heroes[t] && s.eleccion[t] && !s.ia?.[t]) V.cargarEnPartida(e.heroes[t], foto);
   app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
   e.misionIdx = s.misionIdx;
   if (s.perdida) {
@@ -726,6 +757,7 @@ function eventosAnfitrion() {
     alMensaje(id, msg) {
       if (msg.t === 'elegir' && !app.estado) return alternarHeroe(id, msg.heroe);
       if (msg.t === 'variante' && !app.estado) return alternarVariante(id, msg.heroe);
+      if (msg.t === 'ficha' && !app.estado) return ponerFoto(id, msg.heroe, msg.foto);
       if (msg.t === 'accion' && app.estadoReal) {
         const err = M.aplicar(app.estadoReal, msg.accion, id, (m) => app.misiones[m]);
         if (err) app.red.enviar(id, { t: 'error', texto: err });
@@ -734,7 +766,7 @@ function eventosAnfitrion() {
     },
     alSalir(id) {
       const s = app.sala;
-      if (!app.estadoReal) { delete s.jugadores[id]; for (const [t, j] of Object.entries(s.eleccion)) if (j === id) delete s.eleccion[t]; difundirSala(); return; }
+      if (!app.estadoReal) { delete s.jugadores[id]; for (const [t, j] of Object.entries(s.eleccion)) if (j === id) { delete s.eleccion[t]; if (s.fotos) delete s.fotos[t]; } difundirSala(); return; }
       const real = app.estadoReal;
       if (real.jugadores[id]) real.jugadores[id].desconectado = true;
       toast((s.jugadores[id]?.nombre || 'Un jugador') + ' se ha desconectado. Puedes mover sus héroes.', 'peligro');
@@ -774,6 +806,7 @@ function enviar(accion) {
 
 function recibirEstado(e, real) {
   if (e.mision) T.usarPlano(e.mision.plano);
+  if (e.uid && V.sincronizar(ficha, e, miId)) fichaCambiada(e.fase !== 'mision');
   const primera = !app.estado;
   app.estado = e;
   if (real) app.estadoReal = real;
@@ -2007,6 +2040,7 @@ function pintarArmeria() {
       <p class="nota" style="margin-top:12px">${esc(D.HEROES[h.tipo].lema)}${h.kit ? ' Lleva herramientas para desarmar trampas.' : ''}</p>
       ${hz ? `<p><b>Hechizos:</b> ${esc(hz)}</p>` : ''}
       ${e.aleatorio || h.nivel > 1 ? htmlNivel(h, mio) : ''}
+      ${htmlFicha(e, h, mio)}
       ${mio ? '' : '<p class="nota">Este héroe lo lleva otro jugador.</p>'}`;
   }
 
@@ -2085,6 +2119,7 @@ function pintarArmeria() {
   q('[data-subclase]', (b) => enviar({ tipo: 'subclase', heroe: h.id, subclase: b.dataset.subclase }));
   q('[data-equipar]', (b) => enviar({ tipo: 'equipar', heroe: h.id, item: b.dataset.equipar }));
   q('[data-purificar]', () => enviar({ tipo: 'purificar', heroe: h.id }));
+  q('[data-a-ficha]', () => llevarAFicha(e, h));
   q('[data-guardar]', (b) => enviar({ tipo: 'guardar', heroe: h.id, item: b.dataset.guardar }));
   q('[data-vender]', (b) => enviar({ tipo: 'vender', heroe: h.id, item: b.dataset.vender }));
   q('[data-cargar]', (b) => enviar({ tipo: 'cargar', heroe: h.id, item: b.dataset.cargar }));
@@ -2106,6 +2141,25 @@ function pintarArmeria() {
   $('#arm-espera').hidden = manda;
 }
 $('#b-siguiente').addEventListener('click', () => enviar({ tipo: 'siguienteMision' }));
+
+// ---------- Ficha del viajero en el campamento ----------
+function htmlFicha(e, h, mio) {
+  if (!e.aleatorio || !mio || h.ia) return '';
+  const fh = h.fichaId && ficha.heroes[h.fichaId];
+  if (fh) return `<p class="nota ficha-nota">📜 <b>${esc(fh.nombre)}</b> está en tu ficha de viajero: su nivel, equipo y oro se guardan allí entre misiones.</p>`;
+  if (h.fichaId) return '<p class="nota ficha-nota">📜 Este héroe es de una ficha de viajero de otro dispositivo o cuenta.</p>';
+  const lleno = ficha.orden.length >= V.MAX_HEROES;
+  return `<p class="nota ficha-nota">📜 ¿Quieres conservar a este héroe? Llévalo a tu ficha de viajero: podrás usarlo en otras partidas y verlo en tu cabaña.
+    <button class="btn madera" data-a-ficha ${lleno ? 'disabled title="Ya tienes ' + V.MAX_HEROES + ' héroes en la ficha"' : ''} style="min-height:34px;font-size:14px;padding:0 12px;margin-left:6px">Llevar a mi ficha</button></p>`;
+}
+function llevarAFicha(e, h) {
+  const r = V.anadirHeroe(ficha, h);
+  if (r.error) return toast(r.error, 'peligro');
+  V.prestar(ficha, r.id, e.uid);
+  fichaCambiada(true);
+  enviar({ tipo: 'vincularFicha', heroe: h.id, fichaId: r.id });
+  toast(h.nombre + ' ya está en tu ficha de viajero.', 'bueno');
+}
 
 function pintarFinal() {
   const e = app.estado;

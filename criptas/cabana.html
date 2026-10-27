@@ -40,6 +40,8 @@
   .dialogo .heroes button { background: rgba(60,30,10,.12); border: 1px solid #6a4a28; border-radius: 4px; padding: 4px; cursor: pointer; font: 13px 'IM Fell English SC', serif; color: #1c120b; display: flex; flex-direction: column; align-items: center; width: 82px; }
   .dialogo .heroes button.on { background: rgba(122,26,18,.18); border-color: #7a1a12; }
   .dialogo .heroes img { width: 64px; height: 64px; object-fit: contain; }
+  .dialogo .heroes small { font: italic 11px 'IM Fell English', serif; opacity: .75; }
+  .dialogo .heroes button:disabled { opacity: .5; }
   .zzz { position: fixed; inset: 0; z-index: 30; background: #000; opacity: 0; pointer-events: none; transition: opacity 1.2s; display: grid; place-items: center; font: italic 28px 'IM Fell English', serif; color: #d8c8a8; }
   .ayuda { left: 10px; bottom: max(10px, env(safe-area-inset-bottom)); font: italic 13px 'IM Fell English', serif; opacity: .6; pointer-events: none; text-shadow: 0 1px 3px #000; }
   @media (max-width: 640px) { .ayuda { display: none; } .titulo { font-size: 19px; } .titulo small { display: none; } }
@@ -67,6 +69,7 @@ import { RenderPass } from './js/vendor/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
+import * as Ficha from './js/viajero.js';
 
 // =============================================================
 //  Prototipo: la cabaña del jugador por dentro.
@@ -82,6 +85,9 @@ const uno = (l) => l[Math.floor(Math.random() * l.length)];
 const suave = (a, b, k) => a + (b - a) * k;
 const movil = matchMedia('(pointer: coarse)').matches;
 const prm = new URLSearchParams(location.search);
+// Tu ficha de viajero (la guarda el juego en este dispositivo).
+let ficha = Ficha.fichaOCrear(leer('criptas_nombre') || 'Viajero');
+const guardarF = () => Ficha.guardarFicha(ficha);
 const CALIDADES = ['baja', 'media', 'alta'];
 let calidad = prm.get('calidad') || leer('criptas_calidadTortuga', movil ? 'media' : 'alta');
 if (!CALIDADES.includes(calidad)) calidad = 'media';
@@ -288,22 +294,31 @@ const trofeos = new THREE.Group();
     const m = new THREE.Mesh(new THREE.ExtrudeGeometry(f, { depth: .08, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 2 }), mat.madera);
     m.position.set(x, y, 0); m.scale.setScalar(s); trofeos.add(m); return m;
   };
-  // Trofeo 1: cráneo cornudo de Ugrak, el Gran Chamán
-  escudo(0, 2.3, 1.5);
-  const cr = new THREE.Group(); cr.position.set(0, 2.25, .25); trofeos.add(cr);
-  const c = new THREE.Mesh(new THREE.SphereGeometry(.36, 16, 12), mat.hueso); c.scale.set(1, .95, .85); cr.add(c);
-  const mand = new THREE.Mesh(new THREE.SphereGeometry(.24, 12, 8), mat.hueso); mand.scale.set(1.1, .6, .9); mand.position.set(0, -.28, .1); cr.add(mand);
-  for (const s of [-1, 1]) {
-    const cuerno = new THREE.Mesh(new THREE.TorusGeometry(.4, .07, 8, 16, Math.PI * .8), mat.hueso); cuerno.position.set(s * .32, .15, 0); cuerno.rotation.set(0, s > 0 ? 0 : Math.PI, .4); cr.add(cuerno);
-    cr.add(en(new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), brillo(2.4, .5, .25)), s * .13, .03, .3));
-  }
-  trofeos.add(caja(.9, .16, .04, mat.laton, 0, 1.25, .12));
-  // Huecos para los siguientes jefes: escudos vacíos con una silueta tenue
-  for (const [x, y] of [[-1.7, 2.1], [1.7, 2.1], [-1.1, 3.1], [1.1, 3.1]]) {
-    escudo(x, y, 1);
-    const q = new THREE.Mesh(new THREE.PlaneGeometry(.5, .5), new THREE.MeshBasicMaterial({ map: textura(64, 64, (g) => { g.fillStyle = 'rgba(255,220,160,.55)'; g.font = 'bold 44px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 32, 36); }), transparent: true, depthWrite: false }));
-    q.position.set(x, y, .13); trofeos.add(q);
-  }
+  // Un escudo por trofeo de tu ficha (los cinco más recientes); los demás, con un «?».
+  const huecos = [[0, 2.3, 1.5], [-1.7, 2.1, 1], [1.7, 2.1, 1], [-1.1, 3.1, 1], [1.1, 3.1, 1]];
+  const lista = ficha.cabana.trofeos.slice(-huecos.length).reverse();
+  huecos.forEach(([x, y, esc], i) => {
+    escudo(x, y, esc);
+    const t = lista[i];
+    if (t) {
+      // Cráneo con cuernos; el color de los ojos y los cuernos cambian según el jefe
+      let hsh = 0; for (const ch of t.nombre) hsh = (hsh * 31 + ch.charCodeAt(0)) >>> 0;
+      const k = esc * .75;
+      const cr = new THREE.Group(); cr.position.set(x, y - .05 * esc, .25); cr.scale.setScalar(k); trofeos.add(cr);
+      const c = new THREE.Mesh(new THREE.SphereGeometry(.36, 16, 12), mat.hueso); c.scale.set(1, .95, .85); cr.add(c);
+      const mand = new THREE.Mesh(new THREE.SphereGeometry(.24, 12, 8), mat.hueso); mand.scale.set(1.1, .6, .9); mand.position.set(0, -.28, .1); cr.add(mand);
+      const ojos = [[2.4, .5, .25], [.5, 1.6, 2.4], [.6, 2.2, .7], [2.2, 1.6, .3]][hsh % 4];
+      for (const s2 of [-1, 1]) {
+        if (hsh % 3 !== 2) { const cuerno = new THREE.Mesh(new THREE.TorusGeometry(.4, .07, 8, 16, Math.PI * (.6 + (hsh % 5) * .08)), mat.hueso); cuerno.position.set(s2 * .32, .15, 0); cuerno.rotation.set(0, s2 > 0 ? 0 : Math.PI, .4); cr.add(cuerno); }
+        else { const pua = new THREE.Mesh(new THREE.ConeGeometry(.08, .5, 8), mat.hueso); pua.position.set(s2 * .2, .45, 0); pua.rotation.z = -s2 * .3; cr.add(pua); }
+        cr.add(en(new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), brillo(...ojos)), s2 * .13, .03, .3));
+      }
+      trofeos.add(caja(.7 * esc, .12, .04, mat.laton, x, y - .75 * esc, .12));
+    } else {
+      const q = new THREE.Mesh(new THREE.PlaneGeometry(.5 * esc, .5 * esc), new THREE.MeshBasicMaterial({ map: textura(64, 64, (g) => { g.fillStyle = 'rgba(255,220,160,.55)'; g.font = 'bold 44px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', 32, 36); }), transparent: true, depthWrite: false }));
+      q.position.set(x, y, .13); trofeos.add(q);
+    }
+  });
   // Estandarte y antorchas a los lados
   for (const s of [-1, 1]) {
     trofeos.add(cil(.05, .07, .5, mat.hierro, s * 2.6, 2.2, .18, 6));
@@ -446,7 +461,7 @@ const zzzGato = (() => {
 })();
 
 const CLASES = { barbaro: 'Bárbaro', enano: 'Enano', elfo: 'Elfa', mago: 'Mago' };
-let clase = leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
+let clase = ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
 const heroe = new THREE.Group(); heroe.position.copy(puertaPos.clone().multiplyScalar(.72)); casa.add(heroe);
 const sombra = new THREE.Mesh(new THREE.CircleGeometry(.45, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false }));
 sombra.rotation.x = -Math.PI / 2; sombra.position.y = .02; heroe.add(sombra);
@@ -491,18 +506,44 @@ function mostrar(quien, texto, ops = [['Volver', () => usar(ultimo)]], extra = '
 }
 function cerrar() { $('dialogo').style.display = 'none'; enDialogo = false; abrirBaul = false; }
 let abrirBaul = false;
+const SPRITE = (t) => `sprites/${t}.png`;
+const fecha = (n) => new Date(n).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+function pintarBaul(aviso = '') {
+  const hs = ficha.orden.map((id) => ficha.heroes[id]);
+  const estado = (h) => h.caido ? '☠ espera al Limbo' : h.prestado ? 'en una partida' : 'en el baúl';
+  const html = (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + (hs.length
+    ? '<div class="heroes">' + hs.map((h) => `<button data-id="${h.id}" class="${h.id === ficha.activo ? 'on' : ''}" ${h.caido ? 'disabled' : ''} title="${estado(h)}"><img src="${SPRITE(h.tipo)}" alt="">${h.nombre}<small>Nv ${h.nivel || 1} · ${estado(h)}</small></button>`).join('') + '</div>'
+    : '<p><i>Tu baúl está vacío.</i> En la Mazmorra Infinita, desde el campamento, pulsa «Llevar a mi ficha» con tu héroe. O tráelo de una partida guardada.</p>');
+  mostrar('Baúl de los héroes', hs.length ? `Tienes ${hs.length} de ${Ficha.MAX_HEROES} héroes. Elige con quién te paseas:` : '', [
+    ['Traer un héroe de una partida guardada', pintarImportar], ['Cerrar el baúl', cerrar]], html);
+  document.querySelectorAll('.dialogo .heroes button').forEach((b) => b.onclick = (e) => {
+    e.stopPropagation(); ficha.activo = b.dataset.id; Ficha.tocar(ficha); guardarF(); ponerClase(ficha.heroes[b.dataset.id].tipo);
+    document.querySelectorAll('.dialogo .heroes button').forEach((x) => x.classList.toggle('on', x === b)); audio.nota(660, .4);
+  });
+}
+function pintarImportar() {
+  let partidas = {}; try { partidas = JSON.parse(localStorage.getItem('criptas_partidas')) || {}; } catch { partidas = {}; }
+  const lista = Ficha.importables(ficha, partidas);
+  mostrar('Partidas guardadas', lista.length ? 'Elige un héroe para traerlo a tu baúl. Se copia tal y como está; la partida no cambia.' : 'No hay héroes que traer de las partidas guardadas en este dispositivo.',
+    [...lista.slice(0, 8).map((it) => [`${it.heroe.nombre} · Nv ${it.heroe.nivel || 1} — ${it.resumen || 'partida'}`, () => {
+      const r = Ficha.importar(ficha, it); guardarF();
+      pintarBaul(r.error || '');
+      if (!r.error) audio.nota(784, .6);
+    }]), ['Volver al baúl', () => pintarBaul()]]);
+}
 const USOS = {
-  trofeos: () => mostrar('Muro de trofeos', 'Cada jefe que derrotes acabará aquí colgado. De momento solo hay uno, pero ya hay sitio para más.', [['Volver al centro', cerrar]],
-    '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>La Reina de Hueso</span><span>?</span><span>El Gólem Ancestral</span><span>?</span><span>El Heraldo del Abismo</span><span>?</span><span>El Corazón de la Mazmorra</span><span>?</span></div>'),
-  baul: () => {
-    abrirBaul = true; audio.nota(392, .5); audio.nota(523, .6, .1);
-    const html = '<div class="heroes">' + Object.entries(CLASES).map(([k, n]) => `<button data-k="${k}" class="${k === clase ? 'on' : ''}"><img src="sprites/${k}.png" alt="">${n}</button>`).join('') + '</div>';
-    mostrar('Baúl de los héroes', 'Aquí guardas a tus héroes con su equipo. Elige con quién vas a salir:', [['Cerrar el baúl', cerrar]], html);
-    document.querySelectorAll('.dialogo .heroes button').forEach((b) => b.onclick = (e) => { e.stopPropagation(); ponerClase(b.dataset.k); document.querySelectorAll('.dialogo .heroes button').forEach((x) => x.classList.toggle('on', x === b)); audio.nota(660, .4); });
+  trofeos: () => {
+    const t = ficha.cabana.trofeos.slice().reverse();
+    mostrar('Muro de trofeos', t.length ? `Has vencido a ${t.length} ${t.length === 1 ? 'jefe' : 'jefes'}. En la pared caben los cinco últimos.` : 'Todavía no hay ningún trofeo. Cada jefe que derrotes acabará colgado aquí.', [['Volver', cerrar]],
+      t.length ? '<div class="lista">' + t.slice(0, 12).map((x) => `<span>${x.nombre}</span><span>${x.donde || ''}</span>`).join('') + '</div>' : '');
   },
+  baul: () => { abrirBaul = true; audio.nota(392, .5); audio.nota(523, .6, .1); pintarBaul(); },
   hamaca: () => mostrar('Hamaca', 'Se mece sola con el vaivén de Morrandar. Huele a sal y a lana vieja.', [['Dormir un rato', dormir], ['Mejor no', cerrar]]),
-  escritorio: () => mostrar('Diario del viajero', 'Tu letra, cada vez más torcida. Aquí se apuntará todo lo que hagas:', [['Cerrar el diario', cerrar]],
-    '<div class="lista"><span>Pisos de la Infinita</span><span>—</span><span>Jefes vencidos</span><span>1</span><span>Personajes rescatados</span><span>0</span><span>Páginas recuperadas</span><span>0</span><span>Veces que has muerto</span><span>mejor no contarlo</span></div>'),
+  escritorio: () => {
+    const d = ficha.diario;
+    mostrar('Diario de ' + ficha.nombre, d.misiones ? 'Tu letra, cada vez más torcida:' : 'Aún está en blanco. Se irá llenando con cada misión que juegues.', [['Cerrar el diario', cerrar]],
+      `<div class="lista"><span>Misiones jugadas</span><span>${d.misiones}</span><span>Victorias / derrotas</span><span>${d.victorias} / ${d.derrotas}</span><span>Piso más hondo de la Infinita</span><span>${d.pisoMax || '—'}</span><span>Jefes vencidos</span><span>${d.jefes}</span><span>Monstruos abatidos</span><span>${d.monstruos}</span><span>Veces que has caído</span><span>${d.caidas || 'ninguna'}</span><span>Héroes en el baúl</span><span>${ficha.orden.length}</span><span>Oro en el banco</span><span>${ficha.banco}</span></div>`);
+  },
   armero: () => mostrar('Armero', 'Una espada rúnica que todavía zumba y el hacha del primer bárbaro que pisó esta cabaña. Aquí colgarás las armas raras que encuentres.', [['Volver', cerrar]]),
   vitrina: () => mostrar('Vitrina de reliquias', 'El Cáliz Partido, la Campana de los Muertos y la Brújula del Desertor, cuya aguja no deja de temblar. Las reliquias que juntéis acabarán aquí.', [['Volver', cerrar]]),
   ventana: () => mostrar('Ventana', 'El sol se hunde en el mar de tinta. A lo lejos flota una isla de libros. Morrandar rema despacio, sin prisa, como lleva haciendo siglos.', [['Volver', cerrar]]),

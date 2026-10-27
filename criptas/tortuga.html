@@ -73,6 +73,7 @@ import { RenderPass } from './js/vendor/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
+import * as Ficha from './js/viajero.js';
 
 // =============================================================
 //  Prototipo: Morrandar, una tortuga gigante que nada por el mar
@@ -89,6 +90,7 @@ const suave = (a, b, k) => a + (b - a) * k;
 
 const movil = matchMedia('(pointer: coarse)').matches;
 const prm = new URLSearchParams(location.search);   // para pruebas: ?fija, ?x=, ?z=, ?giro=, ?incl=, ?dist=
+let ficha = Ficha.fichaOCrear(leer('criptas_nombre') || 'Viajero');   // tu ficha de viajero
 const CALIDADES = ['baja', 'media', 'alta'];
 let calidad = leer('criptas_calidadTortuga', movil ? 'media' : 'alta');
 if (!CALIDADES.includes(calidad)) calidad = 'media';
@@ -739,7 +741,7 @@ for (let i = 0; i < 6; i++) {
 
 // ---------- Héroe ----------
 const CLASES = { barbaro: 'Bárbaro', enano: 'Enano', elfo: 'Elfa', mago: 'Mago' };
-let clase = leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
+let clase = ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
 const heroe = new THREE.Group(); heroe.position.set(+(new URLSearchParams(location.search).get('x') ?? 0), 0, +(new URLSearchParams(location.search).get('z') ?? 5.6)); pueblo.add(heroe);
 const sombra = new THREE.Mesh(new THREE.CircleGeometry(.5, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false }));
 sombra.rotation.x = -Math.PI / 2; sombra.position.y = .02; heroe.add(sombra);
@@ -862,7 +864,7 @@ const DIALOGOS = {
   mordo: () => ({ texto: 'Bienvenido a mi humilde puesto. Todo lo que vendo lo saqué de alguien que ya no lo necesitaba.',
     ops: [['¿Qué tienes hoy?', () => mostrar('Mordo el Tuerto', 'Género fresco. Casi.', undefined, `<div class="lista"><span>Poción curativa (abierta una vez)</span><span>45 o</span><span>Espada corta (con muesca de propietario)</span><span>120 o</span><span>Mapa del piso 3 (manchado de sangre)</span><span>80 o</span><span>Ojo de cristal (no preguntes)</span><span>200 o</span></div>`)],
       ['Nada, gracias', cerrarDialogo]] }),
-  hiel: () => ({ texto: 'Guardo vuestro oro. Si no volvéis, también lo guardo.', ops: [['¿Cuánto me cobras?', () => mostrar('Madre Hiel', 'Un diente por cada cien monedas. Los de leche no valen.')], ['Me voy', cerrarDialogo]] }),
+  hiel: () => banco(),
   grumete: () => ({ texto: uno(['¡Cuidado, que Morrandar se rasca a veces y media plaza sale volando!', 'Dicen que si te caes a la tinta te conviertes en una nota a pie de página.']),
     ops: [['¿De dónde saliste tú?', () => mostrar('Pip', 'El Viejo Anzuelo me pescó de un cuento de piratas. ¡Ahora vivo en una tortuga! Bueno, encima.')], ['Sigue a lo tuyo', cerrarDialogo]] }),
   pescador: () => ({ texto: 'Aquí no se pescan peces. Se pescan páginas. A veces con alguien dentro.', ops: [['¿Qué has pescado hoy?', () => mostrar('El Viejo Anzuelo', `Hoy he sacado ${uno(PESCA)}.`)], ['Te dejo tranquilo', cerrarDialogo]] }),
@@ -876,6 +878,26 @@ const DIALOGOS = {
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
 };
+// ---------- El banco de Madre Hiel, con tu ficha de viajero ----------
+function banco(aviso = '') {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const h = ficha.heroes[ficha.activo];
+  const cab = aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '';
+  if (!h) return mostrar('Madre Hiel', 'Guardo vuestro oro. Si no volvéis, también lo guardo. Pero tú no tienes héroes en tu ficha: tráeme alguno de las mazmorras.', [['Me voy', cerrarDialogo]], cab);
+  const max = Ficha.maxRetiro(ficha, h);
+  const guardar = (n) => () => { const e = Ficha.depositar(ficha, h.id, n); if (!e) { Ficha.guardarFicha(ficha); audio.tono('hiel'); } banco(e || ''); };
+  const sacar = (n) => () => { const e = Ficha.retirar(ficha, h.id, n); if (!e) { Ficha.guardarFicha(ficha); audio.tono('hiel'); } banco(e || ''); };
+  const ops = [];
+  if (!h.prestado) {
+    if (h.oro >= 50) ops.push(['Guardar 50 monedas', guardar(50)]);
+    if (h.oro > 0) ops.push([`Guardar todo (${h.oro})`, guardar(h.oro)]);
+    if (max > 0) ops.push([`Sacar ${max} (el máximo: 40 %)`, sacar(max)]);
+  }
+  ops.push(['Me voy', cerrarDialogo]);
+  mostrar('Madre Hiel', h.prestado ? `${h.nombre} está en una partida: su bolsa la lleva encima. Vuelve cuando acabe.` : h.retirado ? `${h.nombre} ya ha sacado oro. Hasta su próxima misión, nada.` : 'Guardo vuestro oro. Si no volvéis, también lo guardo. Un diente por cada cien monedas… es broma. O no.', ops,
+    cab + `<div class="lista"><span>Bolsa de ${h.nombre}</span><span>${h.oro} o</span><span>Banco del viajero</span><span>${ficha.banco} o</span></div>`);
+}
+
 let ultimo = null;
 function mostrar(quien, texto, ops = [['Volver', () => interactuar(ultimo)]], extra = '') {
   const d = $('dialogo');
@@ -886,7 +908,7 @@ function mostrar(quien, texto, ops = [['Volver', () => interactuar(ultimo)]], ex
 function interactuar(p) {
   ultimo = p; destino = null; porHablar = null; p.parado = 4;
   const dlg = DIALOGOS[p.id]();
-  mostrar(p.nombre, dlg.texto, dlg.ops);
+  if (dlg) mostrar(p.nombre, dlg.texto, dlg.ops);   // algunos (el banco) pintan su propio diálogo
   audio.tono(p.id);
 }
 function cerrarDialogo() { $('dialogo').style.display = 'none'; enDialogo = false; }
