@@ -52,6 +52,7 @@
 <div class="ui arriba">
   <div class="titulo">El Zepelín <small>prototipo · base caminable</small></div>
   <div class="clases" id="clases"></div>
+  <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
   <button class="btn" id="b-libro" title="Vista ligera para móviles">📖 Ver como libro</button>
 </div>
 <div class="ui aviso" id="aviso"></div>
@@ -668,6 +669,25 @@ addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; cam
 if (innerWidth < innerHeight) { DESFASE_CAM.set(0, 9.5, 12); MIRA_ADELANTE.set(0, 1.2, -3.5); camara.fov = 62; camara.updateProjectionMatrix(); }   // en vertical, más alejada
 requestAnimationFrame(bucle);
 setTimeout(() => { $('fundido').style.opacity = 0; }, 150);
+</script>
+
+<script>
+// Pantalla completa (en iPhone Safari no existe: el botón se oculta)
+(() => {
+  const b = document.getElementById('b-completa'); if (!b) return;
+  const el = document.documentElement;
+  const pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!pedir) { b.style.display = 'none'; return; }
+  const activa = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const pintar = () => { b.textContent = activa() ? '⤡' : '⛶'; b.title = activa() ? 'Salir de pantalla completa' : 'Pantalla completa'; };
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (activa()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const r = pedir.call(el); if (r && r.catch) r.catch(() => {}); if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); }
+  });
+  document.addEventListener('fullscreenchange', pintar); document.addEventListener('webkitfullscreenchange', pintar);
+  pintar();
+})();
 </script>
 </body>
 </html>

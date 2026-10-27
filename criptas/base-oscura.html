@@ -117,7 +117,8 @@
   </defs>
 </svg>
 
-<a href="zepelin.html" style="position:fixed;top:max(8px,env(safe-area-inset-top));right:10px;z-index:60;color:#d9c79e;font:italic 14px 'IM Fell English',serif;border:1px solid #6a4a28;padding:5px 10px;background:rgba(20,10,5,.6);text-decoration:none">🎈 Ver el zepelín</a>
+<button id="b-completa" title="Pantalla completa" style="position:fixed;top:max(8px,env(safe-area-inset-top));left:10px;z-index:60;color:#d9c79e;font:16px serif;border:1px solid #6a4a28;padding:4px 10px;background:rgba(20,10,5,.6);cursor:pointer">⛶</button>
+<a href="barco.html" style="position:fixed;top:max(8px,env(safe-area-inset-top));right:10px;z-index:60;color:#d9c79e;font:italic 14px 'IM Fell English',serif;border:1px solid #6a4a28;padding:5px 10px;background:rgba(20,10,5,.6);text-decoration:none">⛵ Ver el barco</a>
 <div class="aviso">Prototipo oscuro · mueve la vela con el dedo o el ratón · toca a los personajes</div>
 
 <div class="libro" id="libro">
@@ -480,6 +481,25 @@ addEventListener('resize', ajustar);
 ajustar();
 document.fonts && document.fonts.ready.then(ajustar);
 setTimeout(() => document.getElementById('esc0').classList.add('abierta'), 250);
+</script>
+
+<script>
+// Pantalla completa (en iPhone Safari no existe: el botón se oculta)
+(() => {
+  const b = document.getElementById('b-completa'); if (!b) return;
+  const el = document.documentElement;
+  const pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!pedir) { b.style.display = 'none'; return; }
+  const activa = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const pintar = () => { b.textContent = activa() ? '⤡' : '⛶'; b.title = activa() ? 'Salir de pantalla completa' : 'Pantalla completa'; };
+  b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (activa()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else { const r = pedir.call(el); if (r && r.catch) r.catch(() => {}); if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); }
+  });
+  document.addEventListener('fullscreenchange', pintar); document.addEventListener('webkitfullscreenchange', pintar);
+  pintar();
+})();
 </script>
 </body>
 </html>
