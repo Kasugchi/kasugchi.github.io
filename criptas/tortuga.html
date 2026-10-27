@@ -56,7 +56,7 @@
   <div class="titulo">Morrandar <small>la tortuga que nada entre las historias · prototipo</small></div>
   <div class="clases" id="clases"></div>
   <button class="btn" id="b-calidad" title="Calidad gráfica">Calidad</button>
-  <button class="btn" id="b-sonido">🔇</button>
+  <button class="btn" id="b-sonido" title="Mezclador de sonido">🔇</button>
   <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
   <button class="btn" id="b-libro" title="Vista ligera para móviles">📖</button>
 </div>
@@ -72,6 +72,7 @@ import { EffectComposer } from './js/vendor/addons/postprocessing/EffectComposer
 import { RenderPass } from './js/vendor/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
+import { crearMezclador } from './js/mezclador.js';
 
 // =============================================================
 //  Prototipo: Morrandar, una tortuga gigante que nada por el mar
@@ -899,58 +900,48 @@ $('b-calidad').addEventListener('click', () => { calidad = CALIDADES[(CALIDADES.
 // =============================================================
 //  Sonido: mar, viento, crujidos, una cajita de música y Morrandar
 // =============================================================
+const mz = crearMezclador({ boton: $('b-sonido'), canales: [
+  { id: 'mar', nombre: 'Mar' }, { id: 'viento', nombre: 'Viento' }, { id: 'madera', nombre: 'Crujidos' },
+  { id: 'musica', nombre: 'Música' }, { id: 'morrandar', nombre: 'Morrandar' }, { id: 'efectos', nombre: 'Efectos' }] });
+mz.alArrancar((ac) => {
+  const o = ac.createBufferSource(); o.buffer = mz.ruido(4); o.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380;
+  const g = ac.createGain(); g.gain.value = .26;
+  const lfo = ac.createOscillator(); lfo.frequency.value = .09; const lg = ac.createGain(); lg.gain.value = .16; lfo.connect(lg); lg.connect(g.gain); lfo.start();
+  o.connect(f); f.connect(g); g.connect(mz.salida('mar')); o.start();
+  const v = ac.createBufferSource(); v.buffer = mz.ruido(5); v.loop = true;
+  const fv = ac.createBiquadFilter(); fv.type = 'bandpass'; fv.frequency.value = 900; fv.Q.value = .7;
+  const gv = ac.createGain(); gv.gain.value = .035; v.connect(fv); fv.connect(gv); gv.connect(mz.salida('viento')); v.start();
+});
 const audio = (() => {
-  let ac = null, maestro = null, activo = leer('criptas_sonidoBarco', '1') === '1', crujir = 0, musica = 2;
-  const ruido = (s) => { const b = ac.createBuffer(1, ac.sampleRate * s, ac.sampleRate), d = b.getChannelData(0); let u = 0; for (let i = 0; i < d.length; i++) { u = (u + .02 * (Math.random() * 2 - 1)) / 1.02; d[i] = u * 3.5; } return b; };
-  function empezar() {
-    if (ac || !activo) return;
-    ac = new (window.AudioContext || window.webkitAudioContext)();
-    maestro = ac.createGain(); maestro.gain.value = .9; maestro.connect(ac.destination);
-    const o = ac.createBufferSource(); o.buffer = ruido(4); o.loop = true;
-    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 380;
-    const g = ac.createGain(); g.gain.value = .26;
-    const lfo = ac.createOscillator(); lfo.frequency.value = .09; const lg = ac.createGain(); lg.gain.value = .16; lfo.connect(lg); lg.connect(g.gain); lfo.start();
-    o.connect(f); f.connect(g); g.connect(maestro); o.start();
-    const v = ac.createBufferSource(); v.buffer = ruido(5); v.loop = true;
-    const fv = ac.createBiquadFilter(); fv.type = 'bandpass'; fv.frequency.value = 900; fv.Q.value = .7;
-    const gv = ac.createGain(); gv.gain.value = .035; v.connect(fv); fv.connect(gv); gv.connect(maestro); v.start();
-    pintar();
-  }
-  function nota(frec, dur = .5, tipo = 'triangle', vol = .06, cuando = 0) {
-    if (!ac || !activo) return;
-    const t = ac.currentTime + cuando, o = ac.createOscillator(), g = ac.createGain();
-    o.type = tipo; o.frequency.value = frec; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-    o.connect(g); g.connect(maestro); o.start(t); o.stop(t + dur + .05);
-  }
-  // Cajita de música: notas sueltas de una escala pentatónica, muy suave
+  let crujir = 0, musica = 2;
   const ESCALA = [523, 587, 659, 784, 880, 1047, 1175];
-  function cajita() { const n = 2 + Math.floor(Math.random() * 3); let c = 0; for (let i = 0; i < n; i++) { nota(uno(ESCALA), 1.6, 'sine', .028, c); c += azar(.18, .45); } }
+  function cajita() { const n = 2 + Math.floor(Math.random() * 3); let c = 0; for (let i = 0; i < n; i++) { mz.nota('musica', uno(ESCALA), 1.6, c, .028, 'sine'); c += azar(.18, .45); } }
   function cruje() {
-    if (!ac || !activo) return;
+    const ac = mz.ac; if (!mz.activo) return;
     const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
     o.type = 'sawtooth'; o.frequency.setValueAtTime(azar(70, 110), t); o.frequency.linearRampToValueAtTime(azar(45, 70), t + .5);
     f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 3;
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.04, t + .1); g.gain.linearRampToValueAtTime(0, t + .6);
-    o.connect(f); f.connect(g); g.connect(maestro); o.start(t); o.stop(t + .7);
+    o.connect(f); f.connect(g); g.connect(mz.salida('madera')); o.start(t); o.stop(t + .7);
   }
   function rugido() {
-    if (!ac || !activo) return;
+    const ac = mz.ac; if (!mz.activo) return;
     const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter();
     o.type = 'sawtooth'; o.frequency.setValueAtTime(48, t); o.frequency.linearRampToValueAtTime(36, t + 2.4);
     f.type = 'lowpass'; f.frequency.value = 180;
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.35, t + .5); g.gain.linearRampToValueAtTime(0, t + 2.6);
-    o.connect(f); f.connect(g); g.connect(maestro); o.start(t); o.stop(t + 2.7);
+    o.connect(f); f.connect(g); g.connect(mz.salida('morrandar')); o.start(t); o.stop(t + 2.7);
   }
   const TONOS = { mordo: 196, hiel: 147, grumete: 392, pescador: 165, guia: 220, gato: 660, libro: 311, forja: 110, cabana: 262, morrandar: 98 };
-  function tono(id) { nota(TONOS[id] || 220, .6); nota((TONOS[id] || 220) * 1.5, .5, 'triangle', .05, .12); }
-  function libro() { [311, 370, 466, 622].forEach((f, i) => nota(f, 1.2, 'sine', .08, i * .16)); }
-  function pintar() { $('b-sonido').textContent = activo ? '🔊' : '🔇'; }
-  function alternar() { activo = !activo; guardar('criptas_sonidoBarco', activo ? '1' : '0'); if (activo) { if (!ac) empezar(); else ac.resume(); } else if (ac) ac.suspend(); pintar(); }
-  function tic(dt) { crujir -= dt; musica -= dt; if (crujir < 0) { crujir = azar(4, 9); cruje(); } if (musica < 0) { musica = azar(2.5, 6); cajita(); } }
-  return { empezar, alternar, tic, tono, libro, rugido, pintar };
+  return {
+    empezar: () => mz.empezar(),
+    tono(id) { mz.nota('efectos', TONOS[id] || 220, .6, 0, .06); mz.nota('efectos', (TONOS[id] || 220) * 1.5, .5, .12, .05); },
+    libro() { [311, 370, 466, 622].forEach((f, i) => mz.nota('efectos', f, 1.2, i * .16, .08, 'sine')); },
+    rugido,
+    tic(dt) { crujir -= dt; musica -= dt; if (crujir < 0) { crujir = azar(4, 9); cruje(); } if (musica < 0) { musica = azar(2.5, 6); cajita(); } }
+  };
 })();
-audio.pintar();
-$('b-sonido').addEventListener('click', () => audio.alternar());
 
 // Pantalla completa
 (() => {
