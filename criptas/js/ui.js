@@ -309,6 +309,7 @@ import('./nube.js').then((m) => {
     if (!ok) { app.solicitado = await m.haSolicitado().catch(() => false); ponerAcceso('denegado'); pintarNube(u); return pintarPartidas(); }
     guardar('criptas_acceso', u.email);
     ponerAcceso('ok'); pintarNube(u);
+    entrarPorReunion();
     if (!$('#nombre').value.trim() && u.displayName) $('#nombre').value = u.displayName.split(' ')[0];
     try {
       const enLaNube = await m.leerFichaNube();
@@ -327,6 +328,7 @@ import('./nube.js').then((m) => {
   // Sin conexión con Google: si este dispositivo ya tenía acceso, se juega en local.
   ponerAcceso(leer('criptas_acceso') ? 'ok' : 'fuera');
   pintarNube(null, true);
+  entrarPorReunion();
 });
 function pintarNube(u, fallo = false) {
   const caja = $('#nube');
@@ -379,11 +381,15 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
   const codigo = $('#codigo').value.trim().toUpperCase();
   if (codigo.length !== 4) return avisoPortada('El código tiene 4 letras.');
   avisoPortada('Buscando la sala ' + codigo + '…');
+  // ¿Se están reuniendo en Morrandar? Entonces se espera allí (o en la pantalla ligera).
+  const reu = await Reu().then((m) => m.infoReunion(codigo)).catch(() => null);
+  if (reu && !reu.enJuego) { avisoPortada(''); return elegirVistaReunion(codigo); }
+  if (reu) ponerReunion(codigo);
   try { await unirseComoInvitado(codigo); avisoPortada(''); }
   catch (e) { app.modo = null; avisoPortada(e.message); }
 });
 
-async function unirseComoInvitado(codigo) {
+async function unirseComoInvitado(codigo, paciencia = 3000) {
   app.modo = 'invitado';
   app.partidaId = 'sala-' + codigo;
   app.red = await (await Red()).unirseSala(codigo, miId, miNombre(), {
@@ -391,7 +397,7 @@ async function unirseComoInvitado(codigo) {
     alAnfitrion: (online) => anfitrionCambia(online)
   });
   // Si la sala ya no tiene anfitrión, ofrecer seguir enseguida.
-  if (!app.red.anfitrionOnline) anfitrionCambia(false, 3000);
+  if (!app.red.anfitrionOnline) anfitrionCambia(false, paciencia);
 }
 $('#codigo').addEventListener('input', (e) => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 async function continuarPartida(id) {
@@ -730,6 +736,7 @@ $('#b-empezar').addEventListener('click', async () => {
 });
 
 function salirAPortada() {
+  if (app.reunion) { volverAReunion(); return; }   // se vuelve a Morrandar con los demás
   pintarRecord();
   clearTimeout(avisoCaida); ocultarAvisoAnfitrion();
   app.red?.cerrar(); app.red = null; app.modo = null; app.estado = null; app.estadoReal = null; app.sala = null; app.cola = [];
@@ -737,6 +744,77 @@ function salirAPortada() {
   $('#registro').hidden = true;
   mostrar('portada');
 }
+
+// =============================================================
+//  REUNIÓN EN MORRANDAR (js/reunion.js)
+//  Los jugadores se juntan en la tortuga (o en la pantalla ligera) y,
+//  cuando todos dicen «¡Listo!», llegan aquí con ?sala=CODIGO&rol=…&modo=…
+//  Al acabar o salir, todos vuelven a la reunión.
+// =============================================================
+const Reu = () => import('./reunion.js');
+let reunionPendiente = (() => {
+  const p = new URLSearchParams(location.search), c = (p.get('sala') || '').toUpperCase();
+  return c.length === 4 ? { codigo: c, rol: p.get('rol'), modo: p.get('modo') } : null;
+})();
+if (reunionPendiente) history.replaceState(null, '', location.pathname);
+let quitarRegreso = null;
+function ponerReunion(codigo) {
+  app.reunion = codigo;
+  Reu().then((m) => {
+    m.recordarReunion(codigo);
+    quitarRegreso?.();
+    quitarRegreso = m.vigilarRegreso(codigo, () => { if (app.modo !== 'anfitrion') volverAReunion(); });
+  }).catch(() => {});
+}
+async function volverAReunion() {
+  const c = app.reunion;
+  app.reunion = null; quitarRegreso?.(); quitarRegreso = null;
+  try {
+    const m = await Reu();
+    if (app.modo === 'anfitrion') await m.marcarRegreso(c);
+    clearTimeout(avisoCaida);
+    app.red?.cerrar(); app.red = null; app.modo = null; app.estado = null; app.estadoReal = null;
+    location.href = m.paginaDeVista(m.vistaPreferida() || 'tortuga') + '?sala=' + c + '&sinIntro';
+  } catch { salirAPortada(); }
+}
+async function elegirVistaReunion(codigo) {
+  const m = await Reu();
+  let v = m.vistaPreferida();
+  if (!v) {
+    app.cerrarModalFuera = () => {};
+    const i = await modal(`<h2>Sala ${esc(codigo)}</h2><p>Os estáis reuniendo antes de bajar al libro. ¿Dónde esperas?</p><p class="nota">Se recuerda en este dispositivo. Se puede cambiar desde la sala.</p>`,
+      [{ texto: '🐢 Ir a Morrandar' }, { texto: '📖 Esperar en la sala (ligera)', clase: 'claro' }]);
+    v = i === 1 ? 'ligera' : 'tortuga';
+    m.ponerVista(v);
+  }
+  m.recordarReunion(codigo);
+  location.href = m.paginaDeVista(v) + '?sala=' + codigo;
+}
+// Llegada desde la reunión, cuando ya se sabe que hay acceso.
+async function entrarPorReunion() {
+  const r = reunionPendiente;
+  if (!r || app.modo) return;
+  reunionPendiente = null;
+  ponerReunion(r.codigo);
+  await listas;
+  if (r.rol === 'anfitrion') {
+    avisoPortada('Abriendo la sala ' + r.codigo + '…');
+    try {
+      app.modo = 'anfitrion';
+      app.sala = { codigo: r.codigo, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: r.modo !== 'historia' };
+      app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo: r.codigo });
+      avisoPortada(''); pintarSala(); mostrar('sala');
+      return;
+    } catch (e) {
+      app.modo = null; app.sala = null;
+      if (e.name !== 'SalaOcupada') return avisoPortada(e.message);
+    }
+  }
+  avisoPortada('Entrando en la sala ' + r.codigo + '…');
+  try { await unirseComoInvitado(r.codigo, 20000); avisoPortada(''); }
+  catch (e) { app.modo = null; avisoPortada(e.message); }
+}
+$('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html'; });
 
 // =============================================================
 //  RED: anfitrión

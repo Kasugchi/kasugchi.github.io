@@ -59,6 +59,7 @@
   <button class="btn" id="b-sonido" title="Mezclador de sonido">🔇</button>
   <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
   <button class="btn" id="b-libro" title="Vista ligera para móviles">📖</button>
+  <button class="btn" id="b-sala" title="Jugar juntos: sala con código">👥</button>
 </div>
 <div class="ui aviso" id="aviso"></div>
 <button class="ui btn accion" id="accion"></button>
@@ -74,6 +75,7 @@ import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPa
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
 import * as Ficha from './js/viajero.js';
+import { crearPanel, GESTOS } from './js/reunion.js';
 
 // =============================================================
 //  Prototipo: Morrandar, una tortuga gigante que nada por el mar
@@ -741,6 +743,7 @@ for (let i = 0; i < 6; i++) {
 
 // ---------- Héroe ----------
 const CLASES = { barbaro: 'Bárbaro', enano: 'Enano', elfo: 'Elfa', mago: 'Mago' };
+let panelSala = null;   // la reunión con otros jugadores (más abajo)
 let clase = ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
 const heroe = new THREE.Group(); heroe.position.set(+(new URLSearchParams(location.search).get('x') ?? 0), 0, +(new URLSearchParams(location.search).get('z') ?? 5.6)); pueblo.add(heroe);
 const sombra = new THREE.Mesh(new THREE.CircleGeometry(.5, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false }));
@@ -750,6 +753,7 @@ planoHeroe.position.y = 1.1; heroe.add(planoHeroe);
 const cargador = new THREE.TextureLoader();
 function ponerClase(k) {
   clase = k; guardar('criptas_claseBase', k);
+  panelSala?.R?.cambiar({ clase: k });
   cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; planoHeroe.material.map = t; planoHeroe.material.emissiveMap = t; planoHeroe.material.needsUpdate = true; });
   document.querySelectorAll('#clases .btn').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
 }
@@ -764,6 +768,74 @@ for (const p of PNJ) {
   p.rotulo = document.createElement('div'); p.rotulo.className = 'rotulo'; p.rotulo.textContent = p.nombre; p.rotulo.style.opacity = 0; document.body.appendChild(p.rotulo);
   if (p.frases) { p.habla = document.createElement('div'); p.habla.className = 'habla'; p.habla.style.opacity = 0; document.body.appendChild(p.habla); p.hastaHablar = azar(3, 12); p.hablando = 0; }
 }
+
+// =============================================================
+//  Jugar juntos: los demás viajeros de la sala, de papel como tú
+// =============================================================
+const texturasClase = {};
+function texturaClase(k, f) {
+  if (!CLASES[k]) k = 'barbaro';
+  if (texturasClase[k]) return f(texturasClase[k]);
+  cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; texturasClase[k] = t; f(t); });
+}
+const otros = new Map();   // id -> avatar
+function bocadillo() { const d = document.createElement('div'); d.className = 'habla'; d.style.opacity = 0; document.body.appendChild(d); return d; }
+const yoAvatar = { g: heroe, plano: planoHeroe, habla: bocadillo(), hablando: 0, gesto: null, tG: 0 };
+function crearOtro(id, d) {
+  const g = new THREE.Group();
+  const sb = new THREE.Mesh(new THREE.CircleGeometry(.5, 20), sombra.material); sb.rotation.x = -Math.PI / 2; sb.position.y = .02; g.add(sb);
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshStandardMaterial({ transparent: true, alphaTest: .35, side: THREE.DoubleSide, roughness: 1, emissive: 0x4a3a30, emissiveIntensity: .6 }));
+  pl.position.y = 1.1; g.add(pl);
+  g.position.set(d.x ?? 0, 0, d.z ?? 5.6); pueblo.add(g);
+  const rot = document.createElement('div'); rot.className = 'rotulo'; rot.style.opacity = 0; document.body.appendChild(rot);
+  const a = { id, g, plano: pl, rotulo: rot, habla: bocadillo(), hablando: 0, gesto: null, tG: 0, clase: null, x: d.x ?? 0, z: d.z ?? 5.6, tAndar: 0 };
+  otros.set(id, a);
+  return a;
+}
+function quitarOtro(a) { pueblo.remove(a.g); a.plano.material.dispose(); a.rotulo.remove(); a.habla.remove(); otros.delete(a.id); }
+function ponerGente(gente) {
+  const R = panelSala?.R;
+  for (const a of [...otros.values()]) if (!gente[a.id] || gente[a.id].donde !== 'tortuga' || gente[a.id].online === false) quitarOtro(a);
+  for (const [id, d] of Object.entries(gente)) {
+    if (id === R?.yo.id || d.donde !== 'tortuga' || d.online === false) continue;
+    const a = otros.get(id) || crearOtro(id, d);
+    a.x = d.x ?? a.x; a.z = d.z ?? a.z; a.lado = d.lado || 1;
+    a.rotulo.textContent = (d.anfitrion ? '★ ' : '') + (d.nombre || 'Viajero');
+    if (a.clase !== d.clase) { a.clase = d.clase; texturaClase(d.clase, (t) => { a.plano.material.map = t; a.plano.material.emissiveMap = t; a.plano.material.needsUpdate = true; }); }
+  }
+  // Tu cabaña o la del anfitrión
+  const cab = PNJ.find((p) => p.id === 'cabana');
+  const anf = R && !R.soyAnfitrion() ? gente[R.anfitrion] : null;
+  cab.nombre = anf ? 'Cabaña de ' + (anf.nombre || 'tu anfitrión') : 'Tu cabaña';
+  cab.accion = anf ? 'Entrar en la cabaña de ' + (anf.nombre || 'tu anfitrión') : 'Entrar en tu cabaña';
+  cab.rotulo.textContent = cab.nombre;
+}
+const avatarDe = (id) => (id === panelSala?.R?.yo.id ? yoAvatar : otros.get(id));
+function decir(a, texto) { if (!a) return; a.habla.textContent = texto; a.hablando = 3.6; }
+// Los gestos mueven el recorte de papel un rato (sentarse dura hasta que te mueves).
+function animarGesto(a, dt, anda) {
+  if (!a.gesto) return;
+  a.tG += dt;
+  const k = a.tG, pl = a.plano;
+  if (a.gesto === 'saludo') { pl.position.y += Math.abs(Math.sin(k * 7)) * .35; pl.rotation.z = Math.sin(k * 14) * .12; if (k > 1.8) a.gesto = null; }
+  else if (a.gesto === 'reverencia') { const b = Math.sin(Math.min(1, k / 1.6) * Math.PI); pl.scale.y = 1 - b * .28; pl.position.y -= b * .3; pl.rotation.z = b * .25 * Math.sign(pl.scale.x); if (k > 1.6) { a.gesto = null; pl.scale.y = 1; } }
+  else if (a.gesto === 'baile') { pl.rotation.z = Math.sin(k * 9) * .22; pl.position.y += Math.abs(Math.sin(k * 9)) * .2; if (Math.sin(k * 4.5) > .98) pl.scale.x *= -1; if (k > 3) a.gesto = null; }
+  else if (a.gesto === 'sentarse') { if (anda && k > .3) { a.gesto = null; pl.scale.y = 1; return; } const b = Math.min(1, k / .4); pl.scale.y = 1 - b * .35; pl.position.y -= b * .38; if (k > 30) { a.gesto = null; pl.scale.y = 1; } }
+}
+function irA(url) { cerrarDialogo(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 1100); }
+panelSala = crearPanel({
+  donde: 'tortuga', boton: $('b-sala'),
+  datos: () => ({ clase, x: heroe.position.x, z: heroe.position.z }),
+  cabana: () => { const f = Ficha.fichaOCrear(ficha.nombre); return { nombre: f.nombre, trofeos: f.cabana.trofeos.slice(-12), diario: f.diario }; },
+  alConectar: (R) => {
+    R.on('gente', ponerGente)
+      .on('frase', (id, texto) => decir(avatarDe(id), texto))
+      .on('gesto', (id, g) => { const a = avatarDe(id); if (!a) return; a.gesto = g; a.tG = 0; a.plano.scale.y = 1; const x = GESTOS.find((q) => q.id === g); if (x && g !== 'sentarse') decir(a, x.icono); });
+    ponerGente(R.gente());
+  },
+  alSalir: () => ponerGente({}),
+  irA
+});
 
 // La cámara no atraviesa edificios ni la muralla: se acerca al héroe si algo estorba.
 const solidos = [];
@@ -870,9 +942,12 @@ const DIALOGOS = {
   pescador: () => ({ texto: 'Aquí no se pescan peces. Se pescan páginas. A veces con alguien dentro.', ops: [['¿Qué has pescado hoy?', () => mostrar('El Viejo Anzuelo', `Hoy he sacado ${uno(PESCA)}.`)], ['Te dejo tranquilo', cerrarDialogo]] }),
   guia: () => ({ texto: 'No necesito ojos. Morrandar me cuenta adónde vamos con el latido.', ops: [['¿Adónde vamos?', () => mostrar('La Guía Ciega', 'Adonde huela a historia sin terminar. Siempre ahí.')], ['¿Cuántos años tiene?', () => mostrar('La Guía Ciega', 'Más que el libro. Puede que el libro sea suyo, y no al revés.')], ['Hasta luego', cerrarDialogo]] }),
   gato: () => ({ texto: 'El gato te mira como si le debieras algo.', ops: [['Acariciarlo', () => mostrar('Tintero', 'Te mira con desprecio. Luego ronronea. Te deja la mano manchada de tinta.')], ['Dejarlo', cerrarDialogo]] }),
-  libro: () => ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
-    ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
-  cabana: () => ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
+  libro: () => panelSala?.R ? ({ texto: 'Las páginas se agitan solas. Si bajáis juntos, el libro os traga a todos a la vez. Propón una historia y esperad a que todos digan «¡Listo!».',
+    ops: [['Proponer la Mazmorra Infinita', () => { panelSala.R.proponer('infinita'); cerrarDialogo(); }], ['Proponer el Modo Historia', () => { panelSala.R.proponer('historia'); cerrarDialogo(); }],
+      ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }) : ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
+    ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Bajar con amigos (abrir una sala)', () => { cerrarDialogo(); panelSala.abrir(); }], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
+  cabana: () => panelSala?.R && !panelSala.R.soyAnfitrion() ? ({ texto: 'La cabaña de quien lleva la sala. Puedes entrar a ver sus trofeos, y en su baúl cambiar tu propio héroe.',
+    ops: [['Entrar', () => irA('cabana.html')], ['Salir', cerrarDialogo]] }) : ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
     ops: [['Entrar', () => { cerrarDialogo(); $('fundido').style.background = '#000'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'cabana.html'; }, 1100); }], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
@@ -1049,6 +1124,20 @@ function bucle() {
   heroe.rotation.y = cam.giro;
   planoHeroe.position.y = 1.1 + Math.abs(Math.sin(tAndar)) * .18;
   planoHeroe.rotation.z = Math.sin(tAndar) * .07;
+  animarGesto(yoAvatar, dt, mov > 0);
+  panelSala?.R?.mover(heroe.position.x, heroe.position.z, planoHeroe.scale.x < 0 ? -1 : 1);
+  // Los demás viajeros: se deslizan hacia donde dicen que están
+  for (const o of otros.values()) {
+    const p = o.g.position, ddx = o.x - p.x, ddz = o.z - p.z, d = Math.hypot(ddx, ddz);
+    const anda = d > .08;
+    if (d > 8) p.set(o.x, 0, o.z);
+    else if (anda) { const v = Math.min(d, Math.max(5.4, d * 4) * dt); p.x += ddx / d * v; p.z += ddz / d * v; o.tAndar += dt * 11; } else o.tAndar = 0;
+    o.g.rotation.y = cam.giro;
+    o.plano.scale.x = o.lado < 0 ? -1 : 1;
+    o.plano.position.y = 1.1 + Math.abs(Math.sin(o.tAndar)) * .18;
+    o.plano.rotation.z = Math.sin(o.tAndar) * .07;
+    animarGesto(o, dt, anda);
+  }
 
   // Tripulación
   for (const p of PNJ) {
@@ -1175,6 +1264,14 @@ function bucle() {
     p.rotulo.style.left = sx + 'px'; p.rotulo.style.top = sy + 'px';
     p.rotulo.style.opacity = w.z < 1 && !hablando && (cerca === p || dist < 6) ? 1 : 0;
     if (p.habla) { p.habla.style.left = sx + 'px'; p.habla.style.top = (sy - 4) + 'px'; p.habla.style.opacity = hablando ? 1 : 0; }
+  }
+
+  for (const o of [yoAvatar, ...otros.values()]) {
+    const w = o.g.localToWorld(V.set(0, 2.6, 0)).project(camara);
+    const sx = (w.x + 1) / 2 * innerWidth, sy = (1 - w.y) / 2 * innerHeight, vis = w.z < 1;
+    o.hablando -= dt;
+    o.habla.style.left = sx + 'px'; o.habla.style.top = (sy - 4) + 'px'; o.habla.style.opacity = vis && o.hablando > 0 ? 1 : 0;
+    if (o.rotulo) { o.rotulo.style.left = sx + 'px'; o.rotulo.style.top = (sy + 2) + 'px'; o.rotulo.style.opacity = vis && o.hablando <= 0 ? .9 : 0; }
   }
 
   if (calidad === 'baja') render.render(escena, camara); else composer.render(dt);

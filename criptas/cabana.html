@@ -52,10 +52,11 @@
 <div class="fundido" id="fundido"></div>
 <div class="zzz" id="zzz">Zzz…</div>
 <div class="ui arriba">
-  <div class="titulo">Tu cabaña <small>en el caparazón de Morrandar · prototipo</small></div>
+  <div class="titulo" id="titulo">Tu cabaña <small>en el caparazón de Morrandar · prototipo</small></div>
   <button class="btn" id="b-calidad">Calidad</button>
   <button class="btn" id="b-sonido" title="Mezclador de sonido">🔇</button>
   <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
+  <button class="btn" id="b-sala" title="Jugar juntos: sala con código">👥</button>
   <button class="btn" id="b-salir">🚪 Salir</button>
 </div>
 <button class="ui btn accion" id="accion"></button>
@@ -70,6 +71,7 @@ import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPa
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
 import * as Ficha from './js/viajero.js';
+import { crearPanel, cabanaDeLaSala } from './js/reunion.js';
 
 // =============================================================
 //  Prototipo: la cabaña del jugador por dentro.
@@ -88,6 +90,10 @@ const prm = new URLSearchParams(location.search);
 // Tu ficha de viajero (la guarda el juego en este dispositivo).
 let ficha = Ficha.fichaOCrear(leer('criptas_nombre') || 'Viajero');
 const guardarF = () => Ficha.guardarFicha(ficha);
+// De visita en la sala de otro: su muro de trofeos y su diario (tu baúl sigue siendo tuyo).
+const visita = await cabanaDeLaSala();
+const dueno = visita || { nombre: ficha.nombre, trofeos: ficha.cabana.trofeos, diario: ficha.diario };
+if (visita) { document.title = 'Criptas · Cabaña de ' + visita.nombre; $('titulo').firstChild.textContent = 'Cabaña de ' + visita.nombre + ' '; }
 const CALIDADES = ['baja', 'media', 'alta'];
 let calidad = prm.get('calidad') || leer('criptas_calidadTortuga', movil ? 'media' : 'alta');
 if (!CALIDADES.includes(calidad)) calidad = 'media';
@@ -296,7 +302,7 @@ const trofeos = new THREE.Group();
   };
   // Un escudo por trofeo de tu ficha (los cinco más recientes); los demás, con un «?».
   const huecos = [[0, 2.3, 1.5], [-1.7, 2.1, 1], [1.7, 2.1, 1], [-1.1, 3.1, 1], [1.1, 3.1, 1]];
-  const lista = ficha.cabana.trofeos.slice(-huecos.length).reverse();
+  const lista = dueno.trofeos.slice(-huecos.length).reverse();
   huecos.forEach(([x, y, esc], i) => {
     escudo(x, y, esc);
     const t = lista[i];
@@ -461,6 +467,7 @@ const zzzGato = (() => {
 })();
 
 const CLASES = { barbaro: 'Bárbaro', enano: 'Enano', elfo: 'Elfa', mago: 'Mago' };
+let panelSala = null;
 let clase = ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
 const heroe = new THREE.Group(); heroe.position.copy(puertaPos.clone().multiplyScalar(.72)); casa.add(heroe);
 const sombra = new THREE.Mesh(new THREE.CircleGeometry(.45, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .4, depthWrite: false }));
@@ -470,6 +477,7 @@ planoHeroe.position.y = 1; heroe.add(planoHeroe);
 const cargador = new THREE.TextureLoader();
 function ponerClase(k) {
   clase = k; guardar('criptas_claseBase', k);
+  panelSala?.R?.cambiar({ clase: k });
   cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; planoHeroe.material.map = t; planoHeroe.material.emissiveMap = t; planoHeroe.material.needsUpdate = true; });
 }
 ponerClase(clase);
@@ -533,14 +541,18 @@ function pintarImportar() {
 }
 const USOS = {
   trofeos: () => {
-    const t = ficha.cabana.trofeos.slice().reverse();
+    const t = dueno.trofeos.slice().reverse();
+    if (visita) return mostrar('Muro de trofeos', t.length ? `${visita.nombre} ha vencido a ${t.length} ${t.length === 1 ? 'jefe' : 'jefes'}.` : `${visita.nombre} todavía no ha colgado ningún trofeo.`, [['Volver', cerrar]],
+      t.length ? '<div class="lista">' + t.slice(0, 12).map((x) => `<span>${x.nombre}</span><span>${x.donde || ''}</span>`).join('') + '</div>' : '');
     mostrar('Muro de trofeos', t.length ? `Has vencido a ${t.length} ${t.length === 1 ? 'jefe' : 'jefes'}. En la pared caben los cinco últimos.` : 'Todavía no hay ningún trofeo. Cada jefe que derrotes acabará colgado aquí.', [['Volver', cerrar]],
       t.length ? '<div class="lista">' + t.slice(0, 12).map((x) => `<span>${x.nombre}</span><span>${x.donde || ''}</span>`).join('') + '</div>' : '');
   },
   baul: () => { abrirBaul = true; audio.nota(392, .5); audio.nota(523, .6, .1); pintarBaul(); },
   hamaca: () => mostrar('Hamaca', 'Se mece sola con el vaivén de Morrandar. Huele a sal y a lana vieja.', [['Dormir un rato', dormir], ['Mejor no', cerrar]]),
   escritorio: () => {
-    const d = ficha.diario;
+    const d = dueno.diario;
+    if (visita) return mostrar('Diario de ' + visita.nombre, d?.misiones ? 'No es tu letra, pero se lee:' : 'Está en blanco.', [['Cerrar el diario', cerrar]],
+      d ? `<div class="lista"><span>Misiones jugadas</span><span>${d.misiones}</span><span>Victorias / derrotas</span><span>${d.victorias} / ${d.derrotas}</span><span>Piso más hondo de la Infinita</span><span>${d.pisoMax || '—'}</span><span>Jefes vencidos</span><span>${d.jefes}</span><span>Monstruos abatidos</span><span>${d.monstruos}</span></div>` : '');
     mostrar('Diario de ' + ficha.nombre, d.misiones ? 'Tu letra, cada vez más torcida:' : 'Aún está en blanco. Se irá llenando con cada misión que juegues.', [['Cerrar el diario', cerrar]],
       `<div class="lista"><span>Misiones jugadas</span><span>${d.misiones}</span><span>Victorias / derrotas</span><span>${d.victorias} / ${d.derrotas}</span><span>Piso más hondo de la Infinita</span><span>${d.pisoMax || '—'}</span><span>Jefes vencidos</span><span>${d.jefes}</span><span>Monstruos abatidos</span><span>${d.monstruos}</span><span>Veces que has caído</span><span>${d.caidas || 'ninguna'}</span><span>Héroes en el baúl</span><span>${ficha.orden.length}</span><span>Oro en el banco</span><span>${ficha.banco}</span></div>`);
   },
@@ -561,6 +573,13 @@ function salir() {
   setTimeout(() => { location.href = 'tortuga.html?sinIntro&x=-7.6&z=3.0&giro=.9'; }, 1100);
 }
 $('b-salir').addEventListener('click', salir);
+// Jugar juntos: la sala sigue mientras estás en la cabaña (los demás te ven «en la cabaña»).
+panelSala = crearPanel({
+  donde: 'cabana', boton: $('b-sala'),
+  datos: () => ({ clase, x: -7.6, z: 3.0 }),
+  cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
+  irA: (url) => { cerrar(); $('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 1000); }
+});
 // Pantalla completa (en iPhone Safari no existe: el botón se oculta)
 (() => {
   const b = $('b-completa'), el = document.documentElement, pedir = el.requestFullscreen || el.webkitRequestFullscreen;

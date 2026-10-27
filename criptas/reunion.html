@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Criptas · Sala de espera</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: radial-gradient(ellipse at 50% 0%, #2a1a26, #120a14 70%); color: #f1e2c4; font: 16px/1.45 'IM Fell English', Georgia, serif; }
+  main { max-width: 520px; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 16px 40px; }
+  h1 { font: 30px 'IM Fell English SC', Georgia, serif; margin: 0 0 2px; letter-spacing: .04em; }
+  .sub { margin: 0 0 16px; opacity: .7; font-style: italic; }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 0; }
+  nav a { color: #f1e2c4; border: 1px solid rgba(214,160,100,.45); padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 15px; }
+  #fundido { position: fixed; inset: 0; background: #1a0c2a; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 60; }
+</style>
+</head>
+<body>
+<div id="fundido"></div>
+<main>
+  <h1>Sala de espera</h1>
+  <p class="sub">La pantalla ligera: aquí no hay tortuga en 3D, solo la sala. Gasta muy poco.</p>
+  <div id="sala"></div>
+  <nav><a href="index.html">← Menú del juego</a></nav>
+</main>
+<script type="module">
+import { crearPanel } from './js/reunion.js';
+import * as Ficha from './js/viajero.js';
+const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const ficha = Ficha.fichaOCrear(leer('criptas_nombre', '') || 'Viajero');
+crearPanel({
+  donde: 'ligera', fijo: document.getElementById('sala'),
+  datos: () => ({ clase: ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro') }),
+  cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
+  irA: (url) => { document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 700); }
+});
+</script>
+</body>
+</html>
