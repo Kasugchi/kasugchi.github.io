@@ -947,8 +947,8 @@ const DIALOGOS = {
       ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }) : ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
     ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Bajar con amigos (abrir una sala)', () => { cerrarDialogo(); panelSala.abrir(); }], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
   cabana: () => panelSala?.R && !panelSala.R.soyAnfitrion() ? ({ texto: 'La cabaña de quien lleva la sala. Puedes entrar a ver sus trofeos, y en su baúl cambiar tu propio héroe.',
-    ops: [['Entrar', () => irA('cabana.html')], ['Salir', cerrarDialogo]] }) : ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
-    ops: [['Entrar', () => { cerrarDialogo(); $('fundido').style.background = '#000'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'cabana.html'; }, 1100); }], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
+    ops: [['Entrar', abrirCabana], ['Salir', cerrarDialogo]] }) : ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
+    ops: [['Entrar', abrirCabana], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
@@ -987,6 +987,39 @@ function interactuar(p) {
   audio.tono(p.id);
 }
 function cerrarDialogo() { $('dialogo').style.display = 'none'; enDialogo = false; }
+// La cabaña se abre encima, en la misma página: la tortuga se queda en pausa
+// y la sala sigue conectada (los demás te ven «en la cabaña»).
+let cabanaAbierta = null;
+function abrirCabana() {
+  if (cabanaAbierta) return;
+  cerrarDialogo(); teclas.clear(); destino = null; porHablar = null;
+  $('fundido').style.background = '#000'; $('fundido').style.opacity = 1;
+  setTimeout(() => {
+    const f = document.createElement('iframe');
+    f.src = 'cabana.html?embebida&calidad=' + calidad;
+    f.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:30;background:#000';
+    f.allow = 'fullscreen';
+    document.body.appendChild(f); cabanaAbierta = f;
+    panelSala?.R?.cambiar({ donde: 'cabana' });
+    mz.ac?.suspend();
+    f.addEventListener('load', () => { f.focus(); setTimeout(() => { $('fundido').style.opacity = 0; }, 300); });
+  }, 900);
+}
+function cerrarCabana() {
+  if (!cabanaAbierta) return;
+  cabanaAbierta.remove(); cabanaAbierta = null;
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  heroe.position.set(-7.6, 0, 3.0); cam.objetivo.giro = .9; cam.giro = .9;
+  panelSala?.R?.cambiar({ donde: 'tortuga', x: -7.6, z: 3.0 });
+  if (mz.activo !== false) mz.ac?.resume();
+  reloj.getDelta();
+  $('fundido').style.opacity = 0;
+}
+addEventListener('message', (e) => {
+  if (!cabanaAbierta || e.source !== cabanaAbierta.contentWindow) return;
+  if (e.data?.t === 'salirCabana') cerrarCabana();
+  if (e.data?.t === 'clase' && CLASES[e.data.k]) ponerClase(e.data.k);
+});
 function entrarEnLibro() { cerrarDialogo(); audio.libro(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'index.html'; }, 1500); }
 let despierta = 0;
 function despertar() { despierta = 4; audio.rugido(); }
@@ -1071,6 +1104,7 @@ function moverFigura(p, dt) {
 }
 
 function bucle() {
+  if (cabanaAbierta) { reloj.getDelta(); requestAnimationFrame(bucle); return; }   // en pausa mientras estás en la cabaña
   const real = reloj.getDelta(), dt = Math.min(real, .05), t = reloj.elapsedTime;
   uT.value = t;
 

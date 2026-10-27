@@ -87,6 +87,7 @@ const uno = (l) => l[Math.floor(Math.random() * l.length)];
 const suave = (a, b, k) => a + (b - a) * k;
 const movil = matchMedia('(pointer: coarse)').matches;
 const prm = new URLSearchParams(location.search);
+const embebida = prm.has('embebida') && window.parent !== window;   // abierta encima de la tortuga
 // Tu ficha de viajero (la guarda el juego en este dispositivo).
 let ficha = Ficha.fichaOCrear(leer('criptas_nombre') || 'Viajero');
 const guardarF = () => Ficha.guardarFicha(ficha);
@@ -478,6 +479,7 @@ const cargador = new THREE.TextureLoader();
 function ponerClase(k) {
   clase = k; guardar('criptas_claseBase', k);
   panelSala?.R?.cambiar({ clase: k });
+  if (embebida) parent.postMessage({ t: 'clase', k }, location.origin);
   cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; planoHeroe.material.map = t; planoHeroe.material.emissiveMap = t; planoHeroe.material.needsUpdate = true; });
 }
 ponerClase(clase);
@@ -570,11 +572,14 @@ function dormir() {
 }
 function salir() {
   cerrar(); $('fundido').style.opacity = 1;
+  // Dentro de la tortuga (misma página): se avisa y la tortuga cierra la cabaña.
+  if (embebida) return setTimeout(() => parent.postMessage({ t: 'salirCabana' }, location.origin), 900);
   setTimeout(() => { location.href = 'tortuga.html?sinIntro&x=-7.6&z=3.0&giro=.9'; }, 1100);
 }
 $('b-salir').addEventListener('click', salir);
 // Jugar juntos: la sala sigue mientras estás en la cabaña (los demás te ven «en la cabaña»).
-panelSala = crearPanel({
+if (embebida) $('b-sala').style.display = 'none';   // la sala la lleva la tortuga
+else panelSala = crearPanel({
   donde: 'cabana', boton: $('b-sala'),
   datos: () => ({ clase, x: -7.6, z: 3.0 }),
   cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
