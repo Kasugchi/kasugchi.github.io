@@ -786,7 +786,7 @@ const DIST0 = movil ? 25 : 22;
 const cam = { giro: +(prm.get('giro') ?? .35), incl: +(prm.get('incl') ?? .46), dist: +(prm.get('dist') ?? DIST0) };
 cam.objetivo = { giro: cam.giro, incl: cam.incl, dist: cam.dist };
 const fija = prm.has('fija');   // para pruebas: no bajar la calidad sola
-const INTRO = 5.5;
+const INTRO = prm.has('sinIntro') ? 0 : 5.5;
 const punteros = new Map();
 let pulsado = null, arrastrando = false, pellizco = null;
 render.domElement.addEventListener('pointerdown', (e) => {
@@ -870,7 +870,7 @@ const DIALOGOS = {
   libro: () => ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
     ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
   cabana: () => ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
-    ops: [['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
+    ops: [['Entrar', () => { cerrarDialogo(); $('fundido').style.background = '#000'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'cabana.html'; }, 1100); }], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
