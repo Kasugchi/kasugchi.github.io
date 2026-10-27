@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Criptas · El zepelín (prototipo)</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #07060a; color: #e6d6b0; font: 16px/1.4 'IM Fell English', Georgia, serif;
+    -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; }
+  canvas { display: block; }
+  .ui { position: fixed; z-index: 10; }
+  .arriba { top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: none; }
+  .arriba > * { pointer-events: auto; }
+  .titulo { font: 22px 'IM Fell English SC', serif; letter-spacing: .05em; text-shadow: 0 2px 6px #000; margin-right: auto; }
+  .titulo small { display: block; font: italic 13px 'IM Fell English', serif; opacity: .6; letter-spacing: 0; }
+  .btn { font: 15px 'IM Fell English', serif; color: #e6d6b0; background: rgba(20,12,8,.72); border: 1px solid #6a4a28; padding: 7px 12px; border-radius: 3px; cursor: pointer; }
+  .btn:hover { border-color: #c9944a; }
+  .btn.on { background: #6a2a18; border-color: #c9944a; }
+  .clases { display: flex; gap: 4px; }
+  .clases .btn { padding: 4px 6px; } .clases img { width: 30px; height: 30px; display: block; object-fit: contain; }
+  /* Nombre flotante sobre los personajes */
+  .rotulo { position: fixed; z-index: 5; transform: translate(-50%, -100%); font: 16px 'IM Fell English SC', serif; color: #f0dfb8; text-shadow: 0 1px 4px #000, 0 0 10px #000; pointer-events: none; white-space: nowrap; transition: opacity .25s; }
+  /* Botón de interacción cerca de algo */
+  .accion { left: 50%; bottom: max(26px, env(safe-area-inset-bottom)); transform: translateX(-50%); font: 19px 'IM Fell English SC', serif; padding: 12px 22px; display: none; }
+  .accion kbd { font: 12px monospace; opacity: .6; margin-left: 8px; border: 1px solid #6a4a28; padding: 1px 5px; }
+  /* Diálogo: papel viejo abajo */
+  .dialogo { left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100vw - 20px)); display: none;
+    background: radial-gradient(ellipse at 50% 40%, #e2d1a8, #b9a27a); color: #1c120b; border: 1px solid #1c120b; padding: 16px 20px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.8), inset 0 0 40px rgba(60,30,8,.4); }
+  .dialogo b { font: 22px 'IM Fell English SC', serif; color: #7a1a12; display: block; }
+  .dialogo p { margin: 6px 0 10px; font-size: 17px; }
+  .dialogo .ops { display: flex; flex-direction: column; gap: 4px; }
+  .dialogo .ops button { text-align: left; font: italic 16px 'IM Fell English', serif; background: none; border: none; border-left: 2px solid transparent; padding: 4px 10px; cursor: pointer; color: #1c120b; }
+  .dialogo .ops button:hover, .dialogo .ops button:focus { border-left-color: #7a1a12; background: rgba(122,26,18,.08); outline: none; }
+  .dialogo .ops button::before { content: '✠ '; color: #7a1a12; font-style: normal; }
+  .dialogo .lista { margin: 4px 0 10px; display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; font-size: 16px; }
+  .dialogo .lista span:nth-child(even) { color: #7a1a12; }
+  .aviso { left: 50%; top: 70px; transform: translateX(-50%); background: rgba(20,12,8,.88); border: 1px solid #c9944a; padding: 10px 14px; display: none; text-align: center; max-width: calc(100vw - 20px); }
+  .aviso .btn { margin: 8px 4px 0; }
+  .ayuda { left: 10px; bottom: max(10px, env(safe-area-inset-bottom)); font: italic 13px 'IM Fell English', serif; opacity: .55; pointer-events: none; text-shadow: 0 1px 3px #000; }
+  @media (max-width: 600px) { .ayuda { display: none; } .titulo { font-size: 18px; } }
+  .fps { right: 10px; bottom: 10px; font: 11px monospace; opacity: .35; pointer-events: none; }
+  .fundido { position: fixed; inset: 0; z-index: 50; background: #000; pointer-events: none; opacity: 1; transition: opacity 1.2s; }
+</style>
+</head>
+<body>
+<div class="fundido" id="fundido"></div>
+<div class="ui arriba">
+  <div class="titulo">El Zepelín <small>prototipo · base caminable</small></div>
+  <div class="clases" id="clases"></div>
+  <button class="btn" id="b-libro" title="Vista ligera para móviles">📖 Ver como libro</button>
+</div>
+<div class="ui aviso" id="aviso"></div>
+<button class="ui btn accion" id="accion"></button>
+<div class="ui dialogo" id="dialogo"></div>
+<div class="ui ayuda">Toca el suelo para andar · WASD / flechas · E para interactuar</div>
+<div class="ui fps" id="fps"></div>
+
+<script type="module">
+import * as THREE from './js/vendor/three.module.min.js';
+
+// =============================================================
+//  Prototipo del zepelín: cubierta caminable con personajes de
+//  papel (planos con dibujo), farolillos y el libro de entrada.
+// =============================================================
+const $ = (id) => document.getElementById(id);
+const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+// Calidad: en móvil se baja la resolución de entrada.
+const movil = matchMedia('(pointer: coarse)').matches;
+let escalaPixel = Math.min(devicePixelRatio, movil ? 1.25 : 1.75);
+
+const render = new THREE.WebGLRenderer({ antialias: !movil, powerPreference: 'high-performance' });
+render.setPixelRatio(escalaPixel);
+render.setSize(innerWidth, innerHeight);
+render.outputColorSpace = THREE.SRGBColorSpace;
+render.toneMapping = THREE.ACESFilmicToneMapping;
+render.toneMappingExposure = 1.15;
+document.body.appendChild(render.domElement);
+
+const escena = new THREE.Scene();
+escena.fog = new THREE.Fog(0x1a1420, 30, 95);
+const camara = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.5, 300);
+const DESFASE_CAM = new THREE.Vector3(0, 11, 14), MIRA_ADELANTE = new THREE.Vector3(0, 1.2, 0);
+
+// ---------- Cielo: degradado nocturno con estrellas ----------
+{
+  const c = document.createElement('canvas'); c.width = 16; c.height = 256;
+  const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256);
+  gr.addColorStop(0, '#05040a'); gr.addColorStop(.45, '#1a1426'); gr.addColorStop(.62, '#3a2430'); gr.addColorStop(.75, '#1a1420'); gr.addColorStop(1, '#0a080c');
+  g.fillStyle = gr; g.fillRect(0, 0, 16, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  escena.background = t;
+  const n = 500, pos = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2, e = 0.15 + Math.random() * 1.2, r = 180;
+    pos.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3);
+  }
+  const gEst = new THREE.BufferGeometry(); gEst.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  escena.add(new THREE.Points(gEst, new THREE.PointsMaterial({ color: 0xfff0d0, size: 0.7, fog: false, transparent: true, opacity: .8 })));
+  // Luna enorme y enfermiza
+  const luna = new THREE.Mesh(new THREE.CircleGeometry(9, 40), new THREE.MeshBasicMaterial({ color: 0xe8d2a0, fog: false }));
+  luna.position.set(-60, 55, -120); luna.lookAt(0, 0, 0); escena.add(luna);
+}
+
+// ---------- Luces ----------
+escena.add(new THREE.HemisphereLight(0x7a7aaa, 0x3a2414, 1.5));
+const lunaLuz = new THREE.DirectionalLight(0x9aa0d0, 0.9); lunaLuz.position.set(-30, 40, -20); escena.add(lunaLuz);
+
+// ---------- Texturas pintadas a mano en canvas ----------
+function textura(w, h, pintar, rep) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  pintar(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  if (rep) { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); }
+  t.anisotropy = 4;
+  return t;
+}
+const texTablas = textura(256, 256, (g, w, h) => {
+  g.fillStyle = '#5a3a22'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 8; i++) {
+    const y = i * 32;
+    g.fillStyle = `hsl(25, ${30 + Math.random() * 15}%, ${20 + Math.random() * 10}%)`; g.fillRect(0, y + 1, w, 30);
+    g.strokeStyle = 'rgba(0,0,0,.25)';
+    for (let k = 0; k < 6; k++) { g.beginPath(); g.moveTo(0, y + 4 + Math.random() * 24); g.bezierCurveTo(80, y + Math.random() * 30, 160, y + Math.random() * 30, w, y + 4 + Math.random() * 24); g.stroke(); }
+    g.fillStyle = '#140a04'; g.fillRect(0, y, w, 2);
+    const corte = (i * 97) % w; g.fillRect(corte, y, 2, 32);
+    g.fillStyle = '#2a1a10'; g.beginPath(); g.arc(corte + 6, y + 8, 1.6, 0, 7); g.arc(corte + 6, y + 24, 1.6, 0, 7); g.fill();
+  }
+}, [6, 6]);
+const texLona = textura(256, 256, (g, w, h) => {
+  g.fillStyle = '#3a3036'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 1600; i++) { g.fillStyle = `rgba(${Math.random() < .5 ? '0,0,0' : '120,100,90'},.08)`; g.fillRect(Math.random() * w, Math.random() * h, 3, 1); }
+  // Parches cosidos
+  for (let i = 0; i < 5; i++) {
+    const x = Math.random() * w, y = Math.random() * h, s = 30 + Math.random() * 40;
+    g.fillStyle = ['#4a3428', '#2e2a30', '#54402e'][i % 3]; g.fillRect(x, y, s, s * .7);
+    g.strokeStyle = '#c9b48a'; g.setLineDash([3, 4]); g.lineWidth = 1.2; g.strokeRect(x + 3, y + 3, s - 6, s * .7 - 6); g.setLineDash([]);
+  }
+  g.strokeStyle = 'rgba(0,0,0,.45)'; g.lineWidth = 3;
+  for (let x = 0; x < w; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+}, [6, 2]);
+const texTela = textura(128, 128, (g, w, h) => {
+  g.fillStyle = '#6a2a1c'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#8a3a24'; for (let x = 0; x < w; x += 32) g.fillRect(x, 0, 16, h);
+  for (let i = 0; i < 300; i++) { g.fillStyle = 'rgba(0,0,0,.12)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+});
+
+const mat = {
+  tabla: new THREE.MeshStandardMaterial({ map: texTablas, roughness: .9 }),
+  madera: new THREE.MeshStandardMaterial({ color: 0x4a2e1a, roughness: .85 }),
+  oscura: new THREE.MeshStandardMaterial({ color: 0x241810, roughness: .9 }),
+  lona: new THREE.MeshStandardMaterial({ map: texLona, roughness: 1 }),
+  hierro: new THREE.MeshStandardMaterial({ color: 0x3a3a40, roughness: .5, metalness: .7 }),
+  laton: new THREE.MeshStandardMaterial({ color: 0xa07a3a, roughness: .4, metalness: .8 }),
+  tela: new THREE.MeshStandardMaterial({ map: texTela, roughness: 1, side: THREE.DoubleSide }),
+  piedra: new THREE.MeshStandardMaterial({ color: 0x5a524a, roughness: 1 }),
+  hueso: new THREE.MeshStandardMaterial({ color: 0xd8ccb0, roughness: .8 }),
+  cuerda: new THREE.LineBasicMaterial({ color: 0x5a4a38, transparent: true, opacity: .5 })
+};
+const caja = (w, h, d, m, x, y, z) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, z); return o; };
+const cil = (r1, r2, h, m, x, y, z, seg = 10) => { const o = new THREE.Mesh(new THREE.CylinderGeometry(r1, r2, h, seg), m); o.position.set(x, y, z); return o; };
+
+// =============================================================
+//  El barco. Todo cuelga de "barco" para que se balancee junto.
+// =============================================================
+const barco = new THREE.Group(); escena.add(barco);
+const LARGO = 15, ANCHO = 5.6;               // semiejes de la cubierta (elipse)
+const dentro = (x, z, m = 0) => (x * x) / ((LARGO - m) ** 2) + (z * z) / ((ANCHO - m) ** 2) < 1;
+
+// Cubierta: elipse alargada, con borde de proa en punta
+const forma = new THREE.Shape();
+forma.moveTo(-LARGO - 1.5, 0);
+forma.bezierCurveTo(-LARGO, ANCHO * 1.05, -LARGO * .4, ANCHO * 1.15, 0, ANCHO * 1.12);
+forma.bezierCurveTo(LARGO * .5, ANCHO * 1.12, LARGO, ANCHO * .95, LARGO + 2.5, 0);
+forma.bezierCurveTo(LARGO, -ANCHO * .95, LARGO * .5, -ANCHO * 1.12, 0, -ANCHO * 1.12);
+forma.bezierCurveTo(-LARGO * .4, -ANCHO * 1.15, -LARGO, -ANCHO * 1.05, -LARGO - 1.5, 0);
+const cubierta = new THREE.Mesh(new THREE.ExtrudeGeometry(forma, { depth: .5, bevelEnabled: false, curveSegments: 24 }), mat.tabla);
+cubierta.rotation.x = -Math.PI / 2; cubierta.position.y = -.5;
+// UV de las tablas en coordenadas de mundo
+{ const uv = cubierta.geometry.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) / 6, uv.getY(i) / 6); }
+barco.add(cubierta);
+// Casco bajo la cubierta
+const casco = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 12, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), mat.madera);
+casco.scale.set(LARGO + 1.5, 4.2, ANCHO + .9); casco.position.y = -.5; barco.add(casco);
+// Barandilla
+{
+  const puntos = forma.getSpacedPoints(70);
+  const g = new THREE.Group();
+  const pts = [];
+  puntos.forEach((p, i) => {
+    const x = p.x * .97, z = -p.y * .97;
+    if (i % 2 === 0) g.add(cil(.06, .07, 1, mat.oscura, x, .5, z, 5));
+    pts.push(new THREE.Vector3(x, 1, z));
+  });
+  const tubo = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts, true), 140, .07, 5, true), mat.madera);
+  g.add(tubo);
+  barco.add(g);
+}
+
+// Globo: una envoltura enorme de lona remendada
+const globo = new THREE.Group(); globo.position.y = 17; barco.add(globo);
+{
+  const env = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 20), mat.lona);
+  env.scale.set(21, 6.4, 7.4); globo.add(env);
+  for (let i = -4; i <= 4; i++) {               // costillas de latón
+    const x = i * 4.4, f = Math.sqrt(1 - (x / 21) ** 2);
+    const r = new THREE.Mesh(new THREE.TorusGeometry(1, .02, 5, 40), mat.laton);
+    r.scale.set(7.45 * f, 6.45 * f, 1); r.rotation.y = Math.PI / 2; r.position.x = x; globo.add(r);
+  }
+  // Aletas de cola
+  for (const [rx, ry] of [[0, 0], [Math.PI / 2, 0]]) {
+    const a = new THREE.Mesh(new THREE.ConeGeometry(4, 6, 3), mat.tela); a.scale.set(.15, 1, 1);
+    a.rotation.set(rx, 0, Math.PI / 2); a.position.x = -21; globo.add(a);
+  }
+}
+// Cuerdas del globo a la cubierta
+{
+  const verts = [];
+  for (let i = 0; i < 7; i++) {
+    const t = i / 6, x = -LARGO + 1 + t * (LARGO * 2 - 2);
+    for (const s of [-1, 1]) {
+      const z = s * ANCHO * Math.sqrt(Math.max(0, 1 - (x / LARGO) ** 2)) * .95;
+      verts.push(x, 1, z, x * .9, 11.5, s * 5.4 * Math.sqrt(Math.max(0, 1 - (x / 21) ** 2)));
+    }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+  barco.add(new THREE.LineSegments(g, mat.cuerda));
+}
+// Hélice de popa
+const helice = new THREE.Group(); helice.position.set(-LARGO - 2.6, 2.2, 0); barco.add(helice);
+{
+  barco.add(caja(2.4, .3, .3, mat.hierro, -LARGO - 1.4, 2.2, 0));
+  for (let i = 0; i < 4; i++) { const p = caja(.12, 3.2, .45, mat.madera, 0, 0, 0); p.rotation.x = i * Math.PI / 2; p.geometry.translate(0, 1.6, 0); helice.add(p); }
+  helice.add(cil(.3, .3, .5, mat.laton, 0, 0, 0)); helice.children.at(-1).rotation.z = Math.PI / 2;
+}
+// Mástil de proa con un mascarón de calavera
+{
+  barco.add(cil(.12, .16, 4, mat.madera, LARGO + 1, 1.6, 0, 6));
+  const cal = new THREE.Mesh(new THREE.SphereGeometry(.45, 12, 10), mat.hueso); cal.position.set(LARGO + 2.4, .3, 0); cal.scale.set(1, .9, .85); barco.add(cal);
+}
+
+// Farolillos: varios con brillo, pero solo unos pocos con luz real
+const llamas = [];
+function farol(x, z, luz) {
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  g.add(cil(.06, .08, 2.6, mat.oscura, 0, 1.3, 0, 5));
+  g.add(caja(.6, .06, .06, mat.oscura, .3, 2.55, 0));
+  const vidrio = new THREE.Mesh(new THREE.SphereGeometry(.2, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffb050 }));
+  vidrio.position.set(.55, 2.25, 0); g.add(vidrio);
+  g.add(caja(.36, .05, .36, mat.hierro, .55, 2.48, 0));
+  let l = null;
+  if (luz) { l = new THREE.PointLight(0xff9a40, 16, 15, 1.5); l.position.copy(vidrio.position); g.add(l); }
+  llamas.push({ vidrio, l, fase: Math.random() * 10 });
+  barco.add(g);
+  return g;
+}
+
+// ---------- Zonas del pueblo ----------
+const colisiones = [];   // círculos {x, z, r}
+const tope = (x, z, r) => colisiones.push({ x, z, r });
+
+// Puesto de Mordo (izquierda, al fondo)
+function puestoMordo(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z);
+  g.add(caja(3.4, .9, 1.2, mat.madera, 0, .45, 0));
+  for (const [px, pz] of [[-1.6, -.5], [1.6, -.5], [-1.6, .5], [1.6, .5]]) g.add(cil(.07, .07, 2.6, mat.oscura, px, 1.3, pz, 5));
+  const toldo = new THREE.Mesh(new THREE.PlaneGeometry(3.9, 1.9, 6, 2), mat.tela);
+  { const p = toldo.geometry.attributes.position; for (let i = 0; i < p.count; i++) if (p.getY(i) < 0) p.setZ(i, (Math.random() - .5) * .15); }
+  toldo.rotation.x = -Math.PI / 2 + .35; toldo.position.set(0, 2.65, .1); g.add(toldo);
+  for (let i = 0; i < 4; i++) {                 // calaveras y frascos a la venta
+    const c = new THREE.Mesh(new THREE.SphereGeometry(.16, 8, 6), mat.hueso); c.position.set(-1.2 + i * .35, 1.05, .3); g.add(c);
+  }
+  for (let i = 0; i < 5; i++) {
+    const f = cil(.08, .1, .3, new THREE.MeshStandardMaterial({ color: [0x7a1a12, 0x2a6a3a, 0x3a3a8a][i % 3], emissive: [0x5a0a06, 0x0a3a1a, 0x101050][i % 3], roughness: .2 }), .3 + i * .25, 1.05, .1);
+    g.add(f);
+  }
+  for (let i = 0; i < 3; i++) { const cu = cil(.02, .02, .7, mat.cuerda, -1.4 + i * 1.2, 2.2, .55, 3); g.add(cu); const cc = new THREE.Mesh(new THREE.SphereGeometry(.13, 7, 5), mat.hueso); cc.position.set(-1.4 + i * 1.2, 1.8, .55); g.add(cc); }
+  barco.add(g); tope(x, z, 2);
+}
+// La Hiel: casita de banca torcida
+function casaHiel(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = -.15;
+  g.add(caja(3.6, 2.8, 2.6, mat.piedra, 0, 1.4, 0));
+  const tejado = new THREE.Mesh(new THREE.ConeGeometry(2.9, 1.8, 4), mat.oscura); tejado.rotation.y = Math.PI / 4; tejado.scale.set(1.05, 1, .75); tejado.position.y = 3.7; g.add(tejado);
+  g.add(caja(.9, 1.6, .1, mat.oscura, -.6, .8, 1.32));
+  const ventana = caja(.6, .5, .1, new THREE.MeshBasicMaterial({ color: 0xffb860 }), .9, 1.7, 1.32); g.add(ventana);
+  const cartel = new THREE.Mesh(new THREE.PlaneGeometry(1.8, .45), new THREE.MeshStandardMaterial({ map: textura(256, 64, (c) => {
+    c.fillStyle = '#c9b48a'; c.fillRect(0, 0, 256, 64); c.strokeStyle = '#1c120b'; c.lineWidth = 4; c.strokeRect(2, 2, 252, 60);
+    c.fillStyle = '#1c120b'; c.font = '34px "IM Fell English SC", serif'; c.textAlign = 'center'; c.fillText('LA HIEL', 128, 44);
+  }) }));
+  cartel.position.set(0, 2.55, 1.36); g.add(cartel);
+  g.add(cil(.25, .25, 1.6, mat.piedra, 1.4, 4.2, -.6, 6));    // chimenea
+  barco.add(g); tope(x, z, 2.3);
+}
+// La forja fría: tapada con lona y encadenada
+function forjaFria(x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = .3;
+  g.add(caja(3, 2.2, 2.4, mat.piedra, 0, 1.1, 0));
+  g.add(cil(.45, .55, 3, mat.piedra, .9, 3.3, -.5, 8));
+  const lona = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x3a3228, roughness: 1, flatShading: true }));
+  lona.scale.set(2.1, 2.6, 1.8); lona.position.y = .2; g.add(lona);
+  for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(new THREE.TorusGeometry(1.95, .05, 4, 30), mat.hierro); c.rotation.x = Math.PI / 2; c.position.y = .6 + i * .55; c.scale.set(1.05, .9 - i * .2, 1); g.add(c); }
+  const yunque = caja(.9, .45, .4, mat.hierro, -1.9, .6, 1.2); g.add(yunque); g.add(caja(.4, .4, .3, mat.hierro, -1.9, .2, 1.2));
+  barco.add(g); tope(x, z, 2.2);
+}
+// El atril con el libro: la puerta a las misiones
+const libro = new THREE.Group();
+let luzLibro;
+{
+  libro.position.set(1, 0, .5);
+  libro.add(cil(.45, .6, .3, mat.piedra, 0, .15, 0, 8));
+  libro.add(cil(.12, .16, 1.2, mat.oscura, 0, .8, 0, 6));
+  const tapa = caja(1.3, .08, .9, new THREE.MeshStandardMaterial({ color: 0x3a1208, roughness: .7 }), 0, 1.45, 0); tapa.rotation.x = .35; libro.add(tapa);
+  const hojas = textura(256, 128, (g) => {
+    g.fillStyle = '#e8d6aa'; g.fillRect(0, 0, 256, 128); g.fillStyle = '#5a3018'; g.fillRect(126, 0, 4, 128);
+    g.fillStyle = 'rgba(28,18,11,.55)'; for (let i = 0; i < 12; i++) { g.fillRect(14, 14 + i * 9, 90 + Math.random() * 14, 2); g.fillRect(146, 14 + i * 9, 80 + Math.random() * 24, 2); }
+    g.fillStyle = '#7a1a12'; g.font = 'bold 26px serif'; g.fillText('✠', 56, 70);
+  });
+  const pag = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .8), new THREE.MeshBasicMaterial({ map: hojas }));
+  pag.rotation.x = -Math.PI / 2 + .35; pag.position.y = 1.5; libro.add(pag);
+  luzLibro = new THREE.PointLight(0xc8a0ff, 8, 9, 1.6); luzLibro.position.y = 2.1; libro.add(luzLibro);
+  barco.add(libro); tope(1, .5, .9);
+}
+// Motas de tinta mágica que suben del libro
+const motas = (() => {
+  const n = 60, pos = new Float32Array(n * 3), vel = [];
+  for (let i = 0; i < n; i++) { pos.set([1, 1.6 + Math.random() * 3, .5], i * 3); vel.push(Math.random()); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const p = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xd0b0ff, size: .09, transparent: true, opacity: .9, blending: THREE.AdditiveBlending, depthWrite: false }));
+  barco.add(p); return { p, vel };
+})();
+
+puestoMordo(-8, -2.6);
+casaHiel(7.5, -2.8);
+forjaFria(11.5, 2.4);
+farol(-5.6, -3.4, true); farol(4.6, -3.9, true); farol(9, 3.8, false); farol(-11, 2.8, true); farol(-1, 4.4, false);
+// Barriles y cajas para que no parezca vacío
+for (const [x, z, t] of [[-12, -1.8, 'b'], [-12.6, -.6, 'b'], [-3.5, 4.1, 'c'], [-2.9, 4.6, 'c'], [5.5, 3.6, 'b'], [13.5, -1, 'c'], [-6.2, 3.5, 'b']]) {
+  const o = t === 'b' ? cil(.42, .38, 1, mat.madera, x, .5, z, 10) : caja(.9, .8, .9, mat.madera, x, .4, z);
+  if (t === 'c') o.rotation.y = Math.random();
+  barco.add(o); tope(x, z, .6);
+}
+
+// =============================================================
+//  Personajes de papel
+// =============================================================
+// Dibuja un recorte de papel en canvas: silueta sepia con trazo de tinta.
+function recortePapel(dibujar) {
+  return textura(256, 512, (g, w, h) => {
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    dibujar(g, w, h);
+  });
+}
+const PAPEL = '#c9b48a', PAPEL2 = '#a8916a', TINTA = '#1c120b', SANGRE = '#7a1a12';
+function rayado(g, path) {
+  g.save(); g.clip(path); g.strokeStyle = 'rgba(28,18,11,.45)'; g.lineWidth = 2;
+  for (let i = -512; i < 512; i += 9) { g.beginPath(); g.moveTo(i, 512); g.lineTo(i + 512, 0); g.stroke(); }
+  g.restore();
+}
+const texMordo = recortePapel((g) => {
+  // Borde blanco de recorte
+  const cuerpo = new Path2D('M60 500 Q50 340 95 280 Q128 250 165 285 Q205 340 196 500 Z');
+  const cabeza = new Path2D('M128 175 m-46 0 a46 50 0 1 0 92 0 a46 50 0 1 0 -92 0');
+  const capucha = new Path2D('M70 190 Q72 112 130 108 Q190 112 190 196 Q160 165 128 168 Q96 165 70 190Z');
+  g.fillStyle = '#efe2c0'; g.lineWidth = 22; g.strokeStyle = '#efe2c0';
+  for (const p of [cuerpo, cabeza, capucha]) { g.stroke(p); g.fill(p); }
+  g.fillStyle = PAPEL2; g.fill(cuerpo); rayado(g, cuerpo);
+  g.fillStyle = PAPEL; g.fill(cabeza);
+  g.fillStyle = '#3a2a1c'; g.fill(capucha);
+  g.strokeStyle = TINTA; g.lineWidth = 5; for (const p of [cuerpo, cabeza, capucha]) g.stroke(p);
+  g.lineWidth = 7; g.beginPath(); g.moveTo(84, 160); g.lineTo(176, 152); g.stroke();            // cinta del parche
+  g.fillStyle = TINTA; g.beginPath(); g.ellipse(108, 178, 15, 13, 0, 0, 7); g.fill();            // parche
+  g.beginPath(); g.arc(150, 176, 5, 0, 7); g.fill();                                              // ojo bueno
+  g.lineWidth = 4; g.beginPath(); g.moveTo(108, 212); g.quadraticCurveTo(130, 204, 152, 214); g.stroke(); // mueca
+  g.strokeStyle = SANGRE; g.lineWidth = 3; g.beginPath(); g.moveTo(140, 190); g.lineTo(156, 204); g.stroke(); // cicatriz
+  // Saco al hombro
+  const saco = new Path2D('M150 300 q50 -10 52 40 q2 40 -40 40 q-30 -20 -12 -80Z');
+  g.fillStyle = '#8a6a44'; g.fill(saco); g.strokeStyle = TINTA; g.lineWidth = 5; g.stroke(saco);
+});
+const texHiel = recortePapel((g) => {
+  const cuerpo = new Path2D('M78 500 L96 230 Q128 200 160 230 L180 500Z');
+  const capucha = new Path2D('M86 240 Q90 70 128 60 Q168 70 172 240 Q150 222 128 222 Q106 222 86 240Z');
+  const cara = new Path2D('M128 165 m-22 0 a22 28 0 1 0 44 0 a22 28 0 1 0 -44 0');
+  g.fillStyle = '#efe2c0'; g.strokeStyle = '#efe2c0'; g.lineWidth = 22;
+  for (const p of [cuerpo, capucha]) { g.stroke(p); g.fill(p); }
+  g.fillStyle = '#2a1e18'; g.fill(cuerpo); g.fill(capucha);
+  g.fillStyle = PAPEL; g.fill(cara);
+  g.strokeStyle = TINTA; g.lineWidth = 5; for (const p of [cuerpo, capucha, cara]) g.stroke(p);
+  g.fillStyle = TINTA; g.fillRect(114, 160, 8, 4); g.fillRect(134, 160, 8, 4);
+  g.strokeStyle = SANGRE; g.lineWidth = 3; g.beginPath(); g.moveTo(118, 182); g.lineTo(138, 182); g.stroke();
+  // Frasco de dientes
+  const fr = new Path2D('M170 300 h40 v60 q0 12 -12 12 h-16 q-12 0 -12 -12z');
+  g.fillStyle = '#c8d0c0'; g.fill(fr); g.strokeStyle = TINTA; g.lineWidth = 4; g.stroke(fr);
+  g.fillStyle = '#f0ead8'; for (let i = 0; i < 7; i++) { g.fillRect(176 + (i % 3) * 10, 330 + Math.floor(i / 3) * 12, 7, 9); }
+  g.fillStyle = PAPEL2; g.fillRect(166, 290, 48, 12); g.strokeRect(166, 290, 48, 12);
+});
+
+function figuraPapel(tex, alto, aspecto = .5) {
+  const g = new THREE.Group();
+  const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: .4, side: THREE.DoubleSide, color: 0xe0d0b8 });  // el papel se ve siempre, como recortado
+  const plano = new THREE.Mesh(new THREE.PlaneGeometry(alto * aspecto, alto), m);
+  plano.position.y = alto / 2 + .12; g.add(plano);
+  const base = cil(.4, .45, .12, mat.oscura, 0, .06, 0, 16); g.add(base);       // peana de papel doblado
+  g.userData.plano = plano;
+  return g;
+}
+
+// ---------- PNJ ----------
+const PNJ = [
+  { id: 'mordo', nombre: 'Mordo el Tuerto', fig: figuraPapel(texMordo, 2.4), x: -8, z: -1.1, radio: 2.6 },
+  { id: 'hiel', nombre: 'Madre Hiel', fig: figuraPapel(texHiel, 2.7), x: 6.2, z: -.9, radio: 2.4 },
+  { id: 'libro', nombre: 'El Libro', obj: libro, x: 1, z: .5, radio: 2.2, accion: 'Abrir el libro' },
+  { id: 'forja', nombre: 'La Forja Fría', obj: null, x: 10.4, z: 1.4, radio: 2.8, accion: 'Mirar la forja' }
+];
+for (const p of PNJ) if (p.fig) { p.fig.position.set(p.x, 0, p.z); barco.add(p.fig); tope(p.x, p.z, .5); }
+
+// ---------- Héroe ----------
+const CLASES = { barbaro: 'Bárbaro', enano: 'Enano', elfo: 'Elfa', mago: 'Mago' };
+let clase = leer('criptas_claseBase', 'barbaro'); if (!CLASES[clase]) clase = 'barbaro';
+const heroe = new THREE.Group(); heroe.position.set(-2, 0, 3); barco.add(heroe);
+const sombra = new THREE.Mesh(new THREE.CircleGeometry(.5, 20), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: .35, depthWrite: false }));
+sombra.rotation.x = -Math.PI / 2; sombra.position.y = .02; heroe.add(sombra);
+const planoHeroe = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.2), new THREE.MeshBasicMaterial({ transparent: true, alphaTest: .35, side: THREE.DoubleSide, color: 0xe8dcc8 }));
+planoHeroe.position.y = 1.1; heroe.add(planoHeroe);
+const cargador = new THREE.TextureLoader();
+function ponerClase(k) {
+  clase = k; guardar('criptas_claseBase', k);
+  cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; planoHeroe.material.map = t; planoHeroe.material.needsUpdate = true; });
+  document.querySelectorAll('#clases .btn').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
+}
+for (const k of Object.keys(CLASES)) {
+  const b = document.createElement('button'); b.className = 'btn'; b.dataset.k = k; b.title = CLASES[k];
+  b.innerHTML = `<img src="sprites/${k}.png" alt="${CLASES[k]}">`;
+  b.onclick = () => ponerClase(k);
+  $('clases').appendChild(b);
+}
+ponerClase(clase);
+
+// Rótulos HTML que siguen a los personajes
+for (const p of PNJ) {
+  p.rotulo = document.createElement('div'); p.rotulo.className = 'rotulo'; p.rotulo.textContent = p.nombre; p.rotulo.style.opacity = 0;
+  document.body.appendChild(p.rotulo);
+}
+
+// =============================================================
+//  Movimiento: toca el suelo para ir, o teclado
+// =============================================================
+const teclas = new Set();
+let destino = null, porHablar = null, enDialogo = false;
+addEventListener('keydown', (e) => {
+  if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') { if (!enDialogo && cerca) interactuar(cerca); return; }
+  if (e.key === 'Escape') { cerrarDialogo(); return; }
+  teclas.add(e.key.toLowerCase()); destino = null;
+});
+addEventListener('keyup', (e) => teclas.delete(e.key.toLowerCase()));
+
+const rayo = new THREE.Raycaster(), ptr = new THREE.Vector2();
+let pulsado = null;
+render.domElement.addEventListener('pointerdown', (e) => { pulsado = { x: e.clientX, y: e.clientY }; });
+render.domElement.addEventListener('pointerup', (e) => {
+  if (!pulsado || Math.hypot(e.clientX - pulsado.x, e.clientY - pulsado.y) > 12) return;
+  pulsado = null;
+  if (enDialogo) { cerrarDialogo(); return; }
+  ptr.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+  rayo.setFromCamera(ptr, camara);
+  // ¿Ha tocado a alguien?
+  const objetivos = PNJ.flatMap((p) => p.fig ? [p.fig.userData.plano] : p.obj ? [p.obj] : []);
+  const hit = rayo.intersectObjects(objetivos, true)[0];
+  if (hit) {
+    const p = PNJ.find((q) => (q.fig && q.fig.userData.plano === hit.object) || (q.obj && q.obj.getObjectById(hit.object.id)));
+    if (p) { porHablar = p; destino = new THREE.Vector3(p.x, 0, p.z + 1.4); return; }
+  }
+  const suelo = rayo.intersectObject(cubierta)[0];
+  if (suelo) {
+    const local = barco.worldToLocal(suelo.point.clone());
+    destino = new THREE.Vector3(local.x, 0, local.z); porHablar = null;
+    // También vale tocar la forja
+    const f = PNJ.find((q) => q.id === 'forja');
+    if (Math.hypot(local.x - 11.5, local.z - 2.4) < 2.4) { porHablar = f; destino.set(f.x - .6, 0, f.z + 1.2); }
+  }
+});
+
+function libre(x, z) {
+  if (!dentro(x, z, .8)) return false;
+  return colisiones.every((c) => Math.hypot(x - c.x, z - c.z) > c.r);
+}
+
+// =============================================================
+//  Diálogos
+// =============================================================
+const DIALOGOS = {
+  mordo: () => ({
+    texto: 'Bienvenido a mi humilde puesto. Todo lo que vendo lo saqué de alguien que ya no lo necesitaba.',
+    ops: [
+      ['¿Qué tienes hoy?', () => mostrar('Mordo el Tuerto', 'Género fresco. Casi.', undefined, `<div class="lista">
+        <span>Poción curativa (abierta una vez)</span><span>45 o</span>
+        <span>Espada corta (con muesca de propietario)</span><span>120 o</span>
+        <span>Mapa del piso 3 (manchado de sangre)</span><span>80 o</span>
+        <span>Ojo de cristal (no preguntes)</span><span>200 o</span></div>`)],
+      ['¿De dónde sacas todo esto?', () => mostrar('Mordo el Tuerto', 'Las criptas devuelven lo que se tragan. A veces con el dueño dentro. Yo solo les ahorro el viaje de vuelta.')],
+      ['Nada, gracias', cerrarDialogo]
+    ]
+  }),
+  hiel: () => ({
+    texto: 'Guardo vuestro oro. Si no volvéis, también lo guardo.',
+    ops: [
+      ['¿Cuánto me cobras?', () => mostrar('Madre Hiel', 'Un diente por cada cien monedas. Los de leche no valen.')],
+      ['¿Qué hay en ese frasco?', () => mostrar('Madre Hiel', 'Intereses.')],
+      ['Me voy', cerrarDialogo]
+    ]
+  }),
+  libro: () => ({
+    texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
+    ops: [
+      ['Entrar en el libro (ir a las misiones)', entrarEnLibro],
+      ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')],
+      ['Todavía no', cerrarDialogo]
+    ]
+  }),
+  forja: () => ({
+    texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.',
+    ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]]
+  })
+};
+function mostrar(quien, texto, ops = [['Volver', () => interactuar(ultimo)]], extra = '') {
+  const d = $('dialogo');
+  d.innerHTML = `<b>${quien}</b><p>${texto}</p>${extra}<div class="ops"></div>`;
+  ops.forEach(([t, f]) => { const b = document.createElement('button'); b.textContent = t; b.onclick = (e) => { e.stopPropagation(); f(); }; d.querySelector('.ops').appendChild(b); });
+  d.style.display = 'block'; enDialogo = true; $('accion').style.display = 'none';
+}
+let ultimo = null;
+function interactuar(p) {
+  ultimo = p; destino = null; porHablar = null;
+  const dlg = DIALOGOS[p.id]();
+  mostrar(p.nombre, dlg.texto, dlg.ops);
+}
+function cerrarDialogo() { $('dialogo').style.display = 'none'; enDialogo = false; }
+function entrarEnLibro() {
+  cerrarDialogo();
+  $('fundido').style.opacity = 1;
+  setTimeout(() => { location.href = 'index.html'; }, 1100);
+}
+$('accion').addEventListener('click', () => cerca && interactuar(cerca));
+$('b-libro').addEventListener('click', () => { guardar('criptas_vistaBase', 'libro'); location.href = 'base-oscura.html'; });
+
+// =============================================================
+//  Bucle
+// =============================================================
+let cerca = null;
+const reloj = new THREE.Clock();
+const camPos = new THREE.Vector3(), camMira = new THREE.Vector3();
+let primera = true, tAndar = 0;
+// Medidor de fluidez: si va a tirones, ofrece la vista de libro
+let cuadros = 0, tMedida = 0, lentos = 0, avisado = false;
+
+function bucle() {
+  const dt = Math.min(reloj.getDelta(), .05), t = reloj.elapsedTime;
+
+  // Balanceo suave del zepelín
+  barco.rotation.z = Math.sin(t * .5) * .012;
+  barco.rotation.x = Math.sin(t * .37) * .01;
+  barco.position.y = Math.sin(t * .6) * .15;
+  helice.rotation.x += dt * 6;
+
+  // Movimiento del héroe
+  let dx = 0, dz = 0;
+  if (!enDialogo) {
+    if (teclas.has('w') || teclas.has('arrowup')) dz -= 1;
+    if (teclas.has('s') || teclas.has('arrowdown')) dz += 1;
+    if (teclas.has('a') || teclas.has('arrowleft')) dx -= 1;
+    if (teclas.has('d') || teclas.has('arrowright')) dx += 1;
+    if (porHablar && Math.hypot(heroe.position.x - porHablar.x, heroe.position.z - porHablar.z) < porHablar.radio * .8) interactuar(porHablar);
+    if (!dx && !dz && destino) {
+      const vx = destino.x - heroe.position.x, vz = destino.z - heroe.position.z, d = Math.hypot(vx, vz);
+      if (d < .25) { destino = null; if (porHablar) interactuar(porHablar); }
+      else { dx = vx / d; dz = vz / d; }
+    }
+  }
+  const mov = Math.hypot(dx, dz);
+  if (mov) {
+    const v = 5.2 * dt / mov;
+    const nx = heroe.position.x + dx * v, nz = heroe.position.z + dz * v;
+    if (libre(nx, nz)) heroe.position.set(nx, 0, nz);
+    else if (libre(nx, heroe.position.z)) heroe.position.x = nx;
+    else if (libre(heroe.position.x, nz)) heroe.position.z = nz;
+    else if (destino) { destino = null; if (porHablar && Math.hypot(heroe.position.x - porHablar.x, heroe.position.z - porHablar.z) < porHablar.radio) interactuar(porHablar); }
+    if (dx) planoHeroe.scale.x = dx < 0 ? -1 : 1;
+    tAndar += dt * 11;
+  } else tAndar = 0;
+  // Pasito de figura de papel: salta y se ladea
+  planoHeroe.position.y = 1.1 + Math.abs(Math.sin(tAndar)) * .18;
+  planoHeroe.rotation.z = Math.sin(tAndar) * .07;
+  sombra.scale.setScalar(1 - Math.abs(Math.sin(tAndar)) * .15);
+
+  // PNJ: respiran un poco
+  for (const p of PNJ) if (p.fig) p.fig.userData.plano.scale.y = 1 + Math.sin(t * 1.6 + p.x) * .012;
+
+  // ¿Hay alguien cerca?
+  cerca = null;
+  for (const p of PNJ) if (Math.hypot(heroe.position.x - p.x, heroe.position.z - p.z) < p.radio) cerca = p;
+  const ba = $('accion');
+  if (cerca && !enDialogo) { ba.style.display = 'block'; ba.innerHTML = `${cerca.accion || 'Hablar con ' + cerca.nombre.split(' ')[0]}${movil ? '' : '<kbd>E</kbd>'}`; }
+  else ba.style.display = 'none';
+
+  // Farolillos que tiemblan
+  for (const f of llamas) {
+    const k = .85 + Math.sin(t * 9 + f.fase) * .08 + Math.sin(t * 23 + f.fase) * .05;
+    f.vidrio.scale.setScalar(k);
+    if (f.l) f.l.intensity = 16 * k;
+  }
+  luzLibro.intensity = 7 + Math.sin(t * 2) * 2;
+  // Motas del libro
+  const pos = motas.p.geometry.attributes.position;
+  for (let i = 0; i < pos.count; i++) {
+    let y = pos.getY(i) + dt * (.4 + motas.vel[i] * .6);
+    if (y > 5) { y = 1.6; }
+    const s = (y - 1.6) * .35;
+    pos.setXYZ(i, 1 + Math.sin(t + i) * s, y, .5 + Math.cos(t * .8 + i * 2) * s);
+  }
+  pos.needsUpdate = true;
+  motas.p.material.opacity = .9;
+
+  // Cámara: detrás y arriba, siguiendo con suavidad
+  const objetivo = heroe.getWorldPosition(new THREE.Vector3());
+  const deseada = objetivo.clone().add(DESFASE_CAM);
+  if (primera) { camPos.copy(deseada).add(new THREE.Vector3(-14, 10, 10)); camMira.copy(objetivo); primera = false; }
+  camPos.lerp(deseada, 1 - Math.pow(.02, dt));
+  camMira.lerp(objetivo.clone().add(MIRA_ADELANTE), 1 - Math.pow(.01, dt));
+  camara.position.copy(camPos); camara.lookAt(camMira);
+
+  // Rótulos sobre las cabezas
+  for (const p of PNJ) {
+    const alto = p.fig ? 3 : p.id === 'libro' ? 2.6 : 3.8;
+    const w = barco.localToWorld(new THREE.Vector3(p.x, alto, p.z)).project(camara);
+    const visible = w.z < 1 && (cerca === p || Math.hypot(heroe.position.x - p.x, heroe.position.z - p.z) < 7);
+    p.rotulo.style.left = ((w.x + 1) / 2 * innerWidth) + 'px';
+    p.rotulo.style.top = ((1 - w.y) / 2 * innerHeight) + 'px';
+    p.rotulo.style.opacity = visible ? 1 : 0;
+  }
+
+  render.render(escena, camara);
+
+  // Fluidez
+  cuadros++; tMedida += dt;
+  if (tMedida >= 1) {
+    const fps = cuadros / tMedida; $('fps').textContent = Math.round(fps) + ' fps';
+    if (fps < 24 && t > 4) lentos++; else lentos = 0;
+    if (lentos === 2 && escalaPixel > .8) { escalaPixel = Math.max(.75, escalaPixel - .35); render.setPixelRatio(escalaPixel); }  // primero baja la resolución
+    if (lentos >= 5 && !avisado) {
+      avisado = true;
+      const av = $('aviso');
+      av.innerHTML = 'Esto va a tirones en este dispositivo.<br><button class="btn" id="av-libro">Ver la base como libro</button><button class="btn" id="av-no">Seguir aquí</button>';
+      av.style.display = 'block';
+      $('av-libro').onclick = () => $('b-libro').click();
+      $('av-no').onclick = () => { av.style.display = 'none'; };
+    }
+    cuadros = 0; tMedida = 0;
+  }
+  requestAnimationFrame(bucle);
+}
+addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); });
+if (innerWidth < innerHeight) { DESFASE_CAM.set(0, 9.5, 12); MIRA_ADELANTE.set(0, 1.2, -3.5); camara.fov = 62; camara.updateProjectionMatrix(); }   // en vertical, más alejada
+requestAnimationFrame(bucle);
+setTimeout(() => { $('fundido').style.opacity = 0; }, 150);
+</script>
+</body>
+</html>
