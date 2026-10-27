@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criptas · La base (prototipo)</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Grenze+Gotisch:wght@600;700&family=Alegreya:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mesa: #1f1611; --papel: #f1e4c4; --papel-2: #e6d4ab; --tinta: #2a1d14; --suave: #7a6a55; --lacre: #9a2a20; --oro: #c9a24a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 40%, #3a2a1e 0%, var(--mesa) 70%); color: var(--tinta);
+    font: 17px/1.4 Alegreya, Georgia, serif; overflow: hidden; display: grid; place-items: center;
+    -webkit-tap-highlight-color: transparent; user-select: none;
+  }
+  /* ---------- Libro ---------- */
+  .libro { position: relative; width: min(1000px, 96vw); aspect-ratio: 16 / 10.5; perspective: 1800px; }
+  @media (max-width: 760px) { .libro { width: 96vw; aspect-ratio: 3 / 4.4; } }
+  .tapa { position: absolute; inset: -14px -16px; border-radius: 10px; background: linear-gradient(135deg, #5a2a1a, #3a1a10); box-shadow: 0 30px 60px rgba(0,0,0,.6), inset 0 0 0 3px #7a4a24; }
+  .hojas-borde { position: absolute; inset: 4px 2px -6px; border-radius: 4px; background: repeating-linear-gradient(0deg, #d8c59a 0 2px, #efe2c0 2px 4px); }
+  .pagina {
+    position: absolute; inset: 0; border-radius: 4px; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 30%, var(--papel), var(--papel-2));
+    box-shadow: inset 0 0 60px rgba(120,80,30,.25);
+    transform-origin: left center; transition: transform .9s cubic-bezier(.6,.05,.3,1), opacity .2s;
+    backface-visibility: hidden;
+  }
+  .pagina.pasada { transform: rotateY(-178deg); pointer-events: none; }
+  .pagina.oculta { opacity: 0; pointer-events: none; transition: none; }
+  /* Lomo: sombra en el centro del libro (en escritorio, doble página) */
+  @media (min-width: 761px) {
+    .pagina::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 60px; transform: translateX(-50%);
+      background: linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(90,60,30,.28) 48%, rgba(60,40,20,.4) 50%, rgba(90,60,30,.28) 52%, rgba(0,0,0,0) 100%); pointer-events: none; z-index: 30; }
+  }
+  .doble { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 760px) { .doble { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } }
+  .texto { padding: 28px 34px 20px; position: relative; z-index: 2; }
+  @media (max-width: 760px) { .texto { padding: 16px 18px 6px; } }
+  .texto h1 { font: 700 clamp(30px, 4.4vw, 46px)/1 'Grenze Gotisch', serif; color: var(--lacre); margin: 0 0 6px; }
+  .texto .cap { font: 700 13px/1 Alegreya, serif; letter-spacing: .14em; text-transform: uppercase; color: var(--suave); }
+  .texto p { margin: 10px 0; }
+  @media (max-width: 760px) { .texto p.largo { display: none; } }
+  .texto .capital::first-letter { font: 700 3.1em/.8 'Grenze Gotisch', serif; float: left; padding: 6px 8px 0 0; color: var(--lacre); }
+  .lista-pnj { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; }
+  .lista-pnj li { display: flex; gap: 8px; align-items: baseline; }
+  .lista-pnj b { font-family: 'Grenze Gotisch', serif; font-size: 20px; color: var(--tinta); }
+  .lista-pnj .bloq { color: var(--suave); font-style: italic; }
+  @media (max-width: 760px) { .lista-pnj { display: none; } }
+
+  /* ---------- Escena desplegable ---------- */
+  .escena { position: relative; margin: 14px 18px 18px; perspective: 900px; perspective-origin: 50% 20%; align-self: center; }
+  @media (max-width: 760px) { .escena { margin: 0 10px 12px; } }
+  .marco { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; transform-style: preserve-3d; }
+  .suelo-papel { position: absolute; left: -4%; right: -4%; bottom: -2%; height: 34%; background: linear-gradient(#d8c39a, #c9b083); transform: rotateX(70deg); transform-origin: bottom; }
+  .capa { position: absolute; inset: 0; transform-origin: 50% 100%; transform-style: preserve-3d; will-change: transform; }
+  .capa svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 6px 4px rgba(60,35,15,.35)); }
+  .capa.fondo svg { filter: none; }
+  /* Al abrir la página, cada capa se levanta del papel una detrás de otra */
+  .abierta .capa { animation: levantar .9s cubic-bezier(.2,1.25,.4,1) both; animation-delay: calc(var(--n) * 110ms + 250ms); }
+  @keyframes levantar { from { transform: rotateX(-88deg); } to { transform: rotateX(0deg); } }
+  /* Las capas de delante no tapan a los personajes de detrás: solo ellos reciben el toque. */
+  .capa, .capa svg { pointer-events: none; }
+  .pnj { cursor: pointer; pointer-events: auto; }
+  .pnj:hover .recorte, .pnj:focus .recorte { filter: brightness(1.12); }
+  .pnj .tirita { fill: #e8d8b0; stroke: #8a6a3a; stroke-width: 1; }
+
+  /* Bocadillo del personaje */
+  .bocadillo { position: absolute; z-index: 40; max-width: 230px; background: #fff8e6; border: 2px solid var(--tinta); border-radius: 12px; padding: 8px 12px; font-size: 15px;
+    box-shadow: 4px 5px 0 rgba(42,29,20,.35); transform: translate(-50%, -100%); animation: pop .25s cubic-bezier(.2,1.6,.4,1); pointer-events: none; }
+  .bocadillo b { font-family: 'Grenze Gotisch', serif; font-size: 19px; color: var(--lacre); display: block; }
+  .bocadillo::after { content: ''; position: absolute; left: 50%; bottom: -11px; width: 16px; height: 16px; background: #fff8e6; border: 2px solid var(--tinta); border-top: 0; border-left: 0; transform: translateX(-50%) rotate(45deg); }
+  @keyframes pop { from { transform: translate(-50%, -80%) scale(.6); opacity: 0; } }
+
+  /* ---------- Página bloqueada: boceto a lápiz ---------- */
+  .bloqueada .marco { filter: grayscale(1) sepia(.35) contrast(1.1) brightness(1.05); }
+  .bloqueada .capa svg { filter: none; }
+  .bloqueada .capa svg [fill]:not([fill="none"]) { fill-opacity: .07; }
+  .bloqueada .capa svg * { stroke: #6b5a44 !important; stroke-width: 1.4 !important; stroke-dasharray: 3 2; }
+  .bloqueada .capa { animation: none !important; }
+  .sello { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-6deg); z-index: 35; text-align: center; padding: 14px 20px; background: rgba(241,228,196,.94);
+    border: 2px dashed var(--suave); border-radius: 6px; max-width: 80%; }
+  .sello .lacre { width: 54px; height: 54px; border-radius: 50%; margin: -38px auto 8px; display: grid; place-items: center; color: #f6e7c5; font: 700 26px 'Grenze Gotisch', serif;
+    background: radial-gradient(circle at 35% 30%, #c4342a, #7c1510 70%); box-shadow: 0 0 0 3px #d9b45a, 0 5px 10px rgba(0,0,0,.4); }
+  .sello b { font: 700 22px 'Grenze Gotisch', serif; color: var(--lacre); display: block; }
+  .sello button { margin-top: 10px; font: inherit; font-size: 14px; border: 0; border-radius: 5px; padding: 7px 12px; background: #7a4a24; color: #fff; cursor: pointer; }
+  /* Se pinta como acuarela: una mancha de color que se extiende */
+  .pintando .marco { animation: acuarela 1.6s ease-out forwards; -webkit-mask-image: radial-gradient(circle at 50% 70%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 18%)); mask-image: radial-gradient(circle at 50% 70%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 18%)); }
+  @property --r { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+  @keyframes acuarela { from { --r: 0%; } to { --r: 140%; } }
+
+  /* ---------- Navegación ---------- */
+  .nav { position: fixed; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; gap: 14px; align-items: center; color: #e8d8b0; font-size: 15px; z-index: 50; }
+  .nav button { width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer; background: rgba(0,0,0,.35); color: #f3e6c4; font: 700 24px 'Grenze Gotisch', serif; box-shadow: 0 0 0 1px rgba(201,162,74,.5); }
+  .nav button:disabled { opacity: .3; cursor: default; }
+  .puntos { display: flex; gap: 6px; }
+  .puntos i { width: 9px; height: 9px; border-radius: 50%; background: rgba(232,216,176,.3); }
+  .puntos i.on { background: var(--oro); }
+  .aviso { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; color: rgba(232,216,176,.6); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="aviso">Prototipo · mueve el dedo o el ratón sobre la página · toca a los personajes</div>
+
+<div class="libro" id="libro">
+  <div class="tapa"></div>
+  <div class="hojas-borde"></div>
+
+  <!-- =============== PÁGINA 1: LA PLAZA =============== -->
+  <section class="pagina" data-pag="0">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Capítulo I · La base</div>
+        <h1>La Plaza del Viajero</h1>
+        <p class="capital">Sobre el lomo de Morrandar, la gran tortuga de piedra, crece el único pueblo que no se queda quieto. Avanza despacio de mazmorra en mazmorra, y en su plaza siempre hay una luz encendida para los que vuelven.</p>
+        <p class="largo">Aquí descansáis entre aventura y aventura. Cada persona que rescatéis en las criptas encontrará un hueco en el lomo de la tortuga… y el pueblo crecerá con vosotros.</p>
+        <ul class="lista-pnj">
+          <li>🕯️ <b>Tobías</b> el tendero — pociones y armas</li>
+          <li>🪙 <b>Doña Pura</b> la banquera — guarda vuestro oro</li>
+          <li class="bloq">🔒 La forja — rescata al herrero</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc0"></div>
+    </div>
+  </section>
+
+  <!-- =============== PÁGINA 2: LA FORJA (bloqueada) =============== -->
+  <section class="pagina oculta" data-pag="1">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Capítulo II · La base</div>
+        <h1>La Forja de Brasa</h1>
+        <p class="capital">En la cola de Morrandar hay una forja apagada. El yunque está frío y las herramientas, cubiertas de polvo: su herrero desapareció en las Celdas de Hierro hace tres inviernos.</p>
+        <p class="largo">Si lo traéis de vuelta, la forja volverá a arder y podrá templar vuestras armas: +1 dado de ataque, a cambio de oro y de algún material raro de las mazmorras.</p>
+        <ul class="lista-pnj">
+          <li class="bloq">🔒 <b>Bruna</b> la herrera — mejora armas</li>
+          <li class="bloq">🔒 El horno rúnico — graba runas nuevas</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc1"></div>
+    </div>
+  </section>
+</div>
+
+<div class="nav">
+  <button id="ant" aria-label="Página anterior">‹</button>
+  <div class="puntos" id="puntos"><i class="on"></i><i></i></div>
+  <button id="sig" aria-label="Página siguiente">›</button>
+</div>
+
+<script>
+// =============================================================
+//  Escenas por capas (papel recortado). Cada capa es un SVG de 400×300;
+//  "prof" es la profundidad: las capas cercanas se mueven más con el dedo.
+// =============================================================
+const SOMBRA = 'rgba(70,40,15,.18)';
+const tejado = (x, y, w, h, c) => `<path d="M${x - 6} ${y} L${x + w / 2} ${y - h} L${x + w + 6} ${y} Z" fill="${c}" stroke="#3a2416" stroke-width="2"/>`;
+const casa = (x, y, w, h, pared, techo, extra = '') => `
+  <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${pared}" stroke="#3a2416" stroke-width="2"/>
+  ${tejado(x, y, w, h * 0.55, techo)}
+  <rect x="${x + w * 0.2}" y="${y + h * 0.25}" width="${w * 0.18}" height="${h * 0.2}" fill="#ffd36a" stroke="#3a2416" stroke-width="1.5"/>
+  <rect x="${x + w * 0.62}" y="${y + h * 0.25}" width="${w * 0.18}" height="${h * 0.2}" fill="#ffd36a" stroke="#3a2416" stroke-width="1.5"/>
+  <path d="M${x + w * 0.4} ${y + h} v-${h * 0.38} a${w * 0.1} ${w * 0.1} 0 0 1 ${w * 0.2} 0 v${h * 0.38}" fill="#5a3418" stroke="#3a2416" stroke-width="1.5"/>${extra}`;
+// Personaje recortable: cuerpo, cabeza y la pestaña de papel que lo sujeta a la página.
+const muneco = (id, x, y, ropa, piel, pelo, extra = '') => `
+  <g class="pnj" data-pnj="${id}" tabindex="0">
+    <rect class="tirita" x="${x - 14}" y="${y + 2}" width="28" height="6" rx="1"/>
+    <g class="recorte">
+      <path d="M${x - 13} ${y} q0 -34 13 -38 q13 4 13 38 z" fill="${ropa}" stroke="#2a1d14" stroke-width="2"/>
+      <circle cx="${x}" cy="${y - 46}" r="10" fill="${piel}" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M${x - 10} ${y - 48} q10 -14 20 0 q-4 -6 -10 -6 q-6 0 -10 6z" fill="${pelo}" stroke="#2a1d14" stroke-width="1.5"/>
+      ${extra}
+    </g>
+  </g>`;
+
+const ESCENAS = {
+  plaza: [
+    { prof: 0.05, fondo: true, svg: `
+      <defs><linearGradient id="cielo" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9a86a"/><stop offset=".55" stop-color="#f3cf94"/><stop offset="1" stop-color="#f6e0b2"/></linearGradient></defs>
+      <rect width="400" height="300" fill="url(#cielo)"/>
+      <circle cx="300" cy="92" r="30" fill="#fff1c8" opacity=".9"/>
+      <path d="M40 70 q20 -12 40 0 q14 -8 26 2 q-30 6 -66 -2z M220 50 q16 -10 32 0 q10 -6 20 2 q-26 4 -52 -2z" fill="#fff6e2" opacity=".8"/>` },
+    { prof: 0.15, svg: `<path d="M0 190 L50 120 L90 160 L150 95 L210 165 L260 115 L320 170 L370 125 L400 150 L400 300 L0 300 Z" fill="#8a6a8a" stroke="#5a4060" stroke-width="2"/>
+      <path d="M150 95 l-14 22 l10 -4 l6 8 l8 -10 l8 6 z M260 115 l-10 16 l8 -3 l4 6 l6 -8 l6 4z" fill="#f4ecf6"/>` },
+    { prof: 0.3, svg: `
+      <path d="M0 230 Q60 200 120 214 T250 205 T400 220 L400 300 L0 300Z" fill="#7a8a5a" stroke="#4e5a3a" stroke-width="2"/>
+      <!-- Murallas del lomo de la tortuga, con torres y estandartes -->
+      <path d="M30 210 v-46 h14 v-10 h8 v10 h10 v-10 h8 v10 h14 v46" fill="#b9a688" stroke="#3a2416" stroke-width="2"/>
+      <path d="M330 212 v-56 h12 v-10 h8 v10 h10 v-10 h8 v10 h12 v56" fill="#b9a688" stroke="#3a2416" stroke-width="2"/>
+      <line x1="345" y1="146" x2="345" y2="116" stroke="#3a2416" stroke-width="2"/><path d="M345 116 l22 6 l-22 6z" fill="#9a2a20" stroke="#3a2416" stroke-width="1.5"/>
+      <line x1="56" y1="154" x2="56" y2="128" stroke="#3a2416" stroke-width="2"/><path d="M56 128 l20 5 l-20 5z" fill="#c9a24a" stroke="#3a2416" stroke-width="1.5"/>` },
+    { prof: 0.5, svg: `
+      ${casa(70, 178, 70, 56, '#e2c99a', '#9a3a28')}
+      ${casa(250, 170, 82, 64, '#d9bf8a', '#5a6a8a', `<rect x="268" y="160" width="46" height="14" rx="2" fill="#f1e4c4" stroke="#3a2416" stroke-width="1.5"/><text x="291" y="171" text-anchor="middle" font-family="Grenze Gotisch, serif" font-size="11" fill="#2a1d14">BANCO</text>`)}
+      ${casa(150, 186, 52, 46, '#ead6ad', '#7a4a24')}` },
+    { prof: 0.75, svg: `
+      <!-- Puesto del tendero: toldo de rayas, cajas y pociones -->
+      <rect x="60" y="226" width="96" height="34" fill="#8a5a2a" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M52 204 h112 l-6 18 h-100 z" fill="#c43a2a" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M66 204 l-4 18 M86 204 l-2 18 M106 204 v18 M126 204 l2 18 M146 204 l4 18" stroke="#f1e4c4" stroke-width="7"/>
+      <line x1="60" y1="222" x2="60" y2="260" stroke="#2a1d14" stroke-width="3"/><line x1="156" y1="222" x2="156" y2="260" stroke="#2a1d14" stroke-width="3"/>
+      <circle cx="80" cy="222" r="6" fill="#d9572a" stroke="#2a1d14" stroke-width="1.5"/><circle cx="96" cy="221" r="5" fill="#3a6ab0" stroke="#2a1d14" stroke-width="1.5"/><circle cx="136" cy="222" r="6" fill="#4a9a5a" stroke="#2a1d14" stroke-width="1.5"/>
+      ${muneco('tendero', 108, 262, '#3a6ab0', '#e9b98a', '#5a3418', `<path d="M98 230 h20 v10 h-20z" fill="#f1e4c4" stroke="#2a1d14" stroke-width="1.5"/>`)}
+      <!-- La banquera, delante del banco -->
+      ${muneco('banquera', 292, 262, '#6a2a5a', '#f0c8a0', '#c9c9c9', `<circle cx="292" cy="236" r="5" fill="#ffd36a" stroke="#2a1d14" stroke-width="1.5"/>`)}
+      <!-- Pozo de la plaza -->
+      <ellipse cx="205" cy="262" rx="26" ry="8" fill="#8a7a66" stroke="#2a1d14" stroke-width="2"/>
+      <rect x="179" y="240" width="52" height="22" fill="#a89478" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M184 240 v-26 M226 240 v-26 M178 214 h54 l-27 -14 z" fill="#7a4a24" stroke="#2a1d14" stroke-width="2"/>` },
+    { prof: 1.05, svg: `
+      <!-- Primer plano: farola, barril y matas -->
+      <line x1="370" y1="300" x2="370" y2="210" stroke="#2a1d14" stroke-width="4"/>
+      <path d="M358 210 h24 l-4 -18 h-16z" fill="#ffd36a" stroke="#2a1d14" stroke-width="2"/>
+      <circle cx="370" cy="200" r="22" fill="#ffd36a" opacity=".25"/>
+      <ellipse cx="22" cy="290" rx="40" ry="22" fill="#5a7a3a" stroke="#2a1d14" stroke-width="2"/>
+      <ellipse cx="62" cy="296" rx="26" ry="14" fill="#6a8a46" stroke="#2a1d14" stroke-width="2"/>
+      <rect x="318" y="268" width="26" height="32" rx="6" fill="#8a5a2a" stroke="#2a1d14" stroke-width="2"/><path d="M318 278 h26 M318 290 h26" stroke="#3a2416" stroke-width="2"/>` }
+  ],
+  forja: [
+    { prof: 0.05, fondo: true, svg: `
+      <defs><linearGradient id="cielo2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6a4a6a"/><stop offset="1" stop-color="#e8a870"/></linearGradient></defs>
+      <rect width="400" height="300" fill="url(#cielo2)"/>` },
+    { prof: 0.2, svg: `<path d="M0 210 L60 150 L120 190 L190 130 L260 185 L330 140 L400 175 L400 300 L0 300Z" fill="#5a4a5a" stroke="#3a2a3a" stroke-width="2"/>` },
+    { prof: 0.45, svg: `
+      <!-- El taller: chimenea alta, tejado y puerta grande -->
+      <rect x="120" y="150" width="170" height="100" fill="#8a7a6a" stroke="#2a1d14" stroke-width="2"/>
+      ${tejado(120, 150, 170, 50, '#4a3a2a')}
+      <rect x="250" y="80" width="26" height="80" fill="#6a5a4a" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M180 250 v-60 h50 v60" fill="#2a1d14" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M190 250 v-40 q15 -14 30 0 v40" fill="#ff8a2a" opacity=".85"/>` },
+    { prof: 0.8, svg: `
+      <!-- Yunque, herramientas y la herrera -->
+      <path d="M70 262 h60 v-8 h-14 v-10 h22 q0 -10 -16 -12 h-50 q-12 0 -14 8 h14 v14 h-2z" fill="#4a4a4a" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M150 262 l10 -50 M156 212 l14 -6 l2 10z" stroke="#2a1d14" stroke-width="3" fill="#6a6a6a"/>
+      ${muneco('herrera', 320, 262, '#7a3a1a', '#d9a070', '#9a2a10', `<path d="M308 226 h24 v18 h-24z" fill="#5a3a2a" stroke="#2a1d14" stroke-width="1.5"/>`)}` },
+    { prof: 1.05, svg: `
+      <rect x="10" y="262" width="40" height="38" fill="#7a5a3a" stroke="#2a1d14" stroke-width="2"/>
+      <path d="M14 262 l8 -20 l6 20 M30 262 l6 -16 l6 16" stroke="#2a1d14" stroke-width="2" fill="#9a9a9a"/>
+      <ellipse cx="370" cy="292" rx="40" ry="18" fill="#5a6a3a" stroke="#2a1d14" stroke-width="2"/>` }
+  ]
+};
+
+const DIALOGOS = {
+  tendero: ['Tobías, el tendero', '¡Pociones recién hechas! Bueno… de la semana pasada. Pero hechas.'],
+  banquera: ['Doña Pura, la banquera', 'Aquí vuestro oro duerme tranquilo. Lo que caiga en la mazmorra, en la mazmorra se queda.'],
+  herrera: ['Bruna, la herrera', 'Traedme hierro de las profundidades y os templo esa espada hasta que corte la niebla.']
+};
+
+// Monta una escena en su contenedor, con la proporción del dibujo.
+function montar(id, capas) {
+  const esc = document.getElementById(id);
+  esc.innerHTML = '<div class="marco"></div>';
+  const marco = esc.firstChild;
+  capas.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'capa' + (c.fondo ? ' fondo' : '');
+    d.style.setProperty('--n', i);
+    d.dataset.prof = c.prof;
+    // El cielo llena todo; el resto se ajusta sin recortarse, apoyado abajo.
+    d.innerHTML = `<svg viewBox="0 0 400 300" preserveAspectRatio="${c.fondo ? 'xMidYMid slice' : 'xMidYMax meet'}">${c.svg}</svg>`;
+    marco.appendChild(d);
+  });
+  return esc;
+}
+
+// El tamaño de la escena se ajusta a lo que deja el texto.
+function ajustar() {
+  for (const esc of document.querySelectorAll('.escena')) {
+    const pag = esc.closest('.pagina').getBoundingClientRect();
+    const r = esc.getBoundingClientRect();
+    const libre = pag.bottom - r.top - 18;
+    // Que el dibujo no quede pequeño con mucho cielo: como mucho un poco más alto que ancho.
+    esc.style.height = Math.max(160, Math.min(libre, r.width * 0.95)) + 'px';
+  }
+}
+
+montar('esc0', ESCENAS.plaza);
+montar('esc1', ESCENAS.forja);
+
+// Página bloqueada: boceto a lápiz con su sello.
+const pagForja = document.querySelector('[data-pag="1"] .escena');
+pagForja.classList.add('bloqueada');
+pagForja.insertAdjacentHTML('beforeend', `<div class="sello"><div class="lacre">?</div><b>Página sin pintar</b>
+  Rescata a la herrera en <i>Las Celdas de Hierro</i> para despertar la forja.<br><button id="b-desbloquear">Probar el desbloqueo</button></div>`);
+document.getElementById('b-desbloquear').addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  pagForja.querySelector('.sello').remove();
+  pagForja.classList.remove('bloqueada');
+  pagForja.classList.add('pintando');
+  setTimeout(() => { pagForja.classList.remove('pintando'); pagForja.classList.remove('abierta'); void pagForja.offsetWidth; pagForja.classList.add('abierta'); }, 1500);
+  document.querySelectorAll('[data-pag="1"] .lista-pnj .bloq').forEach((li) => { li.classList.remove('bloq'); li.innerHTML = li.innerHTML.replace('🔒', '🔥'); });
+});
+
+// ---------- Profundidad: las capas siguen al dedo, al ratón o a la inclinación del móvil ----------
+let objetivo = { x: 0, y: 0 }, actual = { x: 0, y: 0 };
+const mover = (px, py) => { objetivo = { x: px * 2 - 1, y: py * 2 - 1 }; };
+addEventListener('pointermove', (e) => mover(e.clientX / innerWidth, e.clientY / innerHeight));
+addEventListener('deviceorientation', (e) => { if (e.gamma == null) return; mover(0.5 + Math.max(-30, Math.min(30, e.gamma)) / 60, 0.5 + Math.max(-30, Math.min(30, (e.beta || 45) - 45)) / 60); });
+function bucle() {
+  actual.x += (objetivo.x - actual.x) * 0.08; actual.y += (objetivo.y - actual.y) * 0.08;
+  for (const c of document.querySelectorAll('.pagina:not(.oculta) .escena:not(.bloqueada) .capa')) {
+    const p = +c.dataset.prof;
+    c.style.translate = `${-actual.x * p * 16}px ${-actual.y * p * 6}px`;
+  }
+  requestAnimationFrame(bucle);
+}
+bucle();
+
+// ---------- Personajes: al tocarlos, hablan ----------
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.bocadillo').forEach((b) => b.remove());
+  const p = e.target.closest('.pnj');
+  if (!p || p.closest('.bloqueada')) return;
+  const [quien, frase] = DIALOGOS[p.dataset.pnj];
+  const r = p.getBoundingClientRect(), lib = document.getElementById('libro').getBoundingClientRect();
+  const b = document.createElement('div');
+  b.className = 'bocadillo';
+  b.innerHTML = `<b>${quien}</b>${frase}`;
+  b.style.left = (r.left + r.width / 2 - lib.left) + 'px';
+  b.style.top = (r.top - lib.top - 8) + 'px';
+  document.getElementById('libro').appendChild(b);
+});
+
+// ---------- Pasar página ----------
+const paginas = [...document.querySelectorAll('.pagina')];
+let pag = 0;
+function irA(n) {
+  if (n < 0 || n >= paginas.length || n === pag) return;
+  const vieja = paginas[pag], nueva = paginas[n];
+  nueva.classList.remove('oculta', 'pasada');
+  nueva.style.zIndex = 1; vieja.style.zIndex = 2;
+  if (n > pag) { vieja.classList.add('pasada'); setTimeout(() => vieja.classList.add('oculta'), 900); }
+  else { nueva.style.zIndex = 3; nueva.classList.add('pasada'); void nueva.offsetWidth; nueva.classList.remove('pasada'); setTimeout(() => vieja.classList.add('oculta'), 900); }
+  pag = n;
+  ajustar();
+  const esc = nueva.querySelector('.escena');
+  esc.classList.remove('abierta'); void esc.offsetWidth; setTimeout(() => esc.classList.add('abierta'), 300);
+  document.querySelectorAll('#puntos i').forEach((p, i) => p.classList.toggle('on', i === n));
+  document.getElementById('ant').disabled = n === 0; document.getElementById('sig').disabled = n === paginas.length - 1;
+}
+document.getElementById('ant').addEventListener('click', () => irA(pag - 1));
+document.getElementById('sig').addEventListener('click', () => irA(pag + 1));
+let x0 = null;
+document.getElementById('libro').addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+document.getElementById('libro').addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 60) irA(pag + (dx < 0 ? 1 : -1)); x0 = null; });
+document.getElementById('ant').disabled = true;
+
+addEventListener('resize', ajustar);
+ajustar();
+setTimeout(() => document.getElementById('esc0').classList.add('abierta'), 200);
+</script>
+</body>
+</html>
