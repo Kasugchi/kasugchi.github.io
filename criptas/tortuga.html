@@ -992,6 +992,9 @@ function cerrarDialogo() { $('dialogo').style.display = 'none'; enDialogo = fals
 let cabanaAbierta = null;
 function abrirCabana() {
   if (cabanaAbierta) return;
+  // Red de seguridad: en calidad baja (móviles flojos) no se cargan dos escenas a la vez:
+  // se cambia de página como antes y la sala se reconecta sola en un segundo.
+  if (calidad === 'baja') { irA('cabana.html'); return; }
   cerrarDialogo(); teclas.clear(); destino = null; porHablar = null;
   $('fundido').style.background = '#000'; $('fundido').style.opacity = 1;
   setTimeout(() => {
