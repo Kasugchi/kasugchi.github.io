@@ -38,12 +38,15 @@ export class Escena3D {
     this.render.outputColorSpace = THREE.SRGBColorSpace;
 
     this.escena = new THREE.Scene();
-    this.escena.background = hex('#1f1611');
+    this.escena.background = hex('#120c08');
+    // Niebla: lo lejano se pierde en la oscuridad de la mazmorra (se ajusta a la distancia de la cámara).
+    this.escena.fog = new THREE.Fog(0x120c08, 20, 60);
+    zona.classList.add('con3d');
     this.camara = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
 
     // Luces: ambiente cálida + un "foco" de taberna que da sombras.
-    this.escena.add(new THREE.HemisphereLight(0xfff1dc, 0x2a1d14, 0.9));
-    const sol = new THREE.DirectionalLight(0xffe2b8, 1.4);
+    this.escena.add(new THREE.HemisphereLight(0xffe8cc, 0x1a120c, 0.62));
+    const sol = new THREE.DirectionalLight(0xffd8a8, 1.05);
     sol.position.set(4, 22, 6);
     sol.target.position.set(D.ANCHO / 2, 0, D.ALTO / 2);
     sol.castShadow = true;
@@ -58,9 +61,22 @@ export class Escena3D {
     relleno.position.set(D.ANCHO + 6, 14, D.ALTO + 8);
     relleno.target.position.set(D.ANCHO / 2, 0, D.ALTO / 2);
     this.escena.add(relleno, relleno.target);
-    this.antorcha = new THREE.PointLight(0xff9a40, 1.2, 6, 1.6);
+    this.antorcha = new THREE.PointLight(0xff9a40, 2.2, 6, 1.4);
     this.antorcha.position.y = 1.4;
     this.escena.add(this.antorcha);
+    // Antorchas de las salas: unas pocas luces que se reparten entre las más cercanas a la cámara.
+    this.luces = Array.from({ length: 6 }, () => { const l = new THREE.PointLight(0xff8030, 0, 5.5, 1.2); this.escena.add(l); return l; });
+    this.gAntorchas = new THREE.Group(); this.escena.add(this.gAntorchas);
+    this.antorchas = [];
+    // Partículas (chispas, polvo, brasas, magia): un solo objeto con hasta 500 puntos.
+    const geoP = new THREE.BufferGeometry();
+    geoP.setAttribute('position', new THREE.BufferAttribute(new Float32Array(500 * 3), 3));
+    geoP.setAttribute('color', new THREE.BufferAttribute(new Float32Array(500 * 3), 3));
+    const disco = document.createElement('canvas'); disco.width = disco.height = 32;
+    { const gd = disco.getContext('2d'), gr = gd.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.4, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); gd.fillStyle = gr; gd.fillRect(0, 0, 32, 32); }
+    this.puntos = new THREE.Points(geoP, new THREE.PointsMaterial({ size: 0.3, map: new THREE.CanvasTexture(disco), vertexColors: true, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+    this.puntos.frustumCulled = false;
+    this.escena.add(this.puntos);
 
     // Mesa y canto del tablero.
     const mesa = new THREE.Mesh(new THREE.PlaneGeometry(90, 70), new THREE.MeshStandardMaterial({ color: 0x3a2618, roughness: 0.95 }));
@@ -102,6 +118,7 @@ export class Escena3D {
   }
 
   destruir() {
+    this.zona.classList.remove('con3d');
     this.ro.disconnect();
     this.render.dispose();
     this.cv.remove();
@@ -180,7 +197,9 @@ export class Escena3D {
     c.z = sujetar(c.z, ez, D.ALTO);
     let sx = 0, sz = 0;
     const dt = t - (this.tab.temblor || 0);
-    if (dt < 350) { sx = Math.sin(dt / 18) * 0.15 * (1 - dt / 350); sz = Math.cos(dt / 23) * 0.1 * (1 - dt / 350); }
+    const ft = this.tab.fuerzaTemblor || 1;
+    if (dt < 350) { sx = Math.sin(dt / 18) * 0.15 * ft * (1 - dt / 350); sz = Math.cos(dt / 23) * 0.1 * ft * (1 - dt / 350); }
+    this.escena.fog.near = c.d * 0.85; this.escena.fog.far = c.d * 2.1;
     const h = Math.sin(c.incl) * c.d, horiz = Math.cos(c.incl) * c.d;
     this.camara.position.set(c.x + sx + Math.sin(c.giro) * horiz, h, c.z + sz + Math.cos(c.giro) * horiz);
     this.camara.lookAt(c.x + sx, 0, c.z + sz);
@@ -395,14 +414,23 @@ export class Escena3D {
       vistos.add(f.id);
       let g = this.fichas.get(f.id);
       if (!g) { g = this.crearFicha(f, x.esHeroe); this.fichas.set(f.id, g); }
-      g.position.set(x.x + 0.5, 0, x.y + 0.5);
+      // Saltito al andar: la figura se levanta a mitad de cada casilla.
+      const entre = Math.max(Math.abs(x.x - Math.round(x.x)), Math.abs(x.y - Math.round(x.y)));
+      const salto = x.golpe || x.caida ? 0 : Math.sin(Math.min(0.5, entre) * Math.PI) * 0.16;
+      g.position.set(x.x + 0.5, salto, x.y + 0.5);
       g.userData.casilla = () => [Math.round(x.x), Math.round(x.y)];
+      // Golpe: se enciende de rojo un instante.
+      const rojo = Math.min(1, x.golpe || 0);
+      if (rojo !== g.userData.rojo) {
+        g.userData.rojo = rojo;
+        g.traverse((o) => { const mt = o.material; if (!mt || Array.isArray(mt) || !mt.emissive) return; mt.userData.emi ||= mt.emissive.clone(); mt.emissive.copy(mt.userData.emi).lerp(new THREE.Color(0xff2a10), rojo * 0.85); });
+      }
       // La figura gira hacia la cámara (solo en horizontal).
       g.userData.mini.rotation.y = Math.atan2(this.camara.position.x - g.position.x, this.camara.position.z - g.position.z);
       g.userData.anillo.visible = !!x.activo;
       if (x.activo) g.userData.anillo.scale.setScalar(1 + Math.sin(t / 220) * 0.06);
-      const caida = !f.vivo;
-      g.rotation.z = caida ? Math.PI / 2.4 : 0; // ficha tumbada al morir
+      // Al morir, la ficha cae de lado (animada).
+      g.rotation.z = x.caida ? (Math.PI / 2.4) * (1 - Math.pow(1 - x.caida, 3)) : !f.vivo ? Math.PI / 2.4 : 0;
       const alfa = x.alfa ?? 1;
       if (alfa !== g.userData.alfa) {
         g.userData.alfa = alfa;
@@ -417,7 +445,7 @@ export class Escena3D {
     if (h) {
       const [hx, hy] = this.tab.vista.pos[h.id] || [h.x, h.y];
       this.antorcha.position.set(hx + 0.5, 1.4, hy + 0.5);
-      this.antorcha.intensity = 1.1 + Math.sin(t / 90) * 0.15;
+      this.antorcha.intensity = 2.4 + Math.sin(t / 90) * 0.3 + Math.sin(t / 31) * 0.15;
     }
   }
 
@@ -480,6 +508,70 @@ export class Escena3D {
     }
   }
 
+  // Una antorcha en una esquina de cada sala descubierta (siempre la misma para cada sala).
+  construirAntorchas(e) {
+    this.gAntorchas.clear();
+    this.antorchas = [];
+    const cajas = {};
+    for (const k of Object.keys(e.revelado)) {
+      const [x, y] = k.split(',').map(Number);
+      const r = T.region(x, y);
+      if (!r || r === '.') continue;
+      const c = (cajas[r] ||= { x0: x, y0: y, x1: x, y1: y });
+      c.x0 = Math.min(c.x0, x); c.y0 = Math.min(c.y0, y); c.x1 = Math.max(c.x1, x); c.y1 = Math.max(c.y1, y);
+    }
+    this.matLlama ||= new THREE.MeshBasicMaterial({ color: 0xffb040, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending, depthWrite: false });
+    this.matPalo ||= new THREE.MeshStandardMaterial({ color: 0x2a1a10, roughness: 0.9 });
+    this.matSoporte ||= new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.5, metalness: 0.6 });
+    for (const [r, c] of Object.entries(cajas)) {
+      // Esquina según el nombre de la sala, para que no estén todas en el mismo sitio.
+      const n = r.charCodeAt(0);
+      const esq = [[c.x0 + 0.14, c.y0 + 0.14], [c.x1 + 0.86, c.y0 + 0.14], [c.x0 + 0.14, c.y1 + 0.86], [c.x1 + 0.86, c.y1 + 0.86]][n % 4];
+      const g = new THREE.Group();
+      const palo = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.5, 6), this.matPalo); palo.position.y = 0.25; palo.castShadow = true; g.add(palo);
+      const copa = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.05, 0.08, 8), this.matSoporte); copa.position.y = 0.52; g.add(copa);
+      const llama = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.2, 8), this.matLlama); llama.position.y = 0.66; g.add(llama);
+      const halo = new THREE.Sprite(new THREE.SpriteMaterial({ color: 0xff8a2a, map: this.puntos.material.map, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+      halo.scale.setScalar(0.7); halo.position.y = 0.66; g.add(halo);
+      g.position.set(esq[0], 0, esq[1]);
+      this.gAntorchas.add(g);
+      this.antorchas.push({ g, llama, halo, x: esq[0], z: esq[1], fase: n * 1.7 });
+    }
+  }
+  actualizarAntorchas(t) {
+    if (!this.antorchas.length) { for (const l of this.luces) l.intensity = 0; return; }
+    const c = this.cam;
+    const cerca = this.antorchas.slice().sort((a, b) => Math.hypot(a.x - c.x, a.z - c.z) - Math.hypot(b.x - c.x, b.z - c.z)).slice(0, this.luces.length);
+    for (const a of this.antorchas) {
+      const p = Math.sin(t / 70 + a.fase) * 0.5 + Math.sin(t / 37 + a.fase * 2) * 0.3;
+      a.llama.scale.set(1 + p * 0.12, 1 + p * 0.25, 1 + p * 0.12);
+      a.halo.material.opacity = 0.45 + p * 0.12;
+    }
+    this.luces.forEach((l, i) => {
+      const a = cerca[i];
+      if (!a) { l.intensity = 0; return; }
+      l.position.set(a.x, 0.75, a.z);
+      l.intensity = 4.2 + Math.sin(t / 70 + a.fase) * 0.7 + Math.sin(t / 23 + a.fase) * 0.35;
+      // Brasas que suben de vez en cuando.
+      if (Math.random() < 0.025) this.tab.emitir(a.x - 0.5, a.z - 0.5, 'brasas', 1);
+    });
+  }
+  actualizarParticulas() {
+    const ps = this.tab.particulas, pos = this.puntos.geometry.attributes.position, col = this.puntos.geometry.attributes.color;
+    const ahora = performance.now(), cc = new THREE.Color();
+    let i = 0;
+    for (const p of ps) {
+      if (i >= 500) break;
+      const k = Math.min(1, (ahora - p.t0) / p.vida);
+      pos.setXYZ(i, p.x, p.tipoAltura ?? p.z, p.y);
+      cc.set(p.color).multiplyScalar(1 - k * k);
+      col.setXYZ(i, cc.r, cc.g, cc.b);
+      i++;
+    }
+    this.puntos.geometry.setDrawRange(0, i);
+    pos.needsUpdate = true; col.needsUpdate = true;
+  }
+
   // ---------- cada fotograma ----------
   pintar(t) {
     const e = this.tab.estado;
@@ -487,7 +579,7 @@ export class Escena3D {
     // Rehacer lo estático solo cuando cambia.
     const revelados = Object.keys(e.revelado).length;
     const kPuertas = e.mision.id + '|' + revelados + '|' + e.puertas.map((p) => (p.abierta ? 1 : 0) + (p.descubierta ? 2 : 0) + (p.bloqueada ? 4 : 0)).join('') + '|' + (e.muros || []).map((w) => (w.roto ? 1 : 0)).join('');
-    if (kPuertas !== this.claves.puertas) { this.claves.puertas = kPuertas; this.construirParedes(e); this.construirPuertas(e); }
+    if (kPuertas !== this.claves.puertas) { this.claves.puertas = kPuertas; this.construirParedes(e); this.construirPuertas(e); this.construirAntorchas(e); }
     const kMuebles = e.mision.id + '|' + revelados + '|' + Object.keys(e.rocas).length;
     if (kMuebles !== this.claves.muebles) { this.claves.muebles = kMuebles; this.construirMuebles(e); }
 
@@ -501,6 +593,8 @@ export class Escena3D {
     }
     this.actualizarBrillo(e, t);
     this.colocarCamara(t);
+    this.actualizarAntorchas(t);
+    this.actualizarParticulas();
     this.actualizarFichas(t);
     if (this.tab.textos.length || this.gTextos.children.length) this.actualizarTextos();
     this.render.render(this.escena, this.camara);

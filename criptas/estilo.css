@@ -157,11 +157,12 @@ label.campo { display: flex; flex-direction: column; gap: 6px; font-weight: 700;
 .zona-tablero { grid-area: tablero; position: relative; min-height: 0; }
 #lienzo { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; cursor: pointer; }
 .cartel {
+  z-index: 2;
   position: absolute; left: 50%; top: 14px; transform: translateX(-50%);
   font: 700 26px var(--f-titulo); color: #f3e6c4; background: rgba(20,12,8,0.85); padding: 6px 20px; border-radius: 4px;
   box-shadow: 0 0 0 1px rgba(201,162,74,0.6); pointer-events: none; white-space: nowrap; transition: opacity .3s;
 }
-.toasts { position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
+.toasts { z-index: 2; position: absolute; left: 12px; right: 12px; bottom: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; }
 .toast { background: rgba(20,12,8,0.9); color: #f3e6c4; padding: 8px 14px; border-radius: 4px; max-width: 520px; font-size: 16px; box-shadow: 0 0 0 1px rgba(201,162,74,0.35); animation: entra .25s ease-out; }
 .toast.peligro { box-shadow: 0 0 0 2px var(--lacre-claro); }
 .toast.bueno { box-shadow: 0 0 0 2px #6c9a4e; }
@@ -488,3 +489,7 @@ details.guia p { margin: 6px 0 10px; }
 .panel-reacciones .sello.mini .cera svg { width: 24px; height: 24px; }
 .panel-reacciones .sello.mini .lema { font-size: 11.5px; box-shadow: none; background: none; padding: 0; white-space: normal; text-align: center; }
 .panel-reacciones .sello.mini:active .cera { scale: .92; }
+
+/* Viñeta en la vista 3D: los bordes se oscurecen, como a la luz de las antorchas */
+.zona-tablero.con3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 45%, rgba(10,5,2,0.55) 85%, rgba(10,5,2,0.8) 100%); }

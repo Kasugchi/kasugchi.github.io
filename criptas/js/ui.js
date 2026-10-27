@@ -104,7 +104,7 @@ function sonar(tipo) {
       o.connect(g).connect(a.destination); o.start(t + ret); o.stop(t + ret + dur);
     };
     if (tipo === 'dados') { for (let i = 0; i < 5; i++) setTimeout(() => ruido(0.05, 0.25, 2500 + Math.random() * 2000), i * 70); }
-    if (tipo === 'golpe') { ruido(0.18, 0.5, 400); tono(160, 60, 0.2, 0.3, 'triangle'); }
+    if (tipo === 'golpe') { ruido(0.18, 0.5, 400); ruido(0.08, 0.35, 2600); tono(160, 50, 0.25, 0.35, 'triangle'); tono(90, 40, 0.3, 0.25, 'sine'); }
     if (tipo === 'puerta') { tono(90, 140, 0.45, 0.12, 'sawtooth'); ruido(0.3, 0.15, 600); }
     if (tipo === 'aparece') { tono(220, 110, 0.6, 0.15, 'sawtooth'); tono(233, 116, 0.6, 0.1, 'sawtooth'); }
     if (tipo === 'muerte') { tono(300, 40, 0.5, 0.2, 'square'); }
@@ -112,6 +112,10 @@ function sonar(tipo) {
     if (tipo === 'magia') { tono(400, 1200, 0.5, 0.12, 'triangle'); tono(600, 1800, 0.5, 0.06); }
     if (tipo === 'trampa') { ruido(0.4, 0.5, 300); }
     if (tipo === 'turno') { tono(523, 523, 0.12, 0.06, 'triangle'); }
+    // Silbido del arma al lanzarse a por el objetivo.
+    if (tipo === 'paso') { ruido(0.16, 0.18, 1800); ruido(0.12, 0.1, 900); }
+    // Fanfarria al subir de nivel: arpegio que sube.
+    if (tipo === 'nivel') { [523, 659, 784, 1047].forEach((f, i) => tono(f, f, 0.28, 0.12, 'triangle', i * 0.11)); tono(1047, 1047, 0.6, 0.08, 'sine', 0.44); }
   } catch { /* sin audio */ }
 }
 
@@ -1682,6 +1686,8 @@ async function animar(ev) {
         if (app.estado.heroes[ev.atacante] && ev.ataque.filter((c) => c === 'calavera').length >= 3) setTimeout(() => sello(ev.atacante, D.REACCIONES_AUTO.golpazo), 1600 * velocidad);
         else if (app.estado.heroes[ev.defensor]) setTimeout(() => sello(ev.defensor, D.REACCIONES_AUTO.ay), 1600 * velocidad);
       }
+      // Primero el atacante se lanza contra su objetivo.
+      { const q = posDe(ev.defensor); if (q && posDe(ev.atacante) && !ev.magia) { tablero.embestida(ev.atacante, q[0], q[1]); sonar('paso'); await espera(230); } }
       const atk = ev.ataque, def = ev.defensa;
       const cuentaDef = ev.defiende === 'heroe' ? 'escudo' : 'escudoNegro';
       const golpes = atk.filter((c) => c === 'calavera').length;
@@ -1707,14 +1713,30 @@ async function animar(ev) {
       await esperaSaltable(ev.defiende === 'heroe' ? 1900 : 1600);
       $('#dados').hidden = true;
       const p = posDe(ev.defensor);
-      if (p && ev.dano) { tablero.texto(p[0], p[1], '−' + ev.dano, ev.defiende === 'heroe' ? '#ff6a50' : '#ffd36a'); tablero.destello(p[0], p[1], 'rgba(255,60,40,A)'); sonar('golpe'); }
+      if (p && ev.dano) {
+        // El golpe se nota: la figura tiembla y se enciende, saltan chispas (o sangre si es un héroe) y, si es gordo, tiembla todo.
+        tablero.impacto(ev.defensor, ev.dano);
+        tablero.emitir(p[0], p[1], ev.defiende === 'heroe' ? 'sangre' : 'chispas', 8 + ev.dano * 6);
+        tablero.texto(p[0], p[1], '−' + ev.dano, ev.defiende === 'heroe' ? '#ff6a50' : '#ffd36a'); tablero.destello(p[0], p[1], 'rgba(255,60,40,A)');
+        const enorme = ev.dano >= 3 || golpes >= 4;
+        if (ev.dano >= 2) tablero.temblar(enorme ? 2.2 : 1);
+        if (enorme) cartel(ev.defiende === 'heroe' ? '¡Golpe brutal!' : '¡GOLPE CRÍTICO!');
+        sonar('golpe'); if (enorme) setTimeout(() => sonar('trampa'), 90);
+        await espera(enorme ? 420 : 240);
+      } else if (p) { tablero.emitir(p[0], p[1], 'polvo', 5); tablero.impacto(ev.defensor, 0.3); }
       break;
     }
     case 'muerte': {
       const p = posDe(ev.id);
-      if (p) { tablero.destello(p[0], p[1], 'rgba(120,10,10,A)'); tablero.texto(p[0], p[1], e.heroes[ev.id] ? 'Cae' : '†', '#e8d8b0'); }
+      const fig = e.heroes[ev.id] || e.monstruos.find((m) => m.id === ev.id);
+      if (p) {
+        tablero.caer(ev.id); tablero.emitir(p[0], p[1], 'polvo', 16);
+        tablero.destello(p[0], p[1], 'rgba(120,10,10,A)'); tablero.texto(p[0], p[1], e.heroes[ev.id] ? 'Cae' : '†', '#e8d8b0');
+        // La muerte de un jefe es un momento: temblor, cartel y lluvia de oro.
+        if (fig?.jefe) { tablero.temblar(2.5); tablero.emitir(p[0], p[1], 'oro', 40); cartel('¡' + fig.nombre + ' ha caído!'); }
+      }
       sonar('muerte');
-      await espera(420);
+      await espera(fig?.jefe ? 1400 : 560);
       tablero.vista.vivos.delete(ev.id);
       if (e.heroes[ev.id]) toast(nombre(ev.id) + ' ha caído.', 'peligro');
       break;
@@ -1748,7 +1770,8 @@ async function animar(ev) {
       const p = posDe(ev.objetivo), el = D.ELEMENTOS[ev.elemento];
       const c = el.color;
       const rgb = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)).join(',');
-      if (p) tablero.destello(p[0], p[1], `rgba(${rgb},A)`);
+      if (p) { tablero.destello(p[0], p[1], `rgba(${rgb},A)`); tablero.emitir(p[0], p[1], 'magia', 26, c); }
+      { const q = posDe(ev.heroe); if (q) tablero.emitir(q[0], q[1], 'magia', 10, c); }
       cartel(D.HECHIZOS[ev.hechizo].nombre);
       sonar('magia');
       await espera(650);
@@ -1765,7 +1788,14 @@ async function animar(ev) {
     }
     case 'mensaje': toast(ev.texto, ev.tono); await espera(550); break;
     case 'duelo': { sonar('aparece'); const p = posDe(ev.heroe), q = posDe(ev.monstruo); if (p) tablero.destello(p[0], p[1], 'rgba(190,140,255,A)'); if (q) tablero.destello(q[0], q[1], 'rgba(190,140,255,A)'); await espera(500); break; }
-    case 'nivel': { const p = posDe(ev.heroe); if (p) tablero.destello(p[0], p[1], 'rgba(190,140,255,A)'); sonar('aparece'); break; }
+    case 'nivel': {
+      const p = posDe(ev.heroe);
+      if (p) { tablero.destello(p[0], p[1], 'rgba(255,210,110,A)'); tablero.emitir(p[0], p[1], 'oro', 36); tablero.texto(p[0], p[1], '¡Nivel ' + ev.nivel + '!', '#ffd36a'); }
+      cartel('¡' + nombre(ev.heroe) + ' sube a nivel ' + ev.nivel + '!');
+      sonar('nivel');
+      await espera(900);
+      break;
+    }
     case 'reliquia': {
       sonar(ev.reliquia === 'campana' ? 'trampa' : 'aparece');
       const p = posDe(ev.heroe);

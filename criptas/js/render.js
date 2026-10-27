@@ -438,6 +438,8 @@ export class Tablero {
     this.resaltes = { destinos: {}, ataque: [], magia: [], trampas: [], cargador: {}, muros: [] };
     this.textos = [];
     this.destellos = [];
+    this.anims = new Map(); // id -> { embestida, impacto, caida }: animaciones de las figuras
+    this.particulas = [];   // chispas, polvo, magia… (las pintan el 2D y el 3D)
     this.cam = { x: W / 2, y: H / 2, z: 0.5 };
     this.objetivoCam = null;
     this.punteros = new Map();
@@ -567,10 +569,70 @@ export class Tablero {
   // ---------- efectos ----------
   texto(x, y, txt, color) { this.textos.push({ x, y, txt, color, t0: performance.now() }); }
   destello(x, y, color) { this.destellos.push({ x, y, color, t0: performance.now() }); }
-  temblar() { this.temblor = performance.now(); }
+  temblar(fuerza = 1) { this.temblor = performance.now(); this.fuerzaTemblor = fuerza; }
+
+  // ---------- animaciones de las figuras ----------
+  anim(id) { if (!this.anims.has(id)) this.anims.set(id, {}); return this.anims.get(id); }
+  // El atacante se lanza hacia su objetivo y vuelve.
+  embestida(id, x, y) {
+    const f = this.figura(id); if (!f) return;
+    const [fx, fy] = this.vista.pos[id] || [f.x, f.y];
+    const d = Math.hypot(x - fx, y - fy) || 1;
+    this.anim(id).embestida = { dx: (x - fx) / d, dy: (y - fy) / d, t0: performance.now(), lejos: d > 1.5 };
+  }
+  // Golpe recibido: tiembla y se pone rojo.
+  impacto(id, fuerza = 1) { this.anim(id).impacto = { t0: performance.now(), fuerza: Math.min(3, fuerza) }; }
+  caer(id) { this.anim(id).caida = { t0: performance.now() }; }
+  figura(id) { const e = this.estado; return e?.heroes[id] || (id === 'cargador' ? e?.cargador : null) || e?.monstruos.find((m) => m.id === id); }
+  // Desplazamiento y estado de animación de una figura en este momento.
+  animDe(id, ahora) {
+    const a = this.anims.get(id);
+    if (!a) return null;
+    const r = { dx: 0, dy: 0, golpe: 0, caida: 0 };
+    if (a.embestida) {
+      const k = (ahora - a.embestida.t0) / 420;
+      if (k >= 1) delete a.embestida;
+      else { const s = k < 0.35 ? k / 0.35 : (1 - k) / 0.65; const am = a.embestida.lejos ? 0.18 : 0.42; r.dx = a.embestida.dx * s * am; r.dy = a.embestida.dy * s * am; }
+    }
+    if (a.impacto) {
+      const k = (ahora - a.impacto.t0) / 450;
+      if (k >= 1) delete a.impacto; else { r.golpe = (1 - k) * a.impacto.fuerza / 3 + 0.15 * (1 - k); r.dx += Math.sin(ahora / 22) * 0.06 * (1 - k); }
+    }
+    if (a.caida) r.caida = Math.min(1, (ahora - a.caida.t0) / 380);
+    return r;
+  }
+  // ---------- partículas ----------
+  // tipo: chispas (golpe), sangre (héroe herido), polvo (muerte, derrumbe), magia (color), oro (nivel, tesoro), brasas.
+  emitir(x, y, tipo, n = 12, color) {
+    const ahora = performance.now();
+    const colores = { chispas: ['#ffd36a', '#ff9a3a', '#fff1b0'], sangre: ['#c42a1c', '#8a140c', '#ff5a3a'], polvo: ['#9a8a72', '#6e6252', '#bfae90'], oro: ['#ffd36a', '#fff1b0', '#e0a830'], brasas: ['#ff8a2a', '#ffb050'] };
+    for (let i = 0; i < n && this.particulas.length < 500; i++) {
+      const ang = Math.random() * Math.PI * 2, v = tipo === 'polvo' ? 0.6 + Math.random() * 0.8 : tipo === 'oro' ? 0.4 + Math.random() * 0.6 : 1.2 + Math.random() * 2.2;
+      const lista = color ? [color] : colores[tipo] || colores.chispas;
+      this.particulas.push({
+        x: x + 0.5, y: y + 0.5, z: tipo === 'polvo' ? 0.1 : 0.5, vx: Math.cos(ang) * v * (tipo === 'oro' ? 0.4 : 1), vy: Math.sin(ang) * v * (tipo === 'oro' ? 0.4 : 1),
+        vz: tipo === 'polvo' ? 0.3 + Math.random() * 0.6 : tipo === 'oro' || tipo === 'magia' ? 1 + Math.random() * 1.6 : 1 + Math.random() * 2.5,
+        g: tipo === 'polvo' ? 0.4 : tipo === 'oro' || tipo === 'magia' || tipo === 'brasas' ? -0.6 : 7,
+        t0: ahora, vida: (tipo === 'polvo' ? 900 : tipo === 'oro' || tipo === 'magia' ? 1300 : 600) * (0.7 + Math.random() * 0.6),
+        color: lista[Math.floor(Math.random() * lista.length)], tam: tipo === 'polvo' ? 0.22 : tipo === 'brasas' ? 0.07 : 0.11, frena: tipo === 'polvo' ? 2.5 : 1.2
+      });
+    }
+  }
+  moverParticulas(ahora) {
+    const dt = Math.min(0.05, (ahora - (this.ultimaPart || ahora)) / 1000);
+    this.ultimaPart = ahora;
+    this.particulas = this.particulas.filter((p) => ahora - p.t0 < p.vida);
+    for (const p of this.particulas) {
+      const f = Math.exp(-p.frena * dt);
+      p.vx *= f; p.vy *= f; p.vz -= p.g * dt;
+      p.x += p.vx * dt; p.y += p.vy * dt; p.z = Math.max(0.02, p.z + p.vz * dt);
+      if (p.z <= 0.02 && p.vz < 0) { p.vz *= -0.3; p.vx *= 0.6; p.vy *= 0.6; }
+    }
+  }
 
   // ---------- fotograma ----------
   dibujar(t) {
+    this.moverParticulas(performance.now());
     if (this.e3d) { this.e3d.pintar(t); return; }
     const g = this.g, e = this.estado;
     const r = this.cv.getBoundingClientRect();
@@ -584,8 +646,8 @@ export class Tablero {
       this.limitar();
     }
     let { ox, oy } = this.aPantalla();
-    const dt = t - this.temblor;
-    if (dt < 350) { ox += Math.sin(dt / 18) * 6 * (1 - dt / 350); oy += Math.cos(dt / 23) * 4 * (1 - dt / 350); }
+    const dt = t - this.temblor, ft = this.fuerzaTemblor || 1;
+    if (dt < 350) { ox += Math.sin(dt / 18) * 6 * ft * (1 - dt / 350); oy += Math.cos(dt / 23) * 4 * ft * (1 - dt / 350); }
     g.setTransform(this.dpr * this.cam.z, 0, 0, this.dpr * this.cam.z, this.dpr * ox, this.dpr * oy);
     // Sombra del tablero sobre la mesa.
     g.fillStyle = 'rgba(0,0,0,0.55)'; g.fillRect(14, 18, W, H);
@@ -594,6 +656,15 @@ export class Tablero {
 
   // Figuras que se ven ahora (con su posición animada). La usan el 2D y el 3D.
   figurasVisibles() {
+    const out = this.figurasBase(), ahora = performance.now();
+    for (const x of out) {
+      const a = this.animDe(x.f.id, ahora);
+      if (!a) continue;
+      x.x += a.dx; x.y += a.dy; x.golpe = a.golpe; x.caida = a.caida;
+    }
+    return out;
+  }
+  figurasBase() {
     const e = this.estado, out = [];
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
     for (const m of e.monstruos) {
@@ -673,7 +744,10 @@ export class Tablero {
     }
 
     // Fichas.
-    if (!plano) for (const x of this.figurasVisibles()) dibujarFicha(g, x.f, x.x, x.y, x.esHeroe, t, { alfa: x.alfa, activo: x.activo });
+    if (!plano) for (const x of this.figurasVisibles()) {
+      dibujarFicha(g, x.f, x.x, x.y, x.esHeroe, t, { alfa: (x.alfa ?? 1) * (1 - (x.caida || 0) * 0.6), activo: x.activo });
+      if (x.golpe) { g.fillStyle = `rgba(255,40,20,${Math.min(0.7, x.golpe * 0.8)})`; g.beginPath(); g.arc(x.x * TS + TS / 2, x.y * TS + TS / 2, TS * 0.42, 0, 7); g.fill(); }
+    }
     // Objetivos de ataque y de magia.
     const anillo = (id, color) => {
       const f = e.heroes[id] || e.monstruos.find((m) => m.id === id);
@@ -709,6 +783,13 @@ export class Tablero {
       gr.addColorStop(0, d.color.replace('A', String(1 - k))); gr.addColorStop(1, d.color.replace('A', '0'));
       g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, TS * (0.4 + k * 1.2), 0, 7); g.fill();
     }
+    if (!plano) for (const p of this.particulas) {
+      const k = (ahora - p.t0) / p.vida;
+      g.globalAlpha = Math.max(0, 1 - k);
+      g.fillStyle = p.color;
+      g.beginPath(); g.arc(p.x * TS, (p.y - p.z * 0.5) * TS, Math.max(1.5, p.tam * TS * (p.g < 1 && p.g > 0 ? 1 + k : 1 - k * 0.5)), 0, 7); g.fill();
+    }
+    g.globalAlpha = 1;
     this.textos = this.textos.filter((x) => ahora - x.t0 < 1300);
     if (!plano) for (const x of this.textos) {
       const k = (ahora - x.t0) / 1300;
