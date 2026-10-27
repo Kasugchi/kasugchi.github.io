@@ -3,11 +3,39 @@
 //  Regiones, paredes, puertas, línea de visión y caminos.
 //  No sabe nada de reglas: solo responde "¿se puede pasar/ver?".
 // =============================================================
-import { TABLERO, ANCHO, ALTO } from './datos.js';
+import * as D from './datos.js';
+import { PLANOS } from './planos.js';
+
+// ---------- Plano activo ----------
+// Cada misión puede traer su plano: el nombre de uno de js/planos.js o el dibujo
+// directamente (lista de filas). Sin plano, el clásico. '#' = vacío (roca maciza:
+// no se pisa, no se ve a través y cuenta como fuera del tablero).
+let filasActuales = null, versionPlano = 0;
+export function filasDePlano(p) {
+  if (Array.isArray(p)) return p;
+  return (PLANOS[p] || PLANOS.clasico).filas;
+}
+export function usarPlano(p) {
+  const filas = filasDePlano(p);
+  if (filas === filasActuales) return false;
+  filasActuales = filas;
+  D.fijarPlano(filas);
+  for (const k of Object.keys(cacheSalas)) delete cacheSalas[k];
+  versionPlano++;
+  return true;
+}
+// Cambia cada vez que se cambia de plano (la vista lo usa para rehacer el tablero).
+export const versionDelPlano = () => versionPlano;
+// Las salas del plano activo (sin el pasillo).
+export function salasDelPlano() {
+  const out = new Set();
+  for (const f of D.TABLERO) for (const c of f) if (c !== '.' && c !== '#') out.add(c);
+  return [...out];
+}
 
 export const clave = (x, y) => x + ',' + y;
-export const dentro = (x, y) => x >= 0 && y >= 0 && x < ANCHO && y < ALTO;
-export const region = (x, y) => (dentro(x, y) ? TABLERO[y][x] : null);
+export const dentro = (x, y) => x >= 0 && y >= 0 && x < D.ANCHO && y < D.ALTO && D.TABLERO[y][x] !== '#';
+export const region = (x, y) => (dentro(x, y) ? D.TABLERO[y][x] : null);
 export const esPasillo = (x, y) => region(x, y) === '.';
 export const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 export const DIRS8 = [...DIRS, [1, 1], [1, -1], [-1, 1], [-1, -1]];
@@ -17,7 +45,7 @@ const cacheSalas = {};
 export function casillasDe(r) {
   if (cacheSalas[r]) return cacheSalas[r];
   const out = [];
-  for (let y = 0; y < ALTO; y++) for (let x = 0; x < ANCHO; x++) if (TABLERO[y][x] === r) out.push([x, y]);
+  for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (D.TABLERO[y][x] === r) out.push([x, y]);
   return (cacheSalas[r] = out);
 }
 

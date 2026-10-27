@@ -179,6 +179,7 @@ export function crearPartida(elegidos, jugadores = {}) {
 export function iniciarMision(estado, def) {
   const m = copia(def);
   estado.mision = m;
+  T.usarPlano(m.plano);
   estado.fase = 'briefing';
   estado.resultado = null;
   estado.flags = {};
@@ -2808,6 +2809,7 @@ export function puedeControlar(estado, jugador, heroe) {
 }
 
 export function aplicar(estado, a, jugador, cargarMision) {
+  if (estado.mision) T.usarPlano(estado.mision.plano);
   const esAnfitrion = jugador === estado.anfitrion;
   asegurarInventario(estado);
   if (a.tipo === 'empezar') {
@@ -2885,7 +2887,7 @@ export function aplicar(estado, a, jugador, cargarMision) {
     if (!esAnfitrion || estado.fase !== 'armeria') return 'Solo el anfitrión.';
     // Mazmorra Perdida: cada nivel se genera a partir de la semilla de la partida.
     const def = estado.aleatorio
-      ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1)
+      ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1, estado.planoFijo || null)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
     if (estado.aleatorio) { esconderPieza(estado, def); ponerMurosFragiles(def); ponerExtrasInfinita(estado, def); pisoEspecial(estado, def); }

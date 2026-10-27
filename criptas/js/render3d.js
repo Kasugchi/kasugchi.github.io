@@ -297,9 +297,19 @@ export class Escena3D {
       if (x + 1 < D.ANCHO && T.region(x, y) !== T.region(x + 1, y) && !huecos.has(T.claveBorde([x, y], [x + 1, y]))) tramos.push({ x: x + 1, z: y + 0.5, vert: true, vis: vis(x, y) || vis(x + 1, y) });
       if (y + 1 < D.ALTO && T.region(x, y) !== T.region(x, y + 1) && !huecos.has(T.claveBorde([x, y], [x, y + 1]))) tramos.push({ x: x + 0.5, z: y + 1, vert: false, vis: vis(x, y) || vis(x, y + 1) });
     }
-    // Borde exterior.
-    for (let x = 0; x < D.ANCHO; x++) { tramos.push({ x: x + 0.5, z: 0, vert: false, vis: vis(x, 0) }); tramos.push({ x: x + 0.5, z: D.ALTO, vert: false, vis: vis(x, D.ALTO - 1) }); }
-    for (let y = 0; y < D.ALTO; y++) { tramos.push({ x: 0, z: y + 0.5, vert: true, vis: vis(0, y) }); tramos.push({ x: D.ANCHO, z: y + 0.5, vert: true, vis: vis(D.ANCHO - 1, y) }); }
+    // Borde exterior (no hace falta donde el plano ya es roca maciza).
+    const roca = (x, y) => !T.dentro(x, y);
+    for (let x = 0; x < D.ANCHO; x++) {
+      if (!roca(x, 0)) tramos.push({ x: x + 0.5, z: 0, vert: false, vis: vis(x, 0) });
+      if (!roca(x, D.ALTO - 1)) tramos.push({ x: x + 0.5, z: D.ALTO, vert: false, vis: vis(x, D.ALTO - 1) });
+    }
+    for (let y = 0; y < D.ALTO; y++) {
+      if (!roca(0, y)) tramos.push({ x: 0, z: y + 0.5, vert: true, vis: vis(0, y) });
+      if (!roca(D.ANCHO - 1, y)) tramos.push({ x: D.ANCHO, z: y + 0.5, vert: true, vis: vis(D.ANCHO - 1, y) });
+    }
+    // Roca maciza: bloques de piedra donde el plano no tiene nada.
+    const macizas = [];
+    for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (roca(x, y)) macizas.push([x, y]);
 
     this.gParedes.clear();
     const geo = new THREE.BoxGeometry(1 + GROSOR, ALTO_PARED, GROSOR);
@@ -314,6 +324,18 @@ export class Escena3D {
     });
     malla.castShadow = true; malla.receiveShadow = true;
     this.gParedes.add(malla);
+    if (macizas.length) {
+      const bloque = new THREE.InstancedMesh(new THREE.BoxGeometry(1, ALTO_PARED * 0.85, 1), new THREE.MeshStandardMaterial({ color: 0x3a322b, roughness: 0.95 }), macizas.length);
+      const tono = new THREE.Color();
+      macizas.forEach(([x, y], i) => {
+        const h = 0.85 + ((x * 7 + y * 13) % 5) * 0.06;
+        m4.compose(new THREE.Vector3(x + 0.5, (ALTO_PARED * 0.85 * h) / 2, y + 0.5), q, new THREE.Vector3(1, h, 1));
+        bloque.setMatrixAt(i, m4);
+        bloque.setColorAt(i, tono.setHSL(0.07, 0.12, 0.17 + ((x * 3 + y * 5) % 4) * 0.02));
+      });
+      bloque.receiveShadow = true;
+      this.gParedes.add(bloque);
+    }
   }
 
   construirPuertas(e) {

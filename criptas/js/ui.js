@@ -7,6 +7,7 @@
 import * as D from './datos.js';
 import * as M from './motor.js';
 import * as T from './tablero.js';
+import { PLANOS } from './planos.js';
 // La red se carga solo al crear o unirse a una sala: así el modo local funciona sin conexión.
 let moduloRed = null;
 const Red = async () => {
@@ -772,6 +773,7 @@ function enviar(accion) {
 }
 
 function recibirEstado(e, real) {
+  if (e.mision) T.usarPlano(e.mision.plano);
   const primera = !app.estado;
   app.estado = e;
   if (real) app.estadoReal = real;
@@ -812,6 +814,7 @@ $('#b-campamento').addEventListener('click', () => enviar({ tipo: 'volverCampame
 // Mapa al estilo de un libro de misiones: granate lo que no se juega,
 // claro la zona de la misión. No muestra monstruos, trampas ni pasadizos.
 function pintarMapaMision(cv, e) {
+  if (e.mision) T.usarPlano(e.mision.plano);
   const c = 22, w = D.ANCHO * c, hgt = D.ALTO * c;
   cv.width = w; cv.height = hgt;
   const g = cv.getContext('2d');
@@ -819,6 +822,7 @@ function pintarMapaMision(cv, e) {
   const salas = new Set(Object.values(zona).map((z) => T.region(z.x, z.y)));
   const juega = (x, y) => !!zona[T.clave(x, y)] || (T.region(x, y) !== '.' && salas.has(T.region(x, y)));
   for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) {
+    if (!T.dentro(x, y)) { g.fillStyle = '#3b2730'; g.fillRect(x * c, y * c, c, c); continue; } // roca maciza
     const on = juega(x, y) && !e.rocas[T.clave(x, y)];
     g.fillStyle = on ? (T.region(x, y) === '.' ? '#e6d6bd' : '#f3ebe4') : '#a65a6c';
     g.fillRect(x * c, y * c, c, c);
@@ -2175,7 +2179,8 @@ window.trucos = {
     'trucos.curar()      → todos los héroes al máximo de cuerpo',
     'trucos.oro(500)     → oro para todos los héroes',
     'trucos.revelar()    → descubre todo el tablero',
-    'trucos.hechizos()   → recupera los hechizos gastados'
+    'trucos.hechizos()   → recupera los hechizos gastados',
+    "trucos.plano('torre') → la Mazmorra Infinita usa ese plano en los próximos pisos (trucos.plano() lo quita)"
   ].join('\n')),
   mover: conTruco('movimiento', (e, n = 50) => {
     const t = e.turno;
@@ -2202,6 +2207,11 @@ window.trucos = {
     for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) e.revelado[T.clave(x, y)] = 1;
     for (const m of e.monstruos) if (m.vivo) m.visto = true;
     return 'Mapa descubierto.';
+  }),
+  plano: conTruco('plano', (e, nombre = null) => {
+    if (nombre && !PLANOS[nombre]) return 'No existe ese plano. Hay: ' + Object.keys(PLANOS).join(', ') + '.';
+    e.planoFijo = nombre;
+    return nombre ? 'Los próximos pisos usarán el plano «' + PLANOS[nombre].nombre + '».' : 'Los pisos vuelven a elegir plano solos.';
   }),
   hechizos: conTruco('hechizos', (e) => {
     for (const h of Object.values(e.heroes)) h.hechizos = D.HEROES[h.tipo].elementos.flatMap((el) => D.HECHIZOS_POR_ELEMENTO[el]);

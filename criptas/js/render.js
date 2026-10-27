@@ -11,7 +11,9 @@ import { ICONOS } from './iconos.js';
 import { spriteDe } from './sprites.js';
 
 export const TS = 64; // tamaño de casilla en la capa interna
-const W = D.ANCHO * TS, H = D.ALTO * TS;
+// Tamaño del plano activo en píxeles internos (cambia con el plano de la misión).
+let W = D.ANCHO * TS, H = D.ALTO * TS;
+const medirPlano = () => { W = D.ANCHO * TS; H = D.ALTO * TS; };
 const caminos = {};
 const icono = (n) => (caminos[n] ||= new Path2D(ICONOS[n] || ''));
 
@@ -36,7 +38,8 @@ function baldosa(g, r, x, y, w, h, c, k) {
 }
 
 function pintarSuelo(g, r, x, y, reg) {
-  const { c, p } = D.SUELOS[reg];
+  if (!reg) return pintarRocaMaciza(g, r, x, y);
+  const { c, p } = D.sueloDe(reg);
   const px = x * TS, py = y * TS, m = TS / 2;
   g.fillStyle = rgb(c, -45); g.fillRect(px, py, TS, TS); // lechada
   switch (p) {
@@ -105,7 +108,20 @@ function pintarSuelo(g, r, x, y, reg) {
   if (r() < 0.05) { g.fillStyle = 'rgba(110,20,14,0.35)'; g.beginPath(); g.ellipse(px + r() * TS, py + r() * TS, 4 + r() * 5, 3 + r() * 3, r() * 3, 0, 7); g.fill(); }
 }
 
-function capaBase() {
+// Roca maciza: lo que queda fuera del plano (cuevas, torres, cascos de barco…).
+function pintarRocaMaciza(g, r, x, y) {
+  const px = x * TS, py = y * TS;
+  g.fillStyle = '#17120f'; g.fillRect(px, py, TS, TS);
+  for (let i = 0; i < 3; i++) {
+    g.fillStyle = `rgba(${60 + r() * 30},${48 + r() * 20},${40 + r() * 16},0.55)`;
+    g.beginPath(); g.ellipse(px + r() * TS, py + r() * TS, 6 + r() * 14, 4 + r() * 10, r() * 3, 0, 7); g.fill();
+  }
+  g.strokeStyle = 'rgba(0,0,0,0.5)'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(px + r() * TS, py); g.lineTo(px + r() * TS, py + TS * (0.4 + r() * 0.6)); g.stroke();
+}
+
+export function capaBase() {
+  medirPlano();
   const c = document.createElement('canvas');
   c.width = W; c.height = H;
   const g = c.getContext('2d');
@@ -231,7 +247,7 @@ export function dibujarMueble(g, u, t) {
   }
 }
 
-function dibujarEscalera(g, esc) {
+export function dibujarEscalera(g, esc) {
   const [x0, y0] = esc[0];
   const x = x0 * TS + 4, y = y0 * TS + 4, s = TS * 2 - 8;
   g.fillStyle = '#2a221c'; g.fillRect(x, y, s, s);
@@ -301,7 +317,7 @@ function dibujarMuroRoto(g, w) {
   }
 }
 
-function dibujarTrampa(g, t) {
+export function dibujarTrampa(g, t) {
   const cx = t.x * TS + TS / 2, cy = t.y * TS + TS / 2;
   if (t.tipo === 'foso' && t.activa) {
     const gr = g.createRadialGradient(cx, cy, 4, cx, cy, TS * 0.46);
@@ -315,7 +331,7 @@ function dibujarTrampa(g, t) {
   }
 }
 
-function dibujarPuerta(g, p) {
+export function dibujarPuerta(g, p) {
   const [ax, ay] = p.a, [bx, by] = p.b;
   const vertical = ay === by; // el borde es una línea vertical
   const ex = vertical ? Math.max(ax, bx) * TS : ax * TS;
@@ -330,7 +346,7 @@ function dibujarPuerta(g, p) {
     g.fillStyle = secreta ? '#4a453f' : '#2a1c12';
     g.fillRect(-largo / 2 - 4, -grosor / 2, 6, grosor);
     g.fillRect(largo / 2 - 2, -grosor / 2, 6, grosor);
-    g.fillStyle = rgb(D.SUELOS[T.region(ax, ay)].c, -10);
+    g.fillStyle = rgb(D.sueloDe(T.region(ax, ay) || '.').c, -10);
     g.fillRect(-largo / 2 + 2, -TS * 0.09, largo - 4, TS * 0.18);
     if (secreta) { g.fillStyle = '#77716a'; } else madera(g, -largo / 2 - 2, -largo + 4, grosor * 0.7, largo - 8, [120, 78, 40]);
     if (secreta) g.fillRect(-largo / 2 - 2, -largo + 4, grosor * 0.7, largo - 8);
@@ -432,6 +448,7 @@ export class Tablero {
     this.cv = canvas;
     this.g = canvas.getContext('2d');
     this.base = capaBase();
+    this.planoVisto = T.versionDelPlano();
     this.alTocar = alTocar;
     this.estado = null;
     this.vista = { pos: {}, ocultos: new Set(), vivos: new Set() };
@@ -631,7 +648,20 @@ export class Tablero {
   }
 
   // ---------- fotograma ----------
+  // El plano de la misión ha cambiado: rehacer el suelo, la cámara y la vista 3D.
+  cambioDePlano() {
+    this.planoVisto = T.versionDelPlano();
+    this.base = capaBase();
+    this.ajustado = false; this.ajustar();
+    this.cam.x = W / 2; this.cam.y = H / 2; this.objetivoCam = null;
+    if (this.e3d && !this.rehaciendo3d) {
+      this.rehaciendo3d = true;
+      this.ponerVista3D(false).then(() => this.ponerVista3D(true)).finally(() => { this.rehaciendo3d = false; });
+    }
+  }
+
   dibujar(t) {
+    if (this.planoVisto !== T.versionDelPlano()) this.cambioDePlano();
     this.moverParticulas(performance.now());
     if (this.e3d) { this.e3d.pintar(t); return; }
     const g = this.g, e = this.estado;

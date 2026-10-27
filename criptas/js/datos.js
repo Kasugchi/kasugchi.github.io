@@ -9,7 +9,7 @@
 // 26 x 19 casillas. '.' = pasillo, cada letra = una sala distinta.
 // Las paredes no se dibujan aquí: existen automáticamente entre dos
 // casillas de distinta región (salvo que haya una puerta).
-export const TABLERO = [
+export const TABLERO_CLASICO = [
   '..........................', // 0
   '.AAA.BBBBB.CCCC.DDD.EEEEE.', // 1
   '.AAA.BBBBB.CCCC.DDD.EEEEE.', // 2
@@ -30,7 +30,15 @@ export const TABLERO = [
   '.IIIII.JJJ.KKKK.LLLLL.MMM.', // 17
   '..........................'  // 18
 ];
-export const ANCHO = 26, ALTO = 19;
+// Plano activo. Cada misión puede traer el suyo (ver js/planos.js); lo cambia
+// tablero.js › usarPlano. Son «let» exportados: quien los importa ve siempre el actual.
+export let TABLERO = TABLERO_CLASICO;
+export let ANCHO = 26, ALTO = 19;
+export function fijarPlano(filas) {
+  ANCHO = Math.max(...filas.map((f) => f.length));
+  ALTO = filas.length;
+  TABLERO = filas.map((f) => f.padEnd(ANCHO, '#'));
+}
 
 // Suelo de cada sala: color y dibujo de baldosa, para que cada una se reconozca.
 // dibujos: losas | damero | rombos | ladrillo | grietas | tablas
@@ -52,6 +60,14 @@ export const SUELOS = {
   L: { c: [170, 120, 104], p: 'losas' },
   M: { c: [78, 140, 64],  p: 'grietas' }
 };
+
+const DIBUJOS_SUELO = ['losas', 'damero', 'rombos', 'ladrillo', 'grietas', 'tablas'];
+export function sueloDe(r) {
+  if (SUELOS[r]) return SUELOS[r];
+  let h = 0; for (const ch of String(r)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const tonos = [[150, 96, 58], [176, 70, 58], [104, 158, 160], [196, 140, 60], [118, 124, 132], [150, 170, 60], [92, 82, 74], [176, 180, 196], [188, 160, 52], [110, 160, 168], [170, 120, 104], [78, 140, 64], [130, 100, 150], [160, 130, 90]];
+  return (SUELOS[r] = { c: tonos[h % tonos.length], p: DIBUJOS_SUELO[(h >>> 4) % DIBUJOS_SUELO.length] });
+}
 
 // ---------- Dado de combate ----------
 // 6 caras: 3 calaveras, 2 escudos blancos (defienden héroes) y 1 escudo negro (defiende monstruos).

@@ -35,19 +35,26 @@ const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 export const nuevaSemilla = () => Array.from({ length: 5 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
 export const semillaDeNivel = (semilla, nivel) => semilla + '-' + nivel;
 
-// ---------- Geometría del tablero ----------
+// ---------- Geometría del plano ----------
+// Salas y pasillos del plano activo. Se calculan una vez por plano.
 const k = (x, y) => x + ',' + y;
-const SALAS = (() => {
+let SALAS = {}, PASILLO = [];
+const geometrias = new Map();
+function prepararGeometria() {
+  const id = D.TABLERO;
+  if (geometrias.has(id)) { ({ SALAS, PASILLO } = geometrias.get(id)); return; }
   const out = {};
   for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) {
     const r = T.region(x, y);
-    if (r === '.') continue;
+    if (!r || r === '.') continue;
     (out[r] ||= { id: r, celdas: [] }).celdas.push([x, y]);
   }
   for (const s of Object.values(out)) {
     const xs = s.celdas.map((c) => c[0]), ys = s.celdas.map((c) => c[1]);
     Object.assign(s, { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) });
     s.area = s.celdas.length;
+    // Huecos de 2x2 para la escalera.
+    s.huecos2 = s.celdas.filter(([x, y]) => [[1, 0], [0, 1], [1, 1]].every(([dx, dy]) => T.region(x + dx, y + dy) === s.id));
     // Bordes con el pasillo y con otras salas (sitios posibles para puertas).
     s.bordesPasillo = []; s.bordesSala = {};
     for (const [x, y] of s.celdas) for (const [dx, dy] of T.DIRS) {
@@ -58,10 +65,18 @@ const SALAS = (() => {
       else if (r !== s.id) (s.bordesSala[r] ||= []).push([[x, y], [nx, ny]]);
     }
   }
-  return out;
-})();
-const PASILLO = [];
-for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (T.region(x, y) === '.') PASILLO.push([x, y]);
+  const pas = [];
+  for (let y = 0; y < D.ALTO; y++) for (let x = 0; x < D.ANCHO; x++) if (T.region(x, y) === '.') pas.push([x, y]);
+  geometrias.set(id, { SALAS: out, PASILLO: pas });
+  ({ SALAS, PASILLO } = geometrias.get(id));
+}
+// Qué planos salen en cada zona de la Mazmorra Infinita (con su peso).
+export const PLANOS_ZONA = {
+  cuevas: { clasico: 2, cuevas: 3, barco: 1 },
+  catacumbas: { clasico: 2, cripta: 3, cuevas: 1 },
+  fortaleza: { clasico: 1, fortaleza: 3, torre: 1 },
+  abismo: { clasico: 1, torre: 3, cripta: 1, fortaleza: 1, barco: 1 }
+};
 
 // ---------- Contenido según el tema ----------
 const TEMAS = {
@@ -109,10 +124,16 @@ const APODOS_JEFE = { orco: 'el Caudillo', momia: 'el Rey Momia', hechicero: 'el
 // =============================================================
 //  GENERADOR
 // =============================================================
-export function generarMision(semilla, nivel = 1) {
+// plano: fuerza un plano (nombre de js/planos.js); si no, lo elige la zona.
+export function generarMision(semilla, nivel = 1, plano = null) {
   const r = azar(semilla);
+  const zona = zonaDe(nivel);
+  const nombrePlano = plano || r.pesos(PLANOS_ZONA[zona.id] || { clasico: 1 });
+  T.usarPlano(nombrePlano);
+  prepararGeometria();
   for (let intento = 0; intento < 60; intento++) {
     const m = intentar(r, semilla, nivel);
+    if (m) m.plano = nombrePlano;
     if (m && !validar(m)) return m;
   }
   throw new Error('No se pudo generar la mazmorra ' + semilla);
@@ -126,7 +147,9 @@ function intentar(r, semilla, nivel) {
 
   // ---------- Salas ----------
   const todas = Object.keys(SALAS);
-  const inicio = r.de(todas.filter((s) => SALAS[s].area <= 20 && SALAS[s].x1 - SALAS[s].x0 >= 1 && SALAS[s].y1 - SALAS[s].y0 >= 1));
+  const conHueco = todas.filter((s) => SALAS[s].huecos2.length && SALAS[s].bordesPasillo.length);
+  const pequenas = conHueco.filter((s) => SALAS[s].area <= 20);
+  const inicio = r.de(pequenas.length ? pequenas : conHueco);
   // La huida contrarreloj va en un mapa más pequeño: con malas tiradas no se hace imposible.
   const nSalas = objetivoTipo === 'escapar' ? 4 + r.int(2) : Math.min(todas.length - 1, 6 + Math.min(3, Math.floor(nivel / 2)) + r.int(2));
   const elegidas = [inicio, ...r.barajar(todas.filter((s) => s !== inicio)).slice(0, nSalas - 1)];
@@ -134,8 +157,7 @@ function intentar(r, semilla, nivel) {
 
   // ---------- Escalera (2x2 dentro de la sala de inicio) ----------
   const si = SALAS[inicio];
-  const huecosEsc = si.celdas.filter(([x, y]) => [[1, 0], [0, 1], [1, 1]].every(([dx, dy]) => T.region(x + dx, y + dy) === inicio));
-  const [ex, ey] = r.de(huecosEsc);
+  const [ex, ey] = r.de(si.huecos2);
   const escalera = [[ex, ey], [ex + 1, ey], [ex, ey + 1], [ex + 1, ey + 1]];
   const ocupado = new Map(); // casilla -> qué hay
   for (const [x, y] of escalera) ocupado.set(k(x, y), 'escalera');
@@ -443,6 +465,8 @@ function salasAlcanzables(m, salas, opciones) {
 
 // Devuelve un texto con el problema, o null si la mazmorra es válida.
 export function validar(m) {
+  T.usarPlano(m.plano);
+  prepararGeometria();
   const oc = new Map();
   const marcar = (x, y, que) => { const c = k(x, y); if (oc.has(c)) return `${que} encima de ${oc.get(c)} en ${c}`; oc.set(c, que); return null; };
   const [ex, ey] = m.escalera;
