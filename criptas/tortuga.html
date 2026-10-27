@@ -828,8 +828,9 @@ panelSala = crearPanel({
   datos: () => ({ clase, x: heroe.position.x, z: heroe.position.z }),
   cabana: () => { const f = Ficha.fichaOCrear(ficha.nombre); return { nombre: f.nombre, trofeos: f.cabana.trofeos.slice(-12), diario: f.diario }; },
   alConectar: (R) => {
-    R.on('gente', ponerGente)
-      .on('frase', (id, texto) => decir(avatarDe(id), texto))
+    R.on('gente', (g) => { ponerGente(g); aCabana({ t: 'gente', gente: g, yo: R.yo.id }); })
+      .on('frase', (id, texto) => { decir(avatarDe(id), texto); aCabana({ t: 'frase', id, texto }); })
+      .on('gesto', (id, g) => aCabana({ t: 'gesto', id, g }))
       .on('gesto', (id, g) => { const a = avatarDe(id); if (!a) return; a.gesto = g; a.tG = 0; a.plano.scale.y = 1; const x = GESTOS.find((q) => q.id === g); if (x && g !== 'sentarse') decir(a, x.icono); });
     ponerGente(R.gente());
   },
@@ -990,6 +991,7 @@ function cerrarDialogo() { $('dialogo').style.display = 'none'; enDialogo = fals
 // La cabaña se abre encima, en la misma página: la tortuga se queda en pausa
 // y la sala sigue conectada (los demás te ven «en la cabaña»).
 let cabanaAbierta = null;
+const aCabana = (m) => cabanaAbierta?.contentWindow?.postMessage(m, location.origin);
 function abrirCabana() {
   if (cabanaAbierta) return;
   // Red de seguridad: en calidad baja (móviles flojos) no se cargan dos escenas a la vez:
@@ -1005,7 +1007,7 @@ function abrirCabana() {
     document.body.appendChild(f); cabanaAbierta = f;
     panelSala?.R?.cambiar({ donde: 'cabana' });
     mz.ac?.suspend();
-    f.addEventListener('load', () => { f.focus(); setTimeout(() => { $('fundido').style.opacity = 0; }, 300); });
+    f.addEventListener('load', () => { f.focus(); const R = panelSala?.R; if (R) aCabana({ t: 'gente', gente: R.gente(), yo: R.yo.id }); setTimeout(() => { $('fundido').style.opacity = 0; }, 300); });
   }, 900);
 }
 function cerrarCabana() {
@@ -1022,6 +1024,10 @@ addEventListener('message', (e) => {
   if (!cabanaAbierta || e.source !== cabanaAbierta.contentWindow) return;
   if (e.data?.t === 'salirCabana') cerrarCabana();
   if (e.data?.t === 'clase' && CLASES[e.data.k]) ponerClase(e.data.k);
+  const R = panelSala?.R;
+  if (R && e.data?.t === 'pos') R.mover(+e.data.x || 0, +e.data.z || 0, e.data.lado < 0 ? -1 : 1, true);
+  if (R && e.data?.t === 'frase') R.frase(String(e.data.texto || ''));
+  if (R && e.data?.t === 'gesto') R.gesto(String(e.data.g || ''));
 });
 function entrarEnLibro() { cerrarDialogo(); audio.libro(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'index.html'; }, 1500); }
 let despierta = 0;

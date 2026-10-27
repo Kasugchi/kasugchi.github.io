@@ -226,11 +226,13 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
       return res;
     },
     on(t, f) { (oyentes[t] ||= []).push(f); return R; },
-    mover(px, pz, lado) {
+    // En la plaza (x, z, lado) o dentro de la cabaña (cx, cz, clado).
+    mover(px, pz, lado, dentro = false) {
+      const [kx, kz, kl] = dentro ? ['cx', 'cz', 'clado'] : ['x', 'z', 'lado'];
       px = +px.toFixed(2); pz = +pz.toFixed(2);
-      if (Math.abs(px - mio.x) < .05 && Math.abs(pz - mio.z) < .05 && lado === mio.lado) return;
-      Object.assign(mio, { x: px, z: pz, lado });
-      pendiente = { x: px, z: pz, lado };
+      if (mio[kx] !== undefined && Math.abs(px - mio[kx]) < .05 && Math.abs(pz - mio[kz]) < .05 && lado === mio[kl]) return;
+      Object.assign(mio, { [kx]: px, [kz]: pz, [kl]: lado });
+      pendiente = { ...(pendiente || {}), [kx]: px, [kz]: pz, [kl]: lado };
       const falta = 200 - (performance.now() - tMov);
       if (falta <= 0) enviarPos(); else if (!tPend) tPend = setTimeout(enviarPos, falta);
     },
