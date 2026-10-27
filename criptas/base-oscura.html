@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criptas · La base (prototipo oscuro)</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Homemade+Apple&display=swap" rel="stylesheet">
+<style>
+  :root { --tinta: #1c120b; --tinta-2: #3a2616; --sangre: #7a1a12; --vela: #e9b45a; --papel: #d9c79e; --papel-2: #b9a27a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: #070403; color: var(--tinta); font: 17px/1.45 'IM Fell English', Georgia, serif; overflow: hidden; display: grid; place-items: center;
+    -webkit-tap-highlight-color: transparent; user-select: none; }
+  body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 50% 45%, rgba(120,70,30,.18), transparent 60%); pointer-events: none; }
+
+  /* ---------- Libro viejo ---------- */
+  .libro { position: relative; width: min(1000px, 96vw); aspect-ratio: 16 / 10.5; perspective: 1800px; }
+  @media (max-width: 760px) { .libro { width: 96vw; aspect-ratio: 3 / 4.5; } }
+  .tapa { position: absolute; inset: -16px -18px; border-radius: 8px; background: linear-gradient(135deg, #2a140c, #120806); box-shadow: 0 40px 80px rgba(0,0,0,.9), inset 0 0 0 2px #4a2a18, inset 0 0 0 7px #1a0c06, inset 0 0 0 8px #6a4a28; }
+  .hojas-borde { position: absolute; inset: 4px 2px -7px; border-radius: 3px; background: repeating-linear-gradient(0deg, #8a7550 0 1px, #c9b48a 1px 3px); }
+  .pagina { position: absolute; inset: 0; border-radius: 3px; overflow: hidden; transform-origin: left center; transition: transform 1s cubic-bezier(.6,.05,.3,1); backface-visibility: hidden;
+    background:
+      radial-gradient(ellipse 22% 16% at 82% 78%, rgba(90,50,20,.22), transparent 70%),
+      radial-gradient(ellipse 14% 10% at 12% 20%, rgba(90,50,20,.18), transparent 70%),
+      radial-gradient(ellipse 8% 6% at 64% 14%, rgba(110,20,10,.18), transparent 70%),
+      radial-gradient(ellipse at 50% 45%, var(--papel), var(--papel-2));
+    box-shadow: inset 0 0 90px rgba(40,20,5,.65), inset 0 0 20px rgba(20,8,2,.6); }
+  /* Bordes quemados */
+  .pagina::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 31;
+    background: radial-gradient(ellipse at 50% 50%, transparent 62%, rgba(40,18,6,.55) 86%, rgba(15,6,2,.9) 100%); }
+  .pagina.pasada { transform: rotateY(-178deg); pointer-events: none; }
+  .pagina.oculta { opacity: 0; pointer-events: none; transition: none; }
+  @media (min-width: 761px) {
+    .pagina::after { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 70px; transform: translateX(-50%); z-index: 30; pointer-events: none;
+      background: linear-gradient(90deg, transparent 0%, rgba(40,20,6,.4) 48%, rgba(20,8,2,.65) 50%, rgba(40,20,6,.4) 52%, transparent 100%); }
+  }
+  .doble { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 760px) { .doble { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } }
+  .texto { padding: 30px 36px 20px; position: relative; z-index: 2; }
+  @media (max-width: 760px) { .texto { padding: 18px 20px 6px; } }
+  .texto .cap { font: 14px/1 'IM Fell English SC', serif; letter-spacing: .2em; color: var(--tinta-2); opacity: .8; }
+  .texto h1 { font: 400 clamp(30px, 4.4vw, 46px)/1.05 'IM Fell English SC', serif; color: var(--tinta); margin: 4px 0 10px; }
+  .texto h1::after { content: ''; display: block; width: 120px; height: 6px; margin-top: 8px;
+    background: radial-gradient(circle, var(--sangre) 0 2px, transparent 3px) 0 0 / 12px 6px repeat-x; opacity: .7; }
+  .texto p { margin: 10px 0; }
+  @media (max-width: 760px) { .texto p.largo { display: none; } }
+  .capital::first-letter { font: 3.3em/.78 'IM Fell English SC', serif; float: left; padding: 6px 8px 0 0; color: var(--sangre); }
+  .lista { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 6px; }
+  .lista li::before { content: '✠ '; color: var(--sangre); }
+  .lista b { font: 20px 'IM Fell English SC', serif; }
+  .lista .bloq { opacity: .55; font-style: italic; }
+  @media (max-width: 760px) { .lista { display: none; } }
+  /* Notas al margen, escritas a mano con tinta roja */
+  @media (max-width: 760px) { .nota-margen { top: auto !important; bottom: .6% !important; left: auto !important; right: 8% !important; font-size: 12px; } }
+  .nota-margen { position: absolute; font: 15px/1.2 'Homemade Apple', cursive; color: rgba(122,26,18,.78); transform: rotate(-7deg); pointer-events: none; z-index: 32; }
+
+  /* ---------- Escena grabada ---------- */
+  .escena { position: relative; margin: 16px 20px 20px; perspective: 900px; perspective-origin: 50% 20%; align-self: center; }
+  @media (max-width: 760px) { .escena { align-self: start; } }
+  @media (max-width: 760px) { .escena { margin: 0 12px 12px; } }
+  .marco { position: absolute; inset: 0; overflow: hidden; transform-style: preserve-3d; border: 1px solid rgba(28,18,11,.5); box-shadow: inset 0 0 30px rgba(20,8,2,.6); }
+  .capa { position: absolute; inset: 0; transform-origin: 50% 100%; transform-style: preserve-3d; pointer-events: none; }
+  .capa svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; filter: drop-shadow(0 7px 4px rgba(10,4,1,.55)); }
+  .capa.fondo svg { filter: none; }
+  .abierta .capa { animation: levantar 1.1s cubic-bezier(.2,1.2,.4,1) both; animation-delay: calc(var(--n) * 130ms + 300ms); }
+  @keyframes levantar { from { transform: rotateX(-88deg); } to { transform: rotateX(0); } }
+  .pnj { pointer-events: auto; cursor: pointer; }
+  .pnj:hover .recorte { filter: brightness(1.25); }
+  /* Luz de vela: solo se ve lo que alumbra la llama */
+  .vela { position: absolute; inset: 0; pointer-events: none; z-index: 20; mix-blend-mode: multiply;
+    background: radial-gradient(circle at var(--lx, 50%) var(--ly, 60%), rgba(255,220,150,0) 0, rgba(255,200,130,.0) calc(var(--lr, 28%) * .45), rgba(40,18,6,.78) var(--lr, 28%), rgba(8,3,1,.95) calc(var(--lr, 28%) * 1.9)); }
+  .brillo { position: absolute; inset: 0; pointer-events: none; z-index: 21; mix-blend-mode: screen;
+    background: radial-gradient(circle at var(--lx, 50%) var(--ly, 60%), rgba(255,170,70,.28) 0, rgba(255,140,50,0) calc(var(--lr, 28%) * .8)); }
+
+  /* Bocadillo: un papel con letra de pluma */
+  .bocadillo { position: absolute; z-index: 40; max-width: 250px; background: #e6d6b0; border: 1px solid var(--tinta); padding: 10px 14px; font: italic 15px/1.35 'IM Fell English', serif;
+    box-shadow: 0 8px 20px rgba(0,0,0,.6); transform: translate(-50%, -100%) rotate(-1.5deg); animation: pop .3s ease-out; pointer-events: none; }
+  .bocadillo b { font: normal 19px 'IM Fell English SC', serif; color: var(--sangre); display: block; }
+  @keyframes pop { from { opacity: 0; transform: translate(-50%, -90%) rotate(-1.5deg); } }
+
+  /* ---------- Página por descubrir ---------- */
+  .bloqueada .capa svg { filter: none; }
+  .bloqueada .capa svg [fill]:not([fill="none"]) { fill-opacity: .05; }
+  .bloqueada .capa svg * { stroke: #4a3a28 !important; stroke-opacity: .5; stroke-dasharray: 2 3; }
+  .bloqueada .capa { animation: none !important; }
+  .bloqueada .vela, .bloqueada .brillo { display: none; }
+  .sello { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%) rotate(-4deg); z-index: 35; text-align: center; padding: 18px 22px 16px; max-width: 82%;
+    background: #d6c497; border: 1px solid var(--tinta); box-shadow: 0 10px 24px rgba(0,0,0,.5); }
+  .sello .lacre { width: 58px; height: 58px; border-radius: 50%; margin: -44px auto 8px; display: grid; place-items: center; color: #e9cfa0; font: 28px 'IM Fell English SC', serif;
+    background: radial-gradient(circle at 35% 30%, #8a1e14, #3a0806 72%); box-shadow: 0 0 0 2px #2a0a06, 0 6px 12px rgba(0,0,0,.6); }
+  .sello b { font: 22px 'IM Fell English SC', serif; color: var(--sangre); display: block; }
+  .sello button { margin-top: 10px; font: italic 15px 'IM Fell English', serif; border: 1px solid var(--tinta); background: transparent; color: var(--tinta); padding: 6px 14px; cursor: pointer; }
+  /* Al descubrirla, la tinta se extiende desde abajo */
+  .tinta .marco { -webkit-mask-image: radial-gradient(ellipse at 50% 100%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 10%)); mask-image: radial-gradient(ellipse at 50% 100%, #000 var(--r, 0%), transparent calc(var(--r, 0%) + 10%)); animation: tinta 2s ease-in forwards; }
+  @property --r { syntax: '<percentage>'; inherits: false; initial-value: 0%; }
+  @keyframes tinta { to { --r: 160%; } }
+
+  .nav { position: fixed; bottom: max(12px, env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; gap: 16px; align-items: center; z-index: 50; }
+  .nav button { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #6a4a28; cursor: pointer; background: rgba(20,10,5,.6); color: #d9c79e; font: 26px 'IM Fell English SC', serif; }
+  .nav button:disabled { opacity: .25; cursor: default; }
+  .puntos { display: flex; gap: 7px; } .puntos i { width: 8px; height: 8px; transform: rotate(45deg); background: rgba(217,199,158,.25); } .puntos i.on { background: var(--sangre); }
+  .aviso { position: fixed; top: max(8px, env(safe-area-inset-top)); left: 0; right: 0; text-align: center; color: rgba(217,199,158,.45); font: italic 13px 'IM Fell English', serif; }
+</style>
+</head>
+<body>
+<!-- Tramas de grabado: rayado suave, rayado denso y cruzado (las usan todos los dibujos) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <pattern id="r1" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><line x1="0" y1="0" x2="0" y2="5" stroke="#1c120b" stroke-width=".7" stroke-opacity=".55"/></pattern>
+    <pattern id="r2" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><line x1="0" y1="0" x2="0" y2="3" stroke="#1c120b" stroke-width=".9" stroke-opacity=".8"/></pattern>
+    <pattern id="r3" width="3.5" height="3.5" patternUnits="userSpaceOnUse" patternTransform="rotate(40)"><path d="M0 0V3.5M0 0H3.5" stroke="#1c120b" stroke-width=".8" stroke-opacity=".85"/></pattern>
+    <pattern id="rh" width="6" height="6" patternUnits="userSpaceOnUse"><line x1="0" y1="3" x2="6" y2="3" stroke="#1c120b" stroke-width=".6" stroke-opacity=".45"/></pattern>
+  </defs>
+</svg>
+
+<div class="aviso">Prototipo oscuro · mueve la vela con el dedo o el ratón · toca a los personajes</div>
+
+<div class="libro" id="libro">
+  <div class="tapa"></div>
+  <div class="hojas-borde"></div>
+
+  <section class="pagina" data-pag="0">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Libro primero · De los desterrados</div>
+        <h1>El Lomo de Morrandar</h1>
+        <p class="capital">Morrandar lleva tres siglos muriéndose. El coloso de piedra camina sin rumbo de cripta en cripta, y sobre su caparazón agrietado se aferra un pueblo de desterrados que no tiene otro sitio al que volver.</p>
+        <p class="largo">Aquí se cura uno las heridas, se vende lo que se arrancó a los muertos y se cuentan los que no volvieron. Cada alma que saquéis de las criptas encontrará una grieta donde vivir… si sabe ser útil.</p>
+        <ul class="lista">
+          <li><b>Mordo el Tuerto</b> — vende lo que otros ya no necesitan</li>
+          <li><b>Madre Hiel</b> — guarda el oro de los vivos y de los muertos</li>
+          <li class="bloq">La forja fría — su herrera no volvió</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc0"></div>
+    </div>
+    <div class="nota-margen" style="right:9%; top:8%">no te fíes del tuerto</div>
+  </section>
+
+  <section class="pagina oculta" data-pag="1">
+    <div class="doble">
+      <div class="texto">
+        <div class="cap">Libro primero · De los desterrados</div>
+        <h1>La Forja Fría</h1>
+        <p class="capital">En la cola del coloso hay un horno que lleva tres inviernos apagado. Bruna la Quemada bajó a las Celdas de Hierro a buscar un metal que no existe en la superficie, y nadie ha vuelto a oír su martillo.</p>
+        <p class="largo">Dicen que sigue viva ahí abajo, encadenada a su propio yunque. Si la traéis de vuelta, templará vuestras armas con el hierro de las profundidades… y con lo que haga falta.</p>
+        <ul class="lista">
+          <li class="bloq"><b>Bruna la Quemada</b> — templa las armas (+1 dado)</li>
+          <li class="bloq">El horno rúnico — graba runas prohibidas</li>
+        </ul>
+      </div>
+      <div class="escena" id="esc1"></div>
+    </div>
+    <div class="nota-margen" style="left:8%; bottom:10%">¿alguien la ha buscado?</div>
+  </section>
+</div>
+
+<div class="nav">
+  <button id="ant" aria-label="Página anterior">‹</button>
+  <div class="puntos" id="puntos"><i class="on"></i><i></i></div>
+  <button id="sig" aria-label="Página siguiente">›</button>
+</div>
+
+<script>
+// =============================================================
+//  Escenas de grabado en tinta, por capas. Viewbox 400×300.
+//  Trazo negro, papel de relleno y tramas para las sombras.
+// =============================================================
+const T = '#1c120b', P = '#d4c194', P2 = '#c4ae82', S = '#7a1a12';
+const trazo = (w = 1.6) => `stroke="${T}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"`;
+const choza = (x, y, w, h, lado = 'r1') => `
+  <path d="M${x} ${y + h} L${x + 2} ${y + 3} L${x + w - 3} ${y} L${x + w} ${y + h} Z" fill="${P}" ${trazo()}/>
+  <path d="M${x + w * 0.62} ${y + 1} L${x + w - 3} ${y} L${x + w} ${y + h} L${x + w * 0.66} ${y + h}Z" fill="url(#${lado})"/>
+  <path d="M${x - 8} ${y + 6} L${x + w * 0.45} ${y - h * 0.55} L${x + w + 8} ${y + 2}" fill="${P2}" ${trazo()}/>
+  <path d="M${x - 8} ${y + 6} L${x + w * 0.45} ${y - h * 0.55} L${x + w + 8} ${y + 2}Z" fill="url(#r1)"/>
+  <rect x="${x + w * 0.25}" y="${y + h * 0.3}" width="${w * 0.14}" height="${h * 0.18}" fill="${T}"/>
+  <rect x="${x + w * 0.27}" y="${y + h * 0.32}" width="${w * 0.1}" height="${h * 0.14}" fill="#e9b45a" opacity=".85"/>
+  <path d="M${x + w * 0.55} ${y + h} v-${h * 0.42} h${w * 0.18} v${h * 0.42}" fill="url(#r2)" ${trazo(1.2)}/>`;
+// Personaje recortado en papel, con su pestaña: siluetas largas y encorvadas.
+const figura = (id, x, y, cuerpo, cabeza) => `
+  <g class="pnj" data-pnj="${id}">
+    <rect x="${x - 13}" y="${y + 1}" width="26" height="5" fill="${P2}" ${trazo(.8)}/>
+    <g class="recorte">${cuerpo}${cabeza}</g>
+  </g>`;
+
+const ESCENAS = {
+  plaza: [
+    { prof: 0.04, fondo: true, svg: `
+      <rect width="400" height="300" fill="#2a1a10"/>
+      <rect width="400" height="300" fill="url(#rh)" opacity=".7"/>
+      <circle cx="318" cy="70" r="26" fill="${P}" ${trazo(1.2)}/><circle cx="318" cy="70" r="26" fill="url(#r1)" opacity=".5"/>
+      <path d="M20 60 q40 -14 80 0 q-20 10 -80 0z M180 40 q30 -10 70 0 q-30 8 -70 0z" fill="none" stroke="${P}" stroke-opacity=".35" stroke-width="1"/>` },
+    { prof: 0.16, svg: `
+      <!-- El coloso: un caparazón agrietado que ocupa el horizonte -->
+      <path d="M-10 250 Q40 150 140 128 Q200 116 260 128 Q360 150 410 250 Z" fill="${P2}" ${trazo(2)}/>
+      <path d="M-10 250 Q40 150 140 128 Q200 116 260 128 Q360 150 410 250 Z" fill="url(#r2)" opacity=".75"/>
+      <path d="M90 150 l20 30 l-14 34 M200 120 l-8 36 l18 28 l-6 40 M300 142 l-16 34 l20 30 M140 128 l6 26 M260 128 l-4 24" fill="none" ${trazo(1.4)}/>
+      <path d="M170 180 l10 6 l-4 14 l12 6" fill="none" stroke="${S}" stroke-width="1.6"/>` },
+    { prof: 0.32, svg: `
+      <!-- Casas torcidas sobre el caparazón, con una horca al fondo -->
+      ${choza(60, 182, 64, 52)}
+      ${choza(240, 172, 78, 62, 'r2')}
+      <path d="M332 232 v-74 h34 M366 158 v14" fill="none" ${trazo(2.2)}/>
+      <path d="M362 172 q4 8 0 16 q-4 -8 0 -16z" fill="${T}"/>
+      <rect x="252" y="160" width="54" height="13" fill="${P}" ${trazo(1.2)}/>
+      <text x="279" y="170" text-anchor="middle" font-family="IM Fell English SC, serif" font-size="10" fill="${T}">LA HIEL</text>` },
+    { prof: 0.62, svg: `
+      <!-- Puesto de Mordo: lona rota, calaveras colgadas y frascos -->
+      <path d="M58 222 l58 -18 l58 18" fill="none" ${trazo(2)}/>
+      <path d="M62 222 h108 v6 l-12 10 l-10 -8 l-14 9 l-12 -9 l-14 10 l-12 -9 l-14 8 l-10 -7z" fill="${P2}" ${trazo(1.5)}/>
+      <path d="M62 222 h108 v6 l-12 10 l-10 -8 l-14 9 l-12 -9 l-14 10 l-12 -9 l-14 8 l-10 -7z" fill="url(#r1)"/>
+      <rect x="68" y="244" width="96" height="22" fill="${P2}" ${trazo(1.6)}/><rect x="68" y="244" width="96" height="22" fill="url(#r3)" opacity=".7"/>
+      <line x1="70" y1="226" x2="70" y2="266" ${trazo(2.2)}/><line x1="162" y1="226" x2="162" y2="266" ${trazo(2.2)}/>
+      <g fill="${P}" ${trazo(1.1)}><circle cx="92" cy="242" r="5"/><circle cx="140" cy="242" r="5"/></g>
+      <g fill="${T}"><circle cx="90" cy="241" r="1.2"/><circle cx="94" cy="241" r="1.2"/><circle cx="138" cy="241" r="1.2"/><circle cx="142" cy="241" r="1.2"/></g>
+      <path d="M104 244 v-8 h6 v8 M120 244 v-10 h5 v10" fill="${S}" ${trazo(1)}/>
+      ${figura('tendero', 116, 270,
+        `<path d="M103 270 q-2 -30 8 -38 q8 -4 14 2 q8 10 4 36z" fill="${P2}" ${trazo(1.6)}/><path d="M103 270 q-2 -30 8 -38 q8 -4 14 2 q8 10 4 36z" fill="url(#r2)" opacity=".8"/>`,
+        `<ellipse cx="117" cy="224" rx="8" ry="9" fill="${P}" ${trazo(1.4)}/><path d="M110 222 l14 -2" stroke="${T}" stroke-width="2"/><circle cx="114" cy="222" r="2.4" fill="${T}"/><path d="M110 216 q7 -8 14 0" fill="none" ${trazo(1.2)}/>`)}
+      <!-- Madre Hiel, alta y encapuchada, con su frasco de dientes -->
+      ${figura('banquera', 290, 270,
+        `<path d="M277 270 l5 -46 q8 -12 16 0 l6 46z" fill="${P2}" ${trazo(1.6)}/><path d="M277 270 l5 -46 q8 -12 16 0 l6 46z" fill="url(#r3)" opacity=".75"/>`,
+        `<path d="M281 228 q9 -30 18 0 q-9 6 -18 0z" fill="${T}"/><ellipse cx="290" cy="222" rx="4" ry="5" fill="${P}"/><rect x="300" y="236" width="10" height="13" rx="2" fill="${P}" ${trazo(1.1)}/><path d="M302 244 l2 -3 l2 3 l2 -3" fill="none" stroke="${T}" stroke-width=".8"/>`)}
+      <!-- Pozo de piedra -->
+      <path d="M186 268 v-22 h42 v22" fill="${P2}" ${trazo(1.6)}/><path d="M186 268 v-22 h42 v22" fill="url(#r1)"/>
+      <path d="M190 246 v-24 M224 246 v-24 M184 222 h46" fill="none" ${trazo(2)}/><path d="M207 222 v14" stroke="${T}" stroke-width="1"/>` },
+    { prof: 1.0, svg: `
+      <!-- Primer plano: velas sobre una calavera, cadenas y huesos -->
+      <path d="M326 300 v-34 q14 -16 28 0 v34" fill="${P}" ${trazo(1.6)}/><path d="M326 300 v-34 q14 -16 28 0 v34" fill="url(#r1)"/>
+      <circle cx="334" cy="276" r="3" fill="${T}"/><circle cx="346" cy="276" r="3" fill="${T}"/>
+      <rect x="334" y="246" width="5" height="16" fill="${P}" ${trazo(1)}/><rect x="343" y="242" width="5" height="20" fill="${P}" ${trazo(1)}/>
+      <path d="M336 246 q2 -8 1 -10 M345 242 q2 -8 1 -10" stroke="#e9b45a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M0 210 q30 18 20 40 q-10 22 14 40 M8 214 q26 16 18 36" fill="none" ${trazo(2.4)}/>
+      <path d="M40 300 l30 -14 M44 290 l10 6 M62 286 l6 6" ${trazo(2)} fill="none"/>` }
+  ],
+  forja: [
+    { prof: 0.04, fondo: true, svg: `<rect width="400" height="300" fill="#24140c"/><rect width="400" height="300" fill="url(#rh)" opacity=".7"/>` },
+    { prof: 0.2, svg: `<path d="M-10 250 Q60 170 200 160 Q330 170 410 250Z" fill="${P2}" ${trazo(2)}/><path d="M-10 250 Q60 170 200 160 Q330 170 410 250Z" fill="url(#r2)" opacity=".7"/>` },
+    { prof: 0.45, svg: `
+      <path d="M118 250 v-90 l84 -26 l84 26 v90z" fill="${P}" ${trazo(2)}/><path d="M220 140 l66 20 v90 h-66z" fill="url(#r2)"/>
+      <rect x="250" y="72" width="24" height="80" fill="${P2}" ${trazo(1.8)}/><rect x="250" y="72" width="24" height="80" fill="url(#r3)"/>
+      <path d="M176 250 v-54 q26 -24 52 0 v54" fill="${T}"/>
+      <path d="M188 250 v-34 q14 -14 28 0 v34" fill="#e9b45a" opacity=".55"/>` },
+    { prof: 0.8, svg: `
+      <path d="M64 266 h62 v-8 h-14 v-10 h22 q0 -10 -16 -12 h-50 q-12 0 -14 8 h14 v14 h-4z" fill="${P2}" ${trazo(1.8)}/><path d="M64 266 h62 v-8 h-14 v-10 h22 q0 -10 -16 -12 h-50 q-12 0 -14 8 h14 v14 h-4z" fill="url(#r3)" opacity=".8"/>
+      <path d="M140 266 l12 -54 M146 212 l16 -6 l2 12z" fill="${P}" ${trazo(2)}/>
+      ${figura('herrera', 322, 270,
+        `<path d="M306 270 q-3 -34 10 -42 q12 -4 18 6 q6 12 2 36z" fill="${P2}" ${trazo(1.6)}/><path d="M306 270 q-3 -34 10 -42 q12 -4 18 6 q6 12 2 36z" fill="url(#r2)" opacity=".8"/><path d="M314 236 h18 v22 h-18z" fill="${T}" opacity=".6"/>`,
+        `<ellipse cx="323" cy="220" rx="9" ry="10" fill="${P}" ${trazo(1.4)}/><path d="M316 216 q6 4 4 12" stroke="${S}" stroke-width="2.4" fill="none"/><path d="M314 214 q9 -12 18 0" fill="none" ${trazo(1.6)}/>`)}` },
+    { prof: 1.0, svg: `<path d="M0 300 v-30 l18 -6 l10 10 l14 -4 v30z" fill="${P2}" ${trazo(1.6)}/><path d="M360 300 q10 -30 40 -26 v26z" fill="${P2}" ${trazo(1.6)}/><path d="M360 300 q10 -30 40 -26 v26z" fill="url(#r2)"/>` }
+  ]
+};
+
+const DIALOGOS = {
+  tendero: ['Mordo el Tuerto', 'Todo lo que vendo lo saqué de alguien que ya no lo necesitaba. Pociones frescas. Casi.'],
+  banquera: ['Madre Hiel', 'Guardo vuestro oro. Si no volvéis, también lo guardo.'],
+  herrera: ['Bruna la Quemada', 'Traedme hierro de las profundidades. O huesos. El hueso también templa.']
+};
+
+function montar(id, capas) {
+  const esc = document.getElementById(id);
+  esc.innerHTML = '<div class="marco"></div><div class="vela"></div><div class="brillo"></div>';
+  const marco = esc.firstChild;
+  capas.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'capa' + (c.fondo ? ' fondo' : '');
+    d.style.setProperty('--n', i);
+    d.dataset.prof = c.prof;
+    d.innerHTML = `<svg viewBox="0 0 400 300" preserveAspectRatio="${c.fondo ? 'xMidYMid slice' : 'xMidYMax meet'}">${c.svg}</svg>`;
+    marco.appendChild(d);
+  });
+}
+function ajustar() {
+  for (const esc of document.querySelectorAll('.escena')) {
+    const pag = esc.closest('.pagina').getBoundingClientRect(), r = esc.getBoundingClientRect();
+    esc.style.height = Math.max(170, Math.min(pag.bottom - r.top - 20, r.width * 0.95)) + 'px';
+  }
+}
+montar('esc0', ESCENAS.plaza);
+montar('esc1', ESCENAS.forja);
+
+const forja = document.getElementById('esc1');
+forja.classList.add('bloqueada');
+forja.insertAdjacentHTML('beforeend', `<div class="sello"><div class="lacre">✠</div><b>Página en blanco</b>
+  <i>Traed a Bruna de las Celdas de Hierro y su historia se escribirá aquí.</i><br><button id="b-desbloquear">Probar el desbloqueo</button></div>`);
+document.getElementById('b-desbloquear').addEventListener('click', (ev) => {
+  ev.stopPropagation();
+  forja.querySelector('.sello').remove();
+  forja.classList.remove('bloqueada'); forja.classList.add('tinta');
+  setTimeout(() => { forja.classList.remove('tinta', 'abierta'); void forja.offsetWidth; forja.classList.add('abierta'); }, 1900);
+  document.querySelectorAll('[data-pag="1"] .lista .bloq').forEach((li) => li.classList.remove('bloq'));
+});
+
+// ---------- La vela sigue al dedo; las capas se mueven con ella ----------
+let obj = { x: .5, y: .62 }, act = { x: .5, y: .62 };
+addEventListener('pointermove', (e) => {
+  const esc = document.querySelector('.pagina:not(.oculta) .escena'); if (!esc) return;
+  const r = esc.getBoundingClientRect();
+  obj = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
+});
+addEventListener('deviceorientation', (e) => { if (e.gamma == null) return; obj = { x: .5 + Math.max(-30, Math.min(30, e.gamma)) / 60, y: .55 + Math.max(-30, Math.min(30, (e.beta || 45) - 45)) / 70 }; });
+function bucle(t) {
+  act.x += (obj.x - act.x) * .07; act.y += (obj.y - act.y) * .07;
+  const llama = 30 + Math.sin(t / 90) * 1.6 + Math.sin(t / 37) * 1.1 + Math.sin(t / 13) * .5; // la llama tiembla
+  for (const esc of document.querySelectorAll('.pagina:not(.oculta) .escena')) {
+    esc.style.setProperty('--lx', (Math.max(0, Math.min(1, act.x)) * 100) + '%');
+    esc.style.setProperty('--ly', (Math.max(0, Math.min(1.1, act.y)) * 100) + '%');
+    esc.style.setProperty('--lr', llama + '%');
+    if (esc.classList.contains('bloqueada')) continue;
+    for (const c of esc.querySelectorAll('.capa')) { const p = +c.dataset.prof; c.style.translate = `${(.5 - act.x) * p * 22}px ${(.5 - act.y) * p * 8}px`; }
+  }
+  requestAnimationFrame(bucle);
+}
+requestAnimationFrame(bucle);
+
+document.addEventListener('click', (e) => {
+  document.querySelectorAll('.bocadillo').forEach((b) => b.remove());
+  const p = e.target.closest('.pnj');
+  if (!p || p.closest('.bloqueada')) return;
+  const [quien, frase] = DIALOGOS[p.dataset.pnj];
+  const r = p.getBoundingClientRect(), lib = document.getElementById('libro').getBoundingClientRect();
+  const b = document.createElement('div');
+  b.className = 'bocadillo';
+  b.innerHTML = `<b>${quien}</b>${frase}`;
+  b.style.left = Math.max(130, Math.min(lib.width - 130, r.left + r.width / 2 - lib.left)) + 'px';
+  b.style.top = (r.top - lib.top - 8) + 'px';
+  document.getElementById('libro').appendChild(b);
+});
+
+const paginas = [...document.querySelectorAll('.pagina')];
+let pag = 0;
+function irA(n) {
+  if (n < 0 || n >= paginas.length || n === pag) return;
+  const vieja = paginas[pag], nueva = paginas[n];
+  nueva.classList.remove('oculta', 'pasada');
+  nueva.style.zIndex = 1; vieja.style.zIndex = 2;
+  if (n > pag) { vieja.classList.add('pasada'); setTimeout(() => vieja.classList.add('oculta'), 1000); }
+  else { nueva.style.zIndex = 3; nueva.classList.add('pasada'); void nueva.offsetWidth; nueva.classList.remove('pasada'); setTimeout(() => vieja.classList.add('oculta'), 1000); }
+  pag = n; ajustar();
+  const esc = nueva.querySelector('.escena');
+  esc.classList.remove('abierta'); void esc.offsetWidth; setTimeout(() => esc.classList.add('abierta'), 350);
+  document.querySelectorAll('#puntos i').forEach((p, i) => p.classList.toggle('on', i === n));
+  document.getElementById('ant').disabled = n === 0; document.getElementById('sig').disabled = n === paginas.length - 1;
+}
+document.getElementById('ant').addEventListener('click', () => irA(pag - 1));
+document.getElementById('sig').addEventListener('click', () => irA(pag + 1));
+let x0 = null;
+document.getElementById('libro').addEventListener('touchstart', (e) => { x0 = e.touches[0].clientX; }, { passive: true });
+document.getElementById('libro').addEventListener('touchend', (e) => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 60) irA(pag + (dx < 0 ? 1 : -1)); x0 = null; });
+document.getElementById('ant').disabled = true;
+addEventListener('resize', ajustar);
+ajustar();
+document.fonts && document.fonts.ready.then(ajustar);
+setTimeout(() => document.getElementById('esc0').classList.add('abierta'), 250);
+</script>
+</body>
+</html>
