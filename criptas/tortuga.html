@@ -1016,7 +1016,7 @@ function cerrarCabana() {
   cabanaAbierta.remove(); cabanaAbierta = null;
   ficha = Ficha.fichaOCrear(ficha.nombre);
   heroe.position.set(-7.6, 0, 3.0); cam.objetivo.giro = .9; cam.giro = .9;
-  panelSala?.R?.cambiar({ donde: 'tortuga', x: -7.6, z: 3.0 });
+  panelSala?.R?.cambiar({ donde: 'tortuga', x: -7.6, z: 3.0, cpose: null });
   if (mz.activo !== false) mz.ac?.resume();
   reloj.getDelta();
   $('fundido').style.opacity = 0;
@@ -1029,6 +1029,7 @@ addEventListener('message', (e) => {
   if (R && e.data?.t === 'pos') R.mover(+e.data.x || 0, +e.data.z || 0, e.data.lado < 0 ? -1 : 1, true);
   if (R && e.data?.t === 'frase') R.frase(String(e.data.texto || ''));
   if (R && e.data?.t === 'gesto') R.gesto(String(e.data.g || ''));
+  if (R && e.data?.t === 'pose') R.cambiar({ cpose: ['sentado', 'tumbado'].includes(e.data.pose) ? e.data.pose : null });
 });
 function entrarEnLibro() { cerrarDialogo(); audio.libro(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'index.html'; }, 1500); }
 let despierta = 0;

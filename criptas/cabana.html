@@ -16,7 +16,11 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0806; color: #f1e2c4; font: 16px/1.4 'IM Fell English', Georgia, serif;
     -webkit-tap-highlight-color: transparent; user-select: none; touch-action: none; }
   canvas { display: block; }
-  .ui { position: fixed; z-index: 10; }
+  .ui { position: fixed; z-index: 10; transition: opacity .8s; }
+  body.calma .ui, body.calma .rotulo, body.calma .reu-panel, body.calma .reu-banda, body.calma .charla { opacity: 0 !important; pointer-events: none !important; }
+  .calma-pista { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 12; font: italic 14px 'IM Fell English', serif; color: #f1e2c4; opacity: 0; pointer-events: none; transition: opacity 1.2s; text-shadow: 0 1px 4px #000; }
+  body.calma .calma-pista { animation: pista 6s forwards; }
+  @keyframes pista { 0% { opacity: 0; } 15% { opacity: .7; } 70% { opacity: .7; } 100% { opacity: 0; } }
   .arriba { top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; pointer-events: none; }
   .arriba > * { pointer-events: auto; }
   .titulo { font: 24px 'IM Fell English SC', serif; letter-spacing: .05em; text-shadow: 0 2px 8px #000; margin-right: auto; }
@@ -64,8 +68,10 @@
   <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
   <button class="btn" id="b-sala" title="Jugar juntos: sala con código">👥</button>
   <button class="btn" id="b-charla" title="Frases y gestos" style="display:none">💬</button>
+  <button class="btn" id="b-calma" title="Modo calma: solo la cabaña y la música">🌙</button>
   <button class="btn" id="b-salir">🚪 Salir</button>
 </div>
+<div class="calma-pista" id="calma-pista">Toca para volver</div>
 <button class="ui btn accion" id="accion"></button>
 <div class="ui dialogo" id="dialogo"></div>
 <div class="ui ayuda">Toca para andar · arrastra para girar · rueda o pellizco para acercar · E para usar</div>
@@ -572,7 +578,7 @@ const USOS = {
       t.length ? '<div class="lista">' + t.slice(0, 12).map((x) => `<span>${x.nombre}</span><span>${x.donde || ''}</span>`).join('') + '</div>' : '');
   },
   baul: () => { abrirBaul = true; audio.nota(392, .5); audio.nota(523, .6, .1); pintarBaul(); },
-  hamaca: () => mostrar('Hamaca', 'Se mece sola con el vaivén de Morrandar. Huele a sal y a lana vieja.', [['Dormir un rato', dormir], ['Mejor no', cerrar]]),
+  hamaca: () => mostrar('Hamaca', 'Se mece sola con el vaivén de Morrandar. Huele a sal y a lana vieja.', [['Tumbarte a escuchar la lluvia', () => { cerrar(); ponerPose('tumbado'); }], ['Dormir un rato', dormir], ['Mejor no', cerrar]]),
   escritorio: () => {
     const d = dueno.diario;
     if (visita) return mostrar('Diario de ' + visita.nombre, d?.misiones ? 'No es tu letra, pero se lee:' : 'Está en blanco.', [['Cerrar el diario', cerrar]],
@@ -641,6 +647,7 @@ function ponerGente(gente, yo) {
     const a = otros.get(id) || crearOtro(id, d);
     if (d.cx != null) { a.x = d.cx; a.z = d.cz; a.lado = d.clado || 1; }
     a.rotulo.textContent = (d.anfitrion ? '★ ' : '') + (d.nombre || 'Viajero');
+    a.pose = d.cpose || null;
     const k = CLASES[d.clase] ? d.clase : 'barbaro';
     if (a.clase !== k) {
       a.clase = k;
@@ -699,6 +706,7 @@ function actualizarOtros(dt, mov, haciaCam) {
     o.g.rotation.y = cam.giro;
     o.plano.scale.x = o.lado < 0 ? -1 : 1;
     o.plano.position.y = 1 + Math.abs(Math.sin(o.tAndar)) * .15; o.plano.rotation.z = Math.sin(o.tAndar) * .07;
+    if (!anda && o.pose) posar(o.plano, o.pose, o.lado);
     animarGesto(o, dt, anda);
   }
   for (const o of [yoAvatar, ...otros.values()]) {
@@ -724,7 +732,7 @@ $('b-calidad').addEventListener('click', () => { calidad = CALIDADES[(CALIDADES.
 //  Sonido: fuego, mar lejano y alguna nota de la cajita
 // =============================================================
 const mz = crearMezclador({ boton: $('b-sonido'), canales: [
-  { id: 'fuego', nombre: 'Fogata' }, { id: 'mar', nombre: 'Mar' }, { id: 'musica', nombre: 'Música' }, { id: 'efectos', nombre: 'Efectos' }] });
+  { id: 'fuego', nombre: 'Fogata' }, { id: 'mar', nombre: 'Mar' }, { id: 'lluvia', nombre: 'Lluvia' }, { id: 'musica', nombre: 'Música' }, { id: 'efectos', nombre: 'Efectos' }] });
 mz.alArrancar((ac) => {
   // El mar, lejos y amortiguado por las paredes
   const o = ac.createBufferSource(); o.buffer = mz.ruido(4); o.loop = true;
@@ -751,9 +759,211 @@ const audio = (() => {
     empezar: () => mz.empezar(),
     nota: (frec, dur = .5, cuando = 0) => mz.nota('efectos', frec, dur, cuando),
     cuna: () => [523, 659, 784, 659, 587, 523].forEach((f, i) => mz.nota('musica', f, 1.2, i * .38, .05, 'sine')),
-    tic(dt) { crepita -= dt; musica -= dt; if (crepita < 0) { crepita = azar(.05, .6); chispa(); } if (musica < 0) { musica = azar(3, 7); mz.nota('musica', uno(ESCALA), 1.6, 0, .025, 'sine'); } }
+    tic(dt) { crepita -= dt; musica -= dt; if (crepita < 0) { crepita = azar(.05, .6); chispa(); } if (musica < 0) { musica = azar(3, 7); if (!lofi.sonando) mz.nota('musica', uno(ESCALA), 1.6, 0, .025, 'sine'); } }
   };
 })();
+
+
+// =============================================================
+//  RINCÓN LOFI: tocadiscos, lluvia, modo calma, sentarse y el gato
+// =============================================================
+// ---------- Tocadiscos (gramófono) ----------
+const gramofono = new THREE.Group();
+const discoGira = new THREE.Group();
+{
+  const p = enPared(-125, R - 1.0); gramofono.position.copy(p); gramofono.lookAt(0, 0, 0); casa.add(gramofono);
+  gramofono.add(caja(1.0, .7, .7, mat.madera, 0, .35, 0));                 // mesita
+  gramofono.add(caja(.7, .16, .6, mat.oscura, 0, .78, 0));                 // caja del tocadiscos
+  discoGira.position.set(0, .87, .02); gramofono.add(discoGira);
+  const disco = new THREE.Mesh(new THREE.CylinderGeometry(.26, .26, .015, 32), new THREE.MeshStandardMaterial({ color: 0x111014, roughness: .25, metalness: .2 })); discoGira.add(disco);
+  discoGira.add(en(new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .02, 20), new THREE.MeshStandardMaterial({ color: 0xc23a2a })), 0, .005, 0));
+  discoGira.add(en(new THREE.Mesh(new THREE.BoxGeometry(.03, .02, .1), mat.hueso), .1, .012, 0));   // marca para que se vea girar
+  const brazo = caja(.03, .03, .32, mat.laton, .22, .92, -.05); brazo.rotation.y = .5; gramofono.add(brazo);
+  // Bocina de latón
+  const perfil = []; for (let i = 0; i <= 12; i++) { const t = i / 12; perfil.push(new THREE.Vector2(.03 + Math.pow(t, 2.6) * .42, t * .75)); }
+  const bocina = new THREE.Mesh(new THREE.LatheGeometry(perfil, 24), new THREE.MeshStandardMaterial({ color: 0xc89a4a, roughness: .3, metalness: .85, side: THREE.DoubleSide }));
+  bocina.position.set(-.18, .95, -.08); bocina.rotation.set(-.9, 0, .5); gramofono.add(bocina);
+  gramofono.add(cil(.025, .025, .3, mat.laton, -.12, .9, -.05, 6));
+}
+colisiones.push({ ...enP(-125, R - 1.0), r: .75 });
+const nuevaCosa = (c) => { COSAS.push(c); c.rotulo = document.createElement('div'); c.rotulo.className = 'rotulo'; c.rotulo.textContent = c.nombre; c.rotulo.style.opacity = 0; document.body.appendChild(c.rotulo); };
+nuevaCosa({ id: 'gramofono', nombre: 'Tocadiscos', pos: enPared(-125, R - 2.0), radio: 1.5, accion: 'Poner un disco', alto: 2.2 });
+
+// ---------- Cojín junto al fuego ----------
+const cojinPos = enPared(66, R - 2.5);
+{
+  const c = new THREE.Mesh(new THREE.CylinderGeometry(.42, .46, .32, 20), new THREE.MeshStandardMaterial({ color: 0x5a2a4a, roughness: 1 })); c.position.copy(cojinPos).setY(.16); casa.add(c);
+  const tapa = new THREE.Mesh(new THREE.SphereGeometry(.42, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x6a3456, roughness: 1 })); tapa.scale.y = .35; tapa.position.copy(cojinPos).setY(.32); casa.add(tapa);
+}
+nuevaCosa({ id: 'cojin', nombre: 'Cojín junto al fuego', pos: cojinPos.clone(), radio: 1.2, accion: 'Sentarte junto al fuego', alto: 1.2 });
+
+// ---------- Música lofi (la compone el juego, nunca suena igual) ----------
+const lofi = (() => {
+  const BPM = 74, NEGRA = 60 / BPM;
+  const midi = (n) => 440 * Math.pow(2, (n - 69) / 12);
+  const ACORDES = [[57, 60, 64, 67], [50, 53, 57, 60, 64], [55, 59, 62, 65], [48, 52, 55, 59, 62]];   // Am7 · Dm9 · G7 · Cmaj9
+  const ESCALA = [69, 72, 74, 76, 79, 81, 84];
+  let sonando = false, reloj = null, siguiente = 0, paso = 0, crepitar = null, wow = null;
+  function nota(ac, t, f, dur, vol, tipo = 'sine', destino) {
+    const o = ac.createOscillator(), g = ac.createGain(), fl = ac.createBiquadFilter();
+    o.type = tipo; o.frequency.value = f; if (wow) wow.connect(o.detune);
+    fl.type = 'lowpass'; fl.frequency.value = 1400;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + Math.min(.4, dur * .3)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(fl); fl.connect(g); g.connect(destino); o.start(t); o.stop(t + dur + .05);
+  }
+  function golpe(ac, t, tipo, destino) {
+    if (tipo === 'bombo') {
+      const o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + .18);
+      g.gain.setValueAtTime(.32, t); g.gain.exponentialRampToValueAtTime(.001, t + .35); o.connect(g); g.connect(destino); o.start(t); o.stop(t + .4); return;
+    }
+    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = mz.ruido(tipo === 'caja' ? .25 : .06);
+    f.type = tipo === 'caja' ? 'bandpass' : 'highpass'; f.frequency.value = tipo === 'caja' ? 1800 : 7000;
+    g.gain.setValueAtTime(tipo === 'caja' ? .12 : .035, t); g.gain.exponentialRampToValueAtTime(.001, t + (tipo === 'caja' ? .2 : .05));
+    s.connect(f); f.connect(g); g.connect(destino); s.start(t);
+  }
+  function programar() {
+    const ac = mz.ac, sal = mz.salida('musica');
+    if (!ac || !sal) return;
+    while (siguiente < ac.currentTime + .4) {
+      const t = siguiente, enCompas = paso % 8, compas = Math.floor(paso / 8), acorde = ACORDES[Math.floor(compas / 2) % ACORDES.length];
+      if (enCompas === 0 && compas % 2 === 0) for (const n of acorde) nota(ac, t, midi(n), NEGRA * 8, .028, 'triangle', sal);        // acorde suave, 2 compases
+      if (enCompas === 0 || enCompas === 5) nota(ac, t, midi(acorde[0] - 12), NEGRA * 1.6, .08, 'sine', sal);                      // bajo
+      if (enCompas === 0 || enCompas === 4 && Math.random() < .5) golpe(ac, t, 'bombo', sal);
+      if (enCompas === 2 || enCompas === 6) golpe(ac, t, 'caja', sal);
+      golpe(ac, t + (paso % 2 ? NEGRA * .08 : 0), 'plato', sal);                                                                    // charles con swing
+      if (Math.random() < .28) nota(ac, t, midi(ESCALA[Math.floor(Math.random() * ESCALA.length)]), NEGRA * 1.4, .035, 'sine', sal); // melodía de piano eléctrico
+      siguiente += NEGRA / 2; paso++;
+    }
+  }
+  return {
+    get sonando() { return sonando; },
+    poner() {
+      mz.empezar();
+      const ac = mz.ac; if (!ac || sonando) return !!ac;
+      sonando = true; siguiente = ac.currentTime + .1; paso = 0;
+      // Ruido de vinilo y un poco de «wow» de cinta
+      crepitar = ac.createBufferSource(); crepitar.buffer = mz.ruido(3); crepitar.loop = true;
+      const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3000; const g = ac.createGain(); g.gain.value = .025;
+      crepitar.connect(f); f.connect(g); g.connect(mz.salida('musica')); crepitar.start();
+      wow = ac.createOscillator(); wow.frequency.value = .4; const wg = ac.createGain(); wg.gain.value = 8; wow.connect(wg); wow.start(); wow = wg;
+      reloj = setInterval(programar, 100); programar();
+      return true;
+    },
+    quitar() { sonando = false; clearInterval(reloj); try { crepitar?.stop(); } catch { /* ya parado */ } crepitar = null; wow = null; }
+  };
+})();
+USOS.gramofono = () => mostrar('Tocadiscos', lofi.sonando ? 'El disco gira y la aguja cruje. La música hace que hasta Tintero mueva una oreja.' : 'Un tocadiscos de bocina, con un disco sin título. Alguien escribió en la funda: «para los días de lluvia».',
+  [lofi.sonando ? ['Quitar el disco', () => { lofi.quitar(); cerrar(); }] : ['Poner el disco', () => { if (!lofi.poner()) mostrar('Tocadiscos', 'Activa el sonido (🔇 arriba) para escucharlo.', [['Vale', cerrar]]); else cerrar(); }], ['Volver', cerrar]]);
+
+// ---------- Lluvia en la ventana y en el tejado ----------
+const lluvia = { activa: Math.random() < .4, gotas: [], trueno: azar(15, 40), destello: 0, sonido: null };
+const cvLluvia = document.createElement('canvas'); cvLluvia.width = cvLluvia.height = 256;
+const texLluvia = new THREE.CanvasTexture(cvLluvia); texLluvia.colorSpace = THREE.SRGBColorSpace;
+const cristal = new THREE.Mesh(new THREE.CircleGeometry(.72, 32), new THREE.MeshBasicMaterial({ map: texLluvia, transparent: true, depthWrite: false }));
+{ const g = new THREE.Group(); g.position.copy(ventanaPos); g.position.y = 2.0; g.lookAt(0, 2.0, 0); casa.add(g); cristal.position.z = -.08; g.add(cristal); }
+for (let i = 0; i < 70; i++) lluvia.gotas.push({ x: Math.random() * 256, y: Math.random() * 256, v: azar(40, 120), r: azar(1.5, 4) });
+const luzTrueno = new THREE.PointLight(0xb8c8ff, 0, 14, 1.2); luzTrueno.position.copy(ventanaPos).setY(2.2).multiplyScalar(.85); casa.add(luzTrueno);
+let cuadroLluvia = 0;
+function pintarLluvia(dt) {
+  if (cuadroLluvia++ % 3) return;
+  const g = cvLluvia.getContext('2d');
+  g.clearRect(0, 0, 256, 256);
+  if (!lluvia.activa) { texLluvia.needsUpdate = true; return; }
+  g.fillStyle = `rgba(40,50,72,${.5 - lluvia.destello * .4})`; g.fillRect(0, 0, 256, 256);      // cielo gris de tormenta
+  if (lluvia.destello > 0) { g.fillStyle = `rgba(220,230,255,${lluvia.destello * .8})`; g.fillRect(0, 0, 256, 256); }
+  g.strokeStyle = 'rgba(200,215,240,.35)'; g.lineWidth = 1;
+  for (let i = 0; i < 40; i++) { const x = Math.random() * 256, y = Math.random() * 256; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 4, y + 18); g.stroke(); }   // lluvia fuera
+  for (const d of lluvia.gotas) {                                                                                                // gotas que resbalan por el cristal
+    d.y += d.v * dt * 3; if (d.y > 260) { d.y = -10; d.x = Math.random() * 256; }
+    g.fillStyle = 'rgba(230,240,255,.55)'; g.beginPath(); g.ellipse(d.x, d.y, d.r * .7, d.r, 0, 0, 7); g.fill();
+    g.fillStyle = 'rgba(230,240,255,.15)'; g.fillRect(d.x - .5, d.y - d.r * 5, 1, d.r * 5);
+  }
+  texLluvia.needsUpdate = true;
+}
+function sonarLluvia() {
+  const ac = mz.ac; if (!ac || lluvia.sonido) return;
+  const s = ac.createBufferSource(); s.buffer = mz.ruido(4); s.loop = true;
+  const f = ac.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1600; f.Q.value = .5;
+  const g = ac.createGain(); g.gain.value = lluvia.activa ? .09 : 0;
+  s.connect(f); f.connect(g); g.connect(mz.salida('lluvia')); s.start();
+  lluvia.sonido = g;
+}
+mz.alArrancar(() => sonarLluvia());
+function trueno() {
+  lluvia.destello = 1;
+  const ac = mz.ac; if (!ac || !mz.activo) return;
+  const t = ac.currentTime + azar(.4, 1.6), s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = mz.ruido(3); f.type = 'lowpass'; f.frequency.value = 160;
+  g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.5, t + .25); g.gain.exponentialRampToValueAtTime(.0001, t + 2.8);
+  s.connect(f); f.connect(g); g.connect(mz.salida('lluvia')); s.start(t);
+}
+function ponerLluvia(si) {
+  lluvia.activa = si;
+  if (lluvia.sonido) lluvia.sonido.gain.setTargetAtTime(si ? .09 : 0, mz.ac.currentTime, 1.2);
+}
+USOS.ventana = () => mostrar('Ventana', lluvia.activa ? 'Llueve sobre el mar de tinta. Las gotas resbalan por el cristal y, de vez en cuando, un relámpago ilumina una isla de libros a lo lejos.' : 'El sol se hunde en el mar de tinta. A lo lejos flota una isla de libros. Morrandar rema despacio, sin prisa, como lleva haciendo siglos.',
+  [[lluvia.activa ? 'Esperar a que escampe' : 'Mirar las nubes… parece que va a llover', () => { ponerLluvia(!lluvia.activa); cerrar(); }], ['Volver', cerrar]]);
+
+// ---------- Sentarse, tumbarse y el gato que se te sube ----------
+let pose = null, quieto = performance.now();   // momento del último toque o tecla
+const BASE_GATO = gato.position.clone();
+const gatoVa = { donde: null, t: 0 };
+function posar(plano, p, lado = 1) {
+  if (p === 'sentado') { plano.scale.y = .72; plano.position.y = .78; }
+  else if (p === 'tumbado') { plano.scale.y = 1; plano.rotation.z = 1.45 * (lado < 0 ? -1 : 1); plano.position.y = 1.25; }
+}
+function enviarPose(p) {
+  if (embebida) parent.postMessage({ t: 'pose', pose: p }, location.origin);
+  else panelSala?.R?.cambiar({ cpose: p });
+}
+function ponerPose(p) {
+  pose = p; quieto = performance.now(); destino = null; porUsar = null;
+  if (p === 'sentado') { heroe.position.set(cojinPos.x, 0, cojinPos.z); cam.objetivo.dist = movil ? 10 : 9; cam.objetivo.incl = .55; }
+  if (p === 'tumbado') { heroe.position.set(-3.6, 0, 2.8); cam.objetivo.dist = movil ? 10 : 9; cam.objetivo.incl = .6; }
+  enviarPose(p);
+}
+function levantarse() {
+  pose = null; planoHeroe.scale.y = 1; planoHeroe.rotation.z = 0;
+  enviarPose(null);
+  if (gatoVa.donde) gatoVa.donde = null;
+}
+['pointerdown', 'keydown', 'wheel'].forEach((tipo) => addEventListener(tipo, () => { quieto = performance.now(); }, true));
+USOS.cojin = () => { cerrar(); ponerPose('sentado'); };
+window.cabana = { ponerPose, ponerLluvia, lofi, ponerCalma, gato, heroe };   // para probar desde la consola
+
+// ---------- Modo calma ----------
+let calma = false;
+function ponerCalma(si) {
+  calma = si;
+  document.body.classList.toggle('calma', si);
+  if (si) { cerrar(); if (!lofi.sonando) lofi.poner(); cam.objetivo.dist = Math.max(cam.objetivo.dist, movil ? 14 : 12); }
+}
+$('b-calma').addEventListener('click', (e) => { e.stopPropagation(); ponerCalma(true); });
+addEventListener('pointerdown', (e) => { if (calma && e.target.id !== 'b-calma') { ponerCalma(false); e.stopPropagation(); } }, true);
+addEventListener('keydown', () => { if (calma) ponerCalma(false); }, true);
+
+// ---------- Cada fotograma ----------
+function lofiTic(dt, t, mov) {
+  // El disco gira mientras suena
+  if (lofi.sonando) discoGira.rotation.y -= dt * 3.5;
+  // Lluvia, relámpagos
+  pintarLluvia(dt);
+  lluvia.destello = Math.max(0, lluvia.destello - dt * 2.5);
+  luzTrueno.intensity = lluvia.destello * 30;
+  if (lluvia.activa && (lluvia.trueno -= dt) < 0) { lluvia.trueno = azar(18, 50); trueno(); }
+  if (!lluvia.sonido && mz.ac) sonarLluvia();
+  // Modo calma: la cámara flota despacio alrededor
+  if (calma) { cam.objetivo.giro += dt * .035; cam.objetivo.incl = .62 + Math.sin(t * .07) * .12; }
+  // Sentado o tumbado: te levantas al moverte
+  if (pose && (mov || destino || teclas.size)) levantarse();
+  if (pose) posar(planoHeroe, pose, planoHeroe.scale.x);
+  // El gato: si llevas un rato quieto sentado o tumbado, se te sube encima
+  if (pose && performance.now() - quieto > 18000 && !gatoVa.donde) { gatoVa.donde = pose; gatoVa.t = 0; audio.nota(392, .3); }
+  const meta = gatoVa.donde && pose ? heroe.position.clone().add(new THREE.Vector3(.45, gatoVa.donde === 'tumbado' ? 1.05 : .38, .3)) : BASE_GATO;
+  gato.position.lerp(meta, 1 - Math.pow(.25, dt));
+  if (gatoVa.donde && pose && mz.activo && Math.random() < dt * .6) mz.nota('efectos', azar(38, 46), .9, 0, .05, 'sine');   // ronroneo
+}
 
 // =============================================================
 //  Cámara de casa de muñecas y controles
@@ -854,6 +1064,7 @@ function bucle() {
   } else tAndar = 0;
   heroe.rotation.y = cam.giro;
   planoHeroe.position.y = 1 + Math.abs(Math.sin(tAndar)) * .15; planoHeroe.rotation.z = Math.sin(tAndar) * .07;
+  lofiTic(dt, t, mov);
   actualizarOtros(dt, mov, haciaCam);
   gato.rotation.y = cam.giro; gato.scale.y = 1 + Math.sin(t * 1.2) * .03;
   zzzGato.position.set(gato.position.x + .2 + Math.sin(t) * .1, .9 + (t * .3 % 1) * .6, gato.position.z); zzzGato.material.opacity = 1 - (t * .3 % 1);
