@@ -503,3 +503,7 @@ details.guia p { margin: 6px 0 10px; }
 .mundo.activo { border-color: #8a1d12; background: rgba(138,29,18,.12); box-shadow: inset 0 0 0 1px #8a1d12; }
 .mundo.activo b::before { content: '✠ '; color: #8a1d12; }
 .mundo.nuevo { align-items: center; justify-content: center; font-weight: 400; border-style: dashed; opacity: .8; }
+details.guia h3 { font: 700 15px var(--f-texto); margin: 12px 0 2px; color: var(--tinta); }
+.lista-guia { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 6px 0 10px; font-size: 15px; }
+.lista-guia span:nth-child(odd) { white-space: nowrap; }
+@media (max-width: 480px) { .lista-guia { grid-template-columns: 1fr; gap: 0; } .lista-guia span:nth-child(even) { margin: 0 0 6px 10px; opacity: .85; } }

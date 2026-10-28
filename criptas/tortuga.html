@@ -12,28 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261028153935",
-    "./js/datos.js": "./js/datos.js?v=20261028153935",
-    "./js/firebase.js": "./js/firebase.js?v=20261028153935",
-    "./js/ia.js": "./js/ia.js?v=20261028153935",
-    "./js/iconos.js": "./js/iconos.js?v=20261028153935",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028153935",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028153935",
-    "./js/motor.js": "./js/motor.js?v=20261028153935",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028153935",
-    "./js/nube.js": "./js/nube.js?v=20261028153935",
-    "./js/panel.js": "./js/panel.js?v=20261028153935",
-    "./js/planos.js": "./js/planos.js?v=20261028153935",
-    "./js/procedural.js": "./js/procedural.js?v=20261028153935",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028153935",
-    "./js/red.js": "./js/red.js?v=20261028153935",
-    "./js/render.js": "./js/render.js?v=20261028153935",
-    "./js/render3d.js": "./js/render3d.js?v=20261028153935",
-    "./js/reunion.js": "./js/reunion.js?v=20261028153935",
-    "./js/sprites.js": "./js/sprites.js?v=20261028153935",
-    "./js/tablero.js": "./js/tablero.js?v=20261028153935",
-    "./js/ui.js": "./js/ui.js?v=20261028153935",
-    "./js/viajero.js": "./js/viajero.js?v=20261028153935"
+    "./js/acceso.js": "./js/acceso.js?v=20261028204230",
+    "./js/datos.js": "./js/datos.js?v=20261028204230",
+    "./js/firebase.js": "./js/firebase.js?v=20261028204230",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261028204230",
+    "./js/ia.js": "./js/ia.js?v=20261028204230",
+    "./js/iconos.js": "./js/iconos.js?v=20261028204230",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028204230",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028204230",
+    "./js/motor.js": "./js/motor.js?v=20261028204230",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028204230",
+    "./js/nube.js": "./js/nube.js?v=20261028204230",
+    "./js/panel.js": "./js/panel.js?v=20261028204230",
+    "./js/planos.js": "./js/planos.js?v=20261028204230",
+    "./js/procedural.js": "./js/procedural.js?v=20261028204230",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028204230",
+    "./js/red.js": "./js/red.js?v=20261028204230",
+    "./js/render.js": "./js/render.js?v=20261028204230",
+    "./js/render3d.js": "./js/render3d.js?v=20261028204230",
+    "./js/reunion.js": "./js/reunion.js?v=20261028204230",
+    "./js/sprites.js": "./js/sprites.js?v=20261028204230",
+    "./js/tablero.js": "./js/tablero.js?v=20261028204230",
+    "./js/ui.js": "./js/ui.js?v=20261028204230",
+    "./js/viajero.js": "./js/viajero.js?v=20261028204230"
   }
 }
 </script>
@@ -60,6 +61,16 @@
   .habla::after { content: ''; position: absolute; left: 50%; bottom: -7px; width: 12px; height: 12px; background: inherit; border: inherit; border-width: 0 1px 1px 0; transform: translateX(-50%) rotate(45deg); }
   .accion { left: 50%; bottom: max(26px, env(safe-area-inset-bottom)); transform: translateX(-50%); font: 19px 'IM Fell English SC', serif; padding: 12px 22px; display: none; }
   .accion kbd { font: 12px monospace; opacity: .6; margin-left: 8px; border: 1px solid #6a4a28; padding: 1px 5px; }
+  .guia { inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(10,6,12,.55); z-index: 30; padding: 12px; }
+  .guia[hidden] { display: none; }
+  .guia .hoja { width: min(600px, 100%); max-height: min(86vh, 100%); overflow: auto; background: #efe0bd; color: #1c120b; border-radius: 6px; padding: 16px 18px; box-shadow: 0 10px 40px rgba(0,0,0,.6); font: 16px/1.45 'IM Fell English', Georgia, serif; }
+  .guia h2 { font: 26px 'IM Fell English SC', serif; color: #7a1a12; margin: 0 0 6px; }
+  .guia details { border-bottom: 1px solid rgba(80,50,20,.2); padding: 4px 0; }
+  .guia summary { font-weight: 700; cursor: pointer; padding: 6px 0; color: #7a1a12; }
+  .guia p { margin: 6px 0 10px; }
+  .guia .lista-guia { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 6px 0 10px; font-size: 15px; }
+  .guia .cerrar { margin-top: 12px; width: 100%; font: 17px 'IM Fell English', serif; padding: 9px; background: #7a1a12; color: #f1e2c4; border: none; border-radius: 4px; cursor: pointer; }
+  @media (max-width: 480px) { .guia .lista-guia { grid-template-columns: 1fr; gap: 0; } .guia .lista-guia span:nth-child(even) { margin: 0 0 6px 10px; opacity: .85; } }
   .dialogo { left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(560px, calc(100vw - 20px)); display: none;
     background: radial-gradient(ellipse at 50% 40%, #efdcb2, #c2a87c); color: #1c120b; border: 1px solid #1c120b; padding: 16px 20px 14px; box-shadow: 0 16px 40px rgba(0,0,0,.8), inset 0 0 40px rgba(60,30,8,.35); }
   .dialogo b { font: 22px 'IM Fell English SC', serif; color: #7a1a12; display: block; }
@@ -89,7 +100,9 @@
   <button class="btn" id="b-completa" title="Pantalla completa">⛶</button>
   <button class="btn" id="b-libro" title="Vista ligera para móviles">📖</button>
   <button class="btn" id="b-sala" title="Jugar juntos: sala con código">👥</button>
+  <button class="btn" id="b-guia" title="Guía de Morrandar">?</button>
 </div>
+<div class="ui guia" id="guia" hidden></div>
 <div class="ui aviso" id="aviso"></div>
 <button class="ui btn accion" id="accion"></button>
 <div class="ui dialogo" id="dialogo"></div>
@@ -116,6 +129,7 @@ import('./js/nube.js').then(async (m) => {
 }).catch(() => {});
 import { crearPanel, GESTOS } from './js/reunion.js';
 import * as Pueblo from './js/pueblo.js';
+import { seccionesTortuga } from './js/guiaTortuga.js';
 
 // =============================================================
 //  Prototipo: Morrandar, una tortuga gigante que nada por el mar
@@ -1160,6 +1174,17 @@ const DIALOGOS = {
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
 };
+// ---------- Guía de Morrandar (botón «?») ----------
+function abrirGuia() {
+  const g = $('guia');
+  g.innerHTML = `<div class="hoja"><h2>Morrandar, la tortuga</h2>${seccionesTortuga().map(([t, c], i) => `<details ${i === 0 ? 'open' : ''}><summary>${t}</summary>${c}</details>`).join('')}<button class="cerrar">Entendido</button></div>`;
+  g.hidden = false;
+  g.querySelector('.cerrar').onclick = () => { g.hidden = true; };
+  g.onclick = (e) => { if (e.target === g) g.hidden = true; };
+  g.querySelector('.hoja').scrollTop = 0;
+}
+$('b-guia').addEventListener('click', (e) => { e.stopPropagation(); abrirGuia(); });
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('guia').hidden) $('guia').hidden = true; });
 // ---------- El banco de Madre Hiel, con tu ficha de viajero ----------
 function banco(aviso = '') {
   ficha = Ficha.fichaOCrear(ficha.nombre);

@@ -4,6 +4,7 @@
 //  Modos: 'local' (un dispositivo), 'anfitrion' y 'invitado'.
 //  El anfitrión (o el modo local) ejecuta el motor y reparte el estado.
 // =============================================================
+import { seccionesTortuga } from './guiaTortuga.js';
 import * as D from './datos.js';
 import * as M from './motor.js';
 import * as T from './tablero.js';
@@ -574,6 +575,7 @@ function mostrarReglas() {
     <p>Siempre ves <b>Mover</b>, <b>Atacar</b>, <b>Hechizo</b> y <b>Fin del turno</b>. Lo que depende de dónde estés (abrir puerta, rezar, comerciar, beber del caldero, habilidades…) aparece solo cuando se puede usar.</p>
     <p>El resto está en <b>Más</b>: pociones, reliquias, buscar cuando no se puede… Lo apagado dice por qué no se puede ahora.</p>
     <p>En el <b>Diario</b> (el pergamino de arriba) cambias el sonido y la <b>velocidad</b> de las animaciones.</p>`)}
+    ${sec('🐢 Morrandar, la tortuga', seccionesTortuga().map(([t, c]) => `<h3>${t}</h3>${c}`).join(''))}
     ${sec('Rescate en el Limbo', `
     <p>En <b>Leyenda</b>, quien cae se queda en tu ficha como caído. Desde el menú (o desde el libro de Morrandar) podéis bajar al <b>Limbo</b> a por él. Él no baja: os espera dentro.</p>
     <p><b>El espíritu</b> de vuestro compañero tiene sus mismos dados y su cuerpo. Al acercaros o atacarle, su sala se <b>sella</b>: nadie entra ni sale hasta que caiga. Si echan a todos los de dentro, el sello se rompe y el espíritu se cura del todo.</p>
