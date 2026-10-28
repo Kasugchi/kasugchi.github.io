@@ -12,27 +12,27 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/datos.js": "./js/datos.js?v=20261028142646",
-    "./js/firebase.js": "./js/firebase.js?v=20261028142646",
-    "./js/ia.js": "./js/ia.js?v=20261028142646",
-    "./js/iconos.js": "./js/iconos.js?v=20261028142646",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028142646",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028142646",
-    "./js/motor.js": "./js/motor.js?v=20261028142646",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028142646",
-    "./js/nube.js": "./js/nube.js?v=20261028142646",
-    "./js/panel.js": "./js/panel.js?v=20261028142646",
-    "./js/planos.js": "./js/planos.js?v=20261028142646",
-    "./js/procedural.js": "./js/procedural.js?v=20261028142646",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028142646",
-    "./js/red.js": "./js/red.js?v=20261028142646",
-    "./js/render.js": "./js/render.js?v=20261028142646",
-    "./js/render3d.js": "./js/render3d.js?v=20261028142646",
-    "./js/reunion.js": "./js/reunion.js?v=20261028142646",
-    "./js/sprites.js": "./js/sprites.js?v=20261028142646",
-    "./js/tablero.js": "./js/tablero.js?v=20261028142646",
-    "./js/ui.js": "./js/ui.js?v=20261028142646",
-    "./js/viajero.js": "./js/viajero.js?v=20261028142646"
+    "./js/datos.js": "./js/datos.js?v=20261028143119",
+    "./js/firebase.js": "./js/firebase.js?v=20261028143119",
+    "./js/ia.js": "./js/ia.js?v=20261028143119",
+    "./js/iconos.js": "./js/iconos.js?v=20261028143119",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028143119",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028143119",
+    "./js/motor.js": "./js/motor.js?v=20261028143119",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028143119",
+    "./js/nube.js": "./js/nube.js?v=20261028143119",
+    "./js/panel.js": "./js/panel.js?v=20261028143119",
+    "./js/planos.js": "./js/planos.js?v=20261028143119",
+    "./js/procedural.js": "./js/procedural.js?v=20261028143119",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028143119",
+    "./js/red.js": "./js/red.js?v=20261028143119",
+    "./js/render.js": "./js/render.js?v=20261028143119",
+    "./js/render3d.js": "./js/render3d.js?v=20261028143119",
+    "./js/reunion.js": "./js/reunion.js?v=20261028143119",
+    "./js/sprites.js": "./js/sprites.js?v=20261028143119",
+    "./js/tablero.js": "./js/tablero.js?v=20261028143119",
+    "./js/ui.js": "./js/ui.js?v=20261028143119",
+    "./js/viajero.js": "./js/viajero.js?v=20261028143119"
   }
 }
 </script>
@@ -1209,6 +1209,7 @@ $('b-calidad').addEventListener('click', () => { calidad = CALIDADES[(CALIDADES.
 //  EL PUEBLO CRECE (js/pueblo.js): qué se ve según tu fama y tus obras
 // =============================================================
 const PNJ_TODOS = PNJ.slice();
+window.morrandar = { PNJ_TODOS, PNJ, decor };   // para mirar desde la consola
 let visitaPueblo = null;   // nombre del anfitrión si estás en su tortuga
 const QUE_PNJ = { mordo: 'mordo', pescador: 'pescador', marga: 'cantina' };
 function aplicarPueblo(t) {
@@ -1228,7 +1229,7 @@ function aplicarPueblo(t) {
   // Vecinos: solo los que ya viven aquí.
   PNJ.length = 0;
   for (const p of PNJ_TODOS) {
-    const req = p.vecino ? 'gentio' : QUE_PNJ[p.id], esta = !req || hay[req];
+    const req = p.vecino ? 'gentio' : QUE_PNJ[p.id], esta = !req || !!hay[req];
     if (p.fig) p.fig.visible = esta;
     if (p.tope) p.tope.r = esta ? p.tope.r0 : 0;
     if (esta) PNJ.push(p); else { p.rotulo.style.opacity = 0; if (p.habla) p.habla.style.opacity = 0; }
