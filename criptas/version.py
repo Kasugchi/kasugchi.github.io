@@ -18,4 +18,16 @@ html = re.sub(r'src="js/ui\.js(\?v=\d+)?"', f'src="js/ui.js?v={v}"', html)
 html = re.sub(r'<meta name="version" content="\d*">', '', html)
 html = html.replace('<meta charset="utf-8">', f'<meta charset="utf-8">\n<meta name="version" content="{v}">', 1)
 open('index.html', 'w').write(html)
+
+# Las demás páginas que usan los módulos del juego (tortuga, cabaña, sala ligera, planos):
+# el mismo mapa con versión, conservando lo que ya tuvieran (three).
+for pagina in ['tortuga.html', 'cabana.html', 'reunion.html', 'planos.html']:
+    if not os.path.exists(pagina): continue
+    h = open(pagina).read()
+    extra = '    "three": "./js/vendor/three.module.min.js",\n' if 'three' in h.split('<script type="module">')[0] else ''
+    bloque2 = f'<script type="importmap" id="versiones">\n{{\n  "imports": {{\n{extra}{mapa}\n  }}\n}}\n</script>'
+    h = re.sub(r'<script type="importmap"[^>]*>.*?</script>', bloque2, h, count=1, flags=re.S)
+    if 'id="versiones"' not in h:
+        h = h.replace('</head>', bloque2 + '\n</head>', 1)
+    open(pagina, 'w').write(h)
 print('versión', v)
