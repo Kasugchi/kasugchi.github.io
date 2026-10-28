@@ -29,7 +29,9 @@ export const MEJORAS = [
   { id: 'pescador', nombre: 'El Viejo Anzuelo, pescador de páginas', fama: 60, vecino: true, texto: 'Un viejo se instala en el borde a pescar páginas perdidas.' },
   { id: 'casas2', nombre: 'Más casas en las laderas', fama: 90, texto: 'El pueblo crece: más chimeneas humeando en el caparazón.' },
   { id: 'cantina', nombre: 'La cantina de Marga', fama: 120, vecino: true, texto: 'Marga abre su cantina: un guiso antes de bajar al libro sienta de maravilla.' },
+  { id: 'gentio', nombre: 'Vecinos paseando por la plaza', fama: 160, texto: 'La plaza se llena de gente: náufragos, pescadores, niños corriendo detrás del gato.' },
   { id: 'casas3', nombre: 'Barrio de las laderas', fama: 200, texto: 'Morrandar ya es una ciudad: casas por todo el caparazón.' },
+  { id: 'mercado', nombre: 'Mercado de la plaza', fama: 250, texto: 'Llegan más puestos: pociones de dudosa receta, mapas viejos y curiosidades.' },
   { id: 'forja', nombre: 'Bruna enciende la forja', rescate: 'bruna', texto: 'Rescatad a Bruna en las Celdas de Hierro y la forja volverá a arder.', pronto: true },
   { id: 'faro', nombre: 'El Faro de Velmor', historia: 'velmor', texto: 'Al terminar la historia de Velmor, se levanta un faro en el lomo de Morrandar.' }
 ];

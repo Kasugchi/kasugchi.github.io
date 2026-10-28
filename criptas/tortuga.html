@@ -591,6 +591,20 @@ decor.cantina = (() => {
   g.userData.tope = tope(4.6, -7.2, 2);
   return g;
 })();
+// Mercado: dos puestos más cuando Morrandar es una ciudad
+function puestoMercado(x, z, giro, toldo, mercancia) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = giro; pueblo.add(g);
+  g.add(caja(2.6, .85, 1.1, mat.madera, 0, .42, 0));
+  for (const [px, pz] of [[-1.2, -.45], [1.2, -.45], [-1.2, .45], [1.2, .45]]) g.add(cil(.06, .06, 2.4, mat.oscura, px, 1.2, pz, 5));
+  const t = new THREE.Mesh(new THREE.PlaneGeometry(3.1, 1.7, 4, 2), new THREE.MeshStandardMaterial({ color: toldo, roughness: 1, side: THREE.DoubleSide })); t.rotation.x = -Math.PI / 2 + .35; t.position.set(0, 2.45, .1); g.add(t);
+  mercancia(g);
+  g.userData.tope = tope(x, z, 1.7);
+  return g;
+}
+decor.mercado = [
+  puestoMercado(-4.6, -7.4, .15, 0x6a3a7a, (g) => { for (let i = 0; i < 7; i++) g.add(cil(.07, .09, .26, brillo(...[[.4, 1.8, .6], [1.8, .4, 1.2], [.5, .8, 2.2], [2, 1.4, .3]][i % 4]), -1 + i * .32, 1.0, .1 + (i % 2) * .2)); }),
+  puestoMercado(11.0, 2.4, -1.9, 0x3a6a4a, (g) => { for (let i = 0; i < 4; i++) { const r = caja(.5, .03, .4, new THREE.MeshStandardMaterial({ color: 0xe0cc9a }), -.8 + i * .55, .87, .1); r.rotation.y = i * .3; g.add(r); } g.add(en(new THREE.Mesh(new THREE.SphereGeometry(.22, 12, 10), new THREE.MeshStandardMaterial({ color: 0x4a7ab0, metalness: .3, roughness: .4 })), .9, 1.1, -.1)); })
+];
 // Fuente de tinta
 decor.fuente = (() => {
   const g = new THREE.Group(); g.position.set(-4.4, 0, 1.4); pueblo.add(g);
@@ -814,6 +828,30 @@ const PNJ = [
     frases: ['¡Guiso de anguila de tinta! Bueno… de algo.', 'Nadie baja al libro con el estómago vacío.', '¿Otra vez tú? Siéntate, siéntate.'] },
   { id: 'morrandar', nombre: 'Morrandar', obj: cabeza, x: 14.2, z: .8, radio: 2.2, accion: 'Hablar con Morrandar' }
 ];
+// ---------- Vecinos de papel (llegan con la fama: «Vecinos paseando por la plaza») ----------
+function texVecino(i) {
+  const ropas = ['#4a6a8a', '#8a4a3a', '#5a7a3a', '#7a5a8a', '#9a7a3a', '#3a5a5a', '#6a3a4a', '#8a6a4a'];
+  const ropa = ropas[i % ropas.length], alto = i % 3 === 2;   // algunos son niños (más bajitos, sin sombrero)
+  return recorte(256, 512, (g) => {
+    const cuerpo = alto ? P('M100 500 L106 340 Q128 318 150 340 L156 500Z') : P('M84 500 L94 270 Q128 236 162 270 L172 500Z');
+    const cabeza = alto ? P('M100 290 a28 30 0 1 0 56 0 a28 30 0 1 0 -56 0') : P('M98 200 a30 32 0 1 0 60 0 a30 32 0 1 0 -60 0');
+    const lista = [[cuerpo, ropa, .25], [cabeza, PAPEL]];
+    if (!alto) lista.push([[P('M80 182 Q128 120 176 182 Q128 164 80 182Z'), '#3a2a1a'], [P('M78 176 Q128 150 178 176 L182 186 Q128 168 74 186Z'), '#2a1e14'], [P('M92 178 Q128 140 164 178 Q128 168 92 178Z'), '#2a1e14'], [P('M86 180 L170 180 L166 192 L90 192Z'), '#3a2a1a']][i % 4]);
+    if (i % 4 === 1) lista.push([P('M150 300 l40 -30 l10 14 l-40 30Z'), '#c8b06a']);   // una cesta o un farol
+    piezas(g, lista);
+    const y = alto ? 290 : 200;
+    g.fillStyle = TINTA; g.beginPath(); g.arc(116, y - 2, 4, 0, 7); g.arc(140, y - 2, 4, 0, 7); g.fill();
+    g.lineWidth = 3; g.strokeStyle = TINTA; g.beginPath(); g.moveTo(118, y + 14); g.quadraticCurveTo(128, y + 20, 138, y + 14); g.stroke();
+  });
+}
+const NOMBRES_VECINOS = ['Tobías', 'La señora Ruda', 'Nim', 'Basilio', 'Greta', 'Lula', 'Fermín', 'Odila'];
+const FRASES_VECINOS = ['Dicen que el libro ha soltado otra página.', '¡Buenos días, aventurero!', 'Mi abuelo llegó aquí en una botella. Bueno, en un barco dentro de una botella.', '¿Has probado el guiso de Marga? Yo tampoco me atrevo.', '¡Ese gato me ha robado un pescado!', 'Cuando seas famoso, acuérdate de nosotros.', 'Ayer vi pasar una isla entera de diccionarios.', '¿Me firmas el sombrero?'];
+for (let i = 0; i < 8; i++) {
+  const a = (i / 8) * Math.PI * 2, r = azar(4, 8);
+  const ruta = Array.from({ length: 4 }, (_, k) => { const b = a + k * 1.4 + azar(-.3, .3), rr = azar(3, 7.5); return [Math.cos(b) * rr * 1.3, Math.sin(b) * rr * .75]; });
+  PNJ.push({ id: 'vecino' + i, vecino: true, nombre: NOMBRES_VECINOS[i], fig: figuraPapel(texVecino(i), i % 3 === 2 ? 1.6 : 2.2), x: ruta[0][0], z: ruta[0][1], radio: 1.6, ruta, vel: azar(.9, 1.5),
+    frases: [FRASES_VECINOS[i], uno(FRASES_VECINOS)] });
+}
 for (const p of PNJ) {
   if (p.fig) { p.fig.position.set(p.x, 0, p.z); pueblo.add(p.fig); if (!p.ruta && !p.gato) p.tope = tope(p.x, p.z, .5); }
   if (p.ruta) p.paso = 1;
@@ -1053,6 +1091,7 @@ const DIALOGOS = {
     ops: [['Entrar', abrirCabana], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
   tablon: () => tablon(),
+  ...Object.fromEntries(Array.from({ length: 8 }, (_, i) => ['vecino' + i, () => ({ texto: FRASES_VECINOS[(i + Math.floor(Math.random() * 3)) % FRASES_VECINOS.length], ops: [['Seguir paseando', cerrarDialogo]] })])),
   marga: () => cantina(),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
@@ -1154,6 +1193,7 @@ function aplicarPueblo(t) {
   for (const o of decor.copa) o.visible = !!hay.arbol;
   hojas.p.visible = !!hay.arbol;
   ver(decor.mordo, hay.mordo); ver(decor.cantina, hay.cantina);
+  for (const g of decor.mercado) ver(g, hay.mercado);
   ver(decor.fuente, hay.fuente); ver(decor.jardin, hay.jardin); ver(decor.bandera, hay.bandera); ver(decor.muelle, hay.muelle); ver(decor.faro, hay.faro);
   luzFaro.intensity = hay.faro ? 900 : 0;
   cana.visible = sedal.visible = !!hay.pescador;
@@ -1163,15 +1203,19 @@ function aplicarPueblo(t) {
   // Vecinos: solo los que ya viven aquí.
   PNJ.length = 0;
   for (const p of PNJ_TODOS) {
-    const req = QUE_PNJ[p.id], esta = !req || hay[req];
+    const req = p.vecino ? 'gentio' : QUE_PNJ[p.id], esta = !req || hay[req];
     if (p.fig) p.fig.visible = esta;
     if (p.tope) p.tope.r = esta ? p.tope.r0 : 0;
     if (esta) PNJ.push(p); else { p.rotulo.style.opacity = 0; if (p.habla) p.habla.style.opacity = 0; }
   }
 }
-aplicarPueblo(Pueblo.estadoPueblo(ficha));
+// Demostración (no toca tu ficha): tortuga.html?demo=inicio  o  ?demo=ciudad
+const DEMO = { inicio: { fama: 0, obras: {}, historias: {}, rescatados: [] },
+  ciudad: { fama: 400, obras: Object.fromEntries(Pueblo.OBRAS.map((o) => [o.id, 1])), historias: { velmor: 1 }, rescatados: [] } }[prm.get('demo')];
+aplicarPueblo(DEMO || Pueblo.estadoPueblo(ficha));
+if (DEMO) { const t = document.querySelector('.titulo small'); if (t) t.textContent = 'demostración: ' + Pueblo.rangoDe(DEMO.fama).nombre + ' · no toca tu partida'; }
 // Al llegar: lo nuevo desde la última vez.
-{
+if (!DEMO) {
   const f = Ficha.fichaOCrear(ficha.nombre), nuevas = Pueblo.novedades(Pueblo.estadoPueblo(f));
   if (nuevas.length) {
     Ficha.guardarFicha(f); ficha = f;
