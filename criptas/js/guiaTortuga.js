@@ -20,7 +20,7 @@ export function seccionesTortuga() {
     ['Lugares y vecinos', lista([
       ['<b>El Libro</b>', 'Entrar en una historia: Historia, Infinita o el rescate en el Limbo. Solo o con sala.'],
       ['<b>Tu cabaña</b>', 'Tus trofeos, el baúl con tus héroes (y su aspecto) y un rincón tranquilo con gramófono y lluvia.'],
-      ['<b>Madre Hiel</b>', 'El banco: guarda el oro de tus héroes y lo comparten todos los de tu ficha.'],
+      ['<b>Madre Hiel</b>', 'El banco: el oro de cada héroe y el fondo común del pueblo.'],
       ['<b>Tablón de encargos</b>', 'Retos de la semana, cómo va el pueblo y las obras.'],
       ['<b>Marga</b> (cantina)', 'Un guiso antes de bajar: una poción curativa para la próxima misión.'],
       ['<b>Mordo el Tuerto</b>', 'Mercader de dudosa reputación. De momento solo enseña su género.'],
@@ -30,9 +30,10 @@ export function seccionesTortuga() {
       ['<b>Morrandar</b>', 'Su cabeza, al final del caparazón. Se le puede acariciar.']
     ])],
     ['El banco de Madre Hiel', `
-    <p>Tu ficha tiene <b>un solo banco</b> para todos tus héroes. El héroe que paseas puede <b>guardar</b> todo el oro que lleve.</p>
-    <p>Para <b>sacar</b> hay límite: como mucho el <b>40 %</b> de lo que tiene entre bolsa y banco, y <b>una vez por misión</b>. Así un héroe nuevo no sale con la fortuna de otro.</p>
-    <p>Un héroe que está metido en una partida lleva la bolsa encima: no puede usar el banco hasta que la partida acabe.</p>`],
+    <p><b>Cada héroe tiene lo suyo:</b> su bolsa y su banco. Entre los dos mueve el oro cuando quiera, y su banco va con él a las partidas.</p>
+    <p>Aparte está el <b>fondo común</b> de tu mundo, que es del pueblo: con él se pagan las <b>obras</b> y los <b>guisos</b> de Marga.</p>
+    <p>Por cada misión, un héroe puede <b>aportar</b> al fondo como mucho el <b>40 %</b> de su dinero, y <b>sacar</b> como mucho el <b>40 % del fondo</b>. Después de su siguiente misión, vuelve a poder.</p>
+    <p>Un héroe que está metido en una partida lleva el oro encima: no puede usar el banco hasta que la partida acabe.</p>`],
     ['Cómo crece el pueblo', `
     <p>Tu tortuga empieza como una aldea casi vacía. Crece con la <b>fama</b>, que se gana jugando:</p>
     ${lista([
@@ -50,7 +51,7 @@ export function seccionesTortuga() {
     <p>Al volver, la tortuga te avisa de lo nuevo.</p>`],
     ['Obras y encargos', `
     <p><b>Encargos:</b> en el tablón hay tres retos que cambian cada lunes (jugar misiones, ganar, vencer jefes, matar monstruos). Al cumplirlos, cóbralos ahí mismo: +${RECOMPENSA_ENCARGO} de fama cada uno.</p>
-    <p><b>Obras:</b> desde el tablón se encargan con el oro del banco:</p>
+    <p><b>Obras:</b> desde el tablón se encargan con el <b>fondo común</b>:</p>
     ${lista(OBRAS.map((o) => [o.nombre, o.precio + ' monedas']))}`],
     ['Jugar juntos en la tortuga', `
     <p>Con <b>👥</b> abres una sala y te da un <b>código</b>. Los demás se unen con ese código, desde la tortuga o con <b>Unirse</b> en el menú, y pueden elegir entre ir a la tortuga o esperar en la <b>pantalla ligera</b>, que gasta mucho menos.</p>

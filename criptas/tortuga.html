@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261028204230",
-    "./js/datos.js": "./js/datos.js?v=20261028204230",
-    "./js/firebase.js": "./js/firebase.js?v=20261028204230",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261028204230",
-    "./js/ia.js": "./js/ia.js?v=20261028204230",
-    "./js/iconos.js": "./js/iconos.js?v=20261028204230",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028204230",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028204230",
-    "./js/motor.js": "./js/motor.js?v=20261028204230",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028204230",
-    "./js/nube.js": "./js/nube.js?v=20261028204230",
-    "./js/panel.js": "./js/panel.js?v=20261028204230",
-    "./js/planos.js": "./js/planos.js?v=20261028204230",
-    "./js/procedural.js": "./js/procedural.js?v=20261028204230",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028204230",
-    "./js/red.js": "./js/red.js?v=20261028204230",
-    "./js/render.js": "./js/render.js?v=20261028204230",
-    "./js/render3d.js": "./js/render3d.js?v=20261028204230",
-    "./js/reunion.js": "./js/reunion.js?v=20261028204230",
-    "./js/sprites.js": "./js/sprites.js?v=20261028204230",
-    "./js/tablero.js": "./js/tablero.js?v=20261028204230",
-    "./js/ui.js": "./js/ui.js?v=20261028204230",
-    "./js/viajero.js": "./js/viajero.js?v=20261028204230"
+    "./js/acceso.js": "./js/acceso.js?v=20261028205454",
+    "./js/datos.js": "./js/datos.js?v=20261028205454",
+    "./js/firebase.js": "./js/firebase.js?v=20261028205454",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261028205454",
+    "./js/ia.js": "./js/ia.js?v=20261028205454",
+    "./js/iconos.js": "./js/iconos.js?v=20261028205454",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028205454",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028205454",
+    "./js/motor.js": "./js/motor.js?v=20261028205454",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028205454",
+    "./js/nube.js": "./js/nube.js?v=20261028205454",
+    "./js/panel.js": "./js/panel.js?v=20261028205454",
+    "./js/planos.js": "./js/planos.js?v=20261028205454",
+    "./js/procedural.js": "./js/procedural.js?v=20261028205454",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028205454",
+    "./js/red.js": "./js/red.js?v=20261028205454",
+    "./js/render.js": "./js/render.js?v=20261028205454",
+    "./js/render3d.js": "./js/render3d.js?v=20261028205454",
+    "./js/reunion.js": "./js/reunion.js?v=20261028205454",
+    "./js/sprites.js": "./js/sprites.js?v=20261028205454",
+    "./js/tablero.js": "./js/tablero.js?v=20261028205454",
+    "./js/ui.js": "./js/ui.js?v=20261028205454",
+    "./js/viajero.js": "./js/viajero.js?v=20261028205454"
   }
 }
 </script>
@@ -1191,18 +1191,23 @@ function banco(aviso = '') {
   const h = ficha.heroes[ficha.activo];
   const cab = aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '';
   if (!h) return mostrar('Madre Hiel', 'Guardo vuestro oro. Si no volvéis, también lo guardo. Pero tú no tienes héroes en tu ficha: tráeme alguno de las mazmorras.', [['Me voy', cerrarDialogo]], cab);
-  const max = Ficha.maxRetiro(ficha, h);
-  const guardar = (n) => () => { const e = Ficha.depositar(ficha, h.id, n); if (!e) { Ficha.guardarFicha(ficha); audio.tono('hiel'); } banco(e || ''); };
-  const sacar = (n) => () => { const e = Ficha.retirar(ficha, h.id, n); if (!e) { Ficha.guardarFicha(ficha); audio.tono('hiel'); } banco(e || ''); };
+  const hecho = (f) => (n) => () => { const e = f(ficha, h.id, n); if (!e) { Ficha.guardarFicha(ficha); audio.tono('hiel'); } banco(e || ''); };
+  const guardar = hecho(Ficha.guardarEnSuBanco), sacar = hecho(Ficha.sacarDeSuBanco), aportar = hecho(Ficha.depositar), tomar = hecho(Ficha.retirar);
+  const maxA = Math.min(Ficha.maxAporte(ficha, h), h.oro + (h.banco || 0)), maxR = Ficha.maxRetiro(ficha, h);
   const ops = [];
   if (!h.prestado) {
-    if (h.oro >= 50) ops.push(['Guardar 50 monedas', guardar(50)]);
-    if (h.oro > 0) ops.push([`Guardar todo (${h.oro})`, guardar(h.oro)]);
-    if (max > 0) ops.push([`Sacar ${max} (el máximo: 40 %)`, sacar(max)]);
+    if (h.oro > 0) ops.push([`Guardar en su banco todo lo de la bolsa (${h.oro})`, guardar(h.oro)]);
+    if (h.banco > 0) ops.push([`Sacar de su banco a la bolsa (${h.banco})`, sacar(h.banco)]);
+    if (maxA > 0) ops.push([`Aportar ${maxA} al fondo común (su 40 %)`, aportar(maxA)]);
+    if (maxA > 50) ops.push(['Aportar 50 al fondo común', aportar(50)]);
+    if (maxR > 0) ops.push([`Sacar ${maxR} del fondo común (el 40 %)`, tomar(maxR)]);
   }
   ops.push(['Me voy', cerrarDialogo]);
-  mostrar('Madre Hiel', h.prestado ? `${h.nombre} está en una partida: su bolsa la lleva encima. Vuelve cuando acabe.` : h.retirado ? `${h.nombre} ya ha sacado oro. Hasta su próxima misión, nada.` : 'Guardo vuestro oro. Si no volvéis, también lo guardo. Un diente por cada cien monedas… es broma. O no.', ops,
-    cab + `<div class="lista"><span>Bolsa de ${h.nombre}</span><span>${h.oro} o</span><span>Banco del viajero</span><span>${ficha.banco} o</span></div>`);
+  const texto = h.prestado ? `${h.nombre} está en una partida: su oro lo lleva encima. Vuelve cuando acabe.`
+    : 'Cada uno guarda lo suyo, y el fondo común es del pueblo: obras, guisos… Por misión, cada héroe pone como mucho el 40 % de lo suyo, y saca como mucho el 40 % del fondo.';
+  mostrar('Madre Hiel', texto, ops,
+    cab + `<div class="lista"><span>Bolsa de ${h.nombre}</span><span>${h.oro} o</span><span>Banco de ${h.nombre}</span><span>${h.banco || 0} o</span><span>Fondo común</span><span>${ficha.banco} o</span></div>`
+    + (h.aporte || h.retirado ? `<p style="margin:4px 0 0;font-size:14px;opacity:.75">En esta misión: ${h.aporte ? `ha aportado ${h.aporte}` : ''}${h.aporte && h.retirado ? ' y ' : ''}${h.retirado ? 'ya ha sacado del fondo' : ''}.</p>` : ''));
 }
 
 let ultimo = null;
@@ -1284,7 +1289,7 @@ $('b-calidad').addEventListener('click', () => { calidad = CALIDADES[(CALIDADES.
 //  EL PUEBLO CRECE (js/pueblo.js): qué se ve según tu fama y tus obras
 // =============================================================
 const PNJ_TODOS = PNJ.slice();
-window.morrandar = { PNJ_TODOS, PNJ, decor };   // para mirar desde la consola
+window.morrandar = { PNJ_TODOS, PNJ, decor, banco: () => banco() };   // para mirar desde la consola
 let visitaPueblo = null;   // nombre del anfitrión si estás en su tortuga
 const QUE_PNJ = { mordo: 'mordo', pescador: 'pescador', marga: 'cantina' };
 function aplicarPueblo(t) {
@@ -1339,7 +1344,7 @@ function tablon(aviso = '') {
   const encargosHTML = enc.map((e) => `<span>${e.cobrado ? '✓' : e.listo ? '★' : '·'} ${e.texto}</span><span>${e.cobrado ? 'cobrado' : e.hecho + '/' + e.n}</span>`).join('');
   const ops = [];
   for (const e of enc) if (e.listo && !e.cobrado) ops.push([`Cobrar «${e.texto}» (+${Pueblo.RECOMPENSA_ENCARGO} de fama)`, () => { const err = Pueblo.cobrarEncargo(ficha, e.id); Ficha.tocar(ficha); Ficha.guardarFicha(ficha); aplicarPueblo(Pueblo.estadoPueblo(ficha)); tablon(err || '¡Encargo cobrado!'); }]);
-  ops.push(['Encargar obras (con el oro del banco)', () => obras()]);
+  ops.push(['Encargar obras (con el fondo común)', () => obras()]);
   ops.push(['Cerrar', cerrarDialogo]);
   mostrar('Tablón de encargos', (visitaPueblo ? `Estás en la tortuga de ${visitaPueblo}. Esto es lo tuyo: ` : '') + `Tu Morrandar es un <b>${rango.nombre}</b> · ${t.fama} de fama.` + (sig ? ` Siguiente: ${sig.nombre} (${sig.fama}).` : ''), ops,
     (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + (sig ? barra(t.fama - rango.fama, sig.fama - rango.fama) : '')
@@ -1354,7 +1359,7 @@ function obras(aviso = '') {
     obras(err || '¡Hecho! Los vecinos se ponen manos a la obra.');
   }]);
   ops.push(['Volver al tablón', () => tablon()], ['Cerrar', cerrarDialogo]);
-  mostrar('Obras', 'Las obras se pagan con el oro del banco de Madre Hiel. Tienes <b>' + (ficha.banco || 0) + '</b> monedas.', ops,
+  mostrar('Obras', 'Las obras se pagan con el fondo común de Madre Hiel. Hay <b>' + (ficha.banco || 0) + '</b> monedas.', ops,
     (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + '<div class="lista">' + Pueblo.OBRAS.map((o) => `<span>${t.obras[o.id] ? '✓' : '·'} ${o.nombre}</span><span>${t.obras[o.id] ? 'hecha' : o.precio + ' o'}</span>`).join('') + '</div>');
 }
 // La cantina: un guiso antes de bajar te da una fiambrera (una poción curativa) para la próxima misión.
@@ -1363,8 +1368,8 @@ function cantina(aviso = '') {
   ficha = Ficha.fichaOCrear(ficha.nombre);
   const h = ficha.heroes[ficha.activo];
   const ops = [];
-  if (h && !h.prestado) ops.push([`Comer un guiso (${PRECIO_GUISO} monedas del banco)`, () => {
-    if ((ficha.banco || 0) < PRECIO_GUISO) return cantina('No tienes bastante en el banco de Madre Hiel.');
+  if (h && !h.prestado) ops.push([`Comer un guiso (${PRECIO_GUISO} monedas del fondo común)`, () => {
+    if ((ficha.banco || 0) < PRECIO_GUISO) return cantina('No hay bastante en el fondo común de Madre Hiel.');
     if (h.fiambrera) return cantina(h.nombre + ' ya lleva una fiambrera para la próxima misión.');
     ficha.banco -= PRECIO_GUISO; h.objetos ||= {}; h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; h.fiambrera = true;
     Ficha.tocar(ficha); Ficha.guardarFicha(ficha); audio.tono('hiel');

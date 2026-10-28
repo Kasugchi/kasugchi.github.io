@@ -13,7 +13,7 @@ import { famaDeMision, estadoPueblo } from './pueblo.js';
 //  guardarFicha (localStorage). La nube la gestiona ui.js con nube.js.
 // =============================================================
 export const MAX_HEROES = 8;
-export const RETIRO_MAX = 0.4;          // del banco a un héroe: hasta el 40 % de (bolsa + banco)
+export const RETIRO_MAX = 0.4;          // fondo común: cada héroe aporta hasta el 40 % de su dinero y saca hasta el 40 % del fondo, por misión
 const CLAVE = 'criptas_viajero';
 // ---------- Mundos (ranuras de guardado) ----------
 // Cada mundo tiene su ficha entera: héroes, banco, cabaña, diario y tortuga.
@@ -222,7 +222,7 @@ export function registrarMision(f, estado, miId) {
   if (estado.aleatorio && c.resultado === 'victoria') d.pisoMax = Math.max(d.pisoMax, c.numero || estado.misionIdx);
   for (const id of mios) {
     const fid = estado.heroes[id].fichaId;
-    if (fid && f.heroes[fid]) { delete f.heroes[fid].retirado; delete f.heroes[fid].fiambrera; }     // tras una misión: puede volver a sacar del banco y a comer en la cantina
+    if (fid && f.heroes[fid]) { delete f.heroes[fid].retirado; delete f.heroes[fid].aporte; delete f.heroes[fid].fiambrera; }     // tras una misión: puede volver a usar el fondo y a comer en la cantina
     const hc = c.heroes?.[id];
     if (!hc) continue;
     d.monstruos += Object.values(hc.muertes || {}).reduce((s, n) => s + n, 0);
@@ -243,24 +243,53 @@ export function registrarMision(f, estado, miId) {
   return true;
 }
 
-// ---------- Banco de Madre Hiel (del viajero) ----------
-export function depositar(f, id, n) {
+// ---------- Banco de Madre Hiel ----------
+// Cada héroe tiene su bolsa (h.oro) y su banco (h.banco), que van con él a las partidas;
+// entre los dos mueve lo que quiera. Aparte, el FONDO COMÚN del viajero (f.banco),
+// que paga las obras y la cantina. Por misión, cada héroe aporta como mucho el 40 %
+// de su dinero y saca como mucho el 40 % de lo que haya en el fondo.
+const heroeLibre = (f, id) => {
   const h = f.heroes[id];
+  if (!h) return [null, 'Ese héroe no está en tu ficha.'];
+  if (h.prestado) return [null, h.nombre + ' está en una partida: su oro lo lleva encima.'];
+  return [h, null];
+};
+export function guardarEnSuBanco(f, id, n) {
+  const [h, e] = heroeLibre(f, id); if (e) return e;
   n = Math.floor(n);
-  if (!h) return 'Ese héroe no está en tu ficha.';
-  if (h.prestado) return h.nombre + ' está en una partida: su bolsa la lleva encima.';
   if (!(n > 0) || n > h.oro) return 'No lleva tanto oro.';
-  h.oro -= n; f.banco += n; tocar(f);
+  h.oro -= n; h.banco = (h.banco || 0) + n; tocar(f);
   return null;
 }
-export const maxRetiro = (f, h) => (h.retirado ? 0 : Math.min(f.banco, Math.floor((h.oro + f.banco) * RETIRO_MAX)));
-export function retirar(f, id, n) {
-  const h = f.heroes[id];
+export function sacarDeSuBanco(f, id, n) {
+  const [h, e] = heroeLibre(f, id); if (e) return e;
   n = Math.floor(n);
-  if (!h) return 'Ese héroe no está en tu ficha.';
-  if (h.prestado) return h.nombre + ' está en una partida.';
-  if (h.retirado) return h.nombre + ' ya ha sacado oro del banco. Podrá volver a hacerlo después de su próxima misión.';
-  if (!(n > 0) || n > maxRetiro(f, h)) return 'Como mucho puede sacar ' + maxRetiro(f, h) + ' monedas (el 40 %).';
+  if (!(n > 0) || n > (h.banco || 0)) return 'No tiene tanto en su banco.';
+  h.banco -= n; h.oro += n; tocar(f);
+  return null;
+}
+// Lo que aún puede aportar al fondo en esta misión.
+export const maxAporte = (f, h) => {
+  const ya = h.aporte || 0;
+  return Math.max(0, Math.floor((h.oro + (h.banco || 0) + ya) * RETIRO_MAX) - ya);
+};
+export function depositar(f, id, n) {      // aportar al fondo común (primero de la bolsa, luego de su banco)
+  const [h, e] = heroeLibre(f, id); if (e) return e;
+  n = Math.floor(n);
+  const max = maxAporte(f, h);
+  if (!(n > 0) || n > h.oro + (h.banco || 0)) return 'No tiene tanto oro.';
+  if (n > max) return max ? `Como mucho puede aportar ${max} monedas más en esta misión (el 40 % de su dinero).` : `${h.nombre} ya ha aportado su 40 %. Podrá volver a hacerlo después de su próxima misión.`;
+  const deBolsa = Math.min(h.oro, n);
+  h.oro -= deBolsa; h.banco = (h.banco || 0) - (n - deBolsa);
+  h.aporte = (h.aporte || 0) + n; f.banco += n; tocar(f);
+  return null;
+}
+export const maxRetiro = (f, h) => (h.retirado ? 0 : Math.floor((f.banco || 0) * RETIRO_MAX));
+export function retirar(f, id, n) {        // sacar del fondo común
+  const [h, e] = heroeLibre(f, id); if (e) return e;
+  n = Math.floor(n);
+  if (h.retirado) return h.nombre + ' ya ha sacado del fondo. Podrá volver a hacerlo después de su próxima misión.';
+  if (!(n > 0) || n > maxRetiro(f, h)) return 'Como mucho puede sacar ' + maxRetiro(f, h) + ' monedas (el 40 % del fondo).';
   h.oro += n; f.banco -= n; h.retirado = true; tocar(f);
   return null;
 }

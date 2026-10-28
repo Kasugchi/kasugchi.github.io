@@ -6,7 +6,7 @@
 //    · Rescates: personajes que vienen a vivir (de momento, por fama;
 //      cuando haya misiones de rescate, por rescate).
 //    · Historias completas: cambios grandes (el faro de Velmor).
-//    · Obras: las pagáis con el oro del banco de Madre Hiel.
+//    · Obras: las pagáis con el fondo común de Madre Hiel.
 //  Este módulo no toca la escena: dice qué hay desbloqueado.
 // =============================================================
 
@@ -36,7 +36,7 @@ export const MEJORAS = [
   { id: 'faro', nombre: 'El Faro de Velmor', historia: 'velmor', texto: 'Al terminar la historia de Velmor, se levanta un faro en el lomo de Morrandar.' }
 ];
 
-// Obras que se pagan con el oro del banco del viajero.
+// Obras que se pagan con el fondo común del viajero (ficha.banco).
 export const OBRAS = [
   { id: 'bandera', nombre: 'Bandera en el mirador', precio: 80, texto: 'Una bandera con tu emblema ondea sobre la cabeza de Morrandar.' },
   { id: 'jardin', nombre: 'Jardín de setas brillantes', precio: 150, texto: 'Setas que brillan de noche junto a la casa de Madre Hiel.' },
@@ -87,7 +87,7 @@ export function construir(f, id) {
   const o = OBRAS.find((x) => x.id === id), t = estadoPueblo(f);
   if (!o) return 'Esa obra no existe.';
   if (t.obras[id]) return 'Ya está construida.';
-  if ((f.banco || 0) < o.precio) return `Hacen falta ${o.precio} monedas en el banco (tienes ${f.banco || 0}).`;
+  if ((f.banco || 0) < o.precio) return `Hacen falta ${o.precio} monedas en el fondo común (hay ${f.banco || 0}).`;
   f.banco -= o.precio;
   t.obras[id] = Date.now();
   return null;
