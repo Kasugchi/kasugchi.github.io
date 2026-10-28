@@ -21,30 +21,32 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261028152958",
-    "./js/firebase.js": "./js/firebase.js?v=20261028152958",
-    "./js/ia.js": "./js/ia.js?v=20261028152958",
-    "./js/iconos.js": "./js/iconos.js?v=20261028152958",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028152958",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152958",
-    "./js/motor.js": "./js/motor.js?v=20261028152958",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152958",
-    "./js/nube.js": "./js/nube.js?v=20261028152958",
-    "./js/panel.js": "./js/panel.js?v=20261028152958",
-    "./js/planos.js": "./js/planos.js?v=20261028152958",
-    "./js/procedural.js": "./js/procedural.js?v=20261028152958",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028152958",
-    "./js/red.js": "./js/red.js?v=20261028152958",
-    "./js/render.js": "./js/render.js?v=20261028152958",
-    "./js/render3d.js": "./js/render3d.js?v=20261028152958",
-    "./js/reunion.js": "./js/reunion.js?v=20261028152958",
-    "./js/sprites.js": "./js/sprites.js?v=20261028152958",
-    "./js/tablero.js": "./js/tablero.js?v=20261028152958",
-    "./js/ui.js": "./js/ui.js?v=20261028152958",
-    "./js/viajero.js": "./js/viajero.js?v=20261028152958"
+    "./js/acceso.js": "./js/acceso.js?v=20261028153935",
+    "./js/datos.js": "./js/datos.js?v=20261028153935",
+    "./js/firebase.js": "./js/firebase.js?v=20261028153935",
+    "./js/ia.js": "./js/ia.js?v=20261028153935",
+    "./js/iconos.js": "./js/iconos.js?v=20261028153935",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028153935",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028153935",
+    "./js/motor.js": "./js/motor.js?v=20261028153935",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028153935",
+    "./js/nube.js": "./js/nube.js?v=20261028153935",
+    "./js/panel.js": "./js/panel.js?v=20261028153935",
+    "./js/planos.js": "./js/planos.js?v=20261028153935",
+    "./js/procedural.js": "./js/procedural.js?v=20261028153935",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028153935",
+    "./js/red.js": "./js/red.js?v=20261028153935",
+    "./js/render.js": "./js/render.js?v=20261028153935",
+    "./js/render3d.js": "./js/render3d.js?v=20261028153935",
+    "./js/reunion.js": "./js/reunion.js?v=20261028153935",
+    "./js/sprites.js": "./js/sprites.js?v=20261028153935",
+    "./js/tablero.js": "./js/tablero.js?v=20261028153935",
+    "./js/ui.js": "./js/ui.js?v=20261028153935",
+    "./js/viajero.js": "./js/viajero.js?v=20261028153935"
   }
 }
 </script>
+<style id="cerrojo">body{visibility:hidden}</style>
 </head>
 <body>
 <div id="fundido"></div>
@@ -55,6 +57,7 @@
   <nav><a href="index.html">← Menú del juego</a></nav>
 </main>
 <script type="module">
+import './js/acceso.js';
 import { crearPanel } from './js/reunion.js';
 import * as Ficha from './js/viajero.js';
 const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };

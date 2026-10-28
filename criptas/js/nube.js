@@ -33,7 +33,7 @@ onAuthStateChanged(auth, (u) => {
 export const alCambiarUsuario = (f) => { oyentes.add(f); f(usuario); return () => oyentes.delete(f); };
 export const usuarioActual = () => usuario;
 // Espera a que Firebase diga si hay sesión (al cargar la página tarda un momento).
-export const usuarioListo = () => auth.authStateReady().then(() => auth.currentUser);
+export const usuarioListo = () => auth.authStateReady().then(() => (usuario ||= auth.currentUser));
 
 export async function entrar() {
   const proveedor = new GoogleAuthProvider();

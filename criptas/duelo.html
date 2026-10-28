@@ -74,6 +74,35 @@
   .aviso { color: var(--sangre); font-weight: bold; }
   @media (max-width: 560px) { h1 { font-size: 28px; } .ring { min-height: 190px; margin-top: 96px; } .bocadillo { font-size: 14px; width: 46vw; } .marcador { padding-bottom: 20px; } }
 </style>
+<style id="cerrojo">body{visibility:hidden}</style>
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/acceso.js": "./js/acceso.js?v=20261028153935",
+    "./js/datos.js": "./js/datos.js?v=20261028153935",
+    "./js/firebase.js": "./js/firebase.js?v=20261028153935",
+    "./js/ia.js": "./js/ia.js?v=20261028153935",
+    "./js/iconos.js": "./js/iconos.js?v=20261028153935",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028153935",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028153935",
+    "./js/motor.js": "./js/motor.js?v=20261028153935",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028153935",
+    "./js/nube.js": "./js/nube.js?v=20261028153935",
+    "./js/panel.js": "./js/panel.js?v=20261028153935",
+    "./js/planos.js": "./js/planos.js?v=20261028153935",
+    "./js/procedural.js": "./js/procedural.js?v=20261028153935",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028153935",
+    "./js/red.js": "./js/red.js?v=20261028153935",
+    "./js/render.js": "./js/render.js?v=20261028153935",
+    "./js/render3d.js": "./js/render3d.js?v=20261028153935",
+    "./js/reunion.js": "./js/reunion.js?v=20261028153935",
+    "./js/sprites.js": "./js/sprites.js?v=20261028153935",
+    "./js/tablero.js": "./js/tablero.js?v=20261028153935",
+    "./js/ui.js": "./js/ui.js?v=20261028153935",
+    "./js/viajero.js": "./js/viajero.js?v=20261028153935"
+  }
+}
+</script>
 </head>
 <body>
 <div class="taberna"><div class="farol" style="left:18%"></div><div class="farol" style="left:82%;height:50px"></div></div>
@@ -92,6 +121,7 @@
 </main>
 
 <script type="module">
+import './js/acceso.js';
 // =============================================================
 //  PROTOTIPO: duelo de insultos para la historia pirata.
 //  En la isla os batís con piratas de taberna: al perder un asalto

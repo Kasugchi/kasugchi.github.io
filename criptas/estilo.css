@@ -437,6 +437,8 @@ input.semilla { height: 48px; border-radius: 6px; border: 2px solid var(--pergam
 
 /* Acceso por lista: hasta tener acceso solo se ve la caja de la nube. */
 #portada:not([data-acceso="ok"]) .modos,
+#portada:not([data-acceso="ok"]) #mundos,
+#portada:not([data-acceso="ok"]) #menu-morrandar,
 #portada:not([data-acceso="ok"]) #menu-unirse,
 #portada:not([data-acceso="ok"]) #partidas { display: none !important; }
 
