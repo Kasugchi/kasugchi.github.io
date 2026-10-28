@@ -12,27 +12,27 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/datos.js": "./js/datos.js?v=20261028152144",
-    "./js/firebase.js": "./js/firebase.js?v=20261028152144",
-    "./js/ia.js": "./js/ia.js?v=20261028152144",
-    "./js/iconos.js": "./js/iconos.js?v=20261028152144",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028152144",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152144",
-    "./js/motor.js": "./js/motor.js?v=20261028152144",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152144",
-    "./js/nube.js": "./js/nube.js?v=20261028152144",
-    "./js/panel.js": "./js/panel.js?v=20261028152144",
-    "./js/planos.js": "./js/planos.js?v=20261028152144",
-    "./js/procedural.js": "./js/procedural.js?v=20261028152144",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028152144",
-    "./js/red.js": "./js/red.js?v=20261028152144",
-    "./js/render.js": "./js/render.js?v=20261028152144",
-    "./js/render3d.js": "./js/render3d.js?v=20261028152144",
-    "./js/reunion.js": "./js/reunion.js?v=20261028152144",
-    "./js/sprites.js": "./js/sprites.js?v=20261028152144",
-    "./js/tablero.js": "./js/tablero.js?v=20261028152144",
-    "./js/ui.js": "./js/ui.js?v=20261028152144",
-    "./js/viajero.js": "./js/viajero.js?v=20261028152144"
+    "./js/datos.js": "./js/datos.js?v=20261028152958",
+    "./js/firebase.js": "./js/firebase.js?v=20261028152958",
+    "./js/ia.js": "./js/ia.js?v=20261028152958",
+    "./js/iconos.js": "./js/iconos.js?v=20261028152958",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028152958",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152958",
+    "./js/motor.js": "./js/motor.js?v=20261028152958",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152958",
+    "./js/nube.js": "./js/nube.js?v=20261028152958",
+    "./js/panel.js": "./js/panel.js?v=20261028152958",
+    "./js/planos.js": "./js/planos.js?v=20261028152958",
+    "./js/procedural.js": "./js/procedural.js?v=20261028152958",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028152958",
+    "./js/red.js": "./js/red.js?v=20261028152958",
+    "./js/render.js": "./js/render.js?v=20261028152958",
+    "./js/render3d.js": "./js/render3d.js?v=20261028152958",
+    "./js/reunion.js": "./js/reunion.js?v=20261028152958",
+    "./js/sprites.js": "./js/sprites.js?v=20261028152958",
+    "./js/tablero.js": "./js/tablero.js?v=20261028152958",
+    "./js/ui.js": "./js/ui.js?v=20261028152958",
+    "./js/viajero.js": "./js/viajero.js?v=20261028152958"
   }
 }
 </script>
@@ -51,6 +51,8 @@
   .btn.on { background: rgba(130,52,40,.8); border-color: #e8b070; }
   .clases { display: flex; gap: 4px; }
   .clases .btn { padding: 4px 6px; } .clases img { width: 30px; height: 30px; display: block; object-fit: contain; }
+  .heroe-chip { display: flex !important; align-items: center; gap: 8px; text-align: left; }
+  .heroe-chip span { display: flex; flex-direction: column; line-height: 1.1; } .heroe-chip b { font: 16px 'IM Fell English SC', serif; } .heroe-chip small { font: italic 12px 'IM Fell English', serif; opacity: .8; }
   .rotulo { position: fixed; z-index: 5; transform: translate(-50%, -100%); font: 16px 'IM Fell English SC', serif; color: #fbe9c6; text-shadow: 0 1px 4px #000, 0 0 12px #000; pointer-events: none; white-space: nowrap; transition: opacity .25s; }
   .habla { position: fixed; z-index: 6; transform: translate(-50%, -100%); max-width: 220px; background: rgba(240,224,190,.95); color: #1c120b; border: 1px solid #1c120b; padding: 6px 10px;
     font: italic 14px/1.3 'IM Fell English', serif; pointer-events: none; transition: opacity .4s; box-shadow: 0 6px 16px rgba(0,0,0,.6); text-align: center; border-radius: 2px; }
@@ -923,13 +925,38 @@ function ponerClase(k) {
   cargador.load(`sprites/${k}.png`, (t) => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; planoHeroe.material.map = t; planoHeroe.material.emissiveMap = t; planoHeroe.material.needsUpdate = true; });
   document.querySelectorAll('#clases .btn').forEach((b) => b.classList.toggle('on', b.dataset.k === k));
 }
-for (const k of Object.keys(CLASES)) {
-  const b = document.createElement('button'); b.className = 'btn'; b.dataset.k = k; b.title = CLASES[k];
-  b.innerHTML = `<img src="sprites/${k}.png" alt="${CLASES[k]}">`;
-  b.onclick = () => ponerClase(k);
-  $('clases').appendChild(b);
+// Arriba: con qué héroe de tu ficha paseas (o, sin héroes, solo el dibujo).
+function pintarHeroeArriba() {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const c = $('clases'); c.innerHTML = '';
+  const h = ficha.heroes[ficha.activo];
+  if (ficha.orden.length) {
+    const b = document.createElement('button'); b.className = 'btn heroe-chip';
+    b.innerHTML = h ? `<img src="sprites/${CLASES[h.tipo] ? h.tipo : 'barbaro'}.png" alt=""><span><b>${h.nombre}</b><small>${CLASES[h.tipo] || h.tipo} · Nv ${h.nivel || 1}</small></span>` : '<span><b>Elegir héroe</b></span>';
+    b.onclick = () => elegirHeroe();
+    c.appendChild(b);
+  } else for (const k of Object.keys(CLASES)) {
+    const b = document.createElement('button'); b.className = 'btn'; b.dataset.k = k; b.title = CLASES[k] + ' (solo el aspecto: aún no tienes héroes en este mundo)';
+    b.innerHTML = `<img src="sprites/${k}.png" alt="${CLASES[k]}">`;
+    b.onclick = () => ponerClase(k);
+    c.appendChild(b);
+  }
 }
+function elegirHeroe() {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const hs = ficha.orden.map((id) => ficha.heroes[id]);
+  if (!hs.length) return mostrar('Tus héroes', 'En este mundo aún no tienes héroes. En la Mazmorra Infinita, desde el campamento, pulsa «Llevar a mi ficha» con el tuyo. Mientras tanto paseas como viajero: elige el aspecto con los retratos de arriba.', [['Vale', cerrarDialogo]]);
+  mostrar('¿Con qué héroe quieres visitar la tortuga?', 'Madre Hiel te enseñará su bolsa y el pueblo lo reconocerá.', [
+    ...hs.filter((h) => !h.caido).map((h) => [`${h.id === ficha.activo ? '✓ ' : ''}${h.nombre} · ${CLASES[h.tipo] || h.tipo} nivel ${h.nivel || 1} · ${h.oro || 0} monedas${h.prestado ? ' (ahora en una partida)' : ''}`, () => {
+      ficha.activo = h.id; Ficha.tocar(ficha); Ficha.guardarFicha(ficha);
+      ponerClase(h.tipo); pintarHeroeArriba(); cerrarDialogo();
+    }]),
+    ...(hs.some((h) => h.caido) ? [['(Los caídos esperan en el Limbo)', () => elegirHeroe()]] : []),
+    ['Cerrar', cerrarDialogo]]);
+}
+pintarHeroeArriba();
 ponerClase(clase);
+if (prm.has('elegir') && ficha.orden.length) setTimeout(() => elegirHeroe(), prm.has('sinIntro') ? 600 : 5800);
 for (const p of PNJ) {
   p.rotulo = document.createElement('div'); p.rotulo.className = 'rotulo'; p.rotulo.textContent = p.nombre; p.rotulo.style.opacity = 0; document.body.appendChild(p.rotulo);
   if (p.frases) { p.habla = document.createElement('div'); p.habla.className = 'habla'; p.habla.style.opacity = 0; document.body.appendChild(p.habla); p.hastaHablar = azar(3, 12); p.hablando = 0; }

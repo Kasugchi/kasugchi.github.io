@@ -15,6 +15,54 @@ import { famaDeMision, estadoPueblo } from './pueblo.js';
 export const MAX_HEROES = 8;
 export const RETIRO_MAX = 0.4;          // del banco a un héroe: hasta el 40 % de (bolsa + banco)
 const CLAVE = 'criptas_viajero';
+// ---------- Mundos (ranuras de guardado) ----------
+// Cada mundo tiene su ficha entera: héroes, banco, cabaña, diario y tortuga.
+// El primero ('m1') usa la clave de siempre, así las fichas de antes son el primer mundo.
+const CLAVE_MUNDOS = 'criptas_mundos';
+export const MAX_MUNDOS = 3;
+const claveDe = (id) => (!id || id === 'm1' ? CLAVE : CLAVE + '_' + id);
+export function leerMundos() {
+  try { const m = JSON.parse(localStorage.getItem(CLAVE_MUNDOS)); if (m?.lista?.length) { if (!m.lista.some((x) => x.id === m.activo)) m.activo = m.lista[0].id; return m; } } catch { /* sin mundos todavía */ }
+  return { activo: 'm1', lista: [{ id: 'm1', nombre: 'Mi mundo', creado: Date.now() }] };
+}
+export function guardarMundos(m) { try { localStorage.setItem(CLAVE_MUNDOS, JSON.stringify(m)); } catch { /* sin almacenamiento */ } alGuardarMundos?.(m); }
+let alGuardarMundos = null;
+export const subirMundosAlGuardar = (f) => { alGuardarMundos = f; };
+export const mundoActivo = () => leerMundos().activo;
+export function elegirMundo(id) { const m = leerMundos(); if (!m.lista.some((x) => x.id === id)) return 'Ese mundo no existe.'; m.activo = id; guardarMundos(m); return null; }
+export function crearMundo(nombre) {
+  const m = leerMundos();
+  if (m.lista.length >= MAX_MUNDOS) return { error: 'Como mucho ' + MAX_MUNDOS + ' mundos. Borra uno antes de crear otro.' };
+  const id = 'm' + Date.now().toString(36);
+  m.lista.push({ id, nombre: limpiarNombre(nombre) || 'Mundo nuevo', creado: Date.now() });
+  m.activo = id; guardarMundos(m);
+  return { id };
+}
+export function renombrarMundo(id, nombre) {
+  const m = leerMundos(), x = m.lista.find((y) => y.id === id), n = limpiarNombre(nombre);
+  if (!x) return 'Ese mundo no existe.'; if (!n) return 'Escribe un nombre.';
+  x.nombre = n; guardarMundos(m); return null;
+}
+export function borrarMundo(id) {
+  const m = leerMundos();
+  if (m.lista.length <= 1) return 'Tiene que quedar al menos un mundo.';
+  m.lista = m.lista.filter((x) => x.id !== id);
+  m.borrados = [...(m.borrados || []), id];   // para que no vuelva desde otro dispositivo
+  if (m.activo === id) m.activo = m.lista[0].id;
+  try { localStorage.removeItem(claveDe(id)); } catch { /* nada */ }
+  guardarMundos(m); return null;
+}
+// Juntar la lista de mundos de dos dispositivos (nunca se pierde uno).
+export function fusionarMundos(a, b) {
+  if (!b?.lista) return a;
+  const borrados = [...new Set([...(a.borrados || []), ...(b.borrados || [])])];
+  const out = { activo: a.activo, lista: a.lista.filter((x) => !borrados.includes(x.id)), borrados };
+  for (const x of b.lista) if (!out.lista.some((y) => y.id === x.id) && !borrados.includes(x.id)) out.lista.push(x);
+  if (!out.lista.length) out.lista = [{ id: 'm1', nombre: 'Mi mundo', creado: Date.now() }];
+  if (!out.lista.some((x) => x.id === out.activo)) out.activo = out.lista[0].id;
+  out.lista = out.lista.slice(0, MAX_MUNDOS);
+  return out;
+}
 // Lo que se guarda de cada héroe (lo mismo que define su progreso en una partida).
 export const CAMPOS_HEROE = ['tipo', 'fem', 'nombre', 'icono', 'arma', 'armaduras', 'objetos', 'kit', 'oro', 'cuerpoMax', 'mente',
   'inventario', 'nivel', 'xp', 'puntos', 'mejoras', 'subclase', 'purificada', 'bonoEspecialidad', 'banco', 'cuerpoAlCargar'];
@@ -263,13 +311,14 @@ export function fusionar(a, b) {
 export function tocar(f) { f.actualizada = Date.now(); }
 
 // ---------- Guardado en el dispositivo ----------
-export function leerFicha() {
-  try { const t = localStorage.getItem(CLAVE); return t ? normalizar(JSON.parse(t)) : null; } catch { return null; }
+export function leerFicha(mundo = mundoActivo()) {
+  try { const t = localStorage.getItem(claveDe(mundo)); if (!t) return null; const f = normalizar(JSON.parse(t)); f.mundo = mundo; return f; } catch { return null; }
 }
 // Si una página quiere subir la ficha a la nube al guardarla (la tortuga y la cabaña), pone aquí su función.
 let alGuardar = null;
 export const subirAlGuardar = (f) => { alGuardar = f; };
 export function guardarFicha(f) {
-  try { localStorage.setItem(CLAVE, JSON.stringify(f)); alGuardar?.(f); return true; } catch { return false; }
+  f.mundo ||= mundoActivo();
+  try { localStorage.setItem(claveDe(f.mundo), JSON.stringify(f)); alGuardar?.(f); return true; } catch { return false; }
 }
-export const fichaOCrear = (nombre) => leerFicha() || nuevaFicha(nombre);
+export const fichaOCrear = (nombre) => leerFicha() || { ...nuevaFicha(nombre), mundo: mundoActivo() };

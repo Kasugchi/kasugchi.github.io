@@ -84,7 +84,7 @@ export function vaciar(id) {
     clearTimeout(temporizadores.get(k)); temporizadores.delete(k);
     const p = pendientes.get(k); pendientes.delete(k);
     if (!p || !usuario) return null;
-    const registro = { id: p.id, modo: p.modo, codigo: p.codigo || null, resumen: p.resumen || null, actualizada: p.actualizada || Date.now(),
+    const registro = { id: p.id, modo: p.modo, codigo: p.codigo || null, mundo: p.mundo || 'm1', resumen: p.resumen || null, actualizada: p.actualizada || Date.now(),
       estado: typeof p.estado === 'string' ? p.estado : JSON.stringify(p.estado) };
     return setDoc(doc(coleccion(), k), registro).catch((e) => console.warn('No se pudo guardar en la nube:', e.message));
   }));
@@ -106,11 +106,23 @@ export async function borrarNube(id) {
 }
 
 // ---------- Ficha del viajero ----------
-const docFicha = () => doc(db, 'usuarios', usuario.uid, 'viajero', 'ficha');
-export async function leerFichaNube() {
+// Una por mundo: el primero es «ficha» (como siempre); los demás, con el id del mundo.
+const docFicha = (mundo) => doc(db, 'usuarios', usuario.uid, 'viajero', !mundo || mundo === 'm1' ? 'ficha' : mundo);
+export async function leerFichaNube(mundo) {
   if (!usuario) return null;
-  try { const r = await getDoc(docFicha()); return r.exists() ? JSON.parse(r.data().datos) : null; }
+  try { const r = await getDoc(docFicha(mundo || leerMundoActivo())); return r.exists() ? JSON.parse(r.data().datos) : null; }
   catch (e) { console.warn('No se pudo leer la ficha de la nube:', e.message); return null; }
+}
+const leerMundoActivo = () => { try { return JSON.parse(localStorage.getItem('criptas_mundos'))?.activo || 'm1'; } catch { return 'm1'; } };
+// La lista de mundos también viaja con la cuenta.
+export async function leerMundosNube() {
+  if (!usuario) return null;
+  try { const r = await getDoc(doc(db, 'usuarios', usuario.uid, 'viajero', 'mundos')); return r.exists() ? JSON.parse(r.data().datos) : null; }
+  catch (e) { console.warn('No se pudieron leer los mundos:', e.message); return null; }
+}
+export function subirMundos(m) {
+  if (!usuario || !m) return;
+  setDoc(doc(db, 'usuarios', usuario.uid, 'viajero', 'mundos'), { datos: JSON.stringify(m), actualizada: Date.now() }).catch((e) => console.warn('No se pudieron guardar los mundos:', e.message));
 }
 let fichaPendiente = null, tFicha = null;
 export function subirFicha(f, ya = false) {
@@ -119,6 +131,6 @@ export function subirFicha(f, ya = false) {
   clearTimeout(tFicha);
   tFicha = setTimeout(() => {
     const x = fichaPendiente; fichaPendiente = null;
-    if (x && usuario) setDoc(docFicha(), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar la ficha:', e.message));
+    if (x && usuario) setDoc(docFicha(x.mundo), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar la ficha:', e.message));
   }, ya ? 0 : 4000);
 }

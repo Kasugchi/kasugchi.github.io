@@ -493,3 +493,11 @@ details.guia p { margin: 6px 0 10px; }
 /* Viñeta en la vista 3D: los bordes se oscurecen, como a la luz de las antorchas */
 .zona-tablero.con3d::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
   background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 45%, rgba(10,5,2,0.55) 85%, rgba(10,5,2,0.8) 100%); }
+
+/* Mundos (ranuras de guardado) */
+.mundos { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.mundo { text-align: left; font: 600 17px var(--f-texto); color: var(--tinta); background: rgba(255,255,255,.25); border: 2px solid var(--pergamino-osc); border-radius: 8px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; }
+.mundo small { font: 400 13px var(--f-texto); opacity: .75; }
+.mundo.activo { border-color: #8a1d12; background: rgba(138,29,18,.12); box-shadow: inset 0 0 0 1px #8a1d12; }
+.mundo.activo b::before { content: '✠ '; color: #8a1d12; }
+.mundo.nuevo { align-items: center; justify-content: center; font-weight: 400; border-style: dashed; opacity: .8; }

@@ -201,7 +201,7 @@ function guardarPartida(estado) {
   const todas = leerPartidas();
   // Los eventos solo sirven para animar: no hace falta guardarlos.
   todas[app.partidaId] = {
-    id: app.partidaId, modo: app.modo, codigo: app.red?.codigo || null,
+    id: app.partidaId, modo: app.modo, codigo: app.red?.codigo || null, mundo: todas[app.partidaId]?.mundo || V.mundoActivo(),
     estado: { ...estado, eventos: [] },
     resumen: resumenPartida(estado), actualizada: Date.now()
   };
@@ -235,9 +235,56 @@ function todasLasPartidas() {
   return todas;
 }
 
+// ---------- Mundos: cada uno con su tortuga, sus héroes y sus partidas ----------
+function pintarMundos() {
+  const caja = document.getElementById('mundos'); if (!caja) return;
+  const m = V.leerMundos();
+  const datos = (id) => { const f = V.leerFicha(id); return f ? { heroes: f.orden.length, fama: f.tortuga?.fama || 0 } : { heroes: 0, fama: 0 }; };
+  caja.innerHTML = `<h2 style="margin:0 0 8px">Tus mundos</h2><div class="mundos">${m.lista.map((x) => { const d = datos(x.id); return `<button class="mundo ${x.id === m.activo ? 'activo' : ''}" data-mundo="${esc(x.id)}"><b>${esc(x.nombre)}</b><small>${d.heroes} ${d.heroes === 1 ? 'héroe' : 'héroes'} · ${d.fama} de fama</small></button>`; }).join('')}
+    ${m.lista.length < V.MAX_MUNDOS ? '<button class="mundo nuevo" data-mundo-nuevo>＋ Nuevo mundo</button>' : ''}</div>
+    <div class="fila" style="margin-top:8px;gap:6px"><button class="btn claro" data-mundo-renombrar>Cambiar nombre</button>${m.lista.length > 1 ? '<button class="btn claro" data-mundo-borrar>Borrar este mundo</button>' : ''}</div>`;
+  caja.querySelectorAll('[data-mundo]').forEach((b) => b.addEventListener('click', () => cambiarMundo(b.dataset.mundo)));
+  caja.querySelector('[data-mundo-nuevo]')?.addEventListener('click', async () => {
+    const nombre = await pedirTexto('Nuevo mundo', 'Cada mundo tiene su propia tortuga, sus héroes y sus partidas. Lo que pase en uno no toca a los demás.', 'Mundo ' + (m.lista.length + 1));
+    if (nombre == null) return;
+    const r = V.crearMundo(nombre); if (r.error) return toast(r.error, 'peligro');
+    cambiarMundo(r.id);
+  });
+  caja.querySelector('[data-mundo-renombrar]').addEventListener('click', async () => {
+    const actual = m.lista.find((x) => x.id === m.activo);
+    const nombre = await pedirTexto('Nombre del mundo', '', actual.nombre);
+    if (nombre == null) return;
+    const e = V.renombrarMundo(m.activo, nombre); if (e) toast(e, 'peligro'); pintarMundos();
+  });
+  caja.querySelector('[data-mundo-borrar]')?.addEventListener('click', async () => {
+    const actual = m.lista.find((x) => x.id === m.activo);
+    app.cerrarModalFuera = () => {};
+    const i = await modal(`<h2>¿Borrar «${esc(actual.nombre)}»?</h2><p>Se pierden su tortuga, sus héroes, su cabaña y su diario. Las partidas de este mundo dejarán de verse. No se puede deshacer.</p>`, [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Borrar el mundo' }]);
+    if (i !== 1) return;
+    const e = V.borrarMundo(actual.id); if (e) return toast(e, 'peligro');
+    cambiarMundo(V.mundoActivo());
+  });
+}
+async function pedirTexto(titulo, texto, valor) {
+  app.cerrarModalFuera = () => {};
+  const i = await modal(`<h2>${esc(titulo)}</h2>${texto ? `<p>${esc(texto)}</p>` : ''}<input id="texto-modal" maxlength="20" value="${esc(valor || '')}" autocomplete="off" style="width:100%;height:46px;font:600 18px var(--f-texto);padding:0 12px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta)">`, [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Aceptar' }]);
+  return i === 1 ? (document.getElementById('texto-modal')?.value || '') : null;
+}
+async function cambiarMundo(id) {
+  const e = V.elegirMundo(id); if (e) return toast(e, 'peligro');
+  ficha = V.fichaOCrear(miNombre());
+  // Lo que haya en la nube de este mundo (si jugaste en otro dispositivo).
+  if (moduloNube?.usuarioActual?.()) {
+    try { const n = await moduloNube.leerFichaNube(id); if (n) { ficha = V.fusionar(ficha, n); ficha.mundo = id; V.guardarFicha(ficha); } moduloNube.subirFicha(ficha, true); } catch { /* sin nube */ }
+  }
+  pintarPartidas();
+  toast('Mundo: ' + (V.leerMundos().lista.find((x) => x.id === id)?.nombre || ''), 'bueno');
+}
 function pintarPartidas() {
   const ml = document.getElementById('modo-limbo'); if (ml) ml.hidden = !misCaidos().length;   // solo si tienes a alguien que rescatar
-  const todas = Object.values(todasLasPartidas()).filter((p) => p.resumen).sort((a, b) => b.actualizada - a.actualizada);
+  pintarMundos();
+  const mundo = V.mundoActivo();
+  const todas = Object.values(todasLasPartidas()).filter((p) => p.resumen && (p.mundo || 'm1') === mundo).sort((a, b) => b.actualizada - a.actualizada);
   const fecha = (t) => new Date(t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const fila = (p) => `<li class="partida">
       <div><strong>${esc(p.resumen.heroes)}</strong>
@@ -281,7 +328,7 @@ async function importarPartida(archivo) {
     if (!datos?.criptas || !p?.estado?.heroes) throw new Error('formato');
     const todas = leerPartidas();
     const id = todas[p.id] ? p.id + '-' + Date.now().toString(36) : p.id;
-    todas[id] = { ...p, id, actualizada: Date.now() };
+    todas[id] = { ...p, id, mundo: V.mundoActivo(), actualizada: Date.now() };
     escribirPartidas(todas);
     nube()?.subir(todas[id], true);
     pintarPartidas();
@@ -313,8 +360,12 @@ import('./nube.js').then((m) => {
     entrarPorReunion();
     if (!$('#nombre').value.trim() && u.displayName) $('#nombre').value = u.displayName.split(' ')[0];
     try {
-      const enLaNube = await m.leerFichaNube();
-      ficha = V.fusionar(ficha, enLaNube);
+      // Los mundos (ranuras) también viajan con la cuenta.
+      const mundos = V.fusionarMundos(V.leerMundos(), await m.leerMundosNube());
+      V.guardarMundos(mundos); m.subirMundos(mundos); V.subirMundosAlGuardar((x) => m.subirMundos(x));
+      ficha = V.fichaOCrear(miNombre());
+      const enLaNube = await m.leerFichaNube(V.mundoActivo());
+      ficha = V.fusionar(ficha, enLaNube); ficha.mundo = V.mundoActivo();
       V.guardarFicha(ficha); m.subirFicha(ficha, true);
     } catch (e) { console.warn('Ficha de la nube no disponible:', e.message); }
     try {
@@ -873,7 +924,7 @@ async function entrarPorReunion() {
   try { await unirseComoInvitado(r.codigo, 20000); avisoPortada(''); }
   catch (e) { app.modo = null; avisoPortada(e.message); }
 }
-$('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html'; });
+$('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html?elegir'; });
 
 // =============================================================
 //  RED: anfitrión
