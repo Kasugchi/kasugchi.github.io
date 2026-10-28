@@ -83,6 +83,40 @@ export function nuevaFicha(nombre = 'Viajero') {
   };
 }
 
+// Mundo de exhibición (?showcase en la portada): la tortuga con todo y una cuadrilla veterana.
+export function fichaShowcase(nombre = 'Viajero') {
+  const f = nuevaFicha(nombre), ahora = Date.now();
+  const H = (tipo, nombreH, arma, armaduras, subclase, mejoras, oro, banco) => {
+    const id = idNuevo('h');
+    const cuerpo = { barbaro: 8, enano: 7, elfo: 6, mago: 4 }[tipo] + (mejoras.cuerpo || 0);
+    const mente = { barbaro: 2, enano: 3, elfo: 4, mago: 6 }[tipo] + (mejoras.mente || 0);
+    f.heroes[id] = { id, tipo, nombre: nombreH, icono: tipo, arma, armaduras, objetos: { pocionCurar: 2 }, kit: tipo === 'enano',
+      oro, banco, cuerpoMax: cuerpo, mente, inventario: { armas: [], armaduras: [], objetos: {} },
+      nivel: 10, xp: 270, puntos: 0, mejoras, subclase, prestado: null, creado: ahora };
+    f.orden.push(id);
+  };
+  H('barbaro', 'Grom', 'hacha', ['casco', 'placas'], 'campeon', { cuerpo: 4, ataque: 2, defensa: 2, mente: 1 }, 640, 1800);
+  H('enano', 'Minimax', 'hacha', ['casco', 'escudo', 'cota'], 'guardian', { cuerpo: 4, defensa: 2, ataque: 2, mente: 1 }, 520, 2400);
+  H('elfo', 'Lirael', 'ballesta', ['casco', 'cotaElfica'], 'arquero', { cuerpo: 3, ataque: 2, defensa: 2, mente: 2 }, 410, 1500);
+  H('mago', 'Aldric', 'baston', [], 'hechicero', { cuerpo: 3, mente: 3, defensa: 2, ataque: 1 }, 380, 1200);
+  f.activo = f.orden[0];
+  f.banco = 3200;
+  f.diario = { misiones: 64, victorias: 55, derrotas: 9, jefes: 21, pisoMax: 20, monstruos: 812, caidas: 6 };
+  const dias = (n) => ahora - n * 86400000;
+  f.cabana.trofeos = [
+    { nombre: 'Ugrak, el Gran Chamán', donde: 'Mazmorra Infinita · piso 5', fecha: dias(40) },
+    { nombre: 'La Reina de Hueso', donde: 'Mazmorra Infinita · piso 10', fecha: dias(31) },
+    { nombre: 'El Gólem Ancestral', donde: 'Mazmorra Infinita · piso 15', fecha: dias(22) },
+    { nombre: 'El Heraldo del Abismo', donde: 'Mazmorra Infinita · piso 20', fecha: dias(14) },
+    { nombre: 'Corazón de la Mazmorra', donde: 'Mazmorra Infinita · piso 20', fecha: dias(14) },
+    { nombre: 'Velmor el Pálido', donde: 'Misión 5: El Trono de Velmor', fecha: dias(6) }
+  ];
+  f.tortuga = { fama: 420, rescatados: [], historias: { velmor: dias(6) },
+    obras: { bandera: dias(30), jardin: dias(25), fuente: dias(18), muelle: dias(9) }, vistos: {}, encargos: null };
+  for (const id of ['farolillos', 'casas1', 'mordo', 'arbol', 'pescador', 'casas2', 'cantina', 'gentio', 'casas3', 'mercado', 'faro', 'bandera', 'jardin', 'fuente', 'muelle']) f.tortuga.vistos[id] = ahora;
+  return f;
+}
+
 // Completa una ficha antigua o incompleta con lo que le falte.
 export function normalizar(f) {
   const base = nuevaFicha(f?.nombre || 'Viajero');

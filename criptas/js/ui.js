@@ -368,6 +368,17 @@ import('./nube.js').then((m) => {
       const enLaNube = await m.leerFichaNube(V.mundoActivo());
       ficha = V.fusionar(ficha, enLaNube); ficha.mundo = V.mundoActivo();
       V.guardarFicha(ficha); m.subirFicha(ficha, true);
+      // ?showcase: crea un mundo de exhibición con la tortuga al completo (una vez; luego se quita de la dirección).
+      if (new URLSearchParams(location.search).has('showcase')) {
+        history.replaceState(null, '', location.pathname);
+        const r = V.crearMundo('Morrandar de gala');
+        if (r.error) toast('No cabe otro mundo: ' + r.error, 'peligro');
+        else {
+          ficha = { ...V.fichaShowcase(miNombre()), mundo: r.id };
+          V.guardarFicha(ficha); m.subirFicha(ficha, true);
+          toast('Creado el mundo «Morrandar de gala». Entra en Morrandar para verlo.', 'bueno');
+        }
+      }
     } catch (e) { console.warn('Ficha de la nube no disponible:', e.message); }
     try {
       app.nubePartidas = await m.listar();
