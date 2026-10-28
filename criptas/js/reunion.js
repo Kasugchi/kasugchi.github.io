@@ -68,13 +68,14 @@ function traducir(e) {
 }
 
 // ¿Esta sala es una reunión? (para el menú del juego)
+// Lee la sala entera (como hace red.js al unirse) y, como mucho, espera 6 s.
 export async function infoReunion(codigo) {
-  try {
-    const v = (await get(r(codigo, 'reunion/abierta'))).val();
-    if (!v) return null;
-    const enJuego = (await get(r(codigo, 'reunion/enJuego'))).val() === true;
-    return { enJuego };
-  } catch { return null; }
+  const leerSala = get(r(codigo)).then((s) => {
+    const v = s.val();
+    return v?.reunion?.abierta ? { enJuego: v.reunion.enJuego === true } : null;
+  });
+  const espera = new Promise((ok) => setTimeout(() => ok({ tardado: true }), 6000));
+  try { return await Promise.race([leerSala, espera]); } catch (e) { console.warn('Reunión no disponible:', e.message); return null; }
 }
 
 // Desde la partida (index.html): el anfitrión avisa de que vuelven a Morrandar…

@@ -385,7 +385,8 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
   if (codigo.length !== 4) return avisoPortada('El código tiene 4 letras.');
   avisoPortada('Buscando la sala ' + codigo + '…');
   // ¿Se están reuniendo en Morrandar? Entonces se espera allí (o en la pantalla ligera).
-  const reu = await Reu().then((m) => m.infoReunion(codigo)).catch(() => null);
+  let reu = await Reu().then((m) => m.infoReunion(codigo)).catch((e) => { console.warn(e); return null; });
+  if (reu?.tardado) { avisoPortada('La conexión va lenta… seguimos intentándolo.'); reu = null; }
   if (reu && !reu.enJuego) { avisoPortada(''); return elegirVistaReunion(codigo); }
   if (reu) ponerReunion(codigo);
   try { await unirseComoInvitado(codigo); avisoPortada(''); }
