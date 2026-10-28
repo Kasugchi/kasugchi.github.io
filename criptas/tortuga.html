@@ -12,27 +12,27 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/datos.js": "./js/datos.js?v=20261028143119",
-    "./js/firebase.js": "./js/firebase.js?v=20261028143119",
-    "./js/ia.js": "./js/ia.js?v=20261028143119",
-    "./js/iconos.js": "./js/iconos.js?v=20261028143119",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028143119",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028143119",
-    "./js/motor.js": "./js/motor.js?v=20261028143119",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028143119",
-    "./js/nube.js": "./js/nube.js?v=20261028143119",
-    "./js/panel.js": "./js/panel.js?v=20261028143119",
-    "./js/planos.js": "./js/planos.js?v=20261028143119",
-    "./js/procedural.js": "./js/procedural.js?v=20261028143119",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028143119",
-    "./js/red.js": "./js/red.js?v=20261028143119",
-    "./js/render.js": "./js/render.js?v=20261028143119",
-    "./js/render3d.js": "./js/render3d.js?v=20261028143119",
-    "./js/reunion.js": "./js/reunion.js?v=20261028143119",
-    "./js/sprites.js": "./js/sprites.js?v=20261028143119",
-    "./js/tablero.js": "./js/tablero.js?v=20261028143119",
-    "./js/ui.js": "./js/ui.js?v=20261028143119",
-    "./js/viajero.js": "./js/viajero.js?v=20261028143119"
+    "./js/datos.js": "./js/datos.js?v=20261028144149",
+    "./js/firebase.js": "./js/firebase.js?v=20261028144149",
+    "./js/ia.js": "./js/ia.js?v=20261028144149",
+    "./js/iconos.js": "./js/iconos.js?v=20261028144149",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028144149",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028144149",
+    "./js/motor.js": "./js/motor.js?v=20261028144149",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028144149",
+    "./js/nube.js": "./js/nube.js?v=20261028144149",
+    "./js/panel.js": "./js/panel.js?v=20261028144149",
+    "./js/planos.js": "./js/planos.js?v=20261028144149",
+    "./js/procedural.js": "./js/procedural.js?v=20261028144149",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028144149",
+    "./js/red.js": "./js/red.js?v=20261028144149",
+    "./js/render.js": "./js/render.js?v=20261028144149",
+    "./js/render3d.js": "./js/render3d.js?v=20261028144149",
+    "./js/reunion.js": "./js/reunion.js?v=20261028144149",
+    "./js/sprites.js": "./js/sprites.js?v=20261028144149",
+    "./js/tablero.js": "./js/tablero.js?v=20261028144149",
+    "./js/ui.js": "./js/ui.js?v=20261028144149",
+    "./js/viajero.js": "./js/viajero.js?v=20261028144149"
   }
 }
 </script>
@@ -1110,7 +1110,7 @@ const DIALOGOS = {
     ops: [['Proponer la Mazmorra Infinita', () => { panelSala.R.proponer('infinita'); cerrarDialogo(); }], ['Proponer el Modo Historia', () => { panelSala.R.proponer('historia'); cerrarDialogo(); }],
       ...(Object.values(panelSala.R.gente()).some((g) => g.caidos > 0) ? [['Proponer el rescate en el Limbo', () => { panelSala.R.proponer('limbo'); cerrarDialogo(); }]] : []),
       ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }) : ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
-    ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Bajar con amigos (abrir una sala)', () => { cerrarDialogo(); panelSala.abrir(); }], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
+    ops: [['Entrar en el libro (solo)', paginasDelLibro], ['Bajar con amigos (abrir una sala)', () => { cerrarDialogo(); panelSala.abrir(); }], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
   cabana: () => panelSala?.R && !panelSala.R.soyAnfitrion() ? ({ texto: 'La cabaña de quien lleva la sala. Puedes entrar a ver sus trofeos, y en su baúl cambiar tu propio héroe.',
     ops: [['Entrar', abrirCabana], ['Salir', cerrarDialogo]] }) : ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
     ops: [['Entrar', abrirCabana], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
@@ -1197,7 +1197,18 @@ addEventListener('message', (e) => {
   if (R && e.data?.t === 'gesto') R.gesto(String(e.data.g || ''));
   if (R && e.data?.t === 'pose') R.cambiar({ cpose: ['sentado', 'tumbado'].includes(e.data.pose) ? e.data.pose : null });
 });
-function entrarEnLibro() { cerrarDialogo(); audio.libro(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'index.html'; }, 1500); }
+// El libro te lleva directo a la historia que elijas (index.html?jugar=…); sin nada, al menú.
+function entrarEnLibro(modo) { cerrarDialogo(); audio.libro(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = 'index.html' + (typeof modo === 'string' ? '?jugar=' + modo : ''); }, 1500); }
+function paginasDelLibro() {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const caidos = ficha.orden.filter((id) => ficha.heroes[id]?.caido).length;
+  mostrar('El Libro', 'Las páginas pasan solas hasta abrirse por donde tú quieras. ¿En qué historia entras?', [
+    ['La Caída de Velmor (Modo Historia)', () => entrarEnLibro('historia')],
+    ['Las páginas en blanco (Mazmorra Infinita)', () => entrarEnLibro('infinita')],
+    ...(caidos ? [['El Limbo: rescatar a un caído', () => entrarEnLibro('limbo')]] : []),
+    ['Seguir una partida guardada', () => entrarEnLibro()],
+    ['Volver', () => interactuar(ultimo)]]);
+}
 let despierta = 0;
 function despertar() { despierta = 4; audio.rugido(); }
 $('accion').addEventListener('click', () => cerca && interactuar(cerca));

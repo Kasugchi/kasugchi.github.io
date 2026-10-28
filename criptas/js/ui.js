@@ -841,7 +841,16 @@ async function elegirVistaReunion(codigo) {
   location.href = m.paginaDeVista(v) + '?sala=' + codigo;
 }
 // Llegada desde la reunión, cuando ya se sabe que hay acceso.
+// Llegada desde el libro de Morrandar (index.html?jugar=historia|infinita|limbo): directo a elegir héroes.
+let jugarPendiente = new URLSearchParams(location.search).get('jugar');
+if (jugarPendiente) history.replaceState(null, '', location.pathname);
+function entrarPorLibro() {
+  const modo = jugarPendiente; jugarPendiente = null;
+  if (!modo || app.modo) return;
+  document.querySelector(`#portada [data-modo="${modo}"][data-donde="local"]`)?.click();
+}
 async function entrarPorReunion() {
+  entrarPorLibro();
   const r = reunionPendiente;
   if (!r || app.modo) return;
   reunionPendiente = null;
