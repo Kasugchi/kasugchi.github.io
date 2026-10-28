@@ -9,7 +9,7 @@
 import * as D from './datos.js';
 import * as T from './tablero.js';
 import { turnoMonstruo, turnoAliado } from './ia.js';
-import { generarMision, semillaDeNivel } from './procedural.js';
+import { generarMision, generarLimbo, semillaDeNivel } from './procedural.js';
 
 const { clave } = T;
 export const rnd = (n) => Math.floor(Math.random() * n);
@@ -261,6 +261,7 @@ export function iniciarMision(estado, def) {
     }
   }
   estado.contrato = null;
+  if (m.limbo && estado.limbo) Object.assign(estado.limbo, { sala: m.limbo.salaEspiritu, pozo: m.limbo.pozo, sellada: false, vencido: false, alma: null, carcelero: false, rescatado: false, marca: null });
   estado.cronica ||= {};
   estado.cronica.actual = cronicaNueva(estado);
   log(estado, 'Misión ' + m.numero + ': ' + m.titulo, 'titulo');
@@ -366,7 +367,7 @@ export function revelar(estado) {
 
 // El mercader tranquilo y los aliados no cuentan como «monstruos a la vista».
 export const monstruosALaVista = (estado, h) =>
-  estado.monstruos.filter((m) => m.vivo && m.visto && !m.neutral && !m.aliado && T.lineaVision(estado, h.x, h.y, m.x, m.y));
+  estado.monstruos.filter((m) => m.vivo && m.visto && !m.neutral && !m.aliado && !m.intocable && T.lineaVision(estado, h.x, h.y, m.x, m.y));
 
 // =============================================================
 //  DISPARADORES (el "guion" de cada misión)
@@ -442,6 +443,7 @@ export function danarHeroe(estado, h, n, sinCadena = false) {
       avisar(estado, h.nombre + ' bebe su poción curativa en el último aliento (+' + cura + ').', 'bueno');
       return;
     }
+    if (estado.limbo && estado.heroes[h.id]) { expulsar(estado, h); return; }   // en el Limbo nadie muere: lo escupe fuera
     h.cuerpo = 0; h.vivo = false;
     ev(estado, { tipo: 'muerte', id: h.id });
     sumar(cronH(estado, h.id), 'caidas');
@@ -459,6 +461,7 @@ export function danarHeroe(estado, h, n, sinCadena = false) {
 
 export function danarMonstruo(estado, m, n) {
   if (!m.vivo) return;
+  if (m.intocable) { if (n > 0) avisar(estado, 'El golpe atraviesa ' + m.nombre + ' como si fuera niebla.', ''); return; }
   if (m.ilusion && n > 0) { m.vivo = false; ev(estado, { tipo: 'muerte', id: m.id }); avisar(estado, '¡Era una ilusión! Se deshace en el aire.', ''); return; }
   if (m.efectos.dormido) delete m.efectos.dormido;
   if (n <= 0) return;
@@ -503,6 +506,7 @@ export function danarMonstruo(estado, m, n) {
       if (n.fragmentos > antes) log(estado, n.nombre + ' recoge un fragmento de alma (' + n.fragmentos + '/6).', 'magia');
     }
     log(estado, m.nombre + ' muere.', 'bueno');
+    if (m.limbo === 'espiritu') espirituVencido(estado, m);
     disparar(estado, 'monstruo_muerto', { id: m.id });
   }
 }
@@ -562,7 +566,7 @@ function siguienteEnLinea(estado, h, m) {
 // Ataque de monstruo a héroe.
 // opciones.mental: se defiende con la mente (sin armadura); opciones.aMente: el daño se lo lleva la mente.
 export function golpearHeroe(estado, m, h, dados, etiqueta, opciones = {}) {
-  if (m.tipo === 'fantasma' && estado.heroes[h.id]) opciones = { mental: true, aMente: true }; // los fantasmas atraviesan la armadura y hielan la mente
+  if ((m.tipo === 'fantasma' || m.limbo === 'alma') && estado.heroes[h.id]) opciones = { mental: true, aMente: true }; // los fantasmas atraviesan la armadura y hielan la mente
   if (m.efectos?.tambor) { dados += 1; delete m.efectos.tambor; }
   if (estado.monstruos.some((o) => o.tipo === 'ojo' && o.vivo && !o.aliado && !o.efectos.poseido && o !== m && T.lineaVision(estado, o.x, o.y, m.x, m.y))) dados += 1;
   const ataque = tirarCombate(dados);
@@ -570,7 +574,9 @@ export function golpearHeroe(estado, m, h, dados, etiqueta, opciones = {}) {
     + (h.efectos.runaHierro ? 2 : 0) + (h.efectos.runaPiedra ? 2 : 0) + (h.efectos.baluarte ? 1 : 0) + (h.efectos.esquiva ? 2 : 0);
   delete h.efectos.calderoDef; delete h.efectos.sordo;
   const base = h.efectos?.trance ? Math.floor(defensaHeroe(h) / 2) : defensaHeroe(h);
-  const defensa = tirarCombate(opciones.mental && estado.heroes[h.id] ? menteAhora(h) : h.efectos?.furia || h.efectos?.furiaB ? 0 : Math.max(0, base + extra));
+  let nDef = opciones.mental && estado.heroes[h.id] ? menteAhora(h) : h.efectos?.furia || h.efectos?.furiaB ? 0 : Math.max(0, base + extra);
+  if (opciones.mitadDefensa) nDef = Math.ceil(nDef / 2);
+  const defensa = tirarCombate(nDef);
   if (opciones.mental) etiqueta = (etiqueta ? etiqueta + ' · ' : '') + 'se resiste con la mente';
   let dano = Math.max(0, cuenta(ataque, 'calavera') - cuenta(defensa, 'escudo'));
   if (dano && h.efectos?.aguante) { delete h.efectos.aguante; avisar(estado, h.nombre + ' encaja el golpe sin pestañear.', 'bueno'); dano = 0; }
@@ -631,12 +637,12 @@ export function alcance(estado, h) {
   return T.explorar([h.x, h.y], t.movRestante,
     (c, n) => {
       const [x, y] = n;
-      if (T.esRoca(estado, x, y) || T.muebleEn(estado, x, y)) return false;
+      if (T.esRoca(estado, x, y) || (T.muebleEn(estado, x, y) && !pozoLibre(estado, x, y))) return false;
       const b = T.borde(estado, c, n);
       if (b === 'bloqueado') return false;
       if (!visible(x, y) && b !== 'puerta') return false;
       const f = T.figuraEn(estado, x, y);
-      if (f && !estado.heroes[f.id] && f.visto) return false;
+      if (f && !estado.heroes[f.id] && f.visto && !f.intocable) return false;   // los Ojos del Castigo se atraviesan
       const tr = trampaEn(estado, x, y);
       if (tr && tr.descubierta) return false;
       return true;
@@ -701,7 +707,7 @@ function moverHeroe(estado, h, x, y) {
   for (let i = 1; i < ruta.length; i++) {
     const prev = ruta[i - 1], n = ruta[i];
     const f = T.figuraEn(estado, n[0], n[1]);
-    if (f && !T.esAliado(estado, f)) { volcar(); avisar(estado, '¡Algo bloquea el paso!', 'peligro'); revelar(estado); break; }
+    if (f && !T.esAliado(estado, f) && !f.intocable) { volcar(); avisar(estado, '¡Algo bloquea el paso!', 'peligro'); revelar(estado); break; }
     const b = T.borde(estado, prev, n);
     if (b === 'puerta') {
       const p = T.puertaEntre(estado, prev, n);
@@ -733,6 +739,7 @@ function moverHeroe(estado, h, x, y) {
     revelar(estado);
     disparar(estado, 'heroe_en_casilla', { x: h.x, y: h.y, id: h.id });
     if (!h.vivo) break;
+    if (estado.limbo && limboPaso(estado, h)) break;
   }
   volcar();
   // Nunca acabar encima de otro héroe.
@@ -752,7 +759,7 @@ function moverHeroe(estado, h, x, y) {
 export function objetivosAtaque(estado, h) {
   const arma = D.ARMAS[h.arma];
   return estado.monstruos.filter((m) => {
-    if (!m.vivo || !m.visto || m.aliado) return false;
+    if (!m.vivo || !m.visto || m.aliado || m.intocable) return false;
     if (arma.distancia) return !T.adyacentes(h, m) && T.lineaVision(estado, h.x, h.y, m.x, m.y, true);
     if (T.puedeTocar(estado, h, m)) return true;
     if (arma.alcance === 2 && ((h.x === m.x && Math.abs(h.y - m.y) === 2) || (h.y === m.y && Math.abs(h.x - m.x) === 2))) {
@@ -766,7 +773,7 @@ export function objetivosAtaque(estado, h) {
 export function objetivosHechizo(estado, h, id) {
   const hz = D.HECHIZOS[id];
   if (hz.objetivo === 'monstruo') {
-    return estado.monstruos.filter((m) => m.vivo && m.visto && !m.aliado && T.lineaVision(estado, h.x, h.y, m.x, m.y, true)).map((m) => m.id);
+    return estado.monstruos.filter((m) => m.vivo && m.visto && !m.aliado && !m.intocable && T.lineaVision(estado, h.x, h.y, m.x, m.y, true)).map((m) => m.id);
   }
   if (hz.objetivo === 'propio') return id === 'pacto' && h.cuerpo <= 1 ? [] : [h.id];
   return Object.values(estado.heroes).filter((o) => o.vivo && !o.fuera && (o === h || T.lineaVision(estado, h.x, h.y, o.x, o.y, true))).map((o) => o.id);
@@ -825,8 +832,11 @@ export function disponibles(estado, id) {
   if (libre && pesada && t.movido) r.motivoAtaque = 'Con la ' + D.ARMAS[h.arma].nombre.toLowerCase() + ' no puedes atacar después de moverte.';
   r.hechizos = libre ? h.hechizos.map((hz) => ({ id: hz, objetivos: objetivosHechizo(estado, h, hz).filter((o) => !esNeutral(o)) })).filter((x) => x.objetivos.length) : [];
   r.buscarTesoro = libre && sala !== '.' && !aLaVista && !estado.buscado[id + ':' + sala];
+  const L = estado.limbo;
+  if (L) r.buscarTesoro = libre && L.vencido && !L.almaCogida && sala === L.sala;
   r.buscarTrampas = libre && !aLaVista;
   r.motivoBusqueda = aLaVista ? 'Hay monstruos a la vista' : (sala === '.' ? 'El tesoro solo se busca en salas' : (estado.buscado[id + ':' + sala] ? 'Ya buscaste tesoro aquí' : ''));
+  if (L && !r.buscarTesoro) r.motivoBusqueda = !libre ? 'Ya has hecho tu acción' : L.almaCogida ? 'El alma ya está en camino' : !L.vencido ? 'En el Limbo solo hay niebla. El alma se busca en la sala del espíritu, cuando lo venzáis.' : 'El alma está en la sala del espíritu';
   r.desarmables = libre && (D.HEROES[id].desarmaSiempre || h.kit)
     ? estado.trampas.filter((tr) => tr.activa && tr.descubierta && (Math.abs(tr.x - h.x) + Math.abs(tr.y - h.y) <= 1)).map((tr) => tr.id) : [];
   // Calderos: un trago por héroe y caldero en cada misión, estando al lado.
@@ -2451,6 +2461,7 @@ function beberCaldero(estado, h, i, elegido) {
 
 function buscarTesoro(estado, h) {
   const sala = T.region(h.x, h.y);
+  if (estado.limbo) return cogerAlma(estado, h, true);
   estado.buscado[h.id + ':' + sala] = 1;
   sumar(cron(estado), 'busquedas');
   sumar(cronH(estado, h.id), 'busquedas');
@@ -2624,6 +2635,232 @@ function lanzar(estado, h, id, objetivo) {
 }
 
 // =============================================================
+//  LIMBO: rescate de un héroe caído (misión especial)
+//  estado.limbo = { fichaId, dueno, nombre, tipo, semilla,           ← al crear la partida
+//                   sala, pozo, sellada, vencido, alma, carcelero,   ← en cada incursión
+//                   almaCogida, rescatado, marca }
+//  alma: null | { portador: id } | { x, y } (en el suelo)
+//  marca: última casilla donde un Ojo del Castigo vio a un héroe.
+// =============================================================
+function pozoLibre(estado, x, y) { const u = T.muebleEn(estado, x, y); return !!(u && u.tipo === 'pozo' && u.libre); }
+const enSala = (estado, f) => estado.limbo?.sala && T.region(f.x, f.y) === estado.limbo.sala;
+const encerrados = (estado) => Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera && enSala(estado, h));
+export const portadorAlma = (estado) => (estado.limbo?.alma?.portador ? estado.heroes[estado.limbo.alma.portador] : null);
+
+function puertasDeSala(estado, sala) {
+  return estado.puertas.filter((p) => T.region(...p.a) === sala || T.region(...p.b) === sala);
+}
+function sellarSala(estado) {
+  const L = estado.limbo;
+  if (!L || L.sellada || L.vencido) return;
+  if (!encerrados(estado).length) return;
+  L.sellada = true;
+  for (const p of puertasDeSala(estado, L.sala)) { p.abierta = false; p.bloqueada = true; p.sello = true; }
+  ev(estado, { tipo: 'temblor' });
+  avisar(estado, 'Las puertas se cierran de golpe y se sellan con niebla: nadie entra ni sale hasta que el espíritu caiga.', 'peligro');
+}
+function desellar(estado, reiniciar) {
+  const L = estado.limbo;
+  if (!L.sellada) return;
+  L.sellada = false;
+  for (const p of puertasDeSala(estado, L.sala)) if (p.sello) { p.bloqueada = false; delete p.sello; }
+  if (reiniciar) {
+    const e = estado.monstruos.find((m) => m.limbo === 'espiritu');
+    if (e?.vivo) {
+      e.cuerpo = e.cuerpoMax; e.efectos = {};
+      if (!T.figuraEn(estado, e.x0, e.y0)) { e.x = e.x0; e.y = e.y0; }
+    }
+    avisar(estado, 'No queda nadie dentro: el sello se rompe y el espíritu recupera todas sus fuerzas. Podéis volver a intentarlo.', 'peligro');
+  }
+}
+function espirituVencido(estado, m) {
+  const L = estado.limbo;
+  if (!L) return;
+  L.vencido = true;
+  desellar(estado, false);
+  ponerFlag(estado, 'espirituVencido');
+  // Las cadenas del pozo caen: ya se puede pisar.
+  const i = estado.muebles.findIndex((u) => u.tipo === 'pozo');
+  if (i >= 0) estado.muebles[i].libre = true;   // los héroes ya pueden pisarlo (los monstruos siguen sin poder)
+  ev(estado, { tipo: 'historia', texto: 'El espíritu de ' + L.nombre + ' se deshace en niebla azul. Su alma queda flotando en la sala: buscadla (Buscar tesoro). A lo lejos, las cadenas del Pozo del Retorno caen al suelo.' });
+  log(estado, 'Las cadenas del Pozo del Retorno se rompen.', 'bueno');
+}
+// Buscar tesoro en la sala del espíritu, o pisar el alma caída.
+function cogerAlma(estado, h, buscando) {
+  const L = estado.limbo;
+  if (buscando) {
+    if (!(L.vencido && !L.almaCogida && T.region(h.x, h.y) === L.sala)) { avisar(estado, 'Solo hay niebla.'); return; }
+    L.almaCogida = true;
+  }
+  L.alma = { portador: h.id };
+  ponerFlag(estado, 'alma');
+  ev(estado, { tipo: 'tesoro', heroe: h.id, texto: h.nombre + ' recoge el alma de ' + L.nombre + '. Brilla con una luz azul que se ve desde cualquier rincón del Limbo… y todo lo que vaga aquí la quiere.', especial: true });
+  log(estado, h.nombre + ' lleva el alma. El faro azul se enciende.', 'magia');
+  if (!L.carcelero) aparecerCarcelero(estado, h);
+}
+function aparecerCarcelero(estado, h) {
+  const L = estado.limbo;
+  L.carcelero = true;
+  // Lejos del portador, en un sitio por el que se pueda andar.
+  const mapa = T.explorar([h.x, h.y], 60, (c, n) => !T.esRoca(estado, n[0], n[1]) && !T.muebleEn(estado, n[0], n[1]) && T.borde(estado, c, n) !== 'bloqueado');
+  const lejos = Object.values(mapa).filter((c) => c.d >= 10 && !T.figuraEn(estado, c.x, c.y)).sort((a, b) => b.d - a.d);
+  const sitio = lejos[Math.floor(Math.random() * Math.min(6, lejos.length))] || Object.values(mapa).sort((a, b) => b.d - a.d)[0];
+  const c = aparecer(estado, { id: 'carcelero', tipo: 'carcelero', x: sitio.x, y: sitio.y, ia: 'agresivo', noEscalar: true, extra: { limbo: 'carcelero' } }, false);
+  if (!c) return;
+  c.visto = true;
+  ev(estado, { tipo: 'aparece', id: c.id });
+  ev(estado, { tipo: 'historia', texto: 'Un crujido de cadenas recorre el Limbo. El Carcelero ha despertado: nadie se lleva un alma sin pagar.' });
+}
+function soltarAlma(estado, h) {
+  const L = estado.limbo;
+  if (L.alma?.portador !== h.id) return;
+  // Cae en su casilla (o en la libre más cercana, si no se puede pisar).
+  let sitio = [h.x, h.y];
+  if (T.muebleEn(estado, h.x, h.y) && !pozoLibre(estado, h.x, h.y)) {
+    const mapa = T.explorar([h.x, h.y], 6, (c, n) => !T.esRoca(estado, n[0], n[1]) && T.borde(estado, c, n) !== 'bloqueado');
+    const c = Object.values(mapa).filter((q) => !T.muebleEn(estado, q.x, q.y) && !T.figuraEn(estado, q.x, q.y)).sort((a, b) => a.d - b.d)[0];
+    if (c) sitio = [c.x, c.y];
+  }
+  L.alma = { x: sitio[0], y: sitio[1] };
+  avisar(estado, 'El alma de ' + L.nombre + ' cae al suelo. El faro se apaga. Quien la pise, la recoge.', 'peligro');
+}
+function expulsar(estado, h) {
+  h.cuerpo = 0; h.fuera = true; h.expulsado = true;
+  soltarAlma(estado, h);
+  ev(estado, { tipo: 'salida', heroe: h.id });
+  avisar(estado, h.nombre + ' cae… y el Limbo lo escupe fuera, sano y salvo. Ya no puede volver a entrar en esta incursión.', 'peligro');
+  sumar(cronH(estado, h.id), 'caidas');
+  const L = estado.limbo;
+  if (L.sellada && !encerrados(estado).length) desellar(estado, true);
+  if (estado.turno?.heroe === h.id) estado.turno.movRestante = 0;
+}
+// Cada casilla que pisa un héroe: recoger el alma caída, sellar, o saltar al pozo.
+function limboPaso(estado, h) {
+  const L = estado.limbo;
+  if (L.alma && !L.alma.portador && L.alma.x === h.x && L.alma.y === h.y) { cogerAlma(estado, h, false); return true; }
+  if (L.alma?.portador === h.id && L.pozo && L.vencido && h.x === L.pozo[0] && h.y === L.pozo[1]) { huida(estado, h); return true; }
+  const esp = estado.monstruos.find((m) => m.limbo === 'espiritu' && m.vivo);
+  if (esp && !L.sellada && enSala(estado, h) && (T.puedeTocar(estado, h, esp) || T.diagonales(h, esp))) { sellarSala(estado); return true; }
+  return false;
+}
+function huida(estado, h) {
+  const L = estado.limbo;
+  L.rescatado = true; L.alma = null;
+  ponerFlag(estado, 'rescatado');
+  ev(estado, { tipo: 'historia', texto: h.nombre + ' salta al Pozo del Retorno con el alma de ' + L.nombre + '. La luz azul os arrastra a todos hacia arriba… y, al abrir los ojos, ' + L.nombre + ' respira otra vez.' });
+  for (const o of Object.values(estado.heroes)) if (o.vivo && !o.fuera) { o.fuera = true; ev(estado, { tipo: 'salida', heroe: o.id }); }
+  comprobarFin(estado);
+}
+
+// ---------- Turnos de lo que vive en el Limbo ----------
+const LIMBO_VISTA = 10;
+function heroesDentro(estado) { return Object.values(estado.heroes).filter((h) => h.vivo && !h.fuera); }
+function limboMover(estado, m, ruta) {
+  if (!ruta || ruta.length < 2) return;
+  const tramo = ruta.slice(0, m.mov + 1);
+  // No acabar encima de nadie (se puede pasar por encima, como los ojos con los héroes).
+  while (tramo.length > 1 && T.figuraEn(estado, ...tramo[tramo.length - 1])) tramo.pop();
+  if (tramo.length < 2) return;
+  const [x, y] = tramo[tramo.length - 1];
+  m.x = x; m.y = y; m.region = T.region(x, y);
+  ev(estado, { tipo: 'mover', id: m.id, ruta: tramo });
+}
+function turnoLimbo(estado, m) {
+  const L = estado.limbo;
+  if (m.limbo === 'ojo') return turnoOjo(estado, m);
+  if (m.limbo === 'carcelero') return turnoCarcelero(estado, m);
+  // Alma en pena: lenta, atraviesa paredes (no la sala sellada) y hiela la mente.
+  const heroes = heroesDentro(estado);
+  const pegado = heroes.find((h) => T.puedeTocar(estado, m, h));
+  if (pegado) return golpearHeroe(estado, m, pegado, m.ataque);
+  const portador = portadorAlma(estado);
+  let objetivo = portador;
+  if (!objetivo) {
+    const vistos = heroes.filter((h) => Math.abs(h.x - m.x) + Math.abs(h.y - m.y) <= LIMBO_VISTA && T.lineaVision(estado, m.x, m.y, h.x, h.y));
+    objetivo = vistos.sort((a, b) => (Math.abs(a.x - m.x) + Math.abs(a.y - m.y)) - (Math.abs(b.x - m.x) + Math.abs(b.y - m.y)))[0] || null;
+  }
+  const meta = objetivo ? { x: objetivo.x, y: objetivo.y, heroe: objetivo } : L.marca ? { x: L.marca.x, y: L.marca.y } : null;
+  const puede = (c, n) => T.dentro(n[0], n[1]) && !T.esRoca(estado, n[0], n[1]) && !T.muebleEn(estado, n[0], n[1])
+    && !(L.sellada && T.region(n[0], n[1]) === L.sala && T.region(c[0], c[1]) !== L.sala);
+  const pasar = (c) => !T.figuraEn(estado, c[0], c[1]) || (c[0] === m.x && c[1] === m.y);
+  if (meta) {
+    const mapa = T.explorar([m.x, m.y], 60, puede, pasar);
+    let mejor = null;
+    for (const [k, c] of Object.entries(mapa)) {
+      if (T.figuraEn(estado, c.x, c.y) && !(c.x === m.x && c.y === m.y)) continue;
+      const d = meta.heroe ? (T.puedeTocar(estado, c, meta.heroe) ? 0 : 1 + Math.abs(c.x - meta.x) + Math.abs(c.y - meta.y)) : Math.abs(c.x - meta.x) + Math.abs(c.y - meta.y);
+      if (!mejor || d < mejor.d || (d === mejor.d && c.d < mejor.c.d)) mejor = { k, d, c };
+    }
+    if (mejor) limboMover(estado, m, T.reconstruir(mapa, mejor.k));
+    if (!meta.heroe && L.marca && m.x === L.marca.x && m.y === L.marca.y) L.marca = null;   // aquí ya no hay nadie
+  } else {
+    // Vaga sin rumbo.
+    const mapa = T.explorar([m.x, m.y], m.mov, puede, pasar);
+    const cand = Object.values(mapa).filter((c) => c.d > 0 && !T.figuraEn(estado, c.x, c.y));
+    if (cand.length) { const c = cand[Math.floor(Math.random() * cand.length)]; limboMover(estado, m, T.reconstruir(mapa, clave(c.x, c.y))); }
+  }
+  const ahora = heroesDentro(estado).find((h) => T.puedeTocar(estado, m, h));
+  if (ahora) golpearHeroe(estado, m, ahora, m.ataque);
+}
+// Ojo del Castigo: patrulla los pasillos y avisa a los espíritus de dónde estáis.
+function ojoMira(estado, m) {
+  const vistos = heroesDentro(estado).filter((h) => Math.abs(h.x - m.x) + Math.abs(h.y - m.y) <= LIMBO_VISTA && T.lineaVision(estado, m.x, m.y, h.x, h.y));
+  if (!vistos.length) return false;
+  const h = vistos.sort((a, b) => (Math.abs(a.x - m.x) + Math.abs(a.y - m.y)) - (Math.abs(b.x - m.x) + Math.abs(b.y - m.y)))[0];
+  const antes = estado.limbo.marca;
+  estado.limbo.marca = { x: h.x, y: h.y, heroe: h.id, ronda: estado.ronda };
+  if (!antes || antes.heroe !== h.id || antes.ronda < estado.ronda - 1) avisar(estado, 'Un Ojo del Castigo ha visto a ' + h.nombre + ': las almas en pena ya saben dónde está.', 'peligro');
+  return true;
+}
+function turnoOjo(estado, m) {
+  if (ojoMira(estado, m)) return;
+  const pasillo = (x, y) => T.region(x, y) === '.';
+  const mapa = T.explorar([m.x, m.y], m.mov, (c, n) => pasillo(n[0], n[1]) && !T.esRoca(estado, n[0], n[1]) && T.borde(estado, c, n) === 'libre');
+  const prev = m.prev || [m.x, m.y];
+  const cand = Object.values(mapa).filter((c) => c.d > 0 && !T.figuraEn(estado, c.x, c.y));
+  if (!cand.length) return;
+  // Sigue adelante: prefiere alejarse de donde venía.
+  cand.sort((a, b) => (b.d * 2 + Math.abs(b.x - prev[0]) + Math.abs(b.y - prev[1]) + Math.random() * 4) - (a.d * 2 + Math.abs(a.x - prev[0]) + Math.abs(a.y - prev[1]) + Math.random() * 4));
+  m.prev = [m.x, m.y];
+  limboMover(estado, m, T.reconstruir(mapa, clave(cand[0].x, cand[0].y)));
+  ojoMira(estado, m);
+}
+// El Carcelero: si tiene al portador en línea recta sin pared, la cadena; si no, como cualquier enemigo.
+function lineaLibre(estado, a, b) {
+  if (a.x !== b.x && a.y !== b.y) return null;
+  const dx = Math.sign(b.x - a.x), dy = Math.sign(b.y - a.y);
+  const ruta = [[a.x, a.y]];
+  for (let x = a.x, y = a.y; x !== b.x || y !== b.y;) {
+    const nx = x + dx, ny = y + dy;
+    if (T.borde(estado, [x, y], [nx, ny]) !== 'libre' || T.esRoca(estado, nx, ny)) return null;
+    x = nx; y = ny; ruta.push([x, y]);
+  }
+  return ruta;
+}
+function turnoCarcelero(estado, m) {
+  const p = portadorAlma(estado);
+  const linea = p && !T.puedeTocar(estado, m, p) && lineaLibre(estado, m, p);
+  if (linea) {
+    // El primer sitio libre junto al Carcelero, camino del portador.
+    let destino = null;
+    for (let i = 1; i < linea.length; i++) {
+      const [x, y] = linea[i], f = T.figuraEn(estado, x, y);
+      if ((T.muebleEn(estado, x, y) && !pozoLibre(estado, x, y)) || trampaEn(estado, x, y)) continue;   // la cadena pasa por encima de los muebles
+      if (!f || f === p) { destino = [x, y]; break; }
+    }
+    ev(estado, { tipo: 'mensaje', texto: '¡El Carcelero lanza su cadena espectral y arrastra a ' + p.nombre + '!', tono: 'peligro' });
+    log(estado, 'Cadena espectral: el Carcelero arrastra a ' + p.nombre + '.', 'peligro');
+    if (destino && (destino[0] !== p.x || destino[1] !== p.y)) {
+      ev(estado, { tipo: 'mover', id: p.id, ruta: [[p.x, p.y], destino] });
+      p.x = destino[0]; p.y = destino[1];
+    }
+    golpearHeroe(estado, m, p, 3, 'Cadena espectral', { mitadDefensa: true });
+    return;
+  }
+  turnoMonstruo(estado, m, ctxIA);
+}
+
+// =============================================================
 //  TURNOS
 // =============================================================
 function empezarTurno(estado, id) {
@@ -2692,8 +2929,14 @@ const ctxIA = {
 function turnoMonstruos(estado) {
   ev(estado, { tipo: 'fase', fase: 'monstruos' });
   // Los lobos atacan antes que nadie.
-  const lista = estado.monstruos.slice().sort((a, b) => (b.tipo === 'lobo') - (a.tipo === 'lobo'));
+  const lista = estado.monstruos.slice().sort((a, b) => (b.tipo === 'lobo') - (a.tipo === 'lobo') || (b.limbo === 'ojo') - (a.limbo === 'ojo'));
   for (const m of lista) {
+    // En el Limbo los ojos, las almas en pena y el Carcelero se mueven aunque no los veáis.
+    if (m.vivo && estado.limbo && ['ojo', 'alma', 'carcelero'].includes(m.limbo)) {
+      if (!Object.values(estado.heroes).some((h) => h.vivo && !h.fuera)) break;
+      turnoLimbo(estado, m);
+      continue;
+    }
     if (!m.vivo || !m.visto || !m.activo) continue;
     if (m.efectos.veneno) { log(estado, 'El veneno consume a ' + m.nombre + '.', 'golpe'); danarMonstruo(estado, m, 1); if (!m.vivo) continue; }
     if (!Object.values(estado.heroes).some((h) => h.vivo && !h.fuera)) break;
@@ -2703,6 +2946,8 @@ function turnoMonstruos(estado) {
     }
     if (m.aliado) { estado._autor = m.aliado.de; try { turnoAliado(estado, m, ctxIA); } finally { delete estado._autor; } continue; }
     turnoMonstruo(estado, m, ctxIA);
+    // El espíritu del compañero también sella su sala si es él quien se acerca.
+    if (m.limbo === 'espiritu' && m.vivo && !estado.limbo?.sellada && encerrados(estado).some((h) => T.puedeTocar(estado, m, h))) sellarSala(estado);
   }
   ev(estado, { tipo: 'fase', fase: 'heroes' });
 }
@@ -2712,6 +2957,16 @@ function turnoMonstruos(estado) {
 // =============================================================
 function comprobarFin(estado) {
   if (estado.resultado || estado.fase !== 'mision') return;
+  if (estado.limbo) {
+    const quedan = Object.values(estado.heroes).some((h) => h.vivo && !h.fuera);
+    const res = estado.limbo.rescatado ? 'victoria' : !quedan ? 'derrota' : null;
+    if (!res) return;
+    estado.resultado = res; estado.fase = 'resultado';
+    cerrarCronica(estado, res);
+    ev(estado, { tipo: 'fin', resultado: res });
+    log(estado, res === 'victoria' ? '¡' + estado.limbo.nombre + ' vuelve del Limbo!' : 'El Limbo os ha escupido a todos. ' + estado.limbo.nombre + ' sigue atrapado.', res === 'victoria' ? 'bueno' : 'peligro');
+    return;
+  }
   const o = estado.mision.objetivo;
   const heroes = Object.values(estado.heroes);
   const vivos = heroes.filter((h) => h.vivo);
@@ -2777,6 +3032,7 @@ function comprar(estado, h, item) {
 }
 
 function contratar(estado, h) {
+  if (estado.limbo) return 'Al Limbo no baja ningún cargador.';
   if (estado.contrato) return estado.contrato.patron === h.id ? 'Ya lo has contratado.' : 'Ya hay un cargador contratado.';
   if (h.oro < D.CARGADOR.precio) return 'No tienes oro suficiente.';
   h.oro -= D.CARGADOR.precio;
@@ -2827,6 +3083,14 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (a.tipo === 'continuar') {
     if (!esAnfitrion || estado.fase !== 'resultado') return 'Solo el anfitrión.';
     const todos = Object.values(estado.heroes);
+    if (estado.limbo) {
+      // El Limbo es una sola incursión: se vuelve a casa, sin ganar ni perder nada (lo gastado, gastado está).
+      for (const h of todos) { restaurarCaliz(h); delete h.expulsado; h.vivo = true; h.fuera = false; h.cuerpo = h.cuerpoMax; h.efectos = {}; }
+      estado.limbo.terminado = estado.resultado;
+      estado.fase = 'final';
+      ev(estado, { tipo: 'pantalla', fase: estado.fase });
+      return null;
+    }
     if (estado.aleatorio) {
       // Mazmorra Infinita: quien cae pierde la bolsa (el banco se salva); los demás ganan experiencia.
       for (const h of todos) {
@@ -2888,7 +3152,9 @@ export function aplicar(estado, a, jugador, cargarMision) {
   if (a.tipo === 'siguienteMision') {
     if (!esAnfitrion || estado.fase !== 'armeria') return 'Solo el anfitrión.';
     // Mazmorra Perdida: cada nivel se genera a partir de la semilla de la partida.
-    const def = estado.aleatorio
+    const def = estado.limbo
+      ? generarLimbo(estado.limbo.semilla, estado.limbo, estado.planoFijo || null)
+      : estado.aleatorio
       ? generarMision(semillaDeNivel(estado.aleatorio.semilla, estado.misionIdx + 1), estado.misionIdx + 1, estado.planoFijo || null)
       : cargarMision(estado.campana[estado.misionIdx]);
     if (!def) return 'No se pudo cargar la misión.';
@@ -2982,6 +3248,7 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       if (!disp.atacables.includes(a.objetivo) && !(a.alMercader && disp.atacablesNeutros.includes(a.objetivo))) return 'No puedes atacar a ese objetivo.';
       const m = estado.monstruos.find((x) => x.id === a.objetivo);
       usarAccion();
+      if (m.limbo === 'espiritu') sellarSala(estado);
       // Caminante de sombras: +1 contra un monstruo que está pegado a otro héroe.
       const sigilo = subclaseDe(h)?.sigilo && Object.values(estado.heroes).some((o) => o !== h && o.vivo && !o.fuera && T.puedeTocar(estado, o, m)) ? 1 : 0;
       const halcon = h.efectos.halcon && D.ARMAS[h.arma].distancia ? 2 : 0;
@@ -3137,6 +3404,6 @@ function accionHeroe(estado, a, h, t, disp, usarAccion) {
       return 'Acción desconocida.';
   }
   comprobarFin(estado);
-  if (!estado.resultado && !h.vivo && !h.alma) siguienteTurno(estado);
+  if (!estado.resultado && (!h.vivo || h.fuera) && !h.alma) siguienteTurno(estado);
   return null;
 }

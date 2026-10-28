@@ -34,7 +34,7 @@ const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { re
 const ficha = Ficha.fichaOCrear(leer('criptas_nombre', '') || 'Viajero');
 crearPanel({
   donde: 'ligera', fijo: document.getElementById('sala'),
-  datos: () => ({ clase: ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro') }),
+  datos: () => ({ clase: ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'), caidos: ficha.orden.filter((id) => ficha.heroes[id]?.caido).length }),
   cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
   irA: (url) => { document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 700); }
 });

@@ -167,6 +167,22 @@ export function dibujarMueble(g, u, t) {
   sombra(g, x, y, w, h);
   switch (u.tipo) {
     case 'mesa': madera(g, x, y, w, h); break;
+    case 'pozo': {
+      // Pozo del Retorno: brocal de piedra y agua azul que brilla; encadenado hasta vencer al espíritu.
+      const cx = x + w / 2, cy = y + h / 2, r = Math.min(w, h) / 2;
+      g.fillStyle = '#6a6f78'; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill();
+      const brillo = 0.6 + Math.sin((t || 0) / 300) * 0.25;
+      const agua = g.createRadialGradient(cx, cy, 2, cx, cy, r * 0.72);
+      agua.addColorStop(0, `rgba(190,230,255,${brillo})`); agua.addColorStop(1, 'rgba(20,50,110,1)');
+      g.fillStyle = agua; g.beginPath(); g.arc(cx, cy, r * 0.72, 0, 7); g.fill();
+      if (!u.libre) {
+        g.strokeStyle = '#2a2a30'; g.lineWidth = 5;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + w, y + h); g.moveTo(x + w, y); g.lineTo(x, y + h); g.stroke();
+        g.strokeStyle = '#9a9aa8'; g.lineWidth = 2; g.setLineDash([5, 4]);
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + w, y + h); g.moveTo(x + w, y); g.lineTo(x, y + h); g.stroke(); g.setLineDash([]);
+      }
+      break;
+    }
     case 'cofre':
       madera(g, x + 4, y + 8, w - 8, h - 16, [110, 64, 30]);
       g.fillStyle = '#c9a24a'; g.fillRect(x + 4, y + h / 2 - 3, w - 8, 6); g.fillRect(x + w / 2 - 5, y + h / 2 - 7, 10, 12);
@@ -723,7 +739,7 @@ export class Tablero {
     const e = this.estado;
     g.drawImage(this.base, 0, 0);
     // Tinte de la zona (Mazmorra Infinita): cada profundidad tiene su color.
-    const tinte = { cuevas: '#ecd6b0', catacumbas: '#b9c6da', fortaleza: '#dca49a', abismo: '#b4a2d6' }[e.mision?.zona];
+    const tinte = { cuevas: '#ecd6b0', catacumbas: '#b9c6da', fortaleza: '#dca49a', abismo: '#b4a2d6', limbo: '#8aa2d2' }[e.mision?.zona];
     if (tinte) { g.save(); g.globalCompositeOperation = 'multiply'; g.fillStyle = tinte; g.fillRect(0, 0, W, H); g.restore(); }
     const vis = (x, y) => !!e.revelado[T.clave(x, y)];
 
@@ -774,6 +790,24 @@ export class Tablero {
     }
 
     // Fichas.
+    // Limbo: el alma en el suelo y el faro azul de quien la lleva (también en 3D: va pegado al suelo).
+    const L = e.limbo;
+    if (L && e.fase === 'mision') {
+      const luz = (cx, cy, r, a) => { const gr = g.createRadialGradient(cx, cy, 2, cx, cy, r); gr.addColorStop(0, `rgba(170,220,255,${a})`); gr.addColorStop(1, 'rgba(90,150,255,0)'); g.fillStyle = gr; g.beginPath(); g.arc(cx, cy, r, 0, 7); g.fill(); };
+      if (L.alma && !L.alma.portador && vis(L.alma.x, L.alma.y)) {
+        const cx = L.alma.x * TS + TS / 2, cy = L.alma.y * TS + TS / 2;
+        luz(cx, cy, TS * 0.8, 0.55 + pulso * 0.3);
+        g.fillStyle = '#e8f6ff'; g.beginPath(); g.arc(cx, cy, TS * 0.16, 0, 7); g.fill();
+      }
+      const p = L.alma?.portador && e.heroes[L.alma.portador];
+      if (p && !p.fuera) {
+        const [px, py] = this.vista.pos[p.id] || [p.x, p.y];
+        const fx = px * TS + TS / 2, fy = py * TS + TS / 2;
+        luz(fx, fy, TS * (2.2 + pulso * 0.5), 0.75);
+        g.strokeStyle = `rgba(150,210,255,${0.5 + pulso * 0.4})`; g.lineWidth = 3;
+        g.beginPath(); g.arc(fx, fy, TS * (0.62 + pulso * 0.12), 0, 7); g.stroke();
+      }
+    }
     if (!plano) for (const x of this.figurasVisibles()) {
       dibujarFicha(g, x.f, x.x, x.y, x.esHeroe, t, { alfa: (x.alfa ?? 1) * (1 - (x.caida || 0) * 0.6), activo: x.activo });
       if (x.golpe) { g.fillStyle = `rgba(255,40,20,${Math.min(0.7, x.golpe * 0.8)})`; g.beginPath(); g.arc(x.x * TS + TS / 2, x.y * TS + TS / 2, TS * 0.42, 0, 7); g.fill(); }

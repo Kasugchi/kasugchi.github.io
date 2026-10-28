@@ -120,7 +120,12 @@ export const MONSTRUOS = {
   mercader:    { nombre: 'Mercader errante',     icono: 'mochila',   color: '#8a6a2a', mov: 8,  ataque: 5, defensa: 4, cuerpo: 8, mente: 3 },
   fantasma:    { nombre: 'Fantasma',             icono: 'fantasma',  color: '#7a8aa0', mov: 7,  ataque: 3, defensa: 2, cuerpo: 4, mente: 3, nomuerto: true },
   corazon:     { nombre: 'Corazón de la Mazmorra', icono: 'ojo',     color: '#9a1a2a', mov: 0,  ataque: 4, defensa: 4, cuerpo: 18, mente: 8 },
-  golem:       { nombre: 'Gólem rúnico',         icono: 'piedra',    color: '#6a7a8a', mov: 3,  ataque: 4, defensa: 4, cuerpo: 6, mente: 0, poder: 'embestir' }
+  golem:       { nombre: 'Gólem rúnico',         icono: 'piedra',    color: '#6a7a8a', mov: 3,  ataque: 4, defensa: 4, cuerpo: 6, mente: 0, poder: 'embestir' },
+  // Limbo (rescate de un héroe caído). El espíritu del compañero copia sus dados y su cuerpo al crearse.
+  espirituCaido: { nombre: 'Espíritu',          icono: 'fantasma',  color: '#6aa8d8', mov: 6,  ataque: 3, defensa: 2, cuerpo: 8, mente: 3, nomuerto: true },
+  almaPena:    { nombre: 'Alma en pena',         icono: 'fantasma',  color: '#5a7a9a', mov: 3,  ataque: 2, defensa: 2, cuerpo: 3, mente: 3, nomuerto: true },
+  ojoCastigo:  { nombre: 'Ojo del Castigo',      icono: 'ojo',       color: '#b8d8ff', mov: 4,  ataque: 0, defensa: 9, cuerpo: 1, mente: 0 },
+  carcelero:   { nombre: 'El Carcelero',         icono: 'calavera',  color: '#2a3a4a', mov: 4,  ataque: 5, defensa: 4, cuerpo: 8, mente: 4 }
 };
 
 // ---------- Armería ----------

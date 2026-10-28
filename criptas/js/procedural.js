@@ -400,6 +400,100 @@ function intentar(r, semilla, nivel) {
   };
 }
 
+// =============================================================
+//  LIMBO: misión especial para rescatar a un héroe caído.
+//  Se parte de una mazmorra normal y se vacía: sin monstruos de siempre,
+//  sin trampas ni tesoros. Se ponen la sala del espíritu (la más lejana
+//  de la escalera), el Pozo del Retorno (en la sala más alejada del
+//  espíritu), los Ojos del Castigo en los pasillos y unas almas en pena.
+//  caido: { nombre, tipo, ataque, defensa, cuerpo }
+// =============================================================
+export const LIMBO_SEPARACION = 12;   // casillas mínimas a pie entre el espíritu y el pozo
+export function generarLimbo(semilla, caido, plano = null) {
+  for (let i = 0; i < 40; i++) {
+    const base = generarMision(semilla + (i ? '~' + i : ''), 4, plano || null);
+    const m = limboDesde(base, azar('limbo-' + semilla + '-' + i), caido);
+    if (m) return m;
+  }
+  throw new Error('No se pudo generar el Limbo ' + semilla);
+}
+function limboDesde(base, r, caido) {
+  T.usarPlano(base.plano);
+  prepararGeometria();
+  const m = { ...base };
+  // Las puertas cerradas a cal y canto y las secretas no hacen falta aquí.
+  m.puertas = base.puertas.filter((p) => !p.secreta).map((p) => ({ id: p.id === 'sellada' ? 'ps' : p.id, a: p.a, b: p.b }));
+  m.monstruos = []; m.trampas = []; m.tesoros = {}; m.disparadores = [];
+  const salas = base._salas, inicio = T.region(...base.escalera);
+  const desde = (x, y) => distancias({ ...m, escalera: [x, y] }, { secretas: false, bloqueadas: true });
+  const dEsc = desde(...base.escalera);
+  const dSala = (d, s) => Math.min(...SALAS[s].celdas.map(([x, y]) => d[k(x, y)] ?? 999));
+  const otras = salas.filter((s) => s !== inicio && dSala(dEsc, s) < 999);
+  if (otras.length < 2) return null;
+  // Sala del espíritu: la más lejana de la escalera, con sitio en medio.
+  const ocupado = new Set();
+  for (const [x, y] of m.rocas) ocupado.add(k(x, y));
+  for (const u of m.muebles) for (let y = u.y; y < u.y + u.h; y++) for (let x = u.x; x < u.x + u.w; x++) ocupado.add(k(x, y));
+  const celdaPuerta = new Set(m.puertas.flatMap((p) => [k(...p.a), k(...p.b)]));
+  const libres = (s) => SALAS[s].celdas.filter(([x, y]) => !ocupado.has(k(x, y)) && !celdaPuerta.has(k(x, y)));
+  const centro = (s) => { const S = SALAS[s], cx = (S.x0 + S.x1) / 2, cy = (S.y0 + S.y1) / 2; return libres(s).sort((a, b) => Math.hypot(a[0] - cx, a[1] - cy) - Math.hypot(b[0] - cx, b[1] - cy))[0]; };
+  const salaEsp = otras.slice().sort((a, b) => dSala(dEsc, b) - dSala(dEsc, a)).find((s) => libres(s).length >= 6);
+  if (!salaEsp) return null;
+  const esp = centro(salaEsp);
+  // Pozo: en la sala más alejada (a pie) de la del espíritu, sin tapar el paso.
+  const dEsp = desde(...esp);
+  const candPozo = salas.filter((s) => s !== salaEsp && dSala(dEsp, s) < 999).sort((a, b) => dSala(dEsp, b) - dSala(dEsp, a));
+  let salaPozo = null, pozo = null;
+  for (const s of candPozo) {
+    if (dSala(dEsp, s) < LIMBO_SEPARACION) break;
+    const sitio = centro(s);
+    if (!sitio || (s === inicio && base.escalera && Math.abs(sitio[0] - base.escalera[0]) <= 2 && Math.abs(sitio[1] - base.escalera[1]) <= 2)) continue;
+    // El pozo encadenado no puede partir la sala ni cerrar el camino a otras.
+    const prueba = { ...m, muebles: [...m.muebles, { tipo: 'pozo', x: sitio[0], y: sitio[1], w: 1, h: 1 }] };
+    if (!salasAlcanzables(prueba, salas.filter((q) => dSala(dEsc, q) < 999), { secretas: false, bloqueadas: true })) continue;
+    salaPozo = s; pozo = sitio; break;
+  }
+  if (!pozo) return null;
+  m.muebles = [...m.muebles, { tipo: 'pozo', x: pozo[0], y: pozo[1], w: 1, h: 1 }];
+  ocupado.add(k(...pozo));
+  const nombre = caido?.nombre || 'tu compañero';
+  m.monstruos.push({ id: 'espiritu', tipo: 'espirituCaido', nombre: 'Espíritu de ' + nombre, x: esp[0], y: esp[1], ia: 'guardian', noEscalar: true,
+    ataque: caido?.ataque ?? 3, defensa: caido?.defensa ?? 2, cuerpo: caido?.cuerpo ?? 8, extra: { limbo: 'espiritu', aspecto: caido?.tipo || null, icono: caido?.tipo || 'fantasma' } });
+  ocupado.add(k(...esp));
+  // Ojos del Castigo: 2 o 3 en los pasillos, lejos de la escalera.
+  const pasillos = r.barajar(PASILLO.filter(([x, y]) => !ocupado.has(k(x, y)) && (dEsc[k(x, y)] ?? 0) >= 7 && dEsc[k(x, y)] !== undefined));
+  const nOjos = D.ANCHO * D.ALTO > 520 ? 3 : 2 + r.int(2);
+  const separados = [];
+  for (const c of pasillos) { if (separados.length >= nOjos) break; if (separados.every((o) => Math.abs(o[0] - c[0]) + Math.abs(o[1] - c[1]) >= 6)) separados.push(c); }
+  if (separados.length < 2) return null;
+  separados.forEach(([x, y], i) => { m.monstruos.push({ id: 'ojo' + (i + 1), tipo: 'ojoCastigo', x, y, ia: 'agresivo', noEscalar: true, extra: { limbo: 'ojo', intocable: true } }); ocupado.add(k(x, y)); });
+  // Almas en pena: de 2 a 4, en salas que no son la del espíritu ni la de salida.
+  const nAlmas = 2 + r.int(3);
+  const salasAlma = r.barajar(otras.filter((s) => s !== salaEsp));
+  for (let i = 0; i < nAlmas && salasAlma.length; i++) {
+    const s = salasAlma[i % salasAlma.length];
+    const l = r.barajar(libres(s).filter(([x, y]) => !ocupado.has(k(x, y))));
+    if (!l.length) continue;
+    const [x, y] = l[0];
+    m.monstruos.push({ id: 'alma' + (i + 1), tipo: 'almaPena', x, y, ia: 'agresivo', noEscalar: true, extra: { limbo: 'alma' } });
+    ocupado.add(k(x, y));
+  }
+  m.id = 'limbo-' + base.semilla; m.numero = 1;
+  m.titulo = 'El Limbo';
+  m.zona = 'limbo'; m.nombreZona = 'El Limbo';
+  m.limbo = { salaEspiritu: salaEsp, salaPozo, pozo, espiritu: 'espiritu' };
+  m.objetivo = { tipo: 'limbo', texto: `Vence al espíritu de ${nombre}, coge su alma y llévala al Pozo del Retorno.` };
+  m.tareas = [
+    { flag: 'espirituVencido', texto: 'Vencer al espíritu de ' + nombre },
+    { flag: 'alma', texto: 'Coger su alma (busca tesoro en su sala)' },
+    { flag: 'rescatado', texto: 'Llevar el alma al Pozo del Retorno' }
+  ];
+  m.intro = `Las páginas en blanco del libro no están vacías: ahí esperan los que cayeron. El espíritu de ${nombre} vaga por el Limbo sin reconocer a nadie. Vencedle, coged su alma y llevadla al Pozo del Retorno. Los Ojos del Castigo vigilan los pasillos, y quien cae aquí no muere: el Limbo lo escupe fuera.`;
+  m.recompensa = 0;
+  m._salaObjetivo = salaEsp;
+  return m;
+}
+
 // Busca sitio para un mueble pegado a una pared de la sala, sin tapar puertas
 // y sin partir la sala en dos.
 function colocarMueble(r, s, w, h, ocupado, celdaPuerta) {

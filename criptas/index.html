@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261027234614">
+<meta name="version" content="20261028095249">
+
 
 
 
@@ -100,30 +101,30 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261027234614",
-    "./js/firebase.js": "./js/firebase.js?v=20261027234614",
-    "./js/ia.js": "./js/ia.js?v=20261027234614",
-    "./js/iconos.js": "./js/iconos.js?v=20261027234614",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261027234614",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261027234614",
-    "./js/motor.js": "./js/motor.js?v=20261027234614",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261027234614",
-    "./js/nube.js": "./js/nube.js?v=20261027234614",
-    "./js/panel.js": "./js/panel.js?v=20261027234614",
-    "./js/planos.js": "./js/planos.js?v=20261027234614",
-    "./js/procedural.js": "./js/procedural.js?v=20261027234614",
-    "./js/red.js": "./js/red.js?v=20261027234614",
-    "./js/render.js": "./js/render.js?v=20261027234614",
-    "./js/render3d.js": "./js/render3d.js?v=20261027234614",
-    "./js/reunion.js": "./js/reunion.js?v=20261027234614",
-    "./js/sprites.js": "./js/sprites.js?v=20261027234614",
-    "./js/tablero.js": "./js/tablero.js?v=20261027234614",
-    "./js/ui.js": "./js/ui.js?v=20261027234614",
-    "./js/viajero.js": "./js/viajero.js?v=20261027234614"
+    "./js/datos.js": "./js/datos.js?v=20261028095249",
+    "./js/firebase.js": "./js/firebase.js?v=20261028095249",
+    "./js/ia.js": "./js/ia.js?v=20261028095249",
+    "./js/iconos.js": "./js/iconos.js?v=20261028095249",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028095249",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028095249",
+    "./js/motor.js": "./js/motor.js?v=20261028095249",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028095249",
+    "./js/nube.js": "./js/nube.js?v=20261028095249",
+    "./js/panel.js": "./js/panel.js?v=20261028095249",
+    "./js/planos.js": "./js/planos.js?v=20261028095249",
+    "./js/procedural.js": "./js/procedural.js?v=20261028095249",
+    "./js/red.js": "./js/red.js?v=20261028095249",
+    "./js/render.js": "./js/render.js?v=20261028095249",
+    "./js/render3d.js": "./js/render3d.js?v=20261028095249",
+    "./js/reunion.js": "./js/reunion.js?v=20261028095249",
+    "./js/sprites.js": "./js/sprites.js?v=20261028095249",
+    "./js/tablero.js": "./js/tablero.js?v=20261028095249",
+    "./js/ui.js": "./js/ui.js?v=20261028095249",
+    "./js/viajero.js": "./js/viajero.js?v=20261028095249"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261027234614">
+<link rel="stylesheet" href="estilo.css?v=20261028095249">
 </head>
 <body>
 
@@ -146,6 +147,12 @@
         <p class="nota">La campaña de Velmor: cinco misiones con su guion, de los túneles al trono.</p>
         <button class="btn" data-modo="historia" data-donde="local">Jugar en este dispositivo</button>
         <button class="btn madera" data-modo="historia" data-donde="sala">Crear sala con amigos</button>
+      </div>
+      <div class="pergamino modo limbo" id="modo-limbo" hidden>
+        <h2>Rescate en el Limbo</h2>
+        <p class="nota">Un héroe de tu ficha cayó en Leyenda. Su espíritu os espera en las páginas en blanco: vencedle, coged su alma y llevadla al Pozo del Retorno.</p>
+        <button class="btn" data-modo="limbo" data-donde="local">Jugar en este dispositivo</button>
+        <button class="btn madera" data-modo="limbo" data-donde="sala">Crear sala con amigos</button>
       </div>
       <div class="pergamino modo infinita">
         <h2>Mazmorra Infinita</h2>
@@ -181,6 +188,7 @@
       </div>
       <h2 id="sala-titulo">Elige tus héroes</h2>
       <p class="nota" id="sala-ayuda">Toca un héroe para llevarlo. Puedes llevar varios.</p>
+      <div class="pergamino-limbo" id="campo-limbo" hidden></div>
       <div class="heroes-sel" id="heroes-sel"></div>
       <h2 style="font-size:24px;margin-top:20px">Aventureros</h2>
       <ul class="jugadores" id="lista-jugadores"></ul>
@@ -314,6 +322,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261027234614"></script>
+<script type="module" src="js/ui.js?v=20261028095249"></script>
 </body>
 </html>

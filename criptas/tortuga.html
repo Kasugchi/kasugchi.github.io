@@ -825,7 +825,7 @@ function animarGesto(a, dt, anda) {
 function irA(url) { cerrarDialogo(); $('fundido').style.background = '#1a0c2a'; $('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 1100); }
 panelSala = crearPanel({
   donde: 'tortuga', boton: $('b-sala'),
-  datos: () => ({ clase, x: heroe.position.x, z: heroe.position.z }),
+  datos: () => ({ clase, x: heroe.position.x, z: heroe.position.z, caidos: Ficha.fichaOCrear(ficha.nombre).orden.filter((id) => ficha.heroes[id]?.caido).length }),
   cabana: () => { const f = Ficha.fichaOCrear(ficha.nombre); return { nombre: f.nombre, trofeos: f.cabana.trofeos.slice(-12), diario: f.diario }; },
   alConectar: (R) => {
     R.on('gente', (g) => { ponerGente(g); aCabana({ t: 'gente', gente: g, yo: R.yo.id }); })
@@ -945,6 +945,7 @@ const DIALOGOS = {
   gato: () => ({ texto: 'El gato te mira como si le debieras algo.', ops: [['Acariciarlo', () => mostrar('Tintero', 'Te mira con desprecio. Luego ronronea. Te deja la mano manchada de tinta.')], ['Dejarlo', cerrarDialogo]] }),
   libro: () => panelSala?.R ? ({ texto: 'Las páginas se agitan solas. Si bajáis juntos, el libro os traga a todos a la vez. Propón una historia y esperad a que todos digan «¡Listo!».',
     ops: [['Proponer la Mazmorra Infinita', () => { panelSala.R.proponer('infinita'); cerrarDialogo(); }], ['Proponer el Modo Historia', () => { panelSala.R.proponer('historia'); cerrarDialogo(); }],
+      ...(Object.values(panelSala.R.gente()).some((g) => g.caidos > 0) ? [['Proponer el rescate en el Limbo', () => { panelSala.R.proponer('limbo'); cerrarDialogo(); }]] : []),
       ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }) : ({ texto: 'Las páginas se agitan solas. Huele a cripta y a tinta fresca. Hay una historia esperando a que alguien entre en ella.',
     ops: [['Entrar en el libro (ir a las misiones)', entrarEnLibro], ['Bajar con amigos (abrir una sala)', () => { cerrarDialogo(); panelSala.abrir(); }], ['Leer las notas del margen', () => mostrar('El Libro', '«No dejéis que el libro os vea dormir.» La letra es temblorosa y la tinta, roja.')], ['Todavía no', cerrarDialogo]] }),
   cabana: () => panelSala?.R && !panelSala.R.soyAnfitrion() ? ({ texto: 'La cabaña de quien lleva la sala. Puedes entrar a ver sus trofeos, y en su baúl cambiar tu propio héroe.',

@@ -28,7 +28,7 @@ export function cargarSprites(version = '') {
 // Sprite de una figura (héroe, monstruo o cargador), o null.
 export function spriteDe(f) {
   if (!f) return null;
-  const base = f.tipo;
+  const base = f.aspecto || f.tipo;
   if (f.fem && FEM[base] && imagenes.has(FEM[base])) return imagenes.get(FEM[base]);
   return imagenes.get(base) || null;
 }

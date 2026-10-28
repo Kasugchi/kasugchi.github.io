@@ -194,6 +194,23 @@ export function crearMueble(THREE, u, frente) {
       for (let i = 0; i < 3; i++) { const a = (i / 3) * Math.PI * 2; g.add(cil(0.025, 0.025, 0.12, mat(0x1e1a18), cx + Math.cos(a) * 0.2, 0.05, cz + Math.sin(a) * 0.2)); }
       break;
     }
+    case 'pozo': {
+      // Pozo del Retorno: brocal de piedra con agua que brilla; cadenas cruzadas hasta vencer al espíritu.
+      const anillo = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.09, 8, 20), piedra);
+      anillo.rotation.x = Math.PI / 2; anillo.position.set(cx, 0.18, cz); g.add(anillo);
+      g.add(cil(0.34, 0.36, 0.16, piedra, cx, 0.08, cz));
+      g.add(cil(0.29, 0.29, 0.02, mat(0x8ad0ff, { emissive: 0x3a90ff, emissiveIntensity: 1.2, roughness: 0.2 }), cx, 0.17, cz));
+      if (!u.libre) {
+        const hierro = mat(0x55565e, { metalness: 0.7, roughness: 0.4 });
+        for (const giro of [Math.PI / 4, -Math.PI / 4]) for (let i = -3; i <= 3; i++) {
+          const es = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.015, 6, 10), hierro);
+          es.position.set(cx + Math.cos(giro) * i * 0.09, 0.26, cz + Math.sin(giro) * i * 0.09);
+          es.rotation.set(Math.PI / 2, 0, giro + (i % 2 ? Math.PI / 2 : 0));
+          g.add(es);
+        }
+      }
+      break;
+    }
     default:
       g.add(caja(W, 0.4, H, madera, cx, 0.2, cz));
   }

@@ -236,6 +236,7 @@ function todasLasPartidas() {
 }
 
 function pintarPartidas() {
+  const ml = document.getElementById('modo-limbo'); if (ml) ml.hidden = !misCaidos().length;   // solo si tienes a alguien que rescatar
   const todas = Object.values(todasLasPartidas()).filter((p) => p.resumen).sort((a, b) => b.actualizada - a.actualizada);
   const fecha = (t) => new Date(t).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const fila = (p) => `<li class="partida">
@@ -357,18 +358,20 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // Dos modos de juego; en los dos se juega solo o con sala.
 document.querySelectorAll('#portada [data-modo]').forEach((b) => b.addEventListener('click', () => {
   if (app.acceso !== 'ok') return;
-  const infinita = b.dataset.modo === 'infinita';
+  const modo = b.dataset.modo;
   if (b.dataset.donde === 'local') {
     app.modo = 'local';
-    app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: infinita };
+    app.sala = salaNueva(modo);
     pintarSala(); mostrar('sala');
-  } else crearSala(infinita);
+  } else crearSala(modo);
 }));
-async function crearSala(infinita) {
+// modo: 'historia' | 'infinita' | 'limbo' (rescate de un héroe caído)
+const salaNueva = (modo, codigo = null) => ({ codigo, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: modo === 'infinita', limbo: modo === 'limbo' });
+async function crearSala(modo) {
   avisoPortada('Abriendo la sala…');
   try {
     app.modo = 'anfitrion';
-    app.sala = { codigo: null, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: infinita };
+    app.sala = salaNueva(modo);
     app.red = await (await Red()).crearSala(miId, eventosAnfitrion());
     app.sala.codigo = app.red.codigo;
     avisoPortada('');
@@ -519,6 +522,12 @@ function mostrarReglas() {
     <p>Siempre ves <b>Mover</b>, <b>Atacar</b>, <b>Hechizo</b> y <b>Fin del turno</b>. Lo que depende de dónde estés (abrir puerta, rezar, comerciar, beber del caldero, habilidades…) aparece solo cuando se puede usar.</p>
     <p>El resto está en <b>Más</b>: pociones, reliquias, buscar cuando no se puede… Lo apagado dice por qué no se puede ahora.</p>
     <p>En el <b>Diario</b> (el pergamino de arriba) cambias el sonido y la <b>velocidad</b> de las animaciones.</p>`)}
+    ${sec('Rescate en el Limbo', `
+    <p>En <b>Leyenda</b>, quien cae se queda en tu ficha como caído. Desde el menú (o desde el libro de Morrandar) podéis bajar al <b>Limbo</b> a por él. Él no baja: os espera dentro.</p>
+    <p><b>El espíritu</b> de vuestro compañero tiene sus mismos dados y su cuerpo. Al acercaros o atacarle, su sala se <b>sella</b>: nadie entra ni sale hasta que caiga. Si echan a todos los de dentro, el sello se rompe y el espíritu se cura del todo.</p>
+    <p>Al vencerle, <b>Buscar tesoro</b> en su sala para coger <b>su alma</b>. Quien la lleva brilla con un <b>faro azul</b> que atrae a todas las almas en pena. Llevadla al <b>Pozo del Retorno</b>: al pisarlo, volvéis todos y vuestro compañero revive con 1 de cuerpo y todo su equipo.</p>
+    <p><b>Ojos del Castigo:</b> no se pueden herir y patrullan los pasillos; si os ven, las almas en pena saben dónde estáis. <b>Almas en pena:</b> lentas, atraviesan paredes y atacan primero la mente. <b>El Carcelero</b> despierta al coger el alma: si tiene al portador en línea recta, lo arrastra con su cadena.</p>
+    <p>Aquí nadie muere: quien cae es <b>expulsado</b> sin perder nada. Lo que gastéis (pociones) sí se pierde. Si os echan a todos, podéis volver a intentarlo.</p>`)}
     ${sec('Campamento y cargador', `
     <p>Antes de cada misión cada héroe compra, se equipa, guarda dinero en el banco y puede contratar un cargador. El equipo es de cada héroe: no se pasa a otros, pero se puede vender a mitad de precio. Del banco se puede transferir a otro héroe hasta un 40 % del dinero, una vez por misión.</p>
     <p><b>Cargador:</b> lleva a la mazmorra lo que cada héroe le cargue. Para usarlo hay que ponerse a su lado y gastar 1 casilla. Si muere, lo que lleva se pierde.</p>
@@ -608,8 +617,8 @@ function pintarSala() {
     const quien = esIA ? 'Compañero IA' : duenio ? (duenio === miId ? 'Lo llevas tú' : 'Lo lleva ' + (s.jugadores[duenio]?.nombre || '…')) : 'Llevar';
     const puedoCambiar = !duenio || duenio === miId;
     const otro = fem ? D.HEROES[t].nombre : D.HEROES[t].fem.nombre;
-    const foto = s.perdida ? s.fotos?.[t] : null;
-    const opcionesFicha = s.perdida && duenio === miId && !esIA ? V.libres(ficha, t) : [];
+    const foto = s.perdida || s.limbo ? s.fotos?.[t] : null;
+    const opcionesFicha = (s.perdida || s.limbo) && duenio === miId && !esIA ? V.libres(ficha, t) : [];
     const selFicha = opcionesFicha.length || (foto && duenio === miId)
       ? `<label class="campo ficha-sel">De tu ficha <select data-ficha="${t}"><option value="">Héroe nuevo (nivel 1)</option>${opcionesFicha.concat(foto && !opcionesFicha.some((x) => x.id === foto.id) ? [foto] : []).map((x) => `<option value="${x.id}" ${foto?.id === x.id ? 'selected' : ''}>${esc(x.nombre)} · Nv ${x.nivel || 1}</option>`).join('')}</select></label>`
       : foto ? `<p class="nota ficha-sel">📜 ${esc(foto.nombre)} · Nv ${foto.nivel || 1}</p>` : '';
@@ -635,8 +644,9 @@ function pintarSala() {
   sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
     + '<option value="pruebas">⚙ Zona de pruebas (5000 monedas, para probar cosas)</option>';
   sel.value = s.pruebas ? 'pruebas' : String(s.misionIdx);
-  $('#campo-mision').hidden = !!s.perdida;
-  $('#sala-titulo').textContent = s.perdida ? 'Mazmorra Infinita: elige tus héroes' : 'Elige tus héroes';
+  $('#campo-mision').hidden = !!(s.perdida || s.limbo);
+  $('#sala-titulo').textContent = s.perdida ? 'Mazmorra Infinita: elige tus héroes' : s.limbo ? 'Rescate en el Limbo: ¿quién baja?' : 'Elige tus héroes';
+  pintarRescate(s);
   sel.disabled = !manda;
   $('#campo-semilla').hidden = !s.perdida;
   $('#campo-dificultad').hidden = !s.perdida;
@@ -646,8 +656,8 @@ function pintarSala() {
   $('#semilla').disabled = !manda;
   $('#b-empezar').hidden = !manda;
   $('#sala-espera').hidden = manda;
-  $('#b-empezar').disabled = !Object.keys(s.eleccion).length;
-  $('#b-empezar').textContent = s.perdida ? 'Bajar a la Mazmorra Infinita' : s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
+  $('#b-empezar').disabled = !Object.keys(s.eleccion).length || (s.limbo && !s.rescate);
+  $('#b-empezar').textContent = s.limbo ? (s.rescate ? 'Bajar al Limbo a por ' + s.rescate.nombre : 'Elegid a quién rescatar') : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
 }
 listas.then(() => { if (app.sala && !$('#sala').hidden) pintarSala(); });
 
@@ -668,6 +678,36 @@ function elegirDeFicha(t, id) {
   const foto = fh ? { ...V.fotoHeroe(fh), id: fh.id } : null;
   if (app.modo === 'invitado') return app.red.enviar({ t: 'ficha', heroe: t, foto });
   ponerFoto(miId, t, foto);
+}
+// ---------- Limbo: a quién se rescata ----------
+// Cada jugador puede proponer a uno de sus héroes caídos (en Leyenda) de su ficha.
+function misCaidos() { return ficha.orden.map((id) => ficha.heroes[id]).filter((h) => h?.caido); }
+function pintarRescate(s) {
+  const caja = $('#campo-limbo');
+  caja.hidden = !s.limbo;
+  if (!s.limbo) return;
+  const r = s.rescate, mios = misCaidos();
+  const quien = r ? `<p>Vais a rescatar a <b>${esc(r.nombre)}</b> (${esc(D.HEROES[r.tipo]?.nombre || r.tipo)}, nivel ${r.foto?.nivel || 1}), de ${esc(s.jugadores[r.dueno]?.nombre || 'un viajero')}. Su espíritu tendrá sus mismos dados y su cuerpo.</p>`
+    : '<p>Nadie ha elegido todavía a quién rescatar.</p>';
+  caja.innerHTML = `<h2 style="font-size:22px;margin:0 0 6px">¿A quién rescatáis?</h2>${quien}`
+    + (mios.length ? `<label class="campo">Tus caídos <select id="sel-rescate"><option value="">—</option>${mios.map((h) => `<option value="${h.id}" ${r?.fichaId === h.id ? 'selected' : ''}>${esc(h.nombre)} · ${esc(D.HEROES[h.tipo]?.nombre || h.tipo)} · Nv ${h.nivel || 1}</option>`).join('')}</select></label>`
+      : '<p class="nota">No tienes héroes caídos en tu ficha. Si otro viajero de la sala los tiene, que lo elija él.</p>')
+    + '<p class="nota">El héroe que rescatáis no baja con vosotros: os espera al fondo del Limbo.</p>';
+  $('#sel-rescate')?.addEventListener('change', (ev) => elegirRescate(ev.target.value));
+}
+function elegirRescate(id) {
+  const h = id && ficha.heroes[id];
+  const caido = h?.caido ? { fichaId: h.id, nombre: h.nombre, tipo: h.tipo, foto: { ...V.fotoHeroe(h), id: h.id } } : null;
+  if (app.modo === 'invitado') return app.red.enviar({ t: 'rescate', caido });
+  ponerRescate(miId, caido);
+}
+function ponerRescate(jugador, caido) {
+  const s = app.sala;
+  if (!s?.limbo) return;
+  if (!caido) { if (s.rescate?.dueno === jugador) delete s.rescate; return difundirSala(); }
+  if (typeof caido !== 'object' || !D.HEROES[caido.tipo] || typeof caido.fichaId !== 'string' || !caido.foto || caido.foto.tipo !== caido.tipo) return;
+  s.rescate = { dueno: jugador, fichaId: caido.fichaId, nombre: String(caido.nombre || 'Héroe').slice(0, 30), tipo: caido.tipo, foto: caido.foto };
+  difundirSala();
 }
 function ponerFoto(jugador, t, foto) {
   const s = app.sala;
@@ -710,7 +750,16 @@ $('#b-empezar').addEventListener('click', async () => {
   const e = M.crearPartida(elegidos, s.jugadores);
   e.anfitrion = miId;
   e.uid = 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  if (s.perdida) for (const [t, foto] of Object.entries(s.fotos || {})) if (e.heroes[t] && s.eleccion[t] && !s.ia?.[t]) V.cargarEnPartida(e.heroes[t], foto);
+  if (s.perdida || s.limbo) for (const [t, foto] of Object.entries(s.fotos || {})) if (e.heroes[t] && s.eleccion[t] && !s.ia?.[t]) V.cargarEnPartida(e.heroes[t], foto);
+  if (s.limbo) {
+    if (!s.rescate) return toast('Elegid primero a quién rescatar.', 'peligro');
+    // El espíritu copia los dados y el cuerpo del caído, con su equipo y mejoras.
+    const r = s.rescate, tmp = M.crearPartida([{ tipo: r.tipo, jugador: r.dueno }]).heroes[r.tipo];
+    V.cargarEnPartida(tmp, r.foto);
+    const { nuevaSemilla } = await import('./procedural.js');
+    e.limbo = { fichaId: r.fichaId, dueno: r.dueno, nombre: r.nombre, tipo: r.tipo, ataque: M.ataqueHeroe(tmp), defensa: M.defensaHeroe(tmp), cuerpo: tmp.cuerpoMax, semilla: nuevaSemilla() };
+    e.campana = ['limbo']; e.misionIdx = 0;
+  }
   app.partidaId = app.modo === 'local' ? 'solo-' + Date.now() : 'sala-' + s.codigo;
   e.misionIdx = s.misionIdx;
   if (s.perdida) {
@@ -801,7 +850,7 @@ async function entrarPorReunion() {
     avisoPortada('Abriendo la sala ' + r.codigo + '…');
     try {
       app.modo = 'anfitrion';
-      app.sala = { codigo: r.codigo, jugadores: { [miId]: { nombre: miNombre() } }, eleccion: {}, misionIdx: 0, perdida: r.modo !== 'historia' };
+      app.sala = salaNueva(['historia', 'limbo'].includes(r.modo) ? r.modo : 'infinita', r.codigo);
       app.red = await (await Red()).crearSala(miId, eventosAnfitrion(), { codigo: r.codigo });
       avisoPortada(''); pintarSala(); mostrar('sala');
       return;
@@ -836,6 +885,7 @@ function eventosAnfitrion() {
       if (msg.t === 'elegir' && !app.estado) return alternarHeroe(id, msg.heroe);
       if (msg.t === 'variante' && !app.estado) return alternarVariante(id, msg.heroe);
       if (msg.t === 'ficha' && !app.estado) return ponerFoto(id, msg.heroe, msg.foto);
+      if (msg.t === 'rescate' && !app.estado) return ponerRescate(id, msg.caido);
       if (msg.t === 'accion' && app.estadoReal) {
         const err = M.aplicar(app.estadoReal, msg.accion, id, (m) => app.misiones[m]);
         if (err) app.red.enviar(id, { t: 'error', texto: err });
@@ -901,7 +951,7 @@ function irAFase() {
   const manda = app.modo !== 'invitado';
   if (e.fase === 'briefing') {
     const m = e.mision;
-    $('#br-num').textContent = e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Infinita · piso ' + m.numero + (m.nombreZona ? ' · ' + m.nombreZona : '') + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
+    $('#br-num').textContent = e.limbo ? 'Misión especial · rescate de ' + e.limbo.nombre : e.pruebas ? 'Zona de pruebas' : e.aleatorio ? 'Mazmorra Infinita · piso ' + m.numero + (m.nombreZona ? ' · ' + m.nombreZona : '') + ' · semilla ' + e.aleatorio.semilla : 'Misión ' + m.numero + ' de ' + e.campana.length;
     $('#br-titulo').textContent = m.titulo;
     $('#br-intro').textContent = m.intro;
     $('#br-objetivo').textContent = m.objetivo.texto;
@@ -1939,14 +1989,18 @@ async function mostrarResultado(res) {
   const e = app.estado;
   const manda = app.modo !== 'invitado';
   const victoria = res === 'victoria';
-  const html = `<h2>${victoria ? 'Misión cumplida' : 'Derrota'}</h2>
+  const L = e.limbo;
+  const html = L ? `<h2>${victoria ? '¡' + esc(L.nombre) + ' vuelve!' : 'Expulsados del Limbo'}</h2>
+    <p>${victoria ? 'El Pozo del Retorno os devuelve a todos. ' + esc(L.nombre) + ' abre los ojos, débil pero vivo: vuelve a la ficha de su viajero con 1 de cuerpo y todo su equipo.' : 'El Limbo os ha echado a todos. Nadie ha muerto, pero ' + esc(L.nombre) + ' sigue atrapado. Podéis volver a intentarlo cuando queráis.'}</p>
+    ${htmlCronica(e.cronica?.ultima, e)}
+    ${manda ? '' : '<p class="nota">El anfitrión os llevará de vuelta.</p>'}` : `<h2>${victoria ? 'Misión cumplida' : 'Derrota'}</h2>
     <p>${victoria ? 'Los héroes salen a la luz con sus bolsas más pesadas. Cada superviviente recibe ' + (e.mision.recompensa || 0) + ' monedas de la Hermandad.' : 'La mazmorra se ha cobrado a todos los héroes. La Hermandad los arrastrará de vuelta y podréis intentarlo de nuevo.'}</p>
     ${htmlCronica(e.cronica?.ultima, e)}
     ${manda ? '' : '<p class="nota">El anfitrión os llevará al campamento.</p>'}`;
   sonar(victoria ? 'tesoro' : 'muerte');
   app.cerrarModalFuera = null;
   if (manda) {
-    await modal(html, [{ texto: victoria ? (!e.aleatorio && e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir al campamento') : 'Ir al campamento y reintentar' }]);
+    await modal(html, [{ texto: L ? 'Volver' : victoria ? (!e.aleatorio && e.misionIdx + 1 >= e.campana.length ? 'Ver el final' : 'Ir al campamento') : 'Ir al campamento y reintentar' }]);
     app.trasCola = { tipo: 'continuar' };
   } else await modal(html, [{ texto: 'De acuerdo' }]);
 }
@@ -2241,6 +2295,15 @@ function llevarAFicha(e, h) {
 
 function pintarFinal() {
   const e = app.estado;
+  if (e.limbo) {
+    const ok = e.limbo.terminado === 'victoria';
+    $('#final-titulo').innerHTML = ok ? 'Ha vuelto<small>' + esc(e.limbo.nombre) + ' respira otra vez</small>' : 'El Limbo os ha escupido<small>' + esc(e.limbo.nombre) + ' sigue atrapado</small>';
+    $('#final-texto').textContent = ok ? e.limbo.nombre + ' vuelve a la ficha de su viajero con 1 punto de cuerpo y todo su equipo. Que descanse antes de la próxima mazmorra.'
+      : 'Nadie ha muerto: el Limbo solo os ha echado. Podéis volver a intentarlo cuando queráis, desde el menú o desde el libro de Morrandar.';
+    $('#b-nueva').textContent = 'Volver al inicio';
+    $('#final-heroes').innerHTML = '';
+    return;
+  }
   if (e.caida) {
     guardarRecord(e);
     guardarFantasma(e);

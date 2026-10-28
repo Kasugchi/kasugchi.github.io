@@ -588,7 +588,7 @@ $('b-salir').addEventListener('click', salir);
 if (embebida) $('b-sala').style.display = 'none';   // la sala la lleva la tortuga
 else panelSala = crearPanel({
   donde: 'cabana', boton: $('b-sala'),
-  datos: () => ({ clase, x: -7.6, z: 3.0 }),
+  datos: () => ({ clase, x: -7.6, z: 3.0, caidos: ficha.orden.filter((id) => ficha.heroes[id]?.caido).length }),
   cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
   irA: (url) => { cerrar(); $('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 1000); },
   alConectar: (R) => {

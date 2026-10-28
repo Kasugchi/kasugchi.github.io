@@ -16,7 +16,7 @@ export const RETIRO_MAX = 0.4;          // del banco a un héroe: hasta el 40 % 
 const CLAVE = 'criptas_viajero';
 // Lo que se guarda de cada héroe (lo mismo que define su progreso en una partida).
 export const CAMPOS_HEROE = ['tipo', 'fem', 'nombre', 'icono', 'arma', 'armaduras', 'objetos', 'kit', 'oro', 'cuerpoMax', 'mente',
-  'inventario', 'nivel', 'xp', 'puntos', 'mejoras', 'subclase', 'purificada', 'bonoEspecialidad', 'banco'];
+  'inventario', 'nivel', 'xp', 'puntos', 'mejoras', 'subclase', 'purificada', 'bonoEspecialidad', 'banco', 'cuerpoAlCargar'];
 
 const copia = (o) => JSON.parse(JSON.stringify(o));
 const idNuevo = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -106,7 +106,9 @@ export function devolverDePartida(f, partida) {
 // Pone en el héroe de la partida lo que había en la ficha (al crear la partida).
 export function cargarEnPartida(hPartida, hFicha) {
   for (const k of CAMPOS_HEROE) if (hFicha[k] !== undefined) hPartida[k] = copia(hFicha[k]);
-  hPartida.cuerpo = hPartida.cuerpoMax;
+  // Recién rescatado del Limbo: vuelve con 1 de cuerpo (solo la primera vez que baja).
+  hPartida.cuerpo = hFicha.cuerpoAlCargar ? Math.min(hPartida.cuerpoMax, hFicha.cuerpoAlCargar) : hPartida.cuerpoMax;
+  delete hPartida.cuerpoAlCargar;
   hPartida.fichaId = hFicha.id;
   return hPartida;
 }
@@ -119,9 +121,17 @@ export function sincronizar(f, estado, miId) {
   if (!estado?.uid || !estado.heroes) return false;
   let cambio = false;
   const entreMisiones = estado.fase === 'armeria' || estado.fase === 'final' || estado.fase === 'briefing';
+  // Limbo superado: el caído vuelve a la ficha de su dueño, con 1 de cuerpo y todo su equipo.
+  const L = estado.limbo;
+  if (L?.rescatado && L.dueno === miId && f.heroes[L.fichaId]?.caido) {
+    const fh = f.heroes[L.fichaId];
+    fh.caido = null; fh.prestado = null; fh.cuerpoAlCargar = 1; fh.rescatado = Date.now();
+    cambio = true;
+  }
   for (const h of Object.values(estado.heroes)) {
     const fh = h.fichaId && f.heroes[h.fichaId];
     if (!fh || h.jugador !== miId) continue;
+    if (fh.prestado?.partida === estado.uid && fh.cuerpoAlCargar) { delete fh.cuerpoAlCargar; cambio = true; }   // ya ha bajado con su cuerpo de rescatado
     if (!fh.prestado) { if (estado.fase !== 'final' && !fh.caido && !fh.devueltoDe?.includes(estado.uid)) { fh.prestado = { partida: estado.uid, desde: Date.now() }; cambio = true; } }
     if (fh.prestado?.partida !== estado.uid) continue;
     if (entreMisiones && !h.caido) {

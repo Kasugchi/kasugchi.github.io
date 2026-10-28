@@ -44,7 +44,7 @@ export const GESTOS = [
   { id: 'baile', icono: '💃', nombre: 'Bailar' },
   { id: 'sentarse', icono: '🪑', nombre: 'Sentarse' }
 ];
-export const MODOS = { infinita: 'la Mazmorra Infinita', historia: 'el Modo Historia' };
+export const MODOS = { infinita: 'la Mazmorra Infinita', historia: 'el Modo Historia', limbo: 'el Limbo, a rescatar a un caído' };
 export const LUGARES = { tortuga: '🐢 en Morrandar', ligera: '📖 esperando', cabana: '🏠 en la cabaña', juego: '⚔ en la mazmorra' };
 
 // Recuerda en este dispositivo si se prefiere la tortuga o la pantalla ligera.
@@ -110,7 +110,7 @@ export async function cabanaDeLaSala() {
 //  Conectar: crear una sala nueva o entrar en una que existe.
 //  datos: { donde, clase, x, z }  cabana: datos públicos de la cabaña (si eres anfitrión)
 // -------------------------------------------------------------
-export async function conectar({ codigo = null, crear = false, donde = 'tortuga', clase = 'barbaro', x = 0, z = 5.6, cabana = null } = {}) {
+export async function conectar({ codigo = null, crear = false, donde = 'tortuga', clase = 'barbaro', x = 0, z = 5.6, cabana = null, caidos = 0 } = {}) {
   const yo = miIdentidad();
   try {
     if (crear) {
@@ -139,7 +139,7 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
 
   // Mi ficha en la reunión. update (no set) para no borrar mi voto al cambiar de página.
   const nodo = r(codigo, 'reunion/gente/' + yo.id);
-  const mio = { nombre: yo.nombre, clase, donde, x: +x.toFixed(2), z: +z.toFixed(2), lado: 1 };
+  const mio = { nombre: yo.nombre, clase, donde, x: +x.toFixed(2), z: +z.toFixed(2), lado: 1, caidos: caidos | 0 };
   let anfitrion = null, anfOnline = true, cerrado = false;
   const presencia = (s) => {
     if (s.val() !== true || cerrado) return;
@@ -339,7 +339,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
       const u = await import('./nube.js').then((m) => m.usuarioListo()).catch(() => null);
       if (!u) throw new Error('Para jugar juntos, entra antes con tu cuenta de Google en el menú del juego.');
       const d = datos();
-      R = await conectar({ ...opciones, donde, clase: d.clase, x: d.x ?? 0, z: d.z ?? 5.6, cabana: cabana() });
+      R = await conectar({ ...opciones, donde, clase: d.clase, x: d.x ?? 0, z: d.z ?? 5.6, cabana: cabana(), caidos: d.caidos || 0 });
       R.on('gente', pintar).on('propuesta', pintar).on('juego', pintar)
         .on('error', (e) => { error = e.message; pintar(); })
         .on('frase', (id, texto) => anotar(`<b>${esc(nombreDe(id))}:</b> ${esc(texto)}`))
@@ -387,7 +387,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
       <ul>${gente.map((g) => `<li><span>${g.anfitrion ? '★ ' : ''}${esc(g.nombre)}${g.id === R.yo.id ? ' (tú)' : ''}</span><small>${g.online === false ? '…cambiando de sitio' : LUGARES[g.donde] || ''}</small></li>`).join('')}</ul>
       <div class="frases">${FRASES.map((f, i) => `<button data-r="frase" data-i="${i}">${esc(f)}</button>`).join('')}</div>
       <div class="fila">${GESTOS.map((g) => `<button class="claro" data-r="gesto" data-g="${g.id}" title="${g.nombre}">${g.icono}</button>`).join('')}</div>
-      ${proponer ? `<hr><p>Proponer bajar al libro:</p><div class="fila"><button data-r="proponer" data-m="infinita">Mazmorra Infinita</button><button data-r="proponer" data-m="historia">Modo Historia</button></div>` : ''}
+      ${proponer ? `<hr><p>Proponer bajar al libro:</p><div class="fila"><button data-r="proponer" data-m="infinita">Mazmorra Infinita</button><button data-r="proponer" data-m="historia">Modo Historia</button>${gente.some((g) => g.caidos > 0) ? '<button data-r="proponer" data-m="limbo">Rescate en el Limbo</button>' : ''}</div>` : ''}
       ${registro.length ? `<hr><div class="registro">${registro.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
       <hr><div class="fila">${otraVista}<button class="claro" data-r="salir">Salir de la sala</button></div>${err}`;
   }
