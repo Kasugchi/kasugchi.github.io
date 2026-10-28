@@ -76,6 +76,7 @@ import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
 import * as Ficha from './js/viajero.js';
 import { crearPanel, GESTOS } from './js/reunion.js';
+import * as Pueblo from './js/pueblo.js';
 
 // =============================================================
 //  Prototipo: Morrandar, una tortuga gigante que nada por el mar
@@ -405,7 +406,9 @@ const plaza = (() => {
   }
 }
 const colisiones = [];
-const tope = (x, z, r) => colisiones.push({ x, z, r });
+const tope = (x, z, r) => { const c = { x, z, r, r0: r }; colisiones.push(c); return c; };
+// Lo que aparece según cómo de grande sea tu pueblo (js/pueblo.js): grupos, PNJ y topes.
+const decor = { copa: [], casas: [] };
 
 // Árbol del pueblo con farolillos colgando
 const farolillosArbol = [];
@@ -417,13 +420,13 @@ const farolillosArbol = [];
   for (let i = 0; i < 16; i++) {
     const c = new THREE.Mesh(new THREE.IcosahedronGeometry(azar(1.2, 2.1), 1), new THREE.MeshStandardMaterial({ color: uno(colores), roughness: .9, flatShading: true }));
     const a = Math.random() * Math.PI * 2, r = azar(.4, 2.8);
-    c.position.set(Math.cos(a) * r, azar(5.2, 7.6), Math.sin(a) * r); g.add(c);
+    c.position.set(Math.cos(a) * r, azar(5.2, 7.6), Math.sin(a) * r); g.add(c); decor.copa.push(c);
   }
   for (let i = 0; i < 9; i++) {
     const a = (i / 9) * Math.PI * 2, r = azar(1.6, 2.9), y = azar(3.6, 4.8);
     const hilo = cil(.01, .01, 5.2 - y, mat.oscura, Math.cos(a) * r, (5.2 + y) / 2, Math.sin(a) * r, 3); g.add(hilo);
     const f = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 8), brillo(...uno([[2.4, 1.3, .4], [2.2, .7, .5], [1.4, 1.8, 1.2]])));
-    f.position.set(Math.cos(a) * r, y, Math.sin(a) * r); g.add(f); farolillosArbol.push({ f, fase: Math.random() * 6 });
+    f.position.set(Math.cos(a) * r, y, Math.sin(a) * r); g.add(f); farolillosArbol.push({ f, fase: Math.random() * 6 }); decor.copa.push(f, hilo);
   }
   // Hojas cayendo
   tope(-1.5, -2, 1.3);
@@ -461,12 +464,12 @@ const bombillas = [];
     }
   }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(linea, 3));
-  pueblo.add(new THREE.LineSegments(g, mat.cuerda));
+  decor.guirnalda = new THREE.LineSegments(g, mat.cuerda); pueblo.add(decor.guirnalda);
   const inst = new THREE.InstancedMesh(new THREE.SphereGeometry(.11, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }), bombillas.length);
   const m4 = new THREE.Matrix4(), col = new THREE.Color();
   const tonos = [[1.7, .9, .3], [1.6, .5, .42], [.8, 1.3, 1.1], [1.6, 1.25, .45]];
   bombillas.forEach((p, i) => { m4.makeTranslation(p.x, p.y, p.z); inst.setMatrixAt(i, m4); inst.setColorAt(i, col.setRGB(...tonos[i % tonos.length])); });
-  pueblo.add(inst);
+  pueblo.add(inst); decor.bombillas = inst;
 }
 // Unas pocas luces de verdad (el resto es brillo pintado)
 const luces = [];
@@ -481,7 +484,8 @@ function puestoMordo(x, z) {
   for (let i = 0; i < 4; i++) { const c = new THREE.Mesh(new THREE.SphereGeometry(.16, 8, 6), mat.hueso); c.position.set(-1.2 + i * .35, 1.05, .3); g.add(c); }
   for (let i = 0; i < 5; i++) g.add(cil(.08, .1, .3, brillo(...[[1.8, .25, .2], [.3, 1.6, .5], [.4, .5, 2]][i % 3]), .3 + i * .25, 1.05, .1));
   const f = new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), brillo(2.6, 1.4, .4)); f.position.set(1.7, 2.3, .55); g.add(f);
-  tope(x, z, 2);
+  g.userData.tope = tope(x, z, 2);
+  return g;
 }
 function casa(x, z, giro, w, h, d, tejado, opciones = {}) {
   const g = new THREE.Group(); g.position.set(x, opciones.y || 0, z); g.rotation.y = giro; (opciones.padre || pueblo).add(g);
@@ -555,11 +559,92 @@ const motas = (() => {
   pueblo.add(p); return { p, vel };
 })();
 
-puestoMordo(-8.5, -5.2);
+decor.mordo = puestoMordo(-8.5, -5.2);
 casa(8.4, -5.6, -.25, 3.6, 2.8, 2.6, tejados[0], { chimenea: true }); tope(8.4, -5.6, 2.3);
 forjaFria(8.2, 6.4);
 cabanaJugador(-9.6, 4.6);
 mirador();
+
+// ---------- Lo que se construye con el tiempo (ver js/pueblo.js) ----------
+// Tablón de encargos: siempre está, es donde se ve cómo crece el pueblo.
+decor.tablon = (() => {
+  const g = new THREE.Group(); g.position.set(1.6, 0, -5.0); g.rotation.y = .25; pueblo.add(g);
+  for (const x of [-1, 1]) g.add(cil(.08, .1, 2.4, mat.madera, x, 1.2, 0, 6));
+  g.add(caja(2.3, 1.3, .1, mat.madera, 0, 1.75, 0));
+  g.add(caja(2.5, .12, .25, mat.oscura, 0, 2.45, 0));
+  const papel = new THREE.MeshStandardMaterial({ color: 0xe8d8b0, roughness: 1 });
+  [[-.7, 1.95, .2], [-.1, 1.6, -.1], [.55, 1.9, .15], [.2, 2.1, .05], [-.55, 1.45, -.2]].forEach(([x, y, r]) => { const h = caja(.42, .5, .02, papel, x, y, .07); h.rotation.z = r; g.add(h); });
+  tope(1.6, -5.0, 1.1);
+  return g;
+})();
+// Cantina de Marga
+decor.cantina = (() => {
+  const g = new THREE.Group(); g.position.set(4.6, 0, -7.2); g.rotation.y = -.35; pueblo.add(g);
+  g.add(caja(3.2, 1.0, .9, mat.madera, 0, .5, 0));
+  for (const [x, z] of [[-1.5, -.4], [1.5, -.4], [-1.5, .9], [1.5, .9]]) g.add(cil(.07, .07, 2.7, mat.oscura, x, 1.35, z, 5));
+  const toldo = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2, 6, 2), new THREE.MeshStandardMaterial({ color: 0x2f5a5a, roughness: 1, side: THREE.DoubleSide })); toldo.rotation.x = -Math.PI / 2 + .3; toldo.position.set(0, 2.75, .3); g.add(toldo);
+  g.add(cil(.45, .38, .5, new THREE.MeshStandardMaterial({ color: 0x1e1a18, metalness: .5, roughness: .5 }), -.9, 1.25, -.1, 14));    // olla
+  g.add(cil(.4, .4, .02, new THREE.MeshStandardMaterial({ color: 0xc8782a, emissive: 0x6a3010, emissiveIntensity: .8 }), -.9, 1.5, -.1, 14));
+  for (let i = 0; i < 3; i++) g.add(cil(.08, .1, .25, new THREE.MeshStandardMaterial({ color: 0x6a4a2a }), .3 + i * .35, 1.12, .1, 8));   // jarras
+  for (const x of [-1, 0, 1]) g.add(cil(.25, .22, .55, mat.madera, x, .28, 1.5, 8));                                                 // taburetes
+  const f = new THREE.Mesh(new THREE.SphereGeometry(.15, 10, 8), brillo(2.6, 1.4, .4)); f.position.set(1.5, 2.3, .95); g.add(f);
+  g.userData.tope = tope(4.6, -7.2, 2);
+  return g;
+})();
+// Fuente de tinta
+decor.fuente = (() => {
+  const g = new THREE.Group(); g.position.set(-4.4, 0, 1.4); pueblo.add(g);
+  g.add(cil(1.3, 1.4, .55, mat.piedra, 0, .27, 0, 20));
+  g.add(cil(1.12, 1.12, .05, new THREE.MeshStandardMaterial({ color: 0x0e0a14, roughness: .1, metalness: .3 }), 0, .5, 0, 20));
+  g.add(cil(.2, .26, 1.4, mat.piedra, 0, .9, 0, 8));
+  g.add(cil(.55, .3, .2, mat.piedra, 0, 1.6, 0, 12));
+  g.add(cil(.45, .45, .03, new THREE.MeshStandardMaterial({ color: 0x0e0a14, roughness: .1 }), 0, 1.71, 0, 12));
+  g.userData.tope = tope(-4.4, 1.4, 1.5);
+  return g;
+})();
+// Jardín de setas brillantes
+decor.jardin = (() => {
+  const g = new THREE.Group(); g.position.set(5.4, 0, .4); pueblo.add(g);
+  for (let i = 0; i < 9; i++) {
+    const a = Math.random() * 7, r = azar(.2, 1.2), h = azar(.25, .7), x = Math.cos(a) * r, z = Math.sin(a) * r;
+    g.add(cil(.05, .07, h, new THREE.MeshStandardMaterial({ color: 0xe8e0c8 }), x, h / 2, z, 6));
+    const som = new THREE.Mesh(new THREE.SphereGeometry(azar(.15, .3), 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), brillo(...uno([[.4, 1.6, 2], [1.8, .5, 1.6], [.6, 2, .8]])));
+    som.position.set(x, h, z); g.add(som);
+  }
+  return g;
+})();
+// Bandera en el mirador
+decor.bandera = (() => {
+  const g = new THREE.Group(); g.position.set(LARGO + 1.6, 0, -1.4); pueblo.add(g);
+  g.add(cil(.05, .06, 4.4, mat.oscura, 0, 2.2, 0, 6));
+  const tela = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1, 8, 2), new THREE.MeshStandardMaterial({ map: textura(128, 80, (c) => { c.fillStyle = '#8a1d12'; c.fillRect(0, 0, 128, 80); c.fillStyle = '#e6b85a'; c.font = 'bold 54px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('✠', 64, 44); }), side: THREE.DoubleSide, roughness: 1 }));
+  tela.position.set(.82, 3.85, 0); g.add(tela); g.userData.tela = tela;
+  return g;
+})();
+// Muelle de madera en el mar, junto al costado de Morrandar
+decor.muelle = (() => {
+  const g = new THREE.Group(); g.position.set(2, NIVEL_MAR + .55, -CAP.z - 1); tortuga.add(g);
+  for (let i = 0; i < 9; i++) g.add(caja(2.2, .12, .9, mat.madera, 0, 0, -i * .95));
+  for (let i = 0; i < 5; i++) for (const x of [-1, 1]) g.add(cil(.09, .1, 1.6, mat.oscura, x, -.6, -i * 2, 6));
+  const barco = new THREE.Group(); barco.position.set(2.2, -.3, -6); g.add(barco);
+  const papel = new THREE.MeshStandardMaterial({ color: 0xe8d8b0, roughness: 1, side: THREE.DoubleSide, flatShading: true });
+  barco.add(new THREE.Mesh(new THREE.ConeGeometry(1.2, .8, 4), papel).rotateX(Math.PI).rotateY(Math.PI / 4));
+  barco.add(en(new THREE.Mesh(new THREE.ConeGeometry(.6, 1.4, 3), papel), 0, .8, 0));
+  return g;
+})();
+// El Faro de Velmor, en el lomo de la tortuga (al terminar esa historia)
+const luzFaro = new THREE.SpotLight(0xffe0a0, 0, 80, .25, .6, 1);
+decor.faro = (() => {
+  const x = -17, z = -5, y = alturaCaparazon(x, z);
+  const g = new THREE.Group(); g.position.set(x, y - .3, z); tortuga.add(g);
+  g.add(cil(1.4, 1.8, 1.2, mat.piedra, 0, .6, 0, 10));
+  for (let i = 0; i < 4; i++) g.add(cil(1.1 - i * .12, 1.2 - i * .12, 1.8, i % 2 ? mat.cal : new THREE.MeshStandardMaterial({ color: 0x8a2a20, roughness: .8 }), 0, 2.1 + i * 1.8, 0, 12));
+  g.add(cil(.75, .75, 1, mat.vidrio || new THREE.MeshStandardMaterial({ color: 0xa8c8d8, transparent: true, opacity: .3 }), 0, 9.3, 0, 10));
+  g.add(en(new THREE.Mesh(new THREE.SphereGeometry(.45, 12, 8), brillo(3, 2.4, 1.2)), 0, 9.3, 0));
+  g.add(en(new THREE.Mesh(new THREE.ConeGeometry(1, 1, 10), tejados[0]), 0, 10.3, 0));
+  luzFaro.position.set(0, 9.3, 0); g.add(luzFaro); g.add(luzFaro.target); luzFaro.target.position.set(20, 8, 0);
+  return g;
+})();
 for (const [x, z, t] of [[-12, -1.6, 'b'], [-12.5, -.4, 'b'], [5.2, 6.8, 'c'], [5.9, 7.4, 'b'], [12, -3, 'c'], [-4.5, -7.6, 'b'], [-3.6, 7.8, 'c']]) {
   const o = t === 'b' ? cil(.42, .38, 1, mat.madera, x, .5, z, 10) : caja(.9, .8, .9, mat.madera, x, .4, z);
   if (t === 'c') o.rotation.y = Math.random();
@@ -591,7 +676,8 @@ const humos = [];
     const g = casa(x, z, -a + Math.PI / 2, w, h, d, tejados[i % tejados.length], { y: y - .3, padre: tortuga, chimenea: i % 3 === 0, muro: i % 4 === 0 ? mat.piedra : mat.cal });
     const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), n.clone().lerp(new THREE.Vector3(0, 1, 0), .55).normalize());
     g.quaternion.premultiply(q);
-    if (i % 3 === 0) humos.push(new THREE.Vector3(x, y + h * 2.1, z));
+    if (i % 3 === 0) { humos.push(new THREE.Vector3(x, y + h * 2.1, z)); humos[humos.length - 1].casa = g; }
+    decor.casas.push(g); g.userData.matorral = null;
     // Matorrales al lado
     const m = new THREE.Mesh(new THREE.IcosahedronGeometry(azar(.5, .9), 0), new THREE.MeshStandardMaterial({ color: uno([0x3a5a2a, 0x4a6a2a, 0x5a4a2a]), flatShading: true }));
     m.position.set(x + azar(-1.5, 1.5), alturaCaparazon(x, z) + .2, z + azar(-1.5, 1.5)); tortuga.add(m);
@@ -693,6 +779,11 @@ const texGato = recorte(256, 256, (g) => {
   g.fillStyle = '#e8c040'; g.beginPath(); g.ellipse(140, 138, 9, 7, 0, 0, 7); g.ellipse(176, 138, 9, 7, 0, 0, 7); g.fill();
   g.fillStyle = TINTA; g.fillRect(138, 132, 3, 12); g.fillRect(174, 132, 3, 12);
 });
+const texMarga = recorte(256, 512, (g) => {
+  piezas(g, [[P('M70 500 L84 250 Q128 210 172 250 L186 500Z'), '#6a3a2a'], [P('M96 270 L160 270 L170 470 L86 470Z'), '#e8dcc0', .2], [P('M98 170 a30 34 0 1 0 60 0 a30 34 0 1 0 -60 0'), PAPEL], [P('M92 150 Q128 96 164 150 Q128 132 92 150Z'), '#c84a2a'], [P('M176 250 L214 150 L224 154 L188 256Z'), '#8a6a4a'], [P('M206 140 a14 10 0 1 0 28 0 a14 10 0 1 0 -28 0'), '#8a6a4a']]);
+  g.fillStyle = TINTA; g.fillRect(114, 168, 7, 6); g.fillRect(136, 168, 7, 6);
+  g.strokeStyle = SANGRE; g.lineWidth = 3; g.beginPath(); g.arc(128, 186, 10, .2, Math.PI - .2); g.stroke();
+});
 function figuraPapel(tex, alto, aspecto = .5) {
   const g = new THREE.Group();
   const m = new THREE.MeshStandardMaterial({ map: tex, transparent: true, alphaTest: .4, side: THREE.DoubleSide, roughness: 1, emissive: 0x3a2a24, emissiveMap: tex, emissiveIntensity: .55 });
@@ -718,10 +809,13 @@ const PNJ = [
   { id: 'libro', nombre: 'El Libro', obj: libro, x: 3.4, z: 2.2, radio: 2.2, accion: 'Abrir el libro' },
   { id: 'cabana', nombre: 'Tu cabaña', obj: null, x: -8.2, z: 3.2, radio: 2.2, accion: 'Entrar en tu cabaña' },
   { id: 'forja', nombre: 'La Forja Fría', obj: null, x: 7.4, z: 4.4, radio: 2.4, accion: 'Mirar la forja' },
+  { id: 'tablon', nombre: 'Tablón de encargos', obj: decor.tablon, x: 1.6, z: -4.2, radio: 1.8, accion: 'Mirar el tablón' },
+  { id: 'marga', nombre: 'Marga la cocinera', fig: figuraPapel(texMarga, 2.3), x: 3.2, z: -6.3, radio: 2.3,
+    frases: ['¡Guiso de anguila de tinta! Bueno… de algo.', 'Nadie baja al libro con el estómago vacío.', '¿Otra vez tú? Siéntate, siéntate.'] },
   { id: 'morrandar', nombre: 'Morrandar', obj: cabeza, x: 14.2, z: .8, radio: 2.2, accion: 'Hablar con Morrandar' }
 ];
 for (const p of PNJ) {
-  if (p.fig) { p.fig.position.set(p.x, 0, p.z); pueblo.add(p.fig); if (!p.ruta && !p.gato) tope(p.x, p.z, .5); }
+  if (p.fig) { p.fig.position.set(p.x, 0, p.z); pueblo.add(p.fig); if (!p.ruta && !p.gato) p.tope = tope(p.x, p.z, .5); }
   if (p.ruta) p.paso = 1;
 }
 const pescador = PNJ.find((p) => p.id === 'pescador');
@@ -826,15 +920,21 @@ function irA(url) { cerrarDialogo(); $('fundido').style.background = '#1a0c2a'; 
 panelSala = crearPanel({
   donde: 'tortuga', boton: $('b-sala'),
   datos: () => ({ clase, x: heroe.position.x, z: heroe.position.z, caidos: Ficha.fichaOCrear(ficha.nombre).orden.filter((id) => ficha.heroes[id]?.caido).length }),
-  cabana: () => { const f = Ficha.fichaOCrear(ficha.nombre); return { nombre: f.nombre, trofeos: f.cabana.trofeos.slice(-12), diario: f.diario }; },
+  cabana: () => { const f = Ficha.fichaOCrear(ficha.nombre), t = Pueblo.estadoPueblo(f); return { nombre: f.nombre, trofeos: f.cabana.trofeos.slice(-12), diario: f.diario, pueblo: { fama: t.fama, obras: t.obras, historias: t.historias, rescatados: t.rescatados } }; },
   alConectar: (R) => {
     R.on('gente', (g) => { ponerGente(g); aCabana({ t: 'gente', gente: g, yo: R.yo.id }); })
       .on('frase', (id, texto) => { decir(avatarDe(id), texto); aCabana({ t: 'frase', id, texto }); })
       .on('gesto', (id, g) => aCabana({ t: 'gesto', id, g }))
       .on('gesto', (id, g) => { const a = avatarDe(id); if (!a) return; a.gesto = g; a.tG = 0; a.plano.scale.y = 1; const x = GESTOS.find((q) => q.id === g); if (x && g !== 'sentarse') decir(a, x.icono); });
     ponerGente(R.gente());
+    // Invitado: se ve el pueblo del anfitrión, como lo tenga él.
+    setTimeout(async () => {
+      if (R.soyAnfitrion()) return;
+      const c = await R.leerCabana();
+      if (c?.pueblo) { visitaPueblo = c.nombre || 'tu anfitrión'; aplicarPueblo(c.pueblo); }
+    }, 800);
   },
-  alSalir: () => ponerGente({}),
+  alSalir: () => { ponerGente({}); visitaPueblo = null; aplicarPueblo(Pueblo.estadoPueblo(ficha)); },
   irA
 });
 
@@ -952,6 +1052,8 @@ const DIALOGOS = {
     ops: [['Entrar', abrirCabana], ['Salir', cerrarDialogo]] }) : ({ texto: 'Tu cabaña. De momento: una hamaca, un baúl con tus héroes… y sobre la puerta, el cráneo de Ugrak, el Gran Chamán. El primero de muchos.',
     ops: [['Entrar', abrirCabana], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
+  tablon: () => tablon(),
+  marga: () => cantina(),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
     ops: [['Acariciarle la cabeza', () => { despertar(); mostrar('Morrandar', 'La piel es fría como piedra mojada. Ronronea. Las tortugas no ronronean. Esta sí.'); }], ['¿Adónde nos llevas?', () => mostrar('Morrandar', 'Gira despacio hacia una página que brilla en el horizonte. Ahí, parece decir. Siempre hay otra.')], ['Dejarla nadar', cerrarDialogo]] }; }
 };
@@ -1038,6 +1140,95 @@ $('accion').addEventListener('click', () => cerca && interactuar(cerca));
 $('b-libro').addEventListener('click', () => { guardar('criptas_vistaBase', 'libro'); location.href = 'base-oscura.html'; });
 $('b-calidad').addEventListener('click', () => { calidad = CALIDADES[(CALIDADES.indexOf(calidad) + 1) % 3]; guardar('criptas_calidadTortuga', calidad); aplicarCalidad(); });
 
+
+// =============================================================
+//  EL PUEBLO CRECE (js/pueblo.js): qué se ve según tu fama y tus obras
+// =============================================================
+const PNJ_TODOS = PNJ.slice();
+let visitaPueblo = null;   // nombre del anfitrión si estás en su tortuga
+const QUE_PNJ = { mordo: 'mordo', pescador: 'pescador', marga: 'cantina' };
+function aplicarPueblo(t) {
+  const hay = Pueblo.lo(t);
+  const ver = (o, si) => { if (!o) return; o.visible = !!si; if (o.userData?.tope) o.userData.tope.r = si ? o.userData.tope.r0 : 0; };
+  ver(decor.guirnalda, hay.farolillos); ver(decor.bombillas, hay.farolillos);
+  for (const o of decor.copa) o.visible = !!hay.arbol;
+  hojas.p.visible = !!hay.arbol;
+  ver(decor.mordo, hay.mordo); ver(decor.cantina, hay.cantina);
+  ver(decor.fuente, hay.fuente); ver(decor.jardin, hay.jardin); ver(decor.bandera, hay.bandera); ver(decor.muelle, hay.muelle); ver(decor.faro, hay.faro);
+  luzFaro.intensity = hay.faro ? 900 : 0;
+  cana.visible = sedal.visible = !!hay.pescador;
+  // Casas en las laderas: unas pocas al principio, más con la fama.
+  const n = 3 + (hay.casas1 ? 4 : 0) + (hay.casas2 ? 4 : 0) + (hay.casas3 ? 99 : 0);
+  decor.casas.forEach((g, i) => { g.visible = i < n; });
+  // Vecinos: solo los que ya viven aquí.
+  PNJ.length = 0;
+  for (const p of PNJ_TODOS) {
+    const req = QUE_PNJ[p.id], esta = !req || hay[req];
+    if (p.fig) p.fig.visible = esta;
+    if (p.tope) p.tope.r = esta ? p.tope.r0 : 0;
+    if (esta) PNJ.push(p); else { p.rotulo.style.opacity = 0; if (p.habla) p.habla.style.opacity = 0; }
+  }
+}
+aplicarPueblo(Pueblo.estadoPueblo(ficha));
+// Al llegar: lo nuevo desde la última vez.
+{
+  const f = Ficha.fichaOCrear(ficha.nombre), nuevas = Pueblo.novedades(Pueblo.estadoPueblo(f));
+  if (nuevas.length) {
+    Ficha.guardarFicha(f); ficha = f;
+    const primeras = Object.keys(f.tortuga.vistos).length === nuevas.length && f.tortuga.fama === 0;
+    if (!primeras) setTimeout(() => {
+      const av = $('aviso');
+      av.innerHTML = `<b style="font:20px 'IM Fell English SC',serif;color:#e6b85a">¡Morrandar ha crecido!</b><br>${nuevas.map((m) => '✠ ' + m.nombre).join('<br>')}<br><button class="btn" id="av-ok">A verlo</button>`;
+      av.style.display = 'block';
+      $('av-ok').onclick = () => { av.style.display = 'none'; };
+    }, prm.has('sinIntro') ? 1200 : 6500);
+  }
+}
+function barra(n, max) { return `<div style="height:8px;background:rgba(60,30,10,.25);border-radius:4px;overflow:hidden;margin:4px 0 8px"><i style="display:block;height:100%;width:${Math.min(100, n / max * 100)}%;background:#7a1a12"></i></div>`; }
+function tablon(aviso = '') {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const t = Pueblo.estadoPueblo(ficha), rango = Pueblo.rangoDe(t.fama), sig = Pueblo.siguienteRango(t.fama);
+  const enc = Pueblo.encargos(ficha); Ficha.guardarFicha(ficha);
+  const hay = Pueblo.lo(t);
+  const lista = Pueblo.MEJORAS.map((m) => `<span>${hay[m.id] ? '✓' : '·'} ${m.nombre}</span><span>${hay[m.id] ? '' : m.historia ? 'al acabar una historia' : m.rescate ? 'rescate (pronto)' : m.fama + ' de fama'}</span>`).join('');
+  const encargosHTML = enc.map((e) => `<span>${e.cobrado ? '✓' : e.listo ? '★' : '·'} ${e.texto}</span><span>${e.cobrado ? 'cobrado' : e.hecho + '/' + e.n}</span>`).join('');
+  const ops = [];
+  for (const e of enc) if (e.listo && !e.cobrado) ops.push([`Cobrar «${e.texto}» (+${Pueblo.RECOMPENSA_ENCARGO} de fama)`, () => { const err = Pueblo.cobrarEncargo(ficha, e.id); Ficha.guardarFicha(ficha); aplicarPueblo(Pueblo.estadoPueblo(ficha)); tablon(err || '¡Encargo cobrado!'); }]);
+  ops.push(['Encargar obras (con el oro del banco)', () => obras()]);
+  ops.push(['Cerrar', cerrarDialogo]);
+  mostrar('Tablón de encargos', (visitaPueblo ? `Estás en la tortuga de ${visitaPueblo}. Esto es lo tuyo: ` : '') + `Tu Morrandar es un <b>${rango.nombre}</b> · ${t.fama} de fama.` + (sig ? ` Siguiente: ${sig.nombre} (${sig.fama}).` : ''), ops,
+    (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + (sig ? barra(t.fama - rango.fama, sig.fama - rango.fama) : '')
+    + `<b style="font-size:17px">Encargos de la semana</b><div class="lista">${encargosHTML}</div><b style="font-size:17px">El pueblo</b><div class="lista">${lista}</div>`);
+}
+function obras(aviso = '') {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const t = Pueblo.estadoPueblo(ficha);
+  const ops = Pueblo.OBRAS.filter((o) => !t.obras[o.id]).map((o) => [`${o.nombre} — ${o.precio} monedas`, () => {
+    const err = Pueblo.construir(ficha, o.id);
+    if (!err) { Ficha.tocar(ficha); Ficha.guardarFicha(ficha); Pueblo.novedades(t); Ficha.guardarFicha(ficha); aplicarPueblo(t); audio.tono('hiel'); }
+    obras(err || '¡Hecho! Los vecinos se ponen manos a la obra.');
+  }]);
+  ops.push(['Volver al tablón', () => tablon()], ['Cerrar', cerrarDialogo]);
+  mostrar('Obras', 'Las obras se pagan con el oro del banco de Madre Hiel. Tienes <b>' + (ficha.banco || 0) + '</b> monedas.', ops,
+    (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + '<div class="lista">' + Pueblo.OBRAS.map((o) => `<span>${t.obras[o.id] ? '✓' : '·'} ${o.nombre}</span><span>${t.obras[o.id] ? 'hecha' : o.precio + ' o'}</span>`).join('') + '</div>');
+}
+// La cantina: un guiso antes de bajar te da una fiambrera (una poción curativa) para la próxima misión.
+const PRECIO_GUISO = 20;
+function cantina(aviso = '') {
+  ficha = Ficha.fichaOCrear(ficha.nombre);
+  const h = ficha.heroes[ficha.activo];
+  const ops = [];
+  if (h && !h.prestado) ops.push([`Comer un guiso (${PRECIO_GUISO} monedas del banco)`, () => {
+    if ((ficha.banco || 0) < PRECIO_GUISO) return cantina('No tienes bastante en el banco de Madre Hiel.');
+    if (h.fiambrera) return cantina(h.nombre + ' ya lleva una fiambrera para la próxima misión.');
+    ficha.banco -= PRECIO_GUISO; h.objetos ||= {}; h.objetos.pocionCurar = (h.objetos.pocionCurar || 0) + 1; h.fiambrera = true;
+    Ficha.tocar(ficha); Ficha.guardarFicha(ficha); audio.tono('hiel');
+    mostrar('Marga la cocinera', `${h.nombre} come como si no hubiera mañana. Marga le pone una fiambrera para el camino: <b>una poción curativa</b> en su mochila.`, [['¡Gracias, Marga!', cerrarDialogo]]);
+  }]);
+  ops.push(['¿Qué hay hoy?', () => mostrar('Marga la cocinera', uno(['Guiso de anguila de tinta. Lleva tres días en el fuego y mejora con cada uno.', 'Sopa de páginas con picatostes. Las mayúsculas dan más sabor.', 'Pescado del Viejo Anzuelo. No preguntes qué pescado.']))]);
+  ops.push(['Me voy', cerrarDialogo]);
+  mostrar('Marga la cocinera', h ? (h.prestado ? `${h.nombre} está en una partida. Vuelve con él cuando acabe y te pongo un plato.` : 'Siéntate. Nadie baja al libro con el estómago vacío.') : 'Siéntate… aunque sin héroe en tu ficha, poco te puedo dar de comer.', ops, aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '');
+}
 // =============================================================
 //  Sonido: mar, viento, crujidos, una cajita de música y Morrandar
 // =============================================================
@@ -1233,7 +1424,7 @@ function bucle() {
     const pos = humo.p.geometry.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       humo.vida[i] += dt * .18;
-      if (humo.vida[i] > 1) { humo.vida[i] = 0; const b = humos[i % humos.length]; pos.setXYZ(i, b.x, b.y, b.z); }
+      if (humo.vida[i] > 1) { humo.vida[i] = 0; const b = humos[i % humos.length]; if (b.casa.visible) pos.setXYZ(i, b.x, b.y, b.z); else pos.setXYZ(i, 0, -999, 0); }
       else pos.setXYZ(i, pos.getX(i) - dt * .4, pos.getY(i) + dt * .9, pos.getZ(i) + Math.sin(t + i) * dt * .2);
     }
     pos.needsUpdate = true;

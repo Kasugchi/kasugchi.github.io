@@ -1,3 +1,4 @@
+import { famaDeMision, estadoPueblo } from './pueblo.js';
 // =============================================================
 //  FICHA DEL VIAJERO
 //  Lo que es tuyo fuera de las partidas: tus héroes (hasta 8, se puede
@@ -173,12 +174,17 @@ export function registrarMision(f, estado, miId) {
   if (estado.aleatorio && c.resultado === 'victoria') d.pisoMax = Math.max(d.pisoMax, c.numero || estado.misionIdx);
   for (const id of mios) {
     const fid = estado.heroes[id].fichaId;
-    if (fid && f.heroes[fid]) delete f.heroes[fid].retirado;     // tras una misión puede volver a sacar del banco
+    if (fid && f.heroes[fid]) { delete f.heroes[fid].retirado; delete f.heroes[fid].fiambrera; }     // tras una misión: puede volver a sacar del banco y a comer en la cantina
     const hc = c.heroes?.[id];
     if (!hc) continue;
     d.monstruos += Object.values(hc.muertes || {}).reduce((s, n) => s + n, 0);
     d.caidas += hc.caidas || 0;
   }
+  // Fama para tu tortuga: cuenta igual si eras el anfitrión o ayudabas a otro.
+  const t = estadoPueblo(f);
+  t.fama += famaDeMision(estado, c);
+  // Historia completa: la campaña de Velmor terminada con victoria.
+  if (!estado.aleatorio && !estado.limbo && !estado.pruebas && c.resultado === 'victoria' && estado.campana?.length && estado.misionIdx + 1 >= estado.campana.length) t.historias.velmor ||= Date.now();
   if (c.resultado === 'victoria') for (const nombre of c.jefes || []) {
     d.jefes++;
     f.cabana.trofeos.push({ nombre, donde: estado.aleatorio ? 'Mazmorra Infinita · piso ' + c.numero : 'Misión ' + c.numero + ': ' + (c.titulo || ''), fecha: Date.now() });
@@ -246,6 +252,11 @@ export function fusionar(a, b) {
   const vistos = new Set(out.cabana.trofeos.map((t) => t.nombre + '|' + t.fecha));
   for (const t of vieja.cabana?.trofeos || []) if (!vistos.has(t.nombre + '|' + t.fecha)) out.cabana.trofeos.push(t);
   out.cabana.trofeos.sort((x, y) => x.fecha - y.fecha);
+  // La tortuga nunca pierde lo ganado en otro dispositivo.
+  const tv = vieja.tortuga || {}, tn = out.tortuga;
+  tn.fama = Math.max(tn.fama || 0, tv.fama || 0);
+  for (const k of ['obras', 'historias', 'vistos']) tn[k] = { ...(tv[k] || {}), ...(tn[k] || {}) };
+  tn.rescatados = [...new Set([...(tn.rescatados || []), ...(tv.rescatados || [])])];
   return out;
 }
 
