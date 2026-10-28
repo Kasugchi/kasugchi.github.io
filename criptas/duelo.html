@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Criptas · Duelo de insultos (prototipo)</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Pirata+One&display=swap" rel="stylesheet">
+<style>
+  :root { --tinta: #1c120b; --sangre: #8a1d12; --papel: #e8d6ae; --papel-2: #c9b07e; --oro: #e6b85a; --noche: #120c10; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body { background: var(--noche); color: #f2e2c0; font: 17px/1.45 'IM Fell English', Georgia, serif; -webkit-tap-highlight-color: transparent; }
+  /* La taberna: madera, farolillos y una luna por la ventana */
+  .taberna { position: fixed; inset: 0; z-index: -1; overflow: hidden;
+    background: radial-gradient(ellipse 60% 45% at 50% 30%, rgba(230,160,70,.22), transparent 70%),
+      repeating-linear-gradient(90deg, #2a1810 0 46px, #24140d 46px 48px, #2e1b12 48px 98px, #22130c 98px 100px); }
+  .taberna::before { content: ''; position: absolute; left: 6%; top: 46%; width: 120px; height: 90px; border: 8px solid #3a2416; border-radius: 75px 75px 0 0;
+    background: radial-gradient(circle at 62% 40%, #f4e8c8 0 16px, #bfd0e8 17px 19px, transparent 20px), radial-gradient(ellipse at 50% 120%, #1a2a48, #0a1020); box-shadow: 0 0 40px rgba(0,0,0,.6); }
+  .taberna::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28%; background: linear-gradient(#3a2216, #1e110a); box-shadow: 0 -6px 20px rgba(0,0,0,.6); }
+  .farol { position: absolute; top: 0; width: 2px; height: 70px; background: #4a3020; }
+  .farol::after { content: ''; position: absolute; left: -9px; bottom: -18px; width: 20px; height: 24px; border-radius: 6px; background: radial-gradient(#ffd27a, #c9781e); box-shadow: 0 0 30px 10px rgba(255,170,60,.35); animation: llama 2.4s infinite alternate; }
+  @keyframes llama { to { box-shadow: 0 0 22px 6px rgba(255,170,60,.25); } }
+
+  main { max-width: 860px; margin: 0 auto; padding: max(14px, env(safe-area-inset-top)) 14px 30px; }
+  header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  h1 { font: 34px/1 'Pirata One', 'IM Fell English SC', serif; color: var(--oro); margin: 0; letter-spacing: .02em; text-shadow: 0 2px 0 #000, 0 0 18px rgba(230,150,60,.4); margin-right: auto; }
+  .btn { font: 16px 'IM Fell English', serif; color: #f2e2c0; background: rgba(40,22,14,.85); border: 1px solid rgba(230,184,90,.5); border-radius: 5px; padding: 7px 12px; cursor: pointer; }
+  .btn:hover { border-color: var(--oro); }
+  .btn.rojo { background: #7a2414; border-color: #e8a060; }
+  .btn:disabled { opacity: .45; cursor: default; }
+
+  /* Escena del duelo */
+  .ring { margin-top: 84px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 8px; min-height: 230px; }
+  .luchador { text-align: center; position: relative; }
+  .luchador img, .luchador svg { width: min(170px, 34vw); height: min(190px, 38vw); object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,.7)); transition: transform .2s; }
+  .luchador .nombre { font: 18px 'IM Fell English SC', serif; color: var(--oro); }
+  .luchador.golpe img, .luchador.golpe svg { animation: golpe .45s; }
+  @keyframes golpe { 30% { transform: translateX(-14px) rotate(-6deg); } 60% { transform: translateX(8px) rotate(3deg); } }
+  .rival.golpe svg { animation: golpeR .45s; }
+  @keyframes golpeR { 30% { transform: translateX(14px) rotate(6deg); } 60% { transform: translateX(-8px) rotate(-3deg); } }
+  .marcador { text-align: center; font: 15px 'IM Fell English SC', serif; color: #d8c49c; padding-bottom: 40px; }
+  .marcador .puntos { display: flex; gap: 4px; justify-content: center; font-size: 22px; margin: 4px 0 10px; }
+  .marcador .puntos span { opacity: .25; } .marcador .puntos span.on { opacity: 1; }
+  .espadas { font-size: 34px; }
+  .bocadillo { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: min(300px, 44vw); background: var(--papel); color: var(--tinta); border: 2px solid var(--tinta);
+    border-radius: 12px; padding: 9px 12px; font: italic 16px/1.3 'IM Fell English', serif; box-shadow: 0 8px 20px rgba(0,0,0,.6); opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 3; }
+  .bocadillo.ver { opacity: 1; }
+  .bocadillo::after { content: ''; position: absolute; left: 50%; bottom: -9px; width: 14px; height: 14px; background: inherit; border: inherit; border-width: 0 2px 2px 0; transform: translateX(-50%) rotate(45deg); }
+
+  /* Pergamino de opciones */
+  .pergamino { margin-top: 18px; background: radial-gradient(ellipse at 50% 40%, var(--papel), var(--papel-2)); color: var(--tinta); border-radius: 4px; padding: 14px 16px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.7), inset 0 0 40px rgba(80,40,10,.35); }
+  .pergamino h2 { font: 22px 'IM Fell English SC', serif; color: var(--sangre); margin: 0 0 6px; }
+  .pergamino p { margin: 4px 0 10px; }
+  .opciones { display: grid; gap: 6px; }
+  .opciones button { text-align: left; font: 17px/1.3 'IM Fell English', serif; color: var(--tinta); background: rgba(255,255,255,.18); border: 1px solid rgba(60,30,10,.35); border-left: 4px solid var(--sangre);
+    border-radius: 3px; padding: 8px 12px; cursor: pointer; }
+  .opciones button:hover, .opciones button:focus { background: rgba(138,29,18,.12); outline: none; }
+  .opciones button.torpe { border-left-color: #8a7a60; font-style: italic; }
+  .rivales { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+  .rivales button { text-align: left; font: 16px 'IM Fell English', serif; color: var(--tinta); background: rgba(255,255,255,.2); border: 1px solid rgba(60,30,10,.4); border-radius: 4px; padding: 8px 10px; cursor: pointer; }
+  .rivales button b { display: block; font: 18px 'IM Fell English SC', serif; color: var(--sangre); }
+  .rivales button small { opacity: .75; }
+  .rivales button:disabled { opacity: .5; cursor: default; }
+  .barra { height: 8px; background: rgba(60,30,10,.25); border-radius: 4px; overflow: hidden; margin: 4px 0 10px; }
+  .barra i { display: block; height: 100%; background: var(--sangre); }
+  .cuaderno { columns: 2 260px; column-gap: 24px; }
+  .cuaderno div { break-inside: avoid; margin: 0 0 6px; font-size: 15px; }
+  .cuaderno .tit { font: 17px 'IM Fell English SC', serif; color: var(--sangre); }
+  .nota { font-size: 14px; opacity: .75; }
+  .aviso { color: var(--sangre); font-weight: bold; }
+  @media (max-width: 560px) { h1 { font-size: 28px; } .ring { min-height: 190px; margin-top: 96px; } .bocadillo { font-size: 14px; width: 46vw; } .marcador { padding-bottom: 20px; } }
+</style>
+</head>
+<body>
+<div class="taberna"><div class="farol" style="left:18%"></div><div class="farol" style="left:82%;height:50px"></div></div>
+<main>
+  <header>
+    <h1>Duelo de insultos</h1>
+    <button class="btn" id="b-cuaderno">📜 Cuaderno</button>
+    <button class="btn" id="b-volver">← Taberna</button>
+  </header>
+  <div class="ring">
+    <div class="luchador yo" id="yo"><div class="bocadillo" id="b-yo"></div><img id="img-yo" alt=""><div class="nombre" id="n-yo"></div></div>
+    <div class="marcador"><div class="espadas">⚔</div><div id="marcador"></div></div>
+    <div class="luchador rival" id="rival"><div class="bocadillo" id="b-rival"></div><div id="img-rival"></div><div class="nombre" id="n-rival"></div></div>
+  </div>
+  <div class="pergamino" id="panel"></div>
+</main>
+
+<script type="module">
+// =============================================================
+//  PROTOTIPO: duelo de insultos para la historia pirata.
+//  En la isla os batís con piratas de taberna: al perder un asalto
+//  aprendéis su insulto o su réplica. Con bastantes réplicas, la
+//  Maestra de Esgrima acepta el duelo… y ella usa insultos distintos
+//  que se contestan con las mismas réplicas.
+//  El cuaderno se guarda en este dispositivo (criptas_duelo).
+// =============================================================
+const $ = (id) => document.getElementById(id);
+const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } };
+const uno = (l) => l[Math.floor(Math.random() * l.length)];
+const barajar = (l) => l.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+const espera = (ms) => new Promise((ok) => setTimeout(ok, ms));
+
+// ---------- Insultos: cada réplica sirve para un insulto de taberna y uno de la Maestra ----------
+const PARES = [
+  { id: 'agujeros', t: '¡Te voy a dejar más agujeros que a un queso de bodega!', m: 'Mi acero te zurcirá a estocadas como a una vela vieja.', r: 'Primero tendrías que acertarme una vez.' },
+  { id: 'compania', t: '¡Nadie en este puerto quiere navegar contigo!', m: 'Acabarás en el fondo del mar, con los cangrejos.', r: 'Qué bien: así por fin tendré compañía decente.' },
+  { id: 'lento', t: '¡Eres más lento que un percebe con resaca!', m: 'Mi tortuga de compañía esquiva mejor que tú.', r: 'Y aun así sigues sin tocarme.' },
+  { id: 'pulpo', t: '¡Peleas como un pulpo con calambres!', m: 'Te mueves como un mono que ha probado el grog.', r: 'Será que te estoy imitando.' },
+  { id: 'olor', t: '¡Hueles peor que la bodega de un ballenero!', m: 'Apestas a sardina de la semana pasada.', r: 'Normal: acabo de salir de tu camarote.' },
+  { id: 'loro', t: '¡Mi loro tiene más cerebro que tú!', m: 'He conocido mascarones de proa más listos que tú.', r: 'Al menos él sabe lo que dice.' },
+  { id: 'felpudo', t: '¡Cuando acabe contigo, te usaré de felpudo!', m: 'Fregaré la cubierta con tu sombrero.', r: 'Por fin habría algo limpio en tu barco.' },
+  { id: 'hundir', t: '¡He hundido barcos más grandes que tu ego!', m: 'He mandado a pique flotas enteras sin despeinarme.', r: 'Hundir cosas se te da bien: mira tu fama.' },
+  { id: 'tiembla', t: '¡Tiemblas como gelatina en pleno temporal!', m: 'Veo el miedo bailando en tus rodillas.', r: 'Es la risa, que no la aguanto al verte.' },
+  { id: 'abuela', t: '¡Mi abuela maneja la espada mejor que tú!', m: 'Hasta una anciana te desarmaría con una aguja de punto.', r: 'Lo sé: me la prestó para venir a darte una lección.' },
+  { id: 'invicto', t: '¡Nadie me ha ganado un duelo jamás!', m: 'Mis rivales nunca llegan al tercer asalto.', r: 'Porque nadie se quedó despierto hasta el final.' },
+  { id: 'chiste', t: '¡Tu esgrima es un chiste malo!', m: 'Tu técnica da más risa que un bufón con hipo.', r: 'Y aun así no lo pillas.' }
+];
+const TORPES = ['¡Ah, sí! ¿Pues… tú más?', '¡Mira detrás de ti, una gaviota con sombrero!', 'Eh… ¿me repites la pregunta?', 'Mi madre dice que soy especial.', '¿Y si lo dejamos en empate?'];
+const NO_SABE = ['¿Y-y eso qué quiere decir?', '¡Grrr! ¡Esa no me la sé!', '…Me pillas sin palabras.', '¡Tramposo! ¡Eso no vale!'];
+
+// ---------- Rivales ----------
+const RIVALES = [
+  { id: 'pecas', corto: 'Pecas', nombre: 'Grumete Pecas', desc: 'Novato y bocazas. Ideal para empezar.', sabe: 0.25, insultos: ['lento', 'loro', 'tiembla', 'chiste'], color: '#c86a3a', sombrero: 'pañuelo' },
+  { id: 'sal', corto: 'Sal', nombre: 'Sal la Gruñona', desc: 'Cocinera del puerto. Pica más que su guiso.', sabe: 0.4, insultos: ['olor', 'abuela', 'felpudo', 'compania', 'pulpo'], color: '#7a4a8a', sombrero: 'pañuelo' },
+  { id: 'tres', corto: 'Tom', nombre: 'Tom Tres-Dedos', desc: 'Lleva veinte años en esta taberna.', sabe: 0.55, insultos: ['agujeros', 'hundir', 'invicto', 'pulpo', 'lento', 'felpudo'], color: '#3a6a5a', sombrero: 'tricornio' },
+  { id: 'barba', corto: 'Barbaverde', nombre: 'Barbaverde el Tuerto', desc: 'El más temido de la taberna… según él.', sabe: 0.65, insultos: PARES.map((p) => p.id), color: '#4a6a2a', sombrero: 'tricornio' },
+  { id: 'maestra', corto: 'Filo', nombre: 'La Maestra Filo', desc: 'Nadie la ha vencido. Usa sus propios insultos.', sabe: 0.85, maestra: true, color: '#8a1d12', sombrero: 'pluma' }
+];
+const NECESITA_MAESTRA = 8;   // réplicas que hay que saber para que acepte el duelo
+
+// ---------- Cuaderno (lo aprendido) ----------
+const cuaderno = (() => { try { return JSON.parse(leer('criptas_duelo', '')) || null; } catch { return null; } })()
+  || { insultos: ['lento', 'chiste'], replicas: ['lento', 'chiste'], vencidos: [] };
+const guardarCuaderno = () => guardar('criptas_duelo', JSON.stringify(cuaderno));
+const par = (id) => PARES.find((p) => p.id === id);
+
+// ---------- El héroe (de tu ficha de viajero, si la tienes) ----------
+const ficha = (() => { try { return JSON.parse(leer('criptas_viajero', '')); } catch { return null; } })();
+const activo = ficha?.heroes?.[ficha.activo];
+const tipo = activo?.tipo || leer('criptas_claseBase', 'barbaro');
+$('img-yo').src = `sprites/${['barbaro', 'enano', 'elfo', 'mago'].includes(tipo) ? tipo : 'barbaro'}.png`;
+$('n-yo').textContent = activo?.nombre || leer('criptas_nombre', '') || 'Tú';
+
+// Pirata de papel: una silueta propia, cambiando color y sombrero.
+function pirata(r) {
+  const sombrero = r.sombrero === 'tricornio' ? '<path d="M38 52 Q80 18 122 52 Q100 44 80 46 Q60 44 38 52Z" fill="#1a1210"/>'
+    : r.sombrero === 'pluma' ? '<path d="M44 54 Q80 24 116 54Z" fill="#1a1210"/><path d="M108 40 Q140 6 150 24 Q128 30 112 50Z" fill="#e8e0d0"/>'
+    : '<path d="M48 56 Q80 30 112 56 Q80 50 48 56Z" fill="' + r.color + '"/><path d="M110 52 l14 8 l-12 4Z" fill="' + r.color + '"/>';
+  const parche = r.id === 'barba' ? '<path d="M64 70 h14 v8 h-14Z M56 66 L96 62" stroke="#111" stroke-width="3" fill="#111"/>' : '';
+  const barba = r.id === 'barba' ? '<path d="M58 92 Q80 132 102 92 Q80 102 58 92Z" fill="#3a6a1a"/>' : r.id === 'tres' ? '<path d="M62 94 Q80 116 98 94Z" fill="#6a5a4a"/>' : '';
+  return `<svg viewBox="0 0 160 190" xmlns="http://www.w3.org/2000/svg">
+    <path d="M40 190 Q42 120 80 112 Q118 120 120 190Z" fill="${r.color}"/>
+    <path d="M60 120 L80 150 L100 120" fill="none" stroke="#e8d6ae" stroke-width="5"/>
+    <circle cx="80" cy="78" r="28" fill="#d8a878"/>${barba}${parche}${sombrero}
+    <circle cx="70" cy="76" r="3" fill="#1a1210"/><circle cx="90" cy="76" r="3" fill="#1a1210"/>
+    <path d="M70 92 Q80 98 90 92" stroke="#1a1210" stroke-width="2.5" fill="none"/>
+    <path d="M118 150 L150 104" stroke="#cfd6de" stroke-width="5" stroke-linecap="round"/><path d="M112 156 L124 146" stroke="#6a4a2a" stroke-width="8" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// ---------- Sonido: choque de espadas y risas de taberna (sintetizado) ----------
+let ac = null;
+function sonar(tipo) {
+  try {
+    ac ||= new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime;
+    if (tipo === 'choque') {
+      for (const f of [1900, 2600, 3300]) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.7, t + 0.35);
+        g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+        o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.45);
+      }
+    } else {
+      const notas = tipo === 'gana' ? [523, 659, 784, 1046] : [392, 330, 262];
+      notas.forEach((f, i) => { const o = ac.createOscillator(), g = ac.createGain(); o.type = 'square'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + i * 0.14); g.gain.exponentialRampToValueAtTime(0.04, t + i * 0.14 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.14 + 0.25);
+        o.connect(g).connect(ac.destination); o.start(t + i * 0.14); o.stop(t + i * 0.14 + 0.3); });
+    }
+  } catch { /* sin sonido */ }
+}
+
+// ---------- Bocadillos ----------
+async function decir(quien, texto, ms = 2200) {
+  const b = $(quien === 'yo' ? 'b-yo' : 'b-rival');
+  b.textContent = texto; b.classList.add('ver');
+  await espera(ms);
+  b.classList.remove('ver');
+  await espera(180);
+}
+function choque(quien) { const el = $(quien); el.classList.remove('golpe'); void el.offsetWidth; el.classList.add('golpe'); sonar('choque'); }
+
+// ---------- El duelo ----------
+let duelo = null;
+const META = 3;
+function pintarMarcador() {
+  if (!duelo) { $('marcador').innerHTML = ''; return; }
+  const pts = (n) => Array.from({ length: META }, (_, i) => `<span class="${i < n ? 'on' : ''}">⚔</span>`).join('');
+  $('marcador').innerHTML = `Tú<div class="puntos">${pts(duelo.yo)}</div>${duelo.rival.corto}<div class="puntos">${pts(duelo.el)}</div>`;
+}
+function aprender(clase, id) {
+  if (cuaderno[clase].includes(id)) return '';
+  cuaderno[clase].push(id); guardarCuaderno();
+  return clase === 'insultos' ? '📜 Has aprendido un insulto nuevo.' : '📜 Has aprendido una réplica nueva.';
+}
+async function empezar(r) {
+  duelo = { rival: r, yo: 0, el: 0, ataca: Math.random() < 0.5 ? 'el' : 'yo', usados: new Set(), notas: [] };
+  $('img-rival').innerHTML = pirata(r); $('n-rival').textContent = r.nombre;
+  pintarMarcador();
+  if (r.maestra) await decir('rival', '¿Tú? ¿Contra mí? Muy bien. Pero yo insulto a mi manera…', 2600);
+  else await decir('rival', uno(['¡Ja! ¡Otro aprendiz para mi colección!', '¿Un duelo? Prepárate para llorar, grumete.', 'Saca la espada… si sabes por dónde se coge.']), 2200);
+  siguiente();
+}
+function panel(html) { $('panel').innerHTML = html; }
+async function siguiente() {
+  if (!duelo) return;   // se volvió a la taberna a mitad
+  pintarMarcador();
+  if (duelo.yo >= META || duelo.el >= META) return fin();
+  if (duelo.ataca === 'el' || duelo.rival.maestra) return ataqueRival();
+  // Te toca insultar: eliges entre los insultos que sabes.
+  const mios = cuaderno.insultos.map(par).filter(Boolean);
+  panel(`<h2>Tu turno: ¡insulta!</h2><p class="nota">${duelo.notas.join(' ')}</p><div class="opciones">${mios.map((p) => `<button data-i="${p.id}">${p.t}</button>`).join('')}
+    <button class="torpe" data-i="">${uno(TORPES)}</button></div>`);
+  duelo.notas = [];
+  $('panel').querySelectorAll('[data-i]').forEach((b) => b.onclick = () => tuInsulto(b.dataset.i, b.textContent));
+}
+async function tuInsulto(id, texto) {
+  panel('<p class="nota">…</p>');
+  choque('yo');
+  await decir('yo', texto);
+  if (!duelo) return;
+  const p = par(id);
+  // El rival responde si se la sabe.
+  if (p && Math.random() < duelo.rival.sabe) {
+    choque('rival');
+    await decir('rival', p.r);
+    duelo.el++; duelo.ataca = 'el';
+    duelo.notas.push(aprender('replicas', p.id) || '');
+  } else {
+    await decir('rival', uno(NO_SABE), 1700);
+    duelo.yo++; duelo.ataca = 'yo';
+  }
+  siguiente();
+}
+async function ataqueRival() {
+  const r = duelo.rival;
+  const pool = r.maestra ? PARES.map((p) => p.id) : r.insultos;
+  let id = uno(pool.filter((x) => !duelo.usados.has(x)));
+  if (!id) { duelo.usados.clear(); id = uno(pool); }
+  duelo.usados.add(id);
+  const p = par(id);
+  const texto = r.maestra ? p.m : p.t;
+  panel('<p class="nota">…</p>');
+  choque('rival');
+  await decir('rival', texto, 2600);
+  if (!duelo) return;
+  if (!r.maestra) duelo.notas.push(aprender('insultos', id) || '');
+  // Respondes con una de tus réplicas (o con algo torpe).
+  const mias = barajar(cuaderno.replicas.map(par).filter(Boolean));
+  panel(`<h2>«${texto}»</h2><p class="nota">${duelo.notas.filter(Boolean).join(' ') || 'Elige tu réplica.'}</p><div class="opciones">${mias.map((q) => `<button data-r="${q.id}">${q.r}</button>`).join('')}
+    <button class="torpe" data-r="">${uno(TORPES)}</button></div>`);
+  duelo.notas = [];
+  $('panel').querySelectorAll('[data-r]').forEach((b) => b.onclick = () => tuReplica(id, b.dataset.r, b.textContent));
+}
+async function tuReplica(id, rid, texto) {
+  panel('<p class="nota">…</p>');
+  choque('yo');
+  await decir('yo', texto);
+  if (!duelo) return;
+  if (rid === id) {
+    await decir('rival', uno(['¡Arg! ¡Buena esa!', '¡Mmm…! Touché.', '¡¿Cómo?! ¡Esa me la tenía que saber yo!']), 1600);
+    duelo.yo++; duelo.ataca = 'yo';
+  } else {
+    await decir('rival', uno(['¡Ja! ¿Eso es todo?', '¡Patético!', 'Ni mi loro contestaría tan mal.']), 1600);
+    duelo.el++; duelo.ataca = 'el';
+    // Al fallar, ves cuál era la buena (y te la apuntas).
+    const bien = par(id);
+    if (!duelo.rival.maestra) duelo.notas.push('La buena era: «' + bien.r + '».', aprender('replicas', id));
+  }
+  siguiente();
+}
+async function fin() {
+  if (!duelo) return;
+  const r = duelo.rival, gano = duelo.yo >= META;
+  sonar(gano ? 'gana' : 'pierde');
+  if (gano && !cuaderno.vencidos.includes(r.id)) { cuaderno.vencidos.push(r.id); guardarCuaderno(); }
+  await decir('rival', gano ? (r.maestra ? 'Increíble… Me has vencido. La espada es tuya, aprendiz.' : uno(['¡Me rindo! ¡Me rindo!', 'Está bien, está bien… invita la casa.', 'Me has dejado sin palabras. Literalmente.'])) : uno(['¡Vuelve cuando sepas hablar, grumete!', '¡Ja! ¡Otro para la colección!', 'Practica con tu loro y vuelve.']), 2400);
+  panel(`<h2>${gano ? (r.maestra ? '¡Has vencido a la Maestra Filo!' : '¡Victoria!') : 'Derrota'}</h2>
+    <p>${gano ? (r.maestra ? 'En la campaña, esto os daría la <b>Espada de la Maestra</b> para colgar en el armero de la cabaña.' : 'Te has ganado el respeto de la taberna. Sigue aprendiendo réplicas para retar a la Maestra.') : 'Al perder también se aprende: mira tu cuaderno.'}</p>
+    <div class="opciones"><button data-a="otra">Otra vez contra ${r.nombre}</button><button data-a="taberna">Volver a la taberna</button></div>`);
+  $('panel').querySelector('[data-a=otra]').onclick = () => empezar(r);
+  $('panel').querySelector('[data-a=taberna]').onclick = taberna;
+  duelo = null;
+}
+
+// ---------- La taberna (elegir rival) ----------
+function taberna() {
+  duelo = null; pintarMarcador();
+  $('img-rival').innerHTML = ''; $('n-rival').textContent = '';
+  const n = cuaderno.replicas.length;
+  panel(`<h2>La Taberna del Grog Rancio</h2>
+    <p>Elige con quién te bates. Al perder un asalto aprendes su insulto o su réplica. Sabes <b>${cuaderno.insultos.length}</b> insultos y <b>${n}</b> réplicas.</p>
+    <div class="barra"><i style="width:${Math.min(100, n / NECESITA_MAESTRA * 100)}%"></i></div>
+    <p class="nota">${n >= NECESITA_MAESTRA ? '¡La Maestra Filo acepta tu reto!' : 'La Maestra Filo no se bate con cualquiera: necesitas ' + NECESITA_MAESTRA + ' réplicas.'}</p>
+    <div class="rivales">${RIVALES.map((r) => `<button data-r="${r.id}" ${r.maestra && n < NECESITA_MAESTRA ? 'disabled' : ''}><b>${r.nombre}${cuaderno.vencidos.includes(r.id) ? ' ✓' : ''}</b><small>${r.desc}</small></button>`).join('')}</div>`);
+  $('panel').querySelectorAll('[data-r]').forEach((b) => b.onclick = () => empezar(RIVALES.find((x) => x.id === b.dataset.r)));
+}
+function verCuaderno() {
+  const ins = cuaderno.insultos.map(par).filter(Boolean), rep = cuaderno.replicas.map(par).filter(Boolean);
+  panel(`<h2>Tu cuaderno de insultos</h2>
+    <div class="cuaderno"><div class="tit">Insultos (${ins.length}/${PARES.length})</div>${ins.map((p) => `<div>✠ ${p.t}</div>`).join('')}
+    <div class="tit">Réplicas (${rep.length}/${PARES.length})</div>${rep.map((p) => `<div>✠ ${p.r}</div>`).join('')}</div>
+    <div class="opciones" style="margin-top:10px"><button data-a="taberna">Volver a la taberna</button><button class="torpe" data-a="borrar">Olvidarlo todo y empezar de cero</button></div>`);
+  $('panel').querySelector('[data-a=taberna]').onclick = taberna;
+  $('panel').querySelector('[data-a=borrar]').onclick = () => { Object.assign(cuaderno, { insultos: ['lento', 'chiste'], replicas: ['lento', 'chiste'], vencidos: [] }); guardarCuaderno(); taberna(); };
+}
+$('b-cuaderno').onclick = () => { if (!duelo) verCuaderno(); };
+$('b-volver').onclick = () => { duelo = null; taberna(); };
+taberna();
+</script>
+</body>
+</html>
