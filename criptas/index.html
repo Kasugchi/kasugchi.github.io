@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261028144149">
+<meta name="version" content="20261028152022">
+
 
 
 
@@ -109,31 +110,31 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/datos.js": "./js/datos.js?v=20261028144149",
-    "./js/firebase.js": "./js/firebase.js?v=20261028144149",
-    "./js/ia.js": "./js/ia.js?v=20261028144149",
-    "./js/iconos.js": "./js/iconos.js?v=20261028144149",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028144149",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028144149",
-    "./js/motor.js": "./js/motor.js?v=20261028144149",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028144149",
-    "./js/nube.js": "./js/nube.js?v=20261028144149",
-    "./js/panel.js": "./js/panel.js?v=20261028144149",
-    "./js/planos.js": "./js/planos.js?v=20261028144149",
-    "./js/procedural.js": "./js/procedural.js?v=20261028144149",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028144149",
-    "./js/red.js": "./js/red.js?v=20261028144149",
-    "./js/render.js": "./js/render.js?v=20261028144149",
-    "./js/render3d.js": "./js/render3d.js?v=20261028144149",
-    "./js/reunion.js": "./js/reunion.js?v=20261028144149",
-    "./js/sprites.js": "./js/sprites.js?v=20261028144149",
-    "./js/tablero.js": "./js/tablero.js?v=20261028144149",
-    "./js/ui.js": "./js/ui.js?v=20261028144149",
-    "./js/viajero.js": "./js/viajero.js?v=20261028144149"
+    "./js/datos.js": "./js/datos.js?v=20261028152022",
+    "./js/firebase.js": "./js/firebase.js?v=20261028152022",
+    "./js/ia.js": "./js/ia.js?v=20261028152022",
+    "./js/iconos.js": "./js/iconos.js?v=20261028152022",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028152022",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152022",
+    "./js/motor.js": "./js/motor.js?v=20261028152022",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152022",
+    "./js/nube.js": "./js/nube.js?v=20261028152022",
+    "./js/panel.js": "./js/panel.js?v=20261028152022",
+    "./js/planos.js": "./js/planos.js?v=20261028152022",
+    "./js/procedural.js": "./js/procedural.js?v=20261028152022",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028152022",
+    "./js/red.js": "./js/red.js?v=20261028152022",
+    "./js/render.js": "./js/render.js?v=20261028152022",
+    "./js/render3d.js": "./js/render3d.js?v=20261028152022",
+    "./js/reunion.js": "./js/reunion.js?v=20261028152022",
+    "./js/sprites.js": "./js/sprites.js?v=20261028152022",
+    "./js/tablero.js": "./js/tablero.js?v=20261028152022",
+    "./js/ui.js": "./js/ui.js?v=20261028152022",
+    "./js/viajero.js": "./js/viajero.js?v=20261028152022"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261028144149">
+<link rel="stylesheet" href="estilo.css?v=20261028152022">
 </head>
 <body>
 
@@ -149,6 +150,9 @@
       <label class="campo">Tu nombre
         <input id="nombre" class="nombre" maxlength="20" autocomplete="nickname" placeholder="Aventurero" style="height:48px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta);font:600 18px var(--f-texto);padding:0 12px">
       </label>
+    </div>
+    <div class="pergamino menu" id="menu-morrandar">
+      <button class="btn madera" id="b-morrandar" type="button" style="width:100%">🐢 Ir a Morrandar</button>
     </div>
     <div class="modos">
       <div class="pergamino modo">
@@ -177,7 +181,6 @@
         <button class="btn madera" id="b-unirse" type="submit">Unirse</button>
       </form>
       <button class="btn claro" id="b-reglas" type="button">Cómo se juega</button>
-      <button class="btn claro" id="b-morrandar" type="button">🐢 Ir a Morrandar</button>
       <p class="nota" id="aviso-portada" role="status"></p>
     </div>
     <div class="pergamino nube" id="nube"></div>
@@ -331,6 +334,6 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261028144149"></script>
+<script type="module" src="js/ui.js?v=20261028152022"></script>
 </body>
 </html>
