@@ -266,7 +266,10 @@ export function tocar(f) { f.actualizada = Date.now(); }
 export function leerFicha() {
   try { const t = localStorage.getItem(CLAVE); return t ? normalizar(JSON.parse(t)) : null; } catch { return null; }
 }
+// Si una página quiere subir la ficha a la nube al guardarla (la tortuga y la cabaña), pone aquí su función.
+let alGuardar = null;
+export const subirAlGuardar = (f) => { alGuardar = f; };
 export function guardarFicha(f) {
-  try { localStorage.setItem(CLAVE, JSON.stringify(f)); return true; } catch { return false; }
+  try { localStorage.setItem(CLAVE, JSON.stringify(f)); alGuardar?.(f); return true; } catch { return false; }
 }
 export const fichaOCrear = (nombre) => leerFicha() || nuevaFicha(nombre);

@@ -12,27 +12,27 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/datos.js": "./js/datos.js?v=20261028152022",
-    "./js/firebase.js": "./js/firebase.js?v=20261028152022",
-    "./js/ia.js": "./js/ia.js?v=20261028152022",
-    "./js/iconos.js": "./js/iconos.js?v=20261028152022",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028152022",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152022",
-    "./js/motor.js": "./js/motor.js?v=20261028152022",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152022",
-    "./js/nube.js": "./js/nube.js?v=20261028152022",
-    "./js/panel.js": "./js/panel.js?v=20261028152022",
-    "./js/planos.js": "./js/planos.js?v=20261028152022",
-    "./js/procedural.js": "./js/procedural.js?v=20261028152022",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028152022",
-    "./js/red.js": "./js/red.js?v=20261028152022",
-    "./js/render.js": "./js/render.js?v=20261028152022",
-    "./js/render3d.js": "./js/render3d.js?v=20261028152022",
-    "./js/reunion.js": "./js/reunion.js?v=20261028152022",
-    "./js/sprites.js": "./js/sprites.js?v=20261028152022",
-    "./js/tablero.js": "./js/tablero.js?v=20261028152022",
-    "./js/ui.js": "./js/ui.js?v=20261028152022",
-    "./js/viajero.js": "./js/viajero.js?v=20261028152022"
+    "./js/datos.js": "./js/datos.js?v=20261028152144",
+    "./js/firebase.js": "./js/firebase.js?v=20261028152144",
+    "./js/ia.js": "./js/ia.js?v=20261028152144",
+    "./js/iconos.js": "./js/iconos.js?v=20261028152144",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261028152144",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028152144",
+    "./js/motor.js": "./js/motor.js?v=20261028152144",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028152144",
+    "./js/nube.js": "./js/nube.js?v=20261028152144",
+    "./js/panel.js": "./js/panel.js?v=20261028152144",
+    "./js/planos.js": "./js/planos.js?v=20261028152144",
+    "./js/procedural.js": "./js/procedural.js?v=20261028152144",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261028152144",
+    "./js/red.js": "./js/red.js?v=20261028152144",
+    "./js/render.js": "./js/render.js?v=20261028152144",
+    "./js/render3d.js": "./js/render3d.js?v=20261028152144",
+    "./js/reunion.js": "./js/reunion.js?v=20261028152144",
+    "./js/sprites.js": "./js/sprites.js?v=20261028152144",
+    "./js/tablero.js": "./js/tablero.js?v=20261028152144",
+    "./js/ui.js": "./js/ui.js?v=20261028152144",
+    "./js/viajero.js": "./js/viajero.js?v=20261028152144"
   }
 }
 </script>
@@ -100,6 +100,15 @@ import { UnrealBloomPass } from './js/vendor/addons/postprocessing/UnrealBloomPa
 import { OutputPass } from './js/vendor/addons/postprocessing/OutputPass.js';
 import { crearMezclador } from './js/mezclador.js';
 import * as Ficha from './js/viajero.js';
+// Lo que cambies aquí (banco, obras, encargos, nombres, héroe activo) sube a tu cuenta enseguida.
+import('./js/nube.js').then(async (m) => {
+  const u = await m.usuarioListo(); if (!u) return;
+  // Primero se junta con lo que haya en la nube (por si jugaste en otro dispositivo), y luego se sube.
+  const enNube = await m.leerFichaNube();
+  if (enNube) { ficha = Ficha.fusionar(ficha, enNube); Ficha.guardarFicha(ficha); }
+  Ficha.subirAlGuardar((f) => m.subirFicha(f));
+  m.subirFicha(ficha);
+}).catch(() => {});
 import { crearPanel, GESTOS } from './js/reunion.js';
 import * as Pueblo from './js/pueblo.js';
 
@@ -1274,7 +1283,7 @@ function tablon(aviso = '') {
   const lista = Pueblo.MEJORAS.map((m) => `<span>${hay[m.id] ? '✓' : '·'} ${m.nombre}</span><span>${hay[m.id] ? '' : m.historia ? 'al acabar una historia' : m.rescate ? 'rescate (pronto)' : m.fama + ' de fama'}</span>`).join('');
   const encargosHTML = enc.map((e) => `<span>${e.cobrado ? '✓' : e.listo ? '★' : '·'} ${e.texto}</span><span>${e.cobrado ? 'cobrado' : e.hecho + '/' + e.n}</span>`).join('');
   const ops = [];
-  for (const e of enc) if (e.listo && !e.cobrado) ops.push([`Cobrar «${e.texto}» (+${Pueblo.RECOMPENSA_ENCARGO} de fama)`, () => { const err = Pueblo.cobrarEncargo(ficha, e.id); Ficha.guardarFicha(ficha); aplicarPueblo(Pueblo.estadoPueblo(ficha)); tablon(err || '¡Encargo cobrado!'); }]);
+  for (const e of enc) if (e.listo && !e.cobrado) ops.push([`Cobrar «${e.texto}» (+${Pueblo.RECOMPENSA_ENCARGO} de fama)`, () => { const err = Pueblo.cobrarEncargo(ficha, e.id); Ficha.tocar(ficha); Ficha.guardarFicha(ficha); aplicarPueblo(Pueblo.estadoPueblo(ficha)); tablon(err || '¡Encargo cobrado!'); }]);
   ops.push(['Encargar obras (con el oro del banco)', () => obras()]);
   ops.push(['Cerrar', cerrarDialogo]);
   mostrar('Tablón de encargos', (visitaPueblo ? `Estás en la tortuga de ${visitaPueblo}. Esto es lo tuyo: ` : '') + `Tu Morrandar es un <b>${rango.nombre}</b> · ${t.fama} de fama.` + (sig ? ` Siguiente: ${sig.nombre} (${sig.fama}).` : ''), ops,
