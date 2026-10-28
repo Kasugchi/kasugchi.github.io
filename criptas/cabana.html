@@ -531,12 +531,27 @@ function pintarBaul(aviso = '') {
   const html = (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + (hs.length
     ? '<div class="heroes">' + hs.map((h) => `<button data-id="${h.id}" class="${h.id === ficha.activo ? 'on' : ''}" ${h.caido ? 'disabled' : ''} title="${estado(h)}"><img src="${SPRITE(h.tipo)}" alt="">${h.nombre}<small>Nv ${h.nivel || 1} · ${estado(h)}</small></button>`).join('') + '</div>'
     : '<p><i>Tu baúl está vacío.</i> En la Mazmorra Infinita, desde el campamento, pulsa «Llevar a mi ficha» con tu héroe. O tráelo de una partida guardada.</p>');
+  const activo = ficha.heroes[ficha.activo];
   mostrar('Baúl de los héroes', hs.length ? `Tienes ${hs.length} de ${Ficha.MAX_HEROES} héroes. Elige con quién te paseas:` : '', [
+    ...(activo ? [['Cambiar el nombre de ' + activo.nombre, pintarNombre]] : []),
     ['Traer un héroe de una partida guardada', pintarImportar], ['Cerrar el baúl', cerrar]], html);
   document.querySelectorAll('.dialogo .heroes button').forEach((b) => b.onclick = (e) => {
     e.stopPropagation(); ficha.activo = b.dataset.id; Ficha.tocar(ficha); guardarF(); ponerClase(ficha.heroes[b.dataset.id].tipo);
     document.querySelectorAll('.dialogo .heroes button').forEach((x) => x.classList.toggle('on', x === b)); audio.nota(660, .4);
   });
+}
+// Ponerle nombre propio al héroe con el que te paseas (Carlos, Minimax…).
+function pintarNombre(aviso = '') {
+  const h = ficha.heroes[ficha.activo];
+  if (!h) return pintarBaul();
+  mostrar('Nombre del héroe', 'Así se llamará en las partidas, en tus trofeos y en el diario.', [
+    ['Guardar', () => { const e = Ficha.renombrar(ficha, h.id, document.getElementById('nombre-heroe')?.value); if (e) return pintarNombre(e); guardarF(); audio.nota(660, .4); pintarBaul(); }],
+    ['Volver al baúl', () => pintarBaul()]],
+    (aviso ? `<p style="color:#7a1a12;margin:0 0 6px">${aviso}</p>` : '') + `<input id="nombre-heroe" maxlength="20" autocomplete="off" style="width:100%;font:18px 'IM Fell English', serif;padding:6px 10px;border:1px solid #6a4a28;background:#f6ead0;color:#1c120b;margin:4px 0 10px">`);
+  const inp = document.getElementById('nombre-heroe');
+  inp.value = h.nombre;
+  ['pointerdown', 'keydown', 'keyup'].forEach((t) => inp.addEventListener(t, (e) => e.stopPropagation()));
+  inp.focus(); inp.select();
 }
 function pintarImportar() {
   let partidas = {}; try { partidas = JSON.parse(localStorage.getItem('criptas_partidas')) || {}; } catch { partidas = {}; }

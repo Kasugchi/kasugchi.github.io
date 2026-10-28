@@ -2284,13 +2284,20 @@ function htmlFicha(e, h, mio) {
   return `<p class="nota ficha-nota">📜 ¿Quieres conservar a este héroe? Llévalo a tu ficha de viajero: podrás usarlo en otras partidas y verlo en tu cabaña.
     <button class="btn madera" data-a-ficha ${lleno ? 'disabled title="Ya tienes ' + V.MAX_HEROES + ' héroes en la ficha"' : ''} style="min-height:34px;font-size:14px;padding:0 12px;margin-left:6px">Llevar a mi ficha</button></p>`;
 }
-function llevarAFicha(e, h) {
-  const r = V.anadirHeroe(ficha, h);
+async function llevarAFicha(e, h) {
+  // Antes de guardarlo, se le pone nombre (Carlos, Minimax…). Si no, se queda con el de su clase.
+  app.cerrarModalFuera = () => {};
+  const i = await modal(`<h2>¿Cómo se llama?</h2><p>Tu ${esc((h.fem ? D.HEROES[h.tipo]?.fem?.nombre : D.HEROES[h.tipo]?.nombre) || h.nombre)} se guardará en tu ficha de viajero con este nombre. Se podrá cambiar luego en el baúl de tu cabaña.</p>
+    <input id="nombre-heroe" maxlength="20" value="${esc(h.nombre)}" autocomplete="off" style="width:100%;height:46px;font:600 18px var(--f-texto);padding:0 12px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta)">`,
+    [{ texto: 'Cancelar', clase: 'claro' }, { texto: 'Guardar en mi ficha' }]);
+  const nombre = V.limpiarNombre(document.getElementById('nombre-heroe')?.value) || h.nombre;
+  if (i !== 1) return;
+  const r = V.anadirHeroe(ficha, h, nombre);
   if (r.error) return toast(r.error, 'peligro');
   V.prestar(ficha, r.id, e.uid);
   fichaCambiada(true);
-  enviar({ tipo: 'vincularFicha', heroe: h.id, fichaId: r.id });
-  toast(h.nombre + ' ya está en tu ficha de viajero.', 'bueno');
+  enviar({ tipo: 'vincularFicha', heroe: h.id, fichaId: r.id, nombre });
+  toast(nombre + ' ya está en tu ficha de viajero.', 'bueno');
 }
 
 function pintarFinal() {

@@ -56,7 +56,18 @@ export function fotoHeroe(h) {
   s.armaduras ||= []; s.objetos ||= {};
   return s;
 }
+// Nombre propio de un héroe: sin símbolos raros, 20 letras como mucho.
+export const limpiarNombre = (t) => String(t ?? '').replace(/[<>&"'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
+export function renombrar(f, id, nombre) {
+  const h = f.heroes[id], n = limpiarNombre(nombre);
+  if (!h) return 'Ese héroe no está en tu ficha.';
+  if (!n) return 'Escribe un nombre.';
+  h.nombre = n;
+  tocar(f);
+  return null;
+}
 export function anadirHeroe(f, h, nombre) {
+  nombre = limpiarNombre(nombre);
   if (f.orden.length >= MAX_HEROES) return { error: 'Ya tienes ' + MAX_HEROES + ' héroes. Retira alguno antes de traer otro.' };
   const id = idNuevo('h');
   f.heroes[id] = { ...fotoHeroe(h), id, ...(nombre ? { nombre } : {}), prestado: null, creado: Date.now() };

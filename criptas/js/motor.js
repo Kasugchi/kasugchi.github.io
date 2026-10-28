@@ -3190,6 +3190,8 @@ export function aplicar(estado, a, jugador, cargarMision) {
         if (h.ia || h.caido) return 'Ese héroe no se puede llevar a la ficha.';
         if (typeof a.fichaId !== 'string' || !a.fichaId) return 'Falta el héroe de la ficha.';
         h.fichaId = a.fichaId;
+        const nombre = typeof a.nombre === 'string' ? a.nombre.replace(/[<>&"'`]/g, '').trim().slice(0, 20) : '';
+        if (nombre) h.nombre = nombre;
         log(estado, h.nombre + ' queda unido a la ficha de ' + (estado.jugadores?.[jugador]?.nombre || 'su viajero') + '.', 'bueno');
         return null;
       }
