@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030001920",
-    "./js/datos.js": "./js/datos.js?v=20261030001920",
-    "./js/firebase.js": "./js/firebase.js?v=20261030001920",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030001920",
-    "./js/ia.js": "./js/ia.js?v=20261030001920",
-    "./js/iconos.js": "./js/iconos.js?v=20261030001920",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030001920",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030001920",
-    "./js/motor.js": "./js/motor.js?v=20261030001920",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030001920",
-    "./js/nube.js": "./js/nube.js?v=20261030001920",
-    "./js/panel.js": "./js/panel.js?v=20261030001920",
-    "./js/planos.js": "./js/planos.js?v=20261030001920",
-    "./js/procedural.js": "./js/procedural.js?v=20261030001920",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030001920",
-    "./js/red.js": "./js/red.js?v=20261030001920",
-    "./js/render.js": "./js/render.js?v=20261030001920",
-    "./js/render3d.js": "./js/render3d.js?v=20261030001920",
-    "./js/reunion.js": "./js/reunion.js?v=20261030001920",
-    "./js/sprites.js": "./js/sprites.js?v=20261030001920",
-    "./js/tablero.js": "./js/tablero.js?v=20261030001920",
-    "./js/ui.js": "./js/ui.js?v=20261030001920",
-    "./js/viajero.js": "./js/viajero.js?v=20261030001920"
+    "./js/acceso.js": "./js/acceso.js?v=20261030002425",
+    "./js/datos.js": "./js/datos.js?v=20261030002425",
+    "./js/firebase.js": "./js/firebase.js?v=20261030002425",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030002425",
+    "./js/ia.js": "./js/ia.js?v=20261030002425",
+    "./js/iconos.js": "./js/iconos.js?v=20261030002425",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030002425",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030002425",
+    "./js/motor.js": "./js/motor.js?v=20261030002425",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030002425",
+    "./js/nube.js": "./js/nube.js?v=20261030002425",
+    "./js/panel.js": "./js/panel.js?v=20261030002425",
+    "./js/planos.js": "./js/planos.js?v=20261030002425",
+    "./js/procedural.js": "./js/procedural.js?v=20261030002425",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030002425",
+    "./js/red.js": "./js/red.js?v=20261030002425",
+    "./js/render.js": "./js/render.js?v=20261030002425",
+    "./js/render3d.js": "./js/render3d.js?v=20261030002425",
+    "./js/reunion.js": "./js/reunion.js?v=20261030002425",
+    "./js/sprites.js": "./js/sprites.js?v=20261030002425",
+    "./js/tablero.js": "./js/tablero.js?v=20261030002425",
+    "./js/ui.js": "./js/ui.js?v=20261030002425",
+    "./js/viajero.js": "./js/viajero.js?v=20261030002425"
   }
 }
 </script>
@@ -742,6 +742,7 @@ const lamparas = [];
 const A = { ctx: null, on: leer('criptas_pueblo_sonido', '1') !== '0' };
 const mf = (m) => 440 * 2 ** ((m - 69) / 12);
 const DISCOS = [
+  { nombre: 'The Quiet Corner', archivo: 'musica/cantina-the-quiet-corner.mp3', bpm: 72 },
   { nombre: 'Café de la tarde', bpm: 72, acordes: [[53, 'M7'], [50, 'm7'], [55, 'm7'], [48, '7'], [57, 'm7'], [50, '7'], [55, 'm7'], [48, '7']] },
   { nombre: 'Lluvia en la ventana', bpm: 64, acordes: [[51, 'M7'], [48, 'm7'], [53, 'm7'], [46, '7'], [51, 'M7'], [56, 'M7'], [53, 'm7'], [46, '7']] },
   { nombre: 'Bossa del muelle', bpm: 84, acordes: [[48, 'M7'], [48, 'M7'], [50, 'm7'], [55, '7'], [52, 'm7'], [57, '7'], [50, 'm7'], [55, '7']] }
@@ -764,6 +765,11 @@ function arrancarAudio() {
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
   A.olas = ctx.createGain(); A.olas.gain.value = 0;
   olas.connect(lp); lp.connect(A.olas); A.olas.connect(A.fuera); olas.start();
+  // Las canciones grabadas (las que hagas con IA) suenan por su propio canal, con el mismo fundido
+  A.cancion = new Audio(); A.cancion.loop = true; A.cancion.preload = 'auto';
+  A.cancionVol = ctx.createGain(); A.cancionVol.gain.value = dentro && DISCOS[disco].archivo ? .55 : 0;
+  ctx.createMediaElementSource(A.cancion).connect(A.cancionVol); A.cancionVol.connect(A.master);
+  ponerCancion();
   A.t0 = ctx.currentTime + .15; A.pasoF = 0; A.pasoD = 0;
   setInterval(programar, 90);
 }
@@ -801,13 +807,13 @@ function programar() {
     A.pasoF++;
   }
   // Dentro: jazz de cafetería con swing
-  const D_ = DISCOS[disco], spb = 60 / D_.bpm;
+  const D_ = DISCOS[disco], spb = 60 / D_.bpm, grabada = !!D_.archivo;
   if (A.tD == null) A.tD = c.currentTime + .1;
   const tiempoPaso = (k) => A.tD + Math.floor(k / 2) * spb + (k % 2 ? spb * .64 : 0);
   while (tiempoPaso(A.pasoD) < hasta) {
-    const k = A.pasoD, t = tiempoPaso(k), beat = Math.floor(k / 2) % 4, sub = k % 2, bar = Math.floor(k / 8) % D_.acordes.length;
-    const [raiz, tipo] = D_.acordes[bar], [raizSig] = D_.acordes[(bar + 1) % D_.acordes.length], iv = TIPOS[tipo];
-    if (A.dentro.gain.value > .01) {
+    const k = A.pasoD, t = tiempoPaso(k), beat = Math.floor(k / 2) % 4, sub = k % 2, bar = Math.floor(k / 8);
+    const ac = D_.acordes || [[53, 'M7']], [raiz, tipo] = ac[bar % ac.length], [raizSig] = ac[(bar + 1) % ac.length], iv = TIPOS[tipo];
+    if (A.dentro.gain.value > .01 && !grabada) {
       if (sub === 0) {
         const b = beat === 0 ? raiz - 12 : beat === 1 ? raiz - 12 + iv[1] - (Math.random() < .5 ? 0 : 3) : beat === 2 ? raiz - 12 + (Math.random() < .5 ? 12 : 7) : raizSig - 12 + (Math.random() < .5 ? 1 : -1);
         nota(A.dentro, mf(b), t, spb * .9, .13, 'triangle', .01);
@@ -819,16 +825,28 @@ function programar() {
       }
       const frase = Math.floor(k / 16) % 2 === 0;
       if (frase && Math.random() < .38) { const tonos = [...iv, 12, 14 + (tipo === 'm7' ? -1 : 0)]; const m = raiz + 12 + tonos[Math.floor(Math.random() * tonos.length)]; vibra(A.dentro, m + (m < 66 ? 12 : 0), t, .045); }
+    }
+    if (A.dentro.gain.value > .01) {
       if (Math.random() < .015) nota(A.dentro, 2500 + Math.random() * 900, t, .3, .012);   // tazas
       if (Math.random() < .06) ruido(A.dentro, t, .03, .03 * Math.random(), 2000, 'highpass'); // la leña
     }
     A.pasoD++;
   }
 }
-function cambiarDisco() { disco = (disco + 1) % DISCOS.length; if (A.ctx) { A.tD = A.ctx.currentTime + .2; A.pasoD = 0; } }
+function cambiarDisco() { disco = (disco + 1) % DISCOS.length; if (A.ctx) { A.tD = A.ctx.currentTime + .2; A.pasoD = 0; ponerCancion(); } }
+// La canción grabada suena solo dentro de la cantina y solo con su disco puesto.
+function ponerCancion() {
+  if (!A.cancion) return;
+  const d = DISCOS[disco], t = A.ctx.currentTime, suena = dentro && !!d.archivo;
+  if (d.archivo && !A.cancion.src.endsWith(d.archivo)) { A.cancion.src = d.archivo; A.cancion.currentTime = 0; }
+  A.cancionVol.gain.setTargetAtTime(suena ? .55 : 0, t, .5);
+  clearTimeout(ponerCancion.t);
+  if (suena) A.cancion.play().catch(() => {}); else ponerCancion.t = setTimeout(() => A.cancion.pause(), 2000);
+}
 function mezclar(dentroAhora) {
   if (!A.ctx) return; const t = A.ctx.currentTime;
   A.fuera.gain.setTargetAtTime(dentroAhora ? 0 : 1, t, .5); A.dentro.gain.setTargetAtTime(dentroAhora ? 1 : 0, t, .5);
+  ponerCancion();
 }
 function blip(f) { if (!A.ctx || !A.on) return; const t = A.ctx.currentTime; nota(A.voz, f, t, .06, .035, 'triangle', .004); }
 function pasito() { if (!A.ctx) return; ruido(dentro ? A.dentro : A.fuera, A.ctx.currentTime, .06, dentro ? .05 : .035, dentro ? 900 : 1800, 'bandpass', 1.2); }
@@ -886,7 +904,7 @@ function conversar(p) {
 function hablarMarga() {
   hablar('Marga', [uno([`¡${NOMBRE}! Siéntate, siéntate, que te pongo algo.`, '¿Otra vez tú? Me alegro. ¿Lo de siempre?']), D.misiones ? `Me han contado que llevas ${D.misiones} bajadas al libro. Con ese trajín, necesitas un buen café.` : 'Nadie baja al libro con el estómago vacío.'],
     [['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, MARGA.color, MARGA.voz)],
-      ['¿Qué suena?', () => hablar('Marga', [`«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, MARGA.color, MARGA.voz)],
+      ['¿Qué suena?', () => hablar('Marga', [DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, MARGA.color, MARGA.voz)],
       ['Nada, gracias', cerrarDialogo]], MARGA.color, MARGA.voz);
 }
 
@@ -1084,7 +1102,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; aviso(`Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA };
+window.pueblo = { J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio };
 </script>
 </body>
 </html>
