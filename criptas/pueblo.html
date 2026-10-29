@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030003418",
-    "./js/datos.js": "./js/datos.js?v=20261030003418",
-    "./js/firebase.js": "./js/firebase.js?v=20261030003418",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030003418",
-    "./js/ia.js": "./js/ia.js?v=20261030003418",
-    "./js/iconos.js": "./js/iconos.js?v=20261030003418",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030003418",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030003418",
-    "./js/motor.js": "./js/motor.js?v=20261030003418",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030003418",
-    "./js/nube.js": "./js/nube.js?v=20261030003418",
-    "./js/panel.js": "./js/panel.js?v=20261030003418",
-    "./js/planos.js": "./js/planos.js?v=20261030003418",
-    "./js/procedural.js": "./js/procedural.js?v=20261030003418",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030003418",
-    "./js/red.js": "./js/red.js?v=20261030003418",
-    "./js/render.js": "./js/render.js?v=20261030003418",
-    "./js/render3d.js": "./js/render3d.js?v=20261030003418",
-    "./js/reunion.js": "./js/reunion.js?v=20261030003418",
-    "./js/sprites.js": "./js/sprites.js?v=20261030003418",
-    "./js/tablero.js": "./js/tablero.js?v=20261030003418",
-    "./js/ui.js": "./js/ui.js?v=20261030003418",
-    "./js/viajero.js": "./js/viajero.js?v=20261030003418"
+    "./js/acceso.js": "./js/acceso.js?v=20261030005254",
+    "./js/datos.js": "./js/datos.js?v=20261030005254",
+    "./js/firebase.js": "./js/firebase.js?v=20261030005254",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030005254",
+    "./js/ia.js": "./js/ia.js?v=20261030005254",
+    "./js/iconos.js": "./js/iconos.js?v=20261030005254",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030005254",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030005254",
+    "./js/motor.js": "./js/motor.js?v=20261030005254",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030005254",
+    "./js/nube.js": "./js/nube.js?v=20261030005254",
+    "./js/panel.js": "./js/panel.js?v=20261030005254",
+    "./js/planos.js": "./js/planos.js?v=20261030005254",
+    "./js/procedural.js": "./js/procedural.js?v=20261030005254",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030005254",
+    "./js/red.js": "./js/red.js?v=20261030005254",
+    "./js/render.js": "./js/render.js?v=20261030005254",
+    "./js/render3d.js": "./js/render3d.js?v=20261030005254",
+    "./js/reunion.js": "./js/reunion.js?v=20261030005254",
+    "./js/sprites.js": "./js/sprites.js?v=20261030005254",
+    "./js/tablero.js": "./js/tablero.js?v=20261030005254",
+    "./js/ui.js": "./js/ui.js?v=20261030005254",
+    "./js/viajero.js": "./js/viajero.js?v=20261030005254"
   }
 }
 </script>
@@ -60,6 +60,8 @@
   #bocadillo .ops button:hover, #bocadillo .ops button:focus { background: #ffe9b0; outline: none; }
   #bocadillo .ops button::before { content: '▸ '; color: #e0a040; }
   .etiqueta { position: fixed; z-index: 5; transform: translate(-50%, -100%); color: #fff; font: 800 13px 'Nunito', sans-serif; padding: 2px 10px; border-radius: 999px; pointer-events: none; white-space: nowrap; box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .globo { position: fixed; z-index: 6; transform: translate(-50%, -100%); max-width: 220px; background: #fff8e6; color: #4a3626; font: 700 13px/1.3 'Nunito', sans-serif; padding: 6px 12px; border-radius: 16px; box-shadow: 0 3px 0 #d9c49a; pointer-events: none; text-align: center; }
+  .globo::after { content: ''; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #fff8e6; border-bottom: 0; }
   .ayuda { left: 12px; bottom: max(10px, env(safe-area-inset-bottom)); color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.35); pointer-events: none; }
   @media (max-width: 640px) { .ayuda { display: none; } .titulo { font-size: 18px; } }
   #fundido { position: fixed; inset: 0; background: #1a120c; opacity: 1; pointer-events: none; transition: opacity .6s; z-index: 20; }
@@ -103,6 +105,32 @@ const DIARIO = ficha?.diario || { misiones: 0, victorias: 0, jefes: 0, monstruos
 const FAMA = ficha?.tortuga?.fama ?? 0;
 const TROFEO = ficha?.cabana?.trofeos?.slice(-1)[0] || null;
 const uno = (l) => l[Math.floor(Math.random() * l.length)];
+// Lo que pasa en el pueblo se guarda en la ficha del mundo (ficha.pueblo) y viaja con la cuenta.
+let fichaP = null; try { fichaP = Ficha.fichaOCrear(NOMBRE); } catch { fichaP = null; }
+const EP = (() => { const p = fichaP ? (fichaP.pueblo ||= {}) : {}; p.amistad ||= {}; p.hoy ||= {}; p.hitos ||= {}; p.regalos ||= []; p.cogidas ||= {}; p.flores ||= 0; p.lumi ||= 0; if (p.encargo === undefined) p.encargo = null; return p; })();
+function guardarPueblo() { if (!fichaP) return; try { fichaP.pueblo = EP; Ficha.tocar(fichaP); Ficha.guardarFicha(fichaP); } catch { /* sin almacenamiento */ } }
+function juntarPueblo(otro) {   // lo de otro dispositivo: nos quedamos con lo más avanzado
+  if (!otro) return;
+  for (const [k, v] of Object.entries(otro.amistad || {})) EP.amistad[k] = Math.max(EP.amistad[k] || 0, v);
+  for (const [k, v] of Object.entries(otro.hitos || {})) EP.hitos[k] = Math.max(EP.hitos[k] || 0, v);
+  for (const [k, v] of Object.entries(otro.hoy || {})) if (!EP.hoy[k] || v > EP.hoy[k]) EP.hoy[k] = v;
+  const vistos = new Set(EP.regalos.map((r) => r.de + r.nombre)); for (const r of otro.regalos || []) if (!vistos.has(r.de + r.nombre)) EP.regalos.push(r);
+  EP.lumi = Math.max(EP.lumi, otro.lumi || 0); EP.ultimaVisita = Math.max(EP.ultimaVisita || 0, otro.ultimaVisita || 0);
+}
+const diaHoy = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+const diasFuera = EP.ultimaVisita ? Math.floor((Date.now() - EP.ultimaVisita) / 864e5) : 0;
+EP.ultimaVisita = Date.now(); guardarPueblo();
+import('./js/nube.js').then(async (m) => {
+  const u = await m.usuarioListo(); if (!u) return;
+  m.vigilarErrores?.(); m.registrarActividad?.({ tipo: 'entrada', donde: 'pueblo', fecha: Date.now(), mundo: Ficha.mundoActivo() });
+  const enNube = await m.leerFichaNube();
+  if (enNube && fichaP) { juntarPueblo(enNube.pueblo); fichaP = Ficha.fusionar(fichaP, enNube); fichaP.pueblo = EP; guardarPueblo(); }
+  Ficha.subirAlGuardar((f) => m.subirFicha(f));
+  if (fichaP) m.subirFicha(fichaP);
+}).catch(() => {});
+const HORA = () => (prm.has('hora') ? Number(prm.get('hora')) : new Date().getHours());
+const franja = () => { const h = HORA(); return h < 6 ? 'madrugada' : h < 12 ? 'manana' : h < 20 ? 'tarde' : 'noche'; };
+const fmt = (t) => String(t).replaceAll('{N}', NOMBRE);
 let semilla = 20261030; const rnd = () => ((semilla = (semilla * 1103515245 + 12345) >>> 0) / 4294967296);
 const suave = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -177,7 +205,7 @@ function alto(x, z) {
   return h;
 }
 const PLAZA = { x: 6, z: -4, r: 6.2 };
-const CAMINOS = [[6, -4, 16, -8.4], [6, -4, 18, 6.8], [6, -4, -4.6, 3], [-11.4, 3, -22, 8.8], [6, -4, 17, -23.4], [6, -4, 15.5, 17.5], [10, 15.4, 12, 15], [6, -4, -1, -10],
+const CAMINOS = [[-22, 10.6, -27.5, 16], [-5, -13.3, -5, -19], [20.4, 6.4, 28.5, 5.1], [6, -10, 8, -15.5], [-0.2, -4.6, -4.5, -6.3], [6, -4, 16, -8.4], [6, -4, 18, 6.8], [6, -4, -4.6, 3], [-11.4, 3, -22, 8.8], [6, -4, 17, -23.4], [6, -4, 15.5, 17.5], [10, 15.4, 12, 15], [6, -4, -1, -10],
   [-1, -10, -10.6, -18], [-17.4, -18, -24, -19.6], [-17.4, -18, -26, -8.6], [6, -4, 26, -3.4], [18, 6.8, 24, 12.5]];
 const distCamino = (x, z) => { let d = 1e9; for (const c of CAMINOS) d = Math.min(d, distSeg(x, z, ...c)); return d; };
 function colorSuelo(x, z, h, c) {
@@ -316,7 +344,7 @@ const toque = (nombre, x, z, r, accion, hacer, extra = {}) => { const it = { nom
   const piedras = new THREE.Mesh(new THREE.TorusGeometry(1.6, .22, 6, 18).rotateX(Math.PI / 2), lam('#b8b0a0', { flatShading: true })); enFijo(piedras, PLAZA.x, PLAZA.z, .1);
   toque('El árbol de los farolillos', PLAZA.x, PLAZA.z + 1.8, 2.2, 'Mirar el árbol', () => hablar('El árbol', ['Cada vecino que llega cuelga un farolillo en sus ramas.', FAMA >= 45 ? 'Ya casi no caben más. Es el corazón del pueblo.' : 'Todavía hay muchas ramas vacías…'], null, '#c8402a'));
   banco(PLAZA.x - 4, PLAZA.z + 3.6, .5); banco(PLAZA.x + 4, PLAZA.z + 3.6, -.5); banco(PLAZA.x, PLAZA.z - 5, Math.PI);
-  for (const [x, z] of [[1.2, 1.5], [11, 1.6], [11, -9.5], [0.5, -9.8], [-3, 4.6], [15.2, 15], [6, -14], [18, 10], [-19, 9.4], [-13, -15.6]]) farola(x, z);
+  for (const [x, z] of [[1.2, 1.5], [11, 1.6], [11, -9.5], [0.5, -9.8], [-3, 4.6], [15.2, 15], [4.2, -13.6], [18, 10], [-19, 9.4], [-13, -15.6]]) farola(x, z);
 }
 // ---------- El tablón ----------
 {
@@ -365,7 +393,7 @@ const miCasa = casa(-22, 6, { ancho: 5, fondo: 5, pared: '#f6e6c4', tejado: '#3f
   const v2 = v.clone(); v2.position.set(-1.3, 2.4, 1.9); v2.rotation.y = -.6; g.add(v2);
   enFijo(g, 18, 4); CHOQUES.push({ x: 18, z: 4, r: 2.6 });
   const l = letrero('Banco de Madre Hiel', 2.8, .5, '#5a3a6a'); l.position.set(18, 2.75, 6.36); fijo.add(l);
-  toque('El banco', 18, 7.1, 1.4, 'Llamar a la puerta', () => hablar('Madre Hiel', ['Pasa, pasa. Tu oro está donde lo dejaste.', 'En la prueba del pueblo todavía no abro la ventanilla. Ve a la tortuga si necesitas el banco.'], null, '#6a4a92'));
+  toque('El banco', 18, 7.1, 1.4, 'Llamar a la puerta', () => { const h = PNJ.find((x) => x.id === 'hiel'); if (!h.presente) hablar('La puerta', [VEC.hiel.dormido], null, '#8a6a4a', 300); else hablar('Madre Hiel', ['En la prueba del pueblo todavía no abro la ventanilla. Ve a la tortuga si necesitas el banco.'], null, '#6a4a92', 300); });
 }
 // Puesto de Mordo
 {
@@ -396,6 +424,46 @@ const miCasa = casa(-22, 6, { ancho: 5, fondo: 5, pared: '#f6e6c4', tejado: '#3f
 const casaPip = casa(-26, -11.5, { ancho: 4, fondo: 4, alto: 2.3, techo: 1.9, pared: '#dceaf2', tejado: '#e0783a', puerta: '#3a6ab0' });
 const casaGuia = casa(-24, -22, { ancho: 4.4, fondo: 4.2, alto: 2.4, pared: '#efe6d0', tejado: '#7a8a5a', puerta: '#6a5a4a' });
 const casaAnzuelo = casa(10, 12.6, { ancho: 4, fondo: 4, alto: 2.3, techo: 1.8, pared: '#b08a5e', tejado: '#5a6a7a', puerta: '#4a5a6a', zocalo: '#8a7a6a' });
+// ---------- Los vecinos pescados de los libros ----------
+const casaRufo = casa(-27.5, 13, { ancho: 4, fondo: 4, alto: 2.3, techo: 1.9, pared: '#c8a070', tejado: '#2f4f7a', puerta: '#7a3a2a' });
+{ // bandera pirata y espantapájaros de entrenar insultos
+  const palo = cil(.05, .05, 5.2, '#5a4030', 6); enFijo(palo, -29.2, 11.4, 2.6);
+  const tela = caja(1.1, .7, .03, '#1a1a1a'); enFijo(tela, -28.62, 11.4, 4.75);
+  const calavera = bola(.13, '#f4ead2', undefined, 8); enFijo(calavera, -28.62, 11.42, 4.8);
+  const e = new THREE.Group(); const p1 = cil(.05, .05, 1.8, '#8a6a3a', 6); p1.position.y = .9; e.add(p1); const p2 = caja(1.3, .06, .06, '#8a6a3a'); p2.position.y = 1.35; e.add(p2);
+  const cam = caja(.6, .6, .3, '#e8e0c8'); cam.position.y = 1.2; e.add(cam); const sa = bola(.25, '#d8b878', undefined, 8); sa.position.y = 1.8; e.add(sa); const so = cil(.08, .28, .2, '#3a3a3a', 8); so.position.y = 2.05; e.add(so);
+  enFijo(e, -23.6, 15.4); CHOQUES.push({ x: -23.6, z: 15.4, r: .4 });
+  const l = letrero('Casa de Rufo', 2, .45, '#2f4f7a'); l.position.set(-27.5, 2.42, 15.08); fijo.add(l);
+}
+const casaBart = casa(-5, -22, { ancho: 4.4, fondo: 4, alto: 2.5, pared: '#d0c8b8', tejado: '#9a2a2a', puerta: '#5a4a3a', zocalo: '#9a9080' });
+{ // el huerto de Sir Bartolomé
+  const tierra = caja(3.6, .12, 2.3, '#7a5a3a'); enFijo(tierra, -1.6, -17, .06);
+  for (let f = 0; f < 3; f++) for (let c = 0; c < 5; c++) { const x = -3 + c * .7, z = -17.8 + f * .78; const h = bola(.17, f === 1 ? '#5aa040' : '#6ab048', { flatShading: true }, 6); h.scale.y = .7; enFijo(h, x, z, .25); if (f !== 1) { const n = new THREE.Mesh(new THREE.ConeGeometry(.07, .2, 6), lam('#e8e0f0')); n.rotation.x = Math.PI; enFijo(n, x, z, .1); } }
+  CHOQUES.push({ x: -1.6, z: -17, w: 3.6, d: 2.3 });
+  const l = letrero('Sir Bartolomé', 2.1, .45, '#9a2a2a'); l.position.set(-5, 2.5, -19.92); fijo.add(l);
+}
+const casaEsc = casa(28.5, 2, { ancho: 4, fondo: 4, alto: 2.3, techo: 2.4, pared: '#b8d8b0', tejado: '#4a2a6a', puerta: '#3a5a3a' });
+const calderoEsc = new THREE.Group();
+{ // el caldero de Doña Escarcha
+  const c = new THREE.Mesh(new THREE.SphereGeometry(.55, 12, 8, 0, Math.PI * 2, Math.PI * .35, Math.PI * .65), lam('#2a2a30')); c.position.y = .5; calderoEsc.add(c);
+  const caldo = cil(.45, .45, .05, '#7ae060', 14, { emissive: '#4ac030', emissiveIntensity: .8 }); caldo.position.y = .78; calderoEsc.add(caldo);
+  calderoEsc.position.set(25.6, 0, 4.8); vivo.add(calderoEsc); CHOQUES.push({ x: 25.6, z: 4.8, r: .6 });
+  const l = letrero('Doña Escarcha', 2, .45, '#4a2a6a'); l.position.set(28.5, 2.4, 4.08); fijo.add(l);
+}
+const casaBrumas = casa(8, -18.5, { ancho: 4.2, fondo: 4, alto: 2.5, pared: '#a8a8b4', tejado: '#34343e', puerta: '#2a2a30' });
+{ const l = letrero('Insp. Brumas', 2, .45, '#34343e'); l.position.set(8, 2.5, -16.42); fijo.add(l);
+  const g = new THREE.Group(); const pal = cil(.05, .05, 1.2, '#3a3a3a', 6); pal.position.y = .6; g.add(pal); enFijo(g, 10.6, -15.6);
+  const c = letrero('Se aceptan casos', 1.5, .4, '#e8e0c8', '#2a2a30'); c.position.set(10.6, 1.3, -15.55); fijo.add(c); CHOQUES.push({ x: 10.6, z: -15.6, r: .2 }); }
+const casaLumi = { puerta: { x: -4.5, z: -6.3 } };
+{ // la casita-champiñón de Lumi
+  const g = new THREE.Group();
+  const pie = cil(.85, 1, 1.6, '#f4ead2', 14); pie.position.y = .8; g.add(pie);
+  const sombrero = new THREE.Mesh(new THREE.SphereGeometry(1.7, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), lam('#e04a3a')); sombrero.scale.y = .75; sombrero.position.y = 1.45; g.add(sombrero);
+  for (const [x, y, z, r] of [[.6, 2.35, .5, .2], [-.7, 2.2, .6, .18], [0, 2.6, -.4, .22], [1.1, 1.9, -.4, .16], [-1, 2, -.7, .18], [.2, 2.1, 1.1, .15]]) { const m = bola(r, '#ffffff', undefined, 8); m.scale.y = .5; m.position.set(x, y, z); g.add(m); }
+  const pu = caja(.5, .8, .1, '#8a5a34'); pu.position.set(0, .4, .92); g.add(pu);
+  const ve = cil(.2, .2, .08, '#ffe8a6', 12, { emissive: '#ffd070', emissiveIntensity: .6 }); ve.rotation.x = Math.PI / 2; ve.position.set(.5, 1.1, .82); g.add(ve);
+  enFijo(g, -4.5, -7.8); CHOQUES.push({ x: -4.5, z: -7.8, r: 1.25 });
+}
 // Parcela libre
 {
   const p = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6).rotateX(-Math.PI / 2), lam('#b89a68')); enFijo(p, 25, 10, .03);
@@ -438,12 +506,12 @@ for (const p of PUENTES) {
   toque('El mirador', 18, -23.4, 1.5, 'Sentarse a mirar', () => sentarseMirador());
 }
 // Rocas y detalles
-for (const [x, z, s] of [[-30, -5, 1.2], [28, -16, 1], [-6, -24, .8], [22, 18, 1], [-28, 16, 1.3], [-10, 14, .7], [30, 2, .9]]) roca(x, z, s);
+for (const [x, z, s] of [[-30, -5, 1.2], [28, -16, 1], [22, 18, 1], [-10, 14, .7], [-9, -24, .8]]) roca(x, z, s);
 
 // ---------- Árboles: repartidos donde no estorban ----------
 const huecoLibre = (x, z, m) => {
   if (alto(x, z) < -.05 || Math.abs(x) > 30.5 || z < -26.5 || z > 15) return false;
-  if (distRio(x, z) < 3.2 || distCamino(x, z) < 1.9 || Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 1.4) return false;
+  if (distRio(x, z) < 3.2 || distCamino(x, z) < 2.3 || Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 3.2) return false;
   for (const c of CHOQUES) { if (c.r) { if (Math.hypot(x - c.x, z - c.z) < c.r + m) return false; } else if (Math.abs(x - c.x) < c.w / 2 + m && Math.abs(z - c.z) < c.d / 2 + m) return false; }
   return true;
 };
@@ -461,7 +529,7 @@ const huecoLibre = (x, z, m) => {
   const colores = Object.keys(flores);
   const parches = [[-24, 3.4, 6], [-20, 3.4, 6], [3, 1.6, 4], [10, -10, 4], [21, 1, 4], [-25, -8.2, 4], [12, 10.2, 4], [-22, -18.6, 4], [27, 9, 3]];
   for (let i = 0; i < 14; i++) { const x = -28 + rnd() * 56, z = -24 + rnd() * 38; if (huecoLibre(x, z, 1.2)) parches.push([x, z, 5]); }
-  for (const [px, pz, n] of parches) { const c = colores[Math.floor(rnd() * colores.length)]; for (let i = 0; i < n; i++) flores[c].push([px + (rnd() - .5) * 1.8, pz + (rnd() - .5) * 1.2]); }
+  parches.forEach(([px, pz, n], k) => { const c = colores[Math.floor(rnd() * colores.length)]; for (let i = 0; i < n; i++) flores[c].push([px + (rnd() - .5) * 1.8, pz + (rnd() - .5) * 1.2]); toque('Flores', px, pz, 1.3, 'Coger una flor', () => cogerFlor('f' + k)); });
   const m = new THREE.Matrix4();
   const geoFlor = new THREE.IcosahedronGeometry(.13, 0);
   for (const [c, lista] of Object.entries(flores)) {
@@ -593,6 +661,34 @@ const EXTRAS = {
   mordo({ cabeza, ojos }) { ojos[0].visible = false; const parche = caja(.15, .12, .04, '#1a1a1a'); parche.position.set(-.13, .03, .35); cabeza.add(parche); const s = cil(.26, .26, .32, '#2a2a30', 14); s.position.y = .42; cabeza.add(s); const a = cil(.42, .42, .03, '#2a2a30', 14); a.position.y = .27; cabeza.add(a); },
   anzuelo({ cabeza, brazos, pelo }) { const s = cil(.32, .48, .2, '#d8c48a', 14); s.position.y = .33; cabeza.add(s); const b = new THREE.Mesh(new THREE.ConeGeometry(.2, .3, 8), pelo); b.rotation.x = Math.PI; b.position.set(0, -.3, .2); cabeza.add(b);
     const cana = cil(.015, .02, 2.6, '#6a4a2a', 5); cana.position.set(0, -.4, 1.2); cana.rotation.x = 1.2; brazos[1].add(cana); },
+  rufo({ cabeza, cuerpo, pelo }) {
+    const coleta = new THREE.Mesh(new THREE.SphereGeometry(.13, 10, 8), pelo); coleta.position.set(0, -.08, -.42); cabeza.add(coleta);
+    const espada = caja(.04, .6, .04, '#c8c8d0'); espada.position.set(.32, .36, .12); espada.rotation.z = .35; cuerpo.add(espada);
+    const guarda = caja(.17, .04, .06, '#c8a040'); guarda.position.set(.26, .63, .12); guarda.rotation.z = .35; cuerpo.add(guarda);
+    const cinto = new THREE.Mesh(new THREE.TorusGeometry(.255, .03, 6, 16).rotateX(Math.PI / 2), lam('#5a3a2a')); cinto.position.y = .46; cuerpo.add(cinto);
+  },
+  bartolome({ cabeza, cuerpo }) {
+    const yelmo = new THREE.Mesh(GEO.pelo, lam('#a8b0b8')); yelmo.scale.set(1.12, .95, 1.12); yelmo.position.y = .06; cabeza.add(yelmo);
+    const pluma = new THREE.Mesh(new THREE.ConeGeometry(.07, .5, 8), lam('#d83a3a')); pluma.position.set(0, .56, -.12); pluma.rotation.x = -.6; cabeza.add(pluma);
+    const bigote = caja(.28, .05, .05, '#eeeeee'); bigote.position.set(0, -.1, .37); cabeza.add(bigote);
+    for (const s of [-1, 1]) { const h = bola(.12, '#a8b0b8', undefined, 8); h.position.set(s * .27, .84, 0); cuerpo.add(h); }
+  },
+  escarcha({ cabeza }) {
+    const ala = cil(.52, .52, .03, '#4a2a6a', 16); ala.position.y = .24; cabeza.add(ala);
+    const sombrero = new THREE.Mesh(new THREE.ConeGeometry(.3, .8, 12), lam('#4a2a6a')); sombrero.position.set(.06, .62, -.05); sombrero.rotation.z = -.35; cabeza.add(sombrero);
+    const verruga = bola(.035, '#6a9a4a', undefined, 6); verruga.position.set(.07, -.05, .38); cabeza.add(verruga);
+  },
+  brumas({ cabeza, cuerpo }) {
+    const ala = cil(.48, .48, .03, '#5a4a3a', 16); ala.position.y = .24; cabeza.add(ala);
+    const copa = cil(.27, .3, .25, '#5a4a3a', 14); copa.position.y = .37; cabeza.add(copa);
+    const banda = cil(.305, .305, .06, '#2a2a2a', 14); banda.position.y = .28; cabeza.add(banda);
+    const gab = new THREE.Mesh(new THREE.ConeGeometry(.37, .58, 12, 1, true), lam('#b8a07a', { side: THREE.DoubleSide })); gab.position.y = .33; cuerpo.add(gab);
+    const cuello = new THREE.Mesh(new THREE.TorusGeometry(.2, .06, 6, 12).rotateX(Math.PI / 2), lam('#b8a07a')); cuello.position.y = .88; cuerpo.add(cuello);
+  },
+  lumi({ cuerpo }) {
+    const m = curvar(new THREE.MeshLambertMaterial({ color: '#e6eeff', transparent: true, opacity: .55, side: THREE.DoubleSide }));
+    for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(.3, 12), m); a.scale.set(1, 1.5, 1); a.position.set(s * .27, .85, -.2); a.rotation.y = s * .6; a.userData.ala = true; cuerpo.add(a); }
+  },
   guia({ cabeza, ojos, cuerpo }) { for (const o of ojos) o.visible = false; const v = new THREE.Mesh(new THREE.TorusGeometry(.385, .05, 6, 20).rotateX(Math.PI / 2), lam('#f4ead2')); v.position.y = .03; cabeza.add(v); const t = new THREE.Mesh(new THREE.ConeGeometry(.36, .7, 12), lam('#e8e0f0')); t.position.y = .3; cuerpo.add(t); }
 };
 function gato() {
@@ -635,31 +731,210 @@ const J = { ch: chibi({ ...(ASPECTO[CLASE] || ASPECTO.barbaro) }), x: -22, z: 11
 escena.add(J.ch);
 
 // ---------- Los vecinos ----------
+//  Trabajadores (con su oficio y su casa) y vecinos pescados de los libros.
+//  Cada uno: aspecto, horario (dónde está a cada hora; null = en casa durmiendo),
+//  saludos según la hora, cosas que contar, lo que dicen cuando sois amigos,
+//  lo que recuerdan de ti, regalos, un encargo y cómo dan las gracias.
 const D = DIARIO;
-const PNJ = [
-  { id: 'pip', nombre: 'Pip', color: '#d83a3a', voz: 620, ch: chibi({ ropa: '#3a6ab0', pantalon: '#e8e0d0', pelo: '#3a2a1a', extra: 'pip', escala: .82 }), casa: [-23, -5], radio: 9, vel: 1.9,
-    frases: () => [uno([`¡${NOMBRE}! ¿De verdad has bajado ${D.misiones || 0} veces al libro? ¡Yo me mareo solo de mirarlo!`, '¡Morrandar ha estornudado esta mañana! Media plaza mojada.', '¿Has visto mi otra bota? La busco desde el martes.']),
-      D.jefes ? `Dicen que has vencido a ${D.jefes} ${D.jefes === 1 ? 'jefe' : 'jefes'}. ¿Me enseñas a pelear? … ¿No? Vale.` : '¿Algún día me llevarás al libro? Prometo no tocar nada.'] },
-  { id: 'hiel', nombre: 'Madre Hiel', color: '#6a4a92', voz: 300, ch: chibi({ ropa: '#7a5aa2', pantalon: '#4a3a5a', pelo: '#eeeeee', extra: 'hiel' }), casa: [17, 8.4], radio: 2.5, vel: .9,
-    frases: () => [uno(['Guardo vuestro oro. Si no volvéis, también lo guardo.', 'Un diente por cada cien monedas… es broma. O no.']), FAMA >= 80 ? 'El pueblo ha crecido tanto que ya no me caben los sacos. Me alegro por ti.' : 'Este pueblo necesita más gente. Y más oro, sobre todo más oro.'] },
-  { id: 'mordo', nombre: 'Mordo el Tuerto', color: '#3a6a3a', voz: 220, ch: chibi({ ropa: '#4a7a4a', pantalon: '#3a3a2a', pelo: '#2a2a2a', extra: 'mordo' }), casa: [-1, -14.4], radio: 0, vel: 0, mira: 0, alcance: 3.4,
-    frases: () => ['Bienvenido a mi humilde puesto. Todo lo que vendo lo saqué de alguien que ya no lo necesitaba.', uno(['Hoy tengo un ojo de cristal. No preguntes de quién.', 'Si traes algo raro del libro, yo te lo compro. Barato, pero te lo compro.'])] },
-  { id: 'anzuelo', nombre: 'El Viejo Anzuelo', color: '#5a6a7a', voz: 180, ch: chibi({ ropa: '#d8a040', pantalon: '#4a4a5a', pelo: '#bbbbbb', extra: 'anzuelo' }), casa: [16, 28.2], radio: 0, vel: 0, mira: 0, sentado: true, y: .36,
-    frases: () => ['Aquí no se pescan peces. Se pescan páginas. A veces con alguien dentro.', `Hoy he sacado ${uno(['una página con media receta de sopa', 'un mapa de una cripta que aún no existe', 'una carta de amor sin firmar', 'una escama de Morrandar. Trae suerte'])}.`] },
-  { id: 'guia', nombre: 'La Guía Ciega', color: '#8a7aa0', voz: 400, ch: chibi({ ropa: '#e8e0f0', pantalon: '#c8c0d8', pelo: '#2a2a3a', extra: 'guia' }), casa: [-1, -20.5], radio: 2.5, vel: .7,
-    frases: () => ['No necesito ojos. Morrandar me cuenta adónde vamos con el latido.', uno(['Siéntate en el mirador. A veces se gira a mirarte.', 'Adonde huela a historia sin terminar. Siempre ahí.'])] },
-  { id: 'gato', nombre: 'Tintero', color: '#262230', voz: 900, ch: gato(), casa: [6, -1], radio: 8, vel: 1.4,
-    frases: () => [uno(['Miau.', 'Prrr…', 'Te mira como si le debieras algo.'])] }
+const zona = (x, z, r, txt, extra = {}) => ({ x, z, r, txt, ...extra });
+const VEC = {
+  pip: {
+    nombre: 'Pip', color: '#d83a3a', voz: 620, vel: 1.9, casa: casaPip.puerta,
+    aspecto: { ropa: '#3a6ab0', pantalon: '#e8e0d0', pelo: '#3a2a1a', extra: 'pip', escala: .82 },
+    horario: (h) => (h >= 7 && h < 20 ? zona(6, 1, 9, 'correteando por la plaza') : h >= 20 && h < 23 ? zona(-24, -6.5, 3, 'cerca de su casa') : null),
+    saludo: { manana: '¡Buenos días, {N}! ¡Hoy me he despertado antes que el sol! … Bueno, casi.', tarde: '¡{N}! ¿Vienes del libro? ¿Has visto monstruos? ¿Grandes? ¿Muy grandes?', noche: 'Madre Hiel dice que tengo que acostarme. ¡Cinco minutos más!' },
+    charla: ['¡Morrandar ha estornudado esta mañana! Media plaza mojada.', '¿Has visto mi otra bota? La busco desde el martes.', 'El Viejo Anzuelo me pescó de un cuento de piratas. ¡Ahora vivo encima de una tortuga!', 'Rufo dice que va a ser el pirata más temible de los siete mares. Yo creo que se marea en el muelle.', 'El Inspector Brumas me ha interrogado tres veces por la tarta de Marga. ¡Que yo no fui! … Casi seguro.'],
+    amigo: ['Cuando sea mayor quiero ser como tú, {N}. Pero con las dos botas.', '¿Sabes guardar un secreto? A veces me siento en el mirador y le cuento cosas a Morrandar. Creo que me escucha.'],
+    recuerdo: () => [D.misiones ? `¿De verdad has bajado ${D.misiones} veces al libro? ¡Yo me mareo solo de mirarlo!` : '¿Algún día me llevarás al libro? Prometo no tocar nada.', D.jefes ? `Dicen que has vencido a ${D.jefes} ${D.jefes === 1 ? 'jefe' : 'jefes'}. ¿Me enseñas a pelear? … ¿No? Vale.` : null],
+    regalos: ['una canica de cristal (la más bonita que tiene)', 'un dibujo tuyo luchando contra un dragón', 'su bota. La única. «Para que te acuerdes de mí»'],
+    encargo: { cosa: 'una bota (la otra no)', para: 'anzuelo' },
+    gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? ¡Gracias! No sé qué es, pero lo voy a guardar con mis tesoros.`,
+    dormido: 'Se oye a Pip roncar… y hablar en sueños: «¡Al abordaje!».'
+  },
+  hiel: {
+    nombre: 'Madre Hiel', color: '#6a4a92', voz: 300, vel: .9,
+    aspecto: { ropa: '#7a5aa2', pantalon: '#4a3a5a', pelo: '#eeeeee', extra: 'hiel' },
+    horario: (h) => (h >= 8 && h < 20 ? zona(17, 8.6, 2.2, 'en el banco') : h >= 20 ? zona(6, 0, 3.5, 'tomando el fresco en la plaza') : null),
+    saludo: { manana: 'Madrugas, ¿eh? Así me gusta. El oro no se gana durmiendo.', tarde: 'Pasa, pasa. Tu oro está donde lo dejaste.', noche: 'Fuera de horario no atiendo. Pero charlar es gratis… por ahora.' },
+    charla: ['Guardo vuestro oro. Si no volvéis, también lo guardo.', 'Un diente por cada cien monedas… es broma. O no.', 'Escarcha jura que sus galletas no convierten a nadie en rana. Ayer el cartero croaba.', 'Vivo encima del banco. Así nadie me roba. Ni me visita, que también lo agradezco.'],
+    amigo: ['De joven fui pirata, ¿sabes? No se lo digas a Rufo, que no me dejaría en paz.', 'Me alegro de que vuelvas siempre, {N}. A mi edad, eso vale más que el oro. … No le digas a nadie que he dicho eso.'],
+    recuerdo: () => [FAMA >= 80 ? 'El pueblo ha crecido tanto que ya no me caben los sacos. Me alegro por ti.' : 'Este pueblo necesita más gente. Y más oro. Sobre todo más oro.'],
+    regalos: ['una moneda antigua de un reino que ya no existe', 'una llave pequeñita. «Ya sabrás qué abre»', 'un retrato suyo de joven, con parche de pirata'],
+    encargo: { cosa: 'un recibo con intereses', para: 'mordo' },
+    gracias: (cosa, de) => `${cosa}… de ${de}. Siempre tan detallista. Lo apunto en mi cuenta de favores, que la llevo al día.`,
+    dormido: 'Una vela se apaga en lo alto de la torre. Madre Hiel vive encima del banco, y a estas horas cuenta ovejas. O monedas.'
+  },
+  mordo: {
+    nombre: 'Mordo el Tuerto', color: '#3a6a3a', voz: 220, vel: 1.1,
+    aspecto: { ropa: '#4a7a4a', pantalon: '#3a3a2a', pelo: '#2a2a2a', extra: 'mordo' },
+    horario: (h) => (h >= 9 && h < 21 ? zona(-1, -14.4, 0, 'en su puesto', { fijo: true, mira: 0, alcance: 3.4 }) : h >= 21 || h < 3 ? zona(-5.5, 11.5, 2, 'cazando ranas junto al río') : null),
+    saludo: { manana: 'Madrugador, ¿eh? Los mejores negocios se hacen antes de que la gente se despierte del todo.', tarde: 'Bienvenido a mi humilde puesto. Todo lo que vendo lo saqué de alguien que ya no lo necesitaba.', noche: '¿Qué miras? Cazar ranas a medianoche es perfectamente normal. Y rentable.', madrugada: '¿Tú tampoco duermes? Mala señal. O buen negocio.' },
+    charla: ['Hoy tengo un ojo de cristal. No preguntes de quién.', 'Si traes algo raro del libro, yo te lo compro. Barato, pero te lo compro.', '¿Dónde vivo? Aquí y allá. Sobre todo allá.', 'Escarcha me compra ranas. No quiero saber para qué. Paga en efectivo.'],
+    amigo: ['Te voy a hacer precio de amigo. Que es el mismo, pero con una sonrisa.', '¿El parche? Lo llevo porque queda bien. Debajo hay un ojo perfectamente normal. … O no.'],
+    regalos: ['un «auténtico» colmillo de dragón (de madera pintada)', 'un mapa con una X. «La X la he puesto yo»', 'su parche de repuesto'],
+    encargo: { cosa: 'una rana en un tarro', para: 'escarcha' },
+    gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? Mmm. Esto se vende bien. Digo… qué detalle.`,
+    dormido: 'Nadie sabe dónde duerme Mordo. Ni siquiera Mordo.'
+  },
+  anzuelo: {
+    nombre: 'El Viejo Anzuelo', color: '#5a6a7a', voz: 180, casa: casaAnzuelo.puerta,
+    aspecto: { ropa: '#d8a040', pantalon: '#4a4a5a', pelo: '#bbbbbb', extra: 'anzuelo' },
+    horario: (h) => (h >= 6 && h < 21 ? zona(16, 28.2, 0, 'pescando en el muelle', { fijo: true, mira: 0, sentado: true, y: .36 }) : null),
+    saludo: { manana: 'Las mejores páginas pican al amanecer.', tarde: 'Siéntate si quieres. Aquí el tiempo va más despacio.' },
+    charla: ['Aquí no se pescan peces. Se pescan páginas. A veces con alguien dentro.', () => `Hoy he sacado ${uno(['una página con media receta de sopa', 'un mapa de una cripta que aún no existe', 'una carta de amor sin firmar', 'una escama de Morrandar. Trae suerte'])}.`, 'A Rufo lo pesqué de una novela de piratas sin final. Desde entonces me debe un final. Y una caña.', 'Lumi era tan pequeña que casi la devuelvo al agua. Menos mal que no.'],
+    amigo: ['Cada vecino de este pueblo fue una página perdida. Ahora tienen un sitio. Como tú.', 'Si algún día pesco tu historia, te la guardo. Prometido.'],
+    regalos: ['una escama de Morrandar. Trae suerte', 'un anzuelo de plata', 'una página en blanco. «Para que escribas la tuya»'],
+    encargo: { cosa: 'una página mojada que habla de nabos', para: 'bartolome' },
+    gracias: (cosa, de) => `${cosa}… Ja. ${de} siempre sorprende. Gracias por traerlo hasta aquí, que el muelle es largo.`,
+    dormido: 'La cabaña del Viejo Anzuelo huele a sal. Dentro, alguien ronca como una sirena de niebla.'
+  },
+  guia: {
+    nombre: 'La Guía Ciega', color: '#8a7aa0', voz: 400, vel: .7, casa: casaGuia.puerta,
+    aspecto: { ropa: '#e8e0f0', pantalon: '#c8c0d8', pelo: '#2a2a3a', extra: 'guia' },
+    horario: (h) => (h >= 7 && h < 22 ? zona(14, -22, 2.2, 'junto al mirador') : null),
+    charla: ['No necesito ojos. Morrandar me cuenta adónde vamos con el latido.', 'Siéntate en el mirador. A veces se gira a mirarte.', 'Brumas me pide pistas. Le digo que escuche. No escucha.', 'Adonde huela a historia sin terminar. Siempre ahí.'],
+    amigo: ['Tu paso ha cambiado, ¿sabes? Ya no pisas como un forastero. Pisas como alguien que vuelve a casa.'],
+    regalos: ['una campanilla que suena sin viento', 'una venda bordada', 'un mapa de las estrellas en relieve'],
+    encargo: { cosa: 'una caracola que susurra', para: 'lumi' },
+    gracias: (cosa, de) => `Huele a ${de}. ${cosa}, ¿verdad? Gracias, viajero.`,
+    dormido: 'La Guía Ciega no duerme: escucha. Pero ahora mismo escucha con los ojos cerrados.'
+  },
+  rufo: {
+    nombre: 'Rufo Brea', color: '#2f4f7a', voz: 520, vel: 1.7, casa: casaRufo.puerta,
+    aspecto: { ropa: '#f4f0e6', pantalon: '#3a4a7a', pelo: '#e8c860', extra: 'rufo', zapatos: '#2a2a2a' },
+    horario: (h) => (h >= 9 && h < 14 ? zona(-24.5, 16.5, 2, 'entrenando con su espantapájaros') : h >= 14 && h < 22 ? zona(3, 9, 8, 'paseando por el pueblo') : h >= 22 || h < 4 ? zona(-24.5, 16.5, 2, 'ensayando insultos a la luz de la luna') : null),
+    saludo: { manana: '¡Hola, {N}! Me llamo Rufo Brea, y quiero ser pirata.', tarde: '¡{N}! ¿Sabías que puedo aguantar la respiración diez minutos? No me lo pidas ahora, que he comido.', noche: 'Los piratas de verdad entrenan de noche. Y de día. Y… bueno, cuando no estoy cansado.', madrugada: '¡Shhh! Estoy ensayando un insulto nuevo. Es tan bueno que da miedo.' },
+    charla: ['Un buen pirata no gana con la espada. Gana con la lengua. ¡Los duelos de insultos, {N}!', 'He visto un monstruo de tres cabezas. ¡Lo juro! Nadie me cree.', 'Intento que Marga prepare grog. Dice que «corroe las jarras». Eso es que está bueno.', 'Mi espantapájaros ya no me tiene miedo. Eso es malo, ¿verdad?', 'Colecciono pollos de goma. Con polea. Nunca se sabe cuándo vas a necesitar uno.'],
+    amigo: ['El Anzuelo me pescó de un libro al que le faltaban las últimas páginas. Algún día quiero volver y escribir mi final. ¿Me acompañarías?', 'Tú eres lo más parecido a un capitán que he tenido. No se lo digas a Bartolomé, que se pone celoso.'],
+    regalos: ['un pollo de goma (con polea)', 'un mapa del tesoro dibujado por él. La X está en su casa', 'su sombrero de pirata (todavía le queda grande)'],
+    encargo: { cosa: 'un mapa del tesoro (dibujado por él)', para: 'brumas' },
+    gracias: (cosa, de) => `¿¡${cosa}!? ¿De ${de}? ¡Esto es lo más pirata que me ha pasado nunca!`,
+    ops: () => [['¡Acepto el duelo de insultos!', () => hablar('Rufo Brea', ['¡Ja! ¡Prepárate para la humillación más elegante de tu vida!'], [['¡En guardia!', () => irA('duelo.html')], ['Mejor otro día', cerrarDialogo]], '#2f4f7a', 520)],
+      ['¿Qué monstruo de tres cabezas?', () => hablar('Rufo Brea', ['¡Ahí! ¡Detrás de ti! ¡Mira, mira!'], [['Girarse', () => { cerrarDialogo(); J.dir += Math.PI; setTimeout(() => { J.dir -= Math.PI; hablar('…', ['No hay nada. Cuando vuelves a mirar, Rufo silba mirando al cielo.'], null, '#8a7a6a', 300); }, 1300); }]], '#2f4f7a', 520)],
+      ['Hoy no, Rufo', cerrarDialogo]],
+    dormido: 'Rufo ensaya hasta en sueños: «¡Tienes la gracia de un ancla oxidada!»… y luego ronca.'
+  },
+  bartolome: {
+    nombre: 'Sir Bartolomé', color: '#9a2a2a', voz: 260, vel: .9, casa: casaBart.puerta,
+    aspecto: { ropa: '#a8b0b8', pantalon: '#6a6a74', pelo: '#eeeeee', extra: 'bartolome' },
+    horario: (h) => (h >= 6 && h < 13 ? zona(-1.6, -19, 1.2, 'en su huerto') : h >= 13 && h < 21 ? zona(5, -2, 6, 'paseando por la plaza') : null),
+    saludo: { manana: 'Buen día tengáis, {N}, que el rocío / ya besa mis nabos con brío.', tarde: '¡Salud, {N}! ¿Qué nuevas traéis / de esas mazmorras que tanto queréis?' },
+    charla: ['Fui caballero de una balada. Ahora cultivo nabos. Ambas cosas requieren valor.', '¿Gallos? ¿Dónde? … Ah, era una veleta. Ejem. Sigamos.', 'El joven Rufo me reta a duelos de insultos. Mis insultos riman, señor. Los suyos, ni eso.', 'Doña Escarcha me ofreció una galleta. La he guardado. Por si acaso. En una caja. Lejos.'],
+    amigo: ['Si algún día necesitáis una espada, {N}, la mía está oxidada, pero mi corazón no.', 'En mi balada, yo moría en la estrofa doce. Aquí sigo vivo. Eso se lo debo al Anzuelo… y a este pueblo.'],
+    recuerdo: () => [D.monstruos ? `¡${D.monstruos} monstruos abatidos! / Tal hazaña merece versos cantados.` : null],
+    regalos: ['el nabo más grande de su huerto', 'una pluma de su yelmo', 'una estrofa escrita para ti'],
+    encargo: { cosa: 'un nabo enorme', para: 'marga' },
+    gracias: (cosa, de) => `¡Oh, ${cosa}, presente gentil, / de ${de} enviado: gracias mil!`,
+    dormido: 'Sir Bartolomé se acuesta con las gallinas. Bueno, con las gallinas no, que les tiene pánico.'
+  },
+  escarcha: {
+    nombre: 'Doña Escarcha', color: '#4a2a6a', voz: 360, vel: .9, casa: casaEsc.puerta,
+    aspecto: { ropa: '#5a3a7a', pantalon: '#3a2a4a', pelo: '#e8e8f0', extra: 'escarcha' },
+    horario: (h) => (h >= 11 && h < 19 ? zona(20.5, 8.8, 2, 'cotilleando con Madre Hiel') : h >= 19 || h < 3 ? zona(26.6, 6.4, 1.2, 'removiendo su caldero') : null),
+    saludo: { manana: 'Ay, {N}, ¿tan temprano? Las brujas de bien no madrugan. Yo es que no he dormido.', tarde: '¡Mira quién está aquí! ¿Una galleta? Recién hechas. Casi seguro que son normales.', noche: 'La luna está perfecta para el caldo. Para el CALDO. De verduras. ¿Qué pensabas?', madrugada: '¿Sin sueño? Tengo una infusión para eso. O para lo contrario. Nunca me acuerdo.' },
+    charla: ['Fui la bruja mala de un cuento infantil. Me jubilé. Ahora solo hago galletas. Y alguna rana sin querer.', 'Hiel y yo lo sabemos todo de todos. Pregunta, pregunta.', 'Mordo me vende ranas. Para… decorar. Sí, para decorar.', 'El Inspector Brumas me mira raro desde lo de la tarta. Yo solo le puse un ingrediente secreto. A la tarta, digo.'],
+    amigo: ['Te contaré un secreto: en mi cuento, nadie me preguntaba si estaba bien. Tú sí. Toma otra galleta, anda.'],
+    recuerdo: () => [TROFEO ? `Todo el pueblo habla de cómo venciste a ${TROFEO.nombre}. Yo lo sabía antes que nadie, claro.` : null],
+    regalos: ['una galleta (huele un poco a charca)', 'un tarro de mermelada de… ¿moras?', 'una escoba pequeñita que barre sola'],
+    encargo: { cosa: 'un tarro de mermelada de ¿moras?', para: 'hiel' },
+    gracias: (cosa, de) => `¿${cosa}? ¡De ${de}! Me viene perfecto para una receta. Una receta normal.`,
+    dormido: 'De la casa de Doña Escarcha sale un humito verde. Mejor no llamar.'
+  },
+  brumas: {
+    nombre: 'Inspector Brumas', color: '#34343e', voz: 240, vel: 1, casa: casaBrumas.puerta,
+    aspecto: { ropa: '#b8a07a', pantalon: '#4a4a52', pelo: '#3a3a3a', extra: 'brumas' },
+    horario: (h) => (h >= 20 || h < 6 ? zona(6, -6, 11, 'patrullando las calles') : null),
+    saludo: { noche: '(voz en off) La noche olía a problemas… y a tostadas. Entonces apareció {N}.', madrugada: '(voz en off) Las tres de la madrugada. La hora de los insomnes, los ladrones… y de {N}.' },
+    charla: ['(voz en off) La tarta de Marga desapareció un martes. Tengo tres sospechosos: Pip, la bruja y el gato. El gato me mira mal.', 'Vengo de una novela negra sin final. No sé quién es el asesino. Ni si hubo asesinato. Eso me tiene intranquilo.', '(voz en off) Mordo dice que no tiene casa. Todo el mundo tiene casa. Lo investigaré. Mañana. Después de la siesta.', '¿Usted dónde estaba el martes por la tarde? … Es rutina.'],
+    amigo: ['(voz en off) Era el mejor compañero que un detective podía pedir. Y lo mejor: no sospechaba de él. Casi nunca.'],
+    recuerdo: () => [D.caidas ? `(voz en off) Según mis notas, has caído ${D.caidas} ${D.caidas === 1 ? 'vez' : 'veces'} en el libro. Y sigues aquí. Interesante.` : null],
+    regalos: ['una lupa', 'un expediente: «Caso de la tarta: abierto»', 'su sombrero. «Para tus propias investigaciones»'],
+    encargo: { cosa: 'un sobre lacrado: «Caso cerrado»', para: 'pip' },
+    gracias: (cosa, de) => `(voz en off) ${cosa}. Remitente: ${de}. Lo anoté todo. Por si acaso.`,
+    dormido: 'En la puerta, una nota: «Durmiendo. Los crímenes, después de las ocho.»'
+  },
+  lumi: {
+    nombre: 'Lumi', color: '#d870b0', voz: 900, vel: 1.5, casa: casaLumi.puerta,
+    aspecto: { ropa: '#f0a0d0', pantalon: '#a0d0f0', pelo: '#ffd860', zapatos: '#70c070', extra: 'lumi', escala: .58 },
+    horario: (h) => (h >= 8 && h < 20 ? zona(-3.5, -4.5, 4, 'entre las flores') : null),
+    saludo: { manana: '¡Hola, {N}! ¿Me traes colores hoy?', tarde: '¡{N}! ¡Hoy he visto una mariposa de mi color favorito!' },
+    especial: () => EP.lumi >= 5 ? ['¡Ya tengo todos mis colores! Ahora el pueblo entero me parece más bonito. ¿Será que lo coloreo yo?']
+      : EP.lumi > 0 ? [`¡Mira! ¡Ya tengo ${EP.lumi} de mis cinco colores! ${EP.flores ? '¿Me das otra flor?' : 'Hay flores por todo el pueblo… ¿me traes otra?'}`]
+      : ['Vengo de un libro de colorear… pero nadie me coloreó. Soy toda gris. Cada flor que me regalan me devuelve un color. ' + (EP.flores ? '¿Esa flor es para mí?' : 'Hay flores por todo el pueblo…')],
+    ops: () => (EP.flores > 0 && EP.lumi < 5 ? [['Darle una flor', () => darFlor()], ['Ahora no', cerrarDialogo]] : null),
+    regalos: ['un pétalo que brilla en la oscuridad', 'un dibujo coloreado del pueblo', 'una pizca de polvo de hada (huele a lápices)'],
+    encargo: { cosa: 'un pétalo que brilla', para: 'escarcha' },
+    gracias: (cosa, de) => `¡Oooh, ${cosa}! ¡Dale las gracias a ${de} de mi parte! ¡Muchas! ¡Muchísimas!`,
+    dormido: 'Por la ventanita del champiñón sale una lucecita. Lumi duerme abrazada a una flor.'
+  },
+  gato: {
+    nombre: 'Tintero', color: '#262230', voz: 900, vel: 1.4,
+    horario: () => zona(6, -1, 8, 'por ahí, a sus cosas de gato'),
+    charla: ['Miau.', 'Prrr…', 'Te mira como si le debieras algo.', 'Se frota contra tus piernas. Te deja pelos negros por todas partes.'],
+    regalos: ['un ratón de papel (muy convincente)', 'una pluma de gaviota', 'su ronroneo más fuerte'],
+    regalo: (r) => `Tintero deja a tus pies ${r}. Te mira, muy orgulloso.`,
+    gracias: () => 'Tintero huele el paquete, lo tira al suelo y se sienta encima.'
+  },
+  marga: {
+    nombre: 'Marga', color: '#e8584a', voz: 480,
+    aspecto: { ropa: '#e0a050', pantalon: '#6a4a3a', pelo: '#e8584a', extra: 'marga' },
+    saludo: { manana: '¡Buenos días, {N}! El café está recién hecho.', tarde: '¡{N}! Siéntate, siéntate, que te pongo algo.', noche: '¿Otra vez tú? Me alegro. ¿Lo de siempre?', madrugada: 'Yo no cierro nunca. Alguien tiene que dar de cenar a los que vuelven tarde del libro.' },
+    charla: ['Nadie baja al libro con el estómago vacío.', 'Vivo encima de la cantina. Así nunca llego tarde a trabajar.', 'Rufo quiere que prepare grog. Le he dicho que antes muerta. Y él: «¡Eso es muy pirata!».', 'Brumas sigue buscando al que se comió mi tarta. Fui yo. No se lo digas.'],
+    amigo: ['Tú eres de los que vuelven, {N}. Eso, en una cantina, se nota. Y se agradece.'],
+    recuerdo: () => [D.misiones ? `Me han contado que llevas ${D.misiones} bajadas al libro. Con ese trajín, necesitas un buen café.` : null],
+    regalos: ['su receta secreta de guiso (le falta un ingrediente a propósito)', 'una taza con tu nombre', 'una llave de la cantina. «Por si algún día llegas tarde»'],
+    gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? ¡Esto va directo a la olla!`,
+    ops: () => [['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, '#e8584a', 480)],
+      ['¿Qué suena?', () => hablar('Marga', [DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
+      ['Nada, gracias', cerrarDialogo]]
+  }
+};
+// Charlas entre vecinos (cuando se cruzan)
+const PARES = [
+  ['rufo', 'bartolome', ['¡Sir Bartolomé! ¡En guardia! ¡Tienes la elegancia de un nabo con botas!', '¿Un nabo con botas? Joven, eso ni rima. Volved cuando sepáis.']],
+  ['escarcha', 'hiel', ['¿Has visto lo que lleva hoy Mordo?', 'Lo mismo que ayer. Y que el año pasado.']],
+  ['brumas', 'pip', ['Chico, ¿dónde estabas el martes por la tarde?', '¡Buscando mi bota! ¡Como todos los martes!']],
+  ['rufo', 'pip', ['¡Grumete Pip! ¿Te unes a mi tripulación?', '¿Tienes barco?', 'Tengo… planes.']],
+  ['bartolome', 'escarcha', ['Señora, vuestra galleta sigue en su caja.', '¡Y ahí se pondrá rancia! Qué desperdicio.']],
+  ['lumi', 'escarcha', ['¡Doña Escarcha! ¿Tiene algún color de sobra?', 'Solo el verde rana, cariño. Y ese no te lo recomiendo.']],
+  ['mordo', 'brumas', ['Inspector. Qué casualidad verle por aquí.', '(voz en off) No existen las casualidades. Solo los Mordos.']],
+  ['guia', 'lumi', ['Hueles a primavera, pequeña.', '¡Es que hoy me han dado un color nuevo!']],
+  ['hiel', 'pip', ['¿Has comido?', '¡Sí! Una galleta de Escarcha.', '… Ve a ver a Marga ahora mismo.']],
+  ['rufo', 'escarcha', ['Doña Escarcha, ¿sabe hacer grog?', 'Sé hacer cosas peores, muchacho.']],
+  ['bartolome', 'pip', ['¿Sabéis, joven Pip, que los gallos…?', '¡¿Dónde?!', '… Nada, nada. Falsa alarma.']]
 ];
-for (const p of PNJ) {
-  p.x = p.casa[0]; p.z = p.casa[1]; p.dir = p.mira ?? rnd() * 6; p.espera = rnd() * 3; p.obj = null;
-  if (p.sentado) p.ch.userData.sentado = true;
-  escena.add(p.ch);
-  toque(p.nombre, 0, 0, p.alcance || 1.7, p.id === 'gato' ? 'Acariciar a Tintero' : 'Hablar con ' + p.nombre, () => conversar(p), { pnj: p });
+const GENERICAS = [['¿Has oído lo del libro?', 'Dicen que en el piso veinte duerme algo enorme.'], ['Qué buen día hace.', 'Morrandar está contenta, se nota.'], ['¿Has visto a {N}?', '¡Siempre anda de aventura!'], ['¿Vienes a la cantina luego?', 'Si Marga no me echa otra vez…']];
+// Colores de Lumi: empieza gris y cada flor le devuelve uno
+function grisear(ch) { ch.traverse((o) => { if (o.isMesh && !o.userData.ala && o.material !== matSombra) { const m = curvar(o.material.clone()); m.userData.real = m.color.clone(); o.material = m; } }); }
+function pintarLumi(ch) { const k = Math.min(1, EP.lumi / 5); ch.traverse((o) => { const r = o.material?.userData?.real; if (!r) return; const g = r.r * .3 + r.g * .59 + r.b * .11; o.material.color.setRGB(g, g, g).lerp(r, k); }); }
+const PNJ = [];
+for (const [id, d] of Object.entries(VEC)) {
+  if (id === 'marga') continue;
+  const ch = id === 'gato' ? gato() : chibi(d.aspecto);
+  if (id === 'lumi') { grisear(ch); pintarLumi(ch); }
+  const p = { id, def: d, nombre: d.nombre, color: d.color, voz: d.voz, ch, vel: d.vel ?? 1.2, x: 0, z: 0, dir: rnd() * 6, espera: rnd() * 3, obj: null, presente: false, zona: null };
+  PNJ.push(p); escena.add(p.ch);
+  toque(d.nombre, 0, 0, 1.7, id === 'gato' ? 'Acariciar a Tintero' : 'Hablar con ' + d.nombre, () => conversar(p), { pnj: p });
+  if (d.casa) toque('Casa de ' + d.nombre, d.casa.x, d.casa.z, 1.3, 'Llamar a la puerta', () => llamar(p));
 }
 // Marga, dentro de la cantina
-const MARGA = { id: 'marga', nombre: 'Marga', color: '#e8584a', voz: 480, ch: chibi({ ropa: '#e0a050', pantalon: '#6a4a3a', pelo: '#e8584a', extra: 'marga' }) };
-
+const MARGA = { id: 'marga', def: VEC.marga, nombre: 'Marga', color: VEC.marga.color, voz: VEC.marga.voz, presente: true, ch: chibi(VEC.marga.aspecto) };
+// Dónde está cada uno según la hora (se mira al cargar y cada medio minuto)
+function actualizarHorarios(inicio = false) {
+  const h = HORA();
+  for (const p of PNJ) {
+    const z = p.def.horario(h), antes = p.presente;
+    p.zona = z; p.presente = !!z; p.ch.visible = !!z;
+    if (!z) { p.charlando = null; continue; }
+    p.ch.userData.sentado = !!z.sentado;
+    if (z.fijo) { p.x = z.x; p.z = z.z; p.dir = z.mira ?? p.dir; p.obj = null; continue; }
+    if (!antes) {
+      const desde = !inicio && p.def.casa ? { x: p.def.casa.x, z: p.def.casa.z + .6 } : z;
+      p.x = desde.x; p.z = desde.z; p.obj = null; p.espera = rnd() * 2;
+      if (inicio) for (let k = 0; k < 12; k++) { const a = rnd() * 6.28, r = rnd() * z.r, x = z.x + Math.cos(a) * r, zz = z.z + Math.sin(a) * r; if (libreFuera(x, zz, .3, p)) { p.x = x; p.z = zz; break; } }
+    }
+  }
+}
 // =============================================================
 //  LA CANTINA DE MARGA (por dentro)
 // =============================================================
@@ -712,7 +987,7 @@ const lamparas = [];
   en(caja(6.6, .45, 1.4, '#6a4428'), 0, -3.95, .22);
   MARGA.ch.position.set(X0, .45, -3.9); C.add(MARGA.ch); MARGA.x = X0; MARGA.z = -3.9;
   C.visible = false;
-  toque('Marga', X0, -2, 1.6, 'Hablar con Marga', () => hablarMarga(), { dentro: true });
+  toque('Marga', X0, -2, 1.6, 'Hablar con Marga', () => conversar(MARGA), { dentro: true });
   MESAS.forEach(([x, z], i) => toque('Mesa', X0 + x, z + .9, 1.3, 'Sentarse', () => sentarse(X0 + x + (x < 0 ? 1.1 : -1.1), z, x < 0 ? -Math.PI / 2 : Math.PI / 2), { dentro: true }));
   toque('El gramófono', X0 + 3, -1.9, 1.3, 'Cambiar el disco', () => { cambiarDisco(); aviso('♪ ' + DISCOS[disco].nombre); }, { dentro: true });
   toque('La chimenea', X0 - 4.4, -1.2, 1.4, 'Calentarse', () => hablar('La chimenea', ['El fuego chisporrotea. Fuera huele a mar; aquí, a café y a leña.'], null, '#c86a2a'), { dentro: true });
@@ -893,22 +1168,109 @@ function avanzarDialogo() {
 function cerrarDialogo() {
   clearInterval(escribiendo); escribiendo = null; enDialogo = false; cola = []; opsDialogo = null;
   $('bocadillo').style.display = 'none';
-  for (const p of PNJ) p.hablando = false;
+  for (const p of PNJ) p.hablando = false; MARGA.hablando = false;
 }
 $('bocadillo').addEventListener('pointerdown', (e) => { e.stopPropagation(); if (e.target.tagName !== 'BUTTON') avanzarDialogo(); });
+const corazones = (n) => (n >= 10 ? ' ♥♥♥' : n >= 6 ? ' ♥♥' : n >= 3 ? ' ♥' : '');
+const nombreCon = (p) => p.nombre + corazones(EP.amistad[p.id] || 0);
+const sumarAmistad = (id, n) => { EP.amistad[id] = (EP.amistad[id] || 0) + n; };
+const linea = (l) => fmt(typeof l === 'function' ? l() : l);
+let avisoVuelta = false;
+// Hablar con un vecino: saludo, algo que contar, recuerdos, regalos y encargos
 function conversar(p) {
+  const d = p.def, id = p.id, hoy = diaHoy();
   p.hablando = true;
-  p.dir = Math.atan2(J.x - p.x, J.z - p.z); J.dir = Math.atan2(p.x - J.x, p.z - J.z);
-  if (p.id === 'gato') return hablar('Tintero', p.frases(), null, p.color, p.voz);
-  hablar(p.nombre, p.frases(), null, p.color, p.voz);
+  if (p !== MARGA) { p.dir = Math.atan2(J.x - p.x, J.z - p.z); J.dir = Math.atan2(p.x - J.x, p.z - J.z); }
+  const primera = EP.hoy[id] !== hoy;
+  if (primera) { EP.hoy[id] = hoy; sumarAmistad(id, 1); }
+  const L = [], ops = [];
+  // Un encargo que le traes… o que te dio
+  const e = EP.encargo; let entregado = false;
+  if (e && e.para === id) { entregado = true;
+    L.push(d.gracias(e.cosa, VEC[e.de].nombre)); sumarAmistad(id, 2); sumarAmistad(e.de, 2);
+    EP.encargo = null; EP.entregas = (EP.entregas || 0) + 1; setTimeout(() => aviso('♥ Encargo entregado'), 300);
+  } else if (e && e.de === id) L.push(uno([`¿Ya le has llevado ${e.cosa} a ${VEC[e.para].nombre}?`, `${VEC[e.para].nombre} estará esperando ${e.cosa}…`]));
+  if (primera && id !== 'gato') {
+    if (diasFuera >= 3 && !avisoVuelta) { avisoVuelta = true; L.push(`¡${NOMBRE}! ¡Llevas ${diasFuera} días sin aparecer! Pensábamos que te había tragado el libro.`); }
+    const sal = d.saludo?.[franja()]; if (sal) L.push(fmt(sal));
+  }
+  // Algo que contar: su manera de ser, lo que recuerda de ti y, si sois amigos, algo más personal
+  const am = EP.amistad[id] || 0;
+  if (d.especial) L.push(...d.especial());
+  else {
+    const monton = [...d.charla, ...((d.recuerdo?.() || []).filter(Boolean))];
+    if (am >= 5 && d.amigo) monton.push(...d.amigo, ...d.amigo);
+    L.push(linea(uno(monton)));
+  }
+  // Un regalo cuando la amistad llega a 3, 6 y 10
+  const n = EP.hitos[id] || 0, hito = [3, 6, 10][n];
+  if (hito && am >= hito && d.regalos?.[n]) {
+    const r = d.regalos[n];
+    L.push(d.regalo ? d.regalo(r) : `Toma, ${NOMBRE}. Quiero que tengas esto: ${r}.`);
+    EP.regalos.push({ de: id, nombre: r, fecha: Date.now() }); EP.hitos[id] = n + 1;
+    setTimeout(() => aviso('🎁 ' + r.charAt(0).toUpperCase() + r.slice(1)), 500);
+  }
+  // Un encargo nuevo (llevarle algo a otro vecino)
+  if (primera && !entregado && !EP.encargo && d.encargo && am >= 2 && Math.random() < .5) {
+    const x = d.encargo;
+    L.push(`Oye, ¿me harías un favor? ¿Le llevas ${x.cosa} a ${VEC[x.para].nombre}?`);
+    ops.push(['¡Claro, se lo llevo!', () => { EP.encargo = { de: id, para: x.para, cosa: x.cosa, fecha: Date.now() }; guardarPueblo(); hablar(nombreCon(p), ['¡Gracias! Eres un sol.'], null, d.color, d.voz); aviso('📦 ' + x.cosa + ' → ' + VEC[x.para].nombre); }], ['Ahora no puedo', cerrarDialogo]);
+  } else if (d.ops) ops.push(...(d.ops(am) || []));
+  guardarPueblo();
+  hablar(nombreCon(p), L, ops.length ? ops : null, d.color, d.voz);
 }
-function hablarMarga() {
-  hablar('Marga', [uno([`¡${NOMBRE}! Siéntate, siéntate, que te pongo algo.`, '¿Otra vez tú? Me alegro. ¿Lo de siempre?']), D.misiones ? `Me han contado que llevas ${D.misiones} bajadas al libro. Con ese trajín, necesitas un buen café.` : 'Nadie baja al libro con el estómago vacío.'],
-    [['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, MARGA.color, MARGA.voz)],
-      ['¿Qué suena?', () => hablar('Marga', [DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, MARGA.color, MARGA.voz)],
-      ['Nada, gracias', cerrarDialogo]], MARGA.color, MARGA.voz);
+// Llamar a la puerta de alguien
+function llamar(p) {
+  if (p.presente) hablar('La puerta', [`No contesta nadie. ${p.nombre} debe de estar ${p.zona?.txt || 'por ahí'}.`], null, '#8a6a4a', 300);
+  else hablar('La puerta', [p.def.dormido || 'No contesta nadie.'], null, '#8a6a4a', 300);
 }
-
+// Flores para Lumi
+function cogerFlor(clave) {
+  const hoy = diaHoy();
+  if (EP.cogidas[clave] === hoy) return aviso('De aquí ya cogiste hoy');
+  if (EP.flores >= 5) return aviso('No te caben más flores');
+  EP.flores++; EP.cogidas[clave] = hoy; guardarPueblo(); aviso(`🌸 Has cogido una flor (${EP.flores})`);
+}
+const COLORES_LUMI = ['¡Me ha vuelto el rosa!', '¡Me ha vuelto el amarillo!', '¡Me ha vuelto el azul!', '¡Me ha vuelto el verde!', '¡Y el violeta! ¡Ya tengo todos mis colores!'];
+function darFlor() {
+  EP.flores--; EP.lumi = Math.min(5, EP.lumi + 1); sumarAmistad('lumi', 1); guardarPueblo();
+  const lumi = PNJ.find((x) => x.id === 'lumi'); pintarLumi(lumi.ch);
+  hablar(nombreCon(lumi), [`¡Oooh! ${COLORES_LUMI[EP.lumi - 1]}`], null, VEC.lumi.color, VEC.lumi.voz);
+}
+// Bocadillos que flotan sobre la cabeza (saludos y charlas entre vecinos)
+const globos = new Map();
+function globo(p, texto, dur = 3) {
+  let g = globos.get(p);
+  if (!g) { const el = document.createElement('div'); el.className = 'globo'; document.body.appendChild(el); g = { el, hasta: 0 }; globos.set(p, g); }
+  g.el.textContent = fmt(texto); g.hasta = performance.now() + dur * 1000;
+}
+const charlas = [];
+const ultimaCharla = {};
+function intentarCharla() {
+  if (dentro) return;
+  const libres = PNJ.filter((p) => p.presente && !p.hablando && !p.charlando && p.id !== 'gato');
+  for (let i = 0; i < libres.length; i++) for (let j = i + 1; j < libres.length; j++) {
+    const a = libres[i], b = libres[j], clave = [a.id, b.id].sort().join('-');
+    if (Math.hypot(a.x - b.x, a.z - b.z) > 3.2 || (ultimaCharla[clave] || 0) > performance.now() - 90000) continue;
+    const par = PARES.find(([x, y]) => (x === a.id && y === b.id) || (x === b.id && y === a.id));
+    if (!par && Math.random() < .6) continue;
+    const [habla1, habla2] = par ? (par[0] === a.id ? [a, b] : [b, a]) : [a, b];
+    const lineas = par ? par[2] : uno(GENERICAS);
+    ultimaCharla[clave] = performance.now();
+    const c = { a: habla1, b: habla2, lineas, i: 0, t: .3 };
+    habla1.charlando = habla2.charlando = c; habla1.obj = habla2.obj = null;
+    charlas.push(c); return;
+  }
+}
+function avanzarCharlas(dt) {
+  for (let k = charlas.length - 1; k >= 0; k--) {
+    const c = charlas[k];
+    if (!c.a.presente || !c.b.presente || c.a.hablando || c.b.hablando) { c.a.charlando = c.b.charlando = null; charlas.splice(k, 1); continue; }
+    c.t -= dt; if (c.t > 0) continue;
+    if (c.i >= c.lineas.length) { c.a.charlando = c.b.charlando = null; c.a.espera = c.b.espera = 1 + rnd() * 2; charlas.splice(k, 1); continue; }
+    globo(c.i % 2 ? c.b : c.a, c.lineas[c.i], 3.2); c.i++; c.t = 3.4;
+  }
+}
 // =============================================================
 //  DENTRO Y FUERA, SENTARSE, IR A OTRAS PÁGINAS
 // =============================================================
@@ -959,7 +1321,7 @@ function libreFuera(x, z, r, quien) {
   if (x < -33 || x > 33 || z < -28.5 || z > 29.5) return false;
   if (!enPuente(x, z) && !enMuelle(x, z) && alto(x, z) < -.28) return false;
   for (const c of CHOQUES) { if (c.r) { if (Math.hypot(x - c.x, z - c.z) < c.r + r) return false; } else if (Math.abs(x - c.x) < c.w / 2 + r && Math.abs(z - c.z) < c.d / 2 + r) return false; }
-  for (const p of PNJ) if (p !== quien && Math.hypot(x - p.x, z - p.z) < .5 + r * .5) return false;
+  for (const p of PNJ) if (p !== quien && p.presente && Math.hypot(x - p.x, z - p.z) < .5 + r * .5) return false;
   if (quien && Math.hypot(x - J.x, z - J.z) < .7) return false;
   return true;
 }
@@ -992,8 +1354,8 @@ render.domElement.addEventListener('pointerdown', (e) => {
   if (enDialogo) { avanzarDialogo(); return; }
   if (J.sentado) { levantar(); return; }
   const p = aSuelo(e.clientX, e.clientY); if (!p) return;
-  const it = INTERACCION.filter((i) => !!i.dentro === dentro).map((i) => ({ i, d: Math.hypot(posDe(i).x - p.x, posDe(i).z - p.z) })).filter((x) => x.d < 1.4).sort((a, b) => a.d - b.d)[0];
-  if (it) { const q = posDe(it.i); J.ir = { x: q.x, z: q.z, hacer: () => usar(it.i), cerca: it.i.pnj ? (it.i.pnj.alcance || 1.7) - .4 : .6 }; return; }
+  const it = INTERACCION.filter((i) => !!i.dentro === dentro && !(i.pnj && !i.pnj.presente)).map((i) => ({ i, d: Math.hypot(posDe(i).x - p.x, posDe(i).z - p.z) })).filter((x) => x.d < 1.4).sort((a, b) => a.d - b.d)[0];
+  if (it) { const q = posDe(it.i); J.ir = { x: q.x, z: q.z, hacer: () => usar(it.i), cerca: it.i.pnj ? (it.i.pnj.zona?.alcance || 1.7) - .4 : .6 }; return; }
   J.ir = { x: p.x, z: p.z }; pulsando = true;
 });
 render.domElement.addEventListener('pointermove', (e) => { if (!pulsando) return; const p = aSuelo(e.clientX, e.clientY); if (p) J.ir = { x: p.x, z: p.z }; });
@@ -1030,20 +1392,37 @@ function moverJugador(dt, t) {
   animar(J.ch, dt, andando, t);
   if (andando && Math.floor(fasePrev / Math.PI) !== Math.floor(J.ch.userData.fase / Math.PI)) pasito();
 }
+let relojHorario = 30, relojCharla = 3;
+const HOLA = ['¡Hola, {N}!', '¡Eh, {N}!', '¡Buenas!', '¡{N}! ¿Qué tal?'];
 function moverPNJ(dt, t) {
+  if ((relojHorario -= dt) < 0) { relojHorario = 30; actualizarHorarios(); }
+  if ((relojCharla -= dt) < 0) { relojCharla = 2.5; intentarCharla(); }
+  avanzarCharlas(dt);
   for (const p of PNJ) {
-    let andando = 0;
-    if (p.hablando) { p.dir = angLerp(p.dir, Math.atan2(J.x - p.x, J.z - p.z), 1 - Math.exp(-8 * dt)); }
-    else if (p.vel) {
-      if (p.espera > 0) p.espera -= dt;
-      else if (!p.obj) { for (let k = 0; k < 8; k++) { const a = rnd() * 6.28, r = rnd() * p.radio, x = p.casa[0] + Math.cos(a) * r, z = p.casa[1] + Math.sin(a) * r; if (libreFuera(x, z, .3, p)) { p.obj = { x, z }; break; } } if (!p.obj) p.espera = 1; }
-      else {
-        const vx = p.obj.x - p.x, vz = p.obj.z - p.z, d = Math.hypot(vx, vz);
-        if (d < .2) { p.obj = null; p.espera = 2 + rnd() * 5; }
-        else { const nx = p.x + vx / d * p.vel * dt, nz = p.z + vz / d * p.vel * dt; if (libreFuera(nx, nz, .3, p)) { p.x = nx; p.z = nz; andando = 1; p.dir = angLerp(p.dir, Math.atan2(vx, vz), 1 - Math.exp(-8 * dt)); } else { p.obj = null; p.espera = 1 + rnd() * 2; } }
+    if (!p.presente) continue;
+    const z = p.zona; let andando = 0;
+    if (p.hablando) p.dir = angLerp(p.dir, Math.atan2(J.x - p.x, J.z - p.z), 1 - Math.exp(-8 * dt));
+    else if (p.charlando) { const o = p.charlando.a === p ? p.charlando.b : p.charlando.a; p.dir = angLerp(p.dir, Math.atan2(o.x - p.x, o.z - p.z), 1 - Math.exp(-6 * dt)); }
+    else if (!z.fijo) {
+      const lejos = Math.hypot(p.x - z.x, p.z - z.z) > z.r + 1.5;
+      if (p.espera > 0 && !lejos) p.espera -= dt;
+      else if (!p.obj) {
+        if (lejos) p.obj = { x: z.x, z: z.z };
+        else { for (let k = 0; k < 8; k++) { const a = rnd() * 6.28, r = rnd() * z.r, x = z.x + Math.cos(a) * r, zz = z.z + Math.sin(a) * r; if (libreFuera(x, zz, .3, p)) { p.obj = { x, z: zz }; break; } } if (!p.obj) p.espera = 1; }
+      } else {
+        const vx = p.obj.x - p.x, vz = p.obj.z - p.z, d = Math.hypot(vx, vz), v = p.vel * (lejos ? 1.5 : 1);
+        if (d < .25) { p.obj = null; p.espera = 2 + rnd() * 5; p.atasco = 0; }
+        else {
+          let nx = p.x + vx / d * v * dt, nz = p.z + vz / d * v * dt;
+          if (!libreFuera(nx, nz, .3, p)) { const g = (p.lado ||= rnd() < .5 ? 1 : -1) * 1.1, ca = Math.cos(g), sa = Math.sin(g), ux = vx / d, uz = vz / d; nx = p.x + (ux * ca - uz * sa) * v * dt; nz = p.z + (ux * sa + uz * ca) * v * dt; }
+          if (libreFuera(nx, nz, .3, p)) { p.dir = angLerp(p.dir, Math.atan2(nx - p.x, nz - p.z), 1 - Math.exp(-8 * dt)); p.x = nx; p.z = nz; andando = 1; p.atasco = 0; }
+          else if ((p.atasco = (p.atasco || 0) + dt) > (lejos ? 6 : 1.5)) { if (lejos) { p.x = z.x; p.z = z.z; } p.obj = null; p.lado = 0; p.espera = 1 + rnd() * 2; p.atasco = 0; }
+        }
       }
     }
-    p.ch.position.set(p.x, p.y ?? sueloEn(p.x, p.z), p.z); p.ch.rotation.y = p.dir;
+    // Te saludan al cruzarte (una vez por visita)
+    if (!p.saludado && !dentro && !enDialogo && !p.charlando && p.id !== 'gato' && Math.hypot(J.x - p.x, J.z - p.z) < 3.2) { p.saludado = true; globo(p, uno(HOLA), 2.4); }
+    p.ch.position.set(p.x, z.y ?? sueloEn(p.x, p.z), p.z); p.ch.rotation.y = p.dir;
     animar(p.ch, dt, andando, t);
   }
   animar(MARGA.ch, dt, 0, t);
@@ -1054,7 +1433,7 @@ let cercano = null;
 function buscarCercano() {
   cercano = null; if (enDialogo || J.sentado) { $('accion').style.display = 'none'; return; }
   let mejor = 1e9;
-  for (const i of INTERACCION) { if (!!i.dentro !== dentro) continue; const q = posDe(i), d = Math.hypot(q.x - J.x, q.z - J.z); if (d < i.r && d < mejor) { mejor = d; cercano = i; } }
+  for (const i of INTERACCION) { if (!!i.dentro !== dentro || (i.pnj && !i.pnj.presente)) continue; const q = posDe(i), d = Math.hypot(q.x - J.x, q.z - J.z), r = i.pnj ? (i.pnj.zona?.alcance || i.r) : i.r; if (d < r && d < mejor) { mejor = d; cercano = i; } }
   const b = $('accion');
   if (cercano) { b.style.display = 'block'; b.innerHTML = `${cercano.accion}<kbd>E</kbd>`; } else b.style.display = 'none';
 }
@@ -1064,11 +1443,20 @@ const etiquetas = new Map();
 function pintarEtiquetas() {
   for (const p of [...PNJ, MARGA]) {
     let el = etiquetas.get(p);
-    const visible = !enDialogo && (p === MARGA ? dentro : !dentro) && Math.hypot(p.ch.position.x - J.x, p.ch.position.z - J.z) < 7.5;
+    const visible = !enDialogo && (p === MARGA ? dentro : !dentro && p.presente) && Math.hypot(p.ch.position.x - J.x, p.ch.position.z - J.z) < 7.5;
     if (!visible) { if (el) el.style.display = 'none'; continue; }
     if (!el) { el = document.createElement('div'); el.className = 'etiqueta'; el.textContent = p.nombre; el.style.background = p.color; document.body.appendChild(el); etiquetas.set(p, el); }
     const v = new THREE.Vector3(p.ch.position.x, p.ch.position.y + (p.id === 'gato' ? .9 : 1.95) - (dentro ? 0 : bajada(p.ch.position.z)), p.ch.position.z).project(camara);
     el.style.display = 'block'; el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
+  }
+  const ahora = performance.now();
+  for (const [p, g] of globos) {
+    const ver = ahora < g.hasta && !dentro && p.presente && !enDialogo && Math.hypot(p.ch.position.x - J.x, p.ch.position.z - J.z) < 14;
+    if (!ver) { g.el.style.display = 'none'; continue; }
+    const alto_ = (p.id === 'lumi' ? 1.3 : 2.25) * (p.ch.scale.y || 1);
+    const v = new THREE.Vector3(p.ch.position.x, p.ch.position.y + alto_ + .35 - bajada(p.ch.position.z), p.ch.position.z).project(camara);
+    g.el.style.display = 'block'; g.el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; g.el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
+    g.el.style.opacity = Math.min(1, (g.hasta - ahora) / 400);
   }
 }
 
@@ -1108,6 +1496,7 @@ function animarMundo(dt, t) {
   // las olas suenan más cerca de la playa
   if (A.ctx && A.olas) A.olas.gain.setTargetAtTime(dentro ? 0 : .02 + .1 * suave(4, 22, J.z) + .05 * suave(26, 32, Math.abs(J.x)), A.ctx.currentTime, .4);
 }
+actualizarHorarios(true);
 let ultimo = performance.now();
 render.setAnimationLoop((ahora) => {
   const dt = Math.min(.05, (ahora - ultimo) / 1000); ultimo = ahora; const t = ahora / 1000;
@@ -1115,7 +1504,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; aviso(`Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio };
+window.pueblo = { J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
 </script>
 </body>
 </html>
