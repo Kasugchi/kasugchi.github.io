@@ -15,7 +15,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection
+  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, addDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const auth = getAuth(app);
@@ -133,4 +133,33 @@ export function subirFicha(f, ya = false) {
     const x = fichaPendiente; fichaPendiente = null;
     if (x && usuario) setDoc(docFicha(x.mundo), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar la ficha:', e.message));
   }, ya ? 0 : 4000);
+}
+
+// ---------- Actividad y errores (para el panel) ----------
+//  usuarios/{uid}/actividad/{auto}  { tipo: 'mision' | 'entrada', fecha, … }
+//  usuarios/{uid}/errores/{auto}    { mensaje, donde, pila, fecha, version }
+const sinUsuario = () => !usuario && !auth.currentUser;
+const uidAhora = () => (usuario || auth.currentUser).uid;
+export function registrarActividad(ev) {
+  if (sinUsuario() || !ev) return;
+  addDoc(collection(db, 'usuarios', uidAhora(), 'actividad'), JSON.parse(JSON.stringify(ev))).catch(() => {});
+}
+const errVistos = new Set();
+export function registrarError(mensaje, donde = '', pila = '') {
+  if (sinUsuario() || !mensaje || errVistos.size >= 5 || errVistos.has(mensaje)) return;
+  errVistos.add(mensaje);
+  const version = document.querySelector('meta[name="version"]')?.content || '';
+  addDoc(collection(db, 'usuarios', uidAhora(), 'errores'), {
+    mensaje: String(mensaje).slice(0, 300), donde: String(donde).slice(0, 200), pila: String(pila || '').slice(0, 1200),
+    pagina: location.pathname.split('/').pop() || 'index.html', fecha: Date.now(), version, navegador: navigator.userAgent.slice(0, 160)
+  }).catch(() => {});
+}
+// Los fallos de la página, a la nube (como mucho 5 distintos por visita).
+export function vigilarErrores() {
+  addEventListener('error', (e) => registrarError(e.message, (e.filename || '').split('/').pop() + ':' + e.lineno, e.error?.stack));
+  addEventListener('unhandledrejection', (e) => registrarError(e.reason?.message || String(e.reason), 'promesa', e.reason?.stack));
+}
+// Anuncio para todos en la portada (lo escribe el panel en config/anuncio).
+export async function leerAnuncio() {
+  try { const d = (await getDoc(doc(db, 'config', 'anuncio'))).data(); return d?.texto ? d : null; } catch { return null; }
 }

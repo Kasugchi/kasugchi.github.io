@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261028214716",
-    "./js/datos.js": "./js/datos.js?v=20261028214716",
-    "./js/firebase.js": "./js/firebase.js?v=20261028214716",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261028214716",
-    "./js/ia.js": "./js/ia.js?v=20261028214716",
-    "./js/iconos.js": "./js/iconos.js?v=20261028214716",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261028214716",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261028214716",
-    "./js/motor.js": "./js/motor.js?v=20261028214716",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261028214716",
-    "./js/nube.js": "./js/nube.js?v=20261028214716",
-    "./js/panel.js": "./js/panel.js?v=20261028214716",
-    "./js/planos.js": "./js/planos.js?v=20261028214716",
-    "./js/procedural.js": "./js/procedural.js?v=20261028214716",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261028214716",
-    "./js/red.js": "./js/red.js?v=20261028214716",
-    "./js/render.js": "./js/render.js?v=20261028214716",
-    "./js/render3d.js": "./js/render3d.js?v=20261028214716",
-    "./js/reunion.js": "./js/reunion.js?v=20261028214716",
-    "./js/sprites.js": "./js/sprites.js?v=20261028214716",
-    "./js/tablero.js": "./js/tablero.js?v=20261028214716",
-    "./js/ui.js": "./js/ui.js?v=20261028214716",
-    "./js/viajero.js": "./js/viajero.js?v=20261028214716"
+    "./js/acceso.js": "./js/acceso.js?v=20261029233712",
+    "./js/datos.js": "./js/datos.js?v=20261029233712",
+    "./js/firebase.js": "./js/firebase.js?v=20261029233712",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261029233712",
+    "./js/ia.js": "./js/ia.js?v=20261029233712",
+    "./js/iconos.js": "./js/iconos.js?v=20261029233712",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261029233712",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261029233712",
+    "./js/motor.js": "./js/motor.js?v=20261029233712",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261029233712",
+    "./js/nube.js": "./js/nube.js?v=20261029233712",
+    "./js/panel.js": "./js/panel.js?v=20261029233712",
+    "./js/planos.js": "./js/planos.js?v=20261029233712",
+    "./js/procedural.js": "./js/procedural.js?v=20261029233712",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261029233712",
+    "./js/red.js": "./js/red.js?v=20261029233712",
+    "./js/render.js": "./js/render.js?v=20261029233712",
+    "./js/render3d.js": "./js/render3d.js?v=20261029233712",
+    "./js/reunion.js": "./js/reunion.js?v=20261029233712",
+    "./js/sprites.js": "./js/sprites.js?v=20261029233712",
+    "./js/tablero.js": "./js/tablero.js?v=20261029233712",
+    "./js/ui.js": "./js/ui.js?v=20261029233712",
+    "./js/viajero.js": "./js/viajero.js?v=20261029233712"
   }
 }
 </script>
@@ -121,6 +121,8 @@ import * as Ficha from './js/viajero.js';
 // Lo que cambies aquí (banco, obras, encargos, nombres, héroe activo) sube a tu cuenta enseguida.
 import('./js/nube.js').then(async (m) => {
   const u = await m.usuarioListo(); if (!u) return;
+  m.vigilarErrores();
+  if (!new URLSearchParams(location.search).has('demo')) m.registrarActividad({ tipo: 'entrada', donde: 'tortuga', fecha: Date.now(), mundo: Ficha.mundoActivo() });
   // Primero se junta con lo que haya en la nube (por si jugaste en otro dispositivo), y luego se sube.
   const enNube = await m.leerFichaNube();
   if (enNube) { ficha = Ficha.fusionar(ficha, enNube); Ficha.guardarFicha(ficha); }

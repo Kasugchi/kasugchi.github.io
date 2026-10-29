@@ -242,6 +242,9 @@ export function sincronizar(f, estado, miId) {
   return cambio;
 }
 // Trofeos y diario: una vez por misión terminada.
+// Quien quiera enterarse de cada misión apuntada (la nube la guarda como actividad).
+let alApuntar = null;
+export const avisarAlApuntar = (fn) => { alApuntar = fn; };
 export function registrarMision(f, estado, miId) {
   const c = estado.cronica?.ultima, k = estado.cronica?.campana;
   if (!c || !k || !c.resultado) return false;
@@ -271,6 +274,18 @@ export function registrarMision(f, estado, miId) {
     d.jefes++;
     f.cabana.trofeos.push({ nombre, donde: estado.aleatorio ? 'Mazmorra Infinita · piso ' + c.numero : 'Misión ' + c.numero + ': ' + (c.titulo || ''), fecha: Date.now() });
   }
+  try {
+    alApuntar?.({
+      tipo: 'mision', fecha: Date.now(), mundo: f.mundo || 'm1',
+      modo: estado.aleatorio ? 'infinita' : estado.limbo ? 'limbo' : estado.pruebas ? 'pruebas' : 'historia',
+      dificultad: estado.dificultad || 'heroe', resultado: c.resultado, numero: c.numero || null, titulo: c.titulo || null,
+      rondas: c.rondas || 0, jefes: c.jefes || [], sala: estado.codigo || null,
+      monstruos: mios.reduce((s, id) => s + Object.values(c.heroes?.[id]?.muertes || {}).reduce((a, n) => a + n, 0), 0),
+      caidos: mios.filter((id) => estado.heroes[id].caido).map((id) => estado.heroes[id].nombre),
+      heroes: mios.map((id) => { const h = estado.heroes[id]; return { nombre: h.nombre, tipo: h.tipo, nivel: h.nivel || 1 }; }),
+      fama: famaDeMision(estado, c)
+    });
+  } catch { /* la actividad nunca rompe la partida */ }
   // Que la lista no crezca sin fin: se guardan las últimas misiones apuntadas.
   const claves = Object.keys(f.registradas);
   if (claves.length > 400) for (const x of claves.sort((a, b) => f.registradas[a] - f.registradas[b]).slice(0, claves.length - 400)) delete f.registradas[x];

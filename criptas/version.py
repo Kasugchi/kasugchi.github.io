@@ -21,7 +21,7 @@ open('index.html', 'w').write(html)
 
 # Las demás páginas que usan los módulos del juego (tortuga, cabaña, sala ligera, planos):
 # el mismo mapa con versión, conservando lo que ya tuvieran (three).
-for pagina in ['tortuga.html', 'cabana.html', 'reunion.html', 'planos.html', 'duelo.html']:
+for pagina in ['tortuga.html', 'cabana.html', 'reunion.html', 'planos.html', 'duelo.html', 'panel.html']:
     if not os.path.exists(pagina): continue
     h = open(pagina).read()
     extra = '    "three": "./js/vendor/three.module.min.js",\n' if 'three' in h.split('<script type="module">')[0] else ''
@@ -29,5 +29,6 @@ for pagina in ['tortuga.html', 'cabana.html', 'reunion.html', 'planos.html', 'du
     h = re.sub(r'<script type="importmap"[^>]*>.*?</script>', bloque2, h, count=1, flags=re.S)
     if 'id="versiones"' not in h:
         h = h.replace('</head>', bloque2 + '\n</head>', 1)
+    h = re.sub(r'src="js/panel\.js(\?v=\d+)?"', f'src="js/panel.js?v={v}"', h)
     open(pagina, 'w').write(h)
 print('versión', v)

@@ -30,8 +30,39 @@
   .nota { color: var(--suave); }
   .error { color: var(--lacre); }
   .interruptor { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: rgba(255,255,255,0.45); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+  h3.sub { margin: 14px 0 6px; font-size: 14px; color: var(--suave); font-weight: 600; }
+  textarea { resize: vertical; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --papel: #e8dcbc; } }
 </style>
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/acceso.js": "./js/acceso.js?v=20261029233712",
+    "./js/datos.js": "./js/datos.js?v=20261029233712",
+    "./js/firebase.js": "./js/firebase.js?v=20261029233712",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261029233712",
+    "./js/ia.js": "./js/ia.js?v=20261029233712",
+    "./js/iconos.js": "./js/iconos.js?v=20261029233712",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261029233712",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261029233712",
+    "./js/motor.js": "./js/motor.js?v=20261029233712",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261029233712",
+    "./js/nube.js": "./js/nube.js?v=20261029233712",
+    "./js/panel.js": "./js/panel.js?v=20261029233712",
+    "./js/planos.js": "./js/planos.js?v=20261029233712",
+    "./js/procedural.js": "./js/procedural.js?v=20261029233712",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261029233712",
+    "./js/red.js": "./js/red.js?v=20261029233712",
+    "./js/render.js": "./js/render.js?v=20261029233712",
+    "./js/render3d.js": "./js/render3d.js?v=20261029233712",
+    "./js/reunion.js": "./js/reunion.js?v=20261029233712",
+    "./js/sprites.js": "./js/sprites.js?v=20261029233712",
+    "./js/tablero.js": "./js/tablero.js?v=20261029233712",
+    "./js/ui.js": "./js/ui.js?v=20261029233712",
+    "./js/viajero.js": "./js/viajero.js?v=20261029233712"
+  }
+}
+</script>
 </head>
 <body>
 <header>
@@ -43,6 +74,6 @@
 <main id="contenido">
   <section><p class="nota">Entra con la cuenta de administrador para ver las partidas y estadísticas de todos los jugadores.</p></section>
 </main>
-<script type="module" src="js/panel.js"></script>
+<script type="module" src="js/panel.js?v=20261029233712"></script>
 </body>
 </html>

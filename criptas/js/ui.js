@@ -358,6 +358,14 @@ import('./nube.js').then((m) => {
     if (!ok) { app.solicitado = await m.haSolicitado().catch(() => false); ponerAcceso('denegado'); pintarNube(u); return pintarPartidas(); }
     guardar('criptas_acceso', u.email);
     ponerAcceso('ok'); pintarNube(u);
+    if (!app.vigilando) {
+      // Actividad y errores para el panel (una entrada por visita) y el anuncio del administrador.
+      app.vigilando = true;
+      m.vigilarErrores();
+      V.avisarAlApuntar((ev) => m.registrarActividad({ ...ev, sala: app.red?.codigo || null }));
+      m.registrarActividad({ tipo: 'entrada', donde: 'portada', fecha: Date.now(), mundo: V.mundoActivo() });
+      m.leerAnuncio().then(pintarAnuncio);
+    }
     entrarPorReunion();
     if (!$('#nombre').value.trim() && u.displayName) $('#nombre').value = u.displayName.split(' ')[0];
     try {
@@ -394,6 +402,12 @@ import('./nube.js').then((m) => {
   pintarNube(null, true);
   entrarPorReunion();
 });
+function pintarAnuncio(a) {
+  const caja = document.getElementById('anuncio');
+  if (!caja) return;
+  caja.hidden = !a;
+  if (a) caja.innerHTML = `<b>📜 ${esc(a.titulo || 'Aviso')}</b><p>${esc(a.texto).replace(/\n/g, '<br>')}</p>`;
+}
 function pintarNube(u, fallo = false) {
   const caja = $('#nube');
   if (fallo && !u) {

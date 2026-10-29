@@ -507,3 +507,9 @@ details.guia h3 { font: 700 15px var(--f-texto); margin: 12px 0 2px; color: var(
 .lista-guia { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 6px 0 10px; font-size: 15px; }
 .lista-guia span:nth-child(odd) { white-space: nowrap; }
 @media (max-width: 480px) { .lista-guia { grid-template-columns: 1fr; gap: 0; } .lista-guia span:nth-child(even) { margin: 0 0 6px 10px; opacity: .85; } }
+
+/* Anuncio del administrador en la portada */
+.anuncio { border-left: 4px solid var(--lacre); }
+.anuncio b { display: block; font: 700 18px var(--f-texto); color: var(--lacre); }
+.anuncio p { margin: 6px 0 0; }
+#portada:not([data-acceso="ok"]) #anuncio { display: none !important; }
