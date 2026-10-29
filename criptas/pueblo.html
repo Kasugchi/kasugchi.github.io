@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030003042",
-    "./js/datos.js": "./js/datos.js?v=20261030003042",
-    "./js/firebase.js": "./js/firebase.js?v=20261030003042",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030003042",
-    "./js/ia.js": "./js/ia.js?v=20261030003042",
-    "./js/iconos.js": "./js/iconos.js?v=20261030003042",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030003042",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030003042",
-    "./js/motor.js": "./js/motor.js?v=20261030003042",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030003042",
-    "./js/nube.js": "./js/nube.js?v=20261030003042",
-    "./js/panel.js": "./js/panel.js?v=20261030003042",
-    "./js/planos.js": "./js/planos.js?v=20261030003042",
-    "./js/procedural.js": "./js/procedural.js?v=20261030003042",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030003042",
-    "./js/red.js": "./js/red.js?v=20261030003042",
-    "./js/render.js": "./js/render.js?v=20261030003042",
-    "./js/render3d.js": "./js/render3d.js?v=20261030003042",
-    "./js/reunion.js": "./js/reunion.js?v=20261030003042",
-    "./js/sprites.js": "./js/sprites.js?v=20261030003042",
-    "./js/tablero.js": "./js/tablero.js?v=20261030003042",
-    "./js/ui.js": "./js/ui.js?v=20261030003042",
-    "./js/viajero.js": "./js/viajero.js?v=20261030003042"
+    "./js/acceso.js": "./js/acceso.js?v=20261030003418",
+    "./js/datos.js": "./js/datos.js?v=20261030003418",
+    "./js/firebase.js": "./js/firebase.js?v=20261030003418",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030003418",
+    "./js/ia.js": "./js/ia.js?v=20261030003418",
+    "./js/iconos.js": "./js/iconos.js?v=20261030003418",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030003418",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030003418",
+    "./js/motor.js": "./js/motor.js?v=20261030003418",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030003418",
+    "./js/nube.js": "./js/nube.js?v=20261030003418",
+    "./js/panel.js": "./js/panel.js?v=20261030003418",
+    "./js/planos.js": "./js/planos.js?v=20261030003418",
+    "./js/procedural.js": "./js/procedural.js?v=20261030003418",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030003418",
+    "./js/red.js": "./js/red.js?v=20261030003418",
+    "./js/render.js": "./js/render.js?v=20261030003418",
+    "./js/render3d.js": "./js/render3d.js?v=20261030003418",
+    "./js/reunion.js": "./js/reunion.js?v=20261030003418",
+    "./js/sprites.js": "./js/sprites.js?v=20261030003418",
+    "./js/tablero.js": "./js/tablero.js?v=20261030003418",
+    "./js/ui.js": "./js/ui.js?v=20261030003418",
+    "./js/viajero.js": "./js/viajero.js?v=20261030003418"
   }
 }
 </script>
@@ -283,12 +283,13 @@ function farola(x, z) {
   const t = new THREE.Mesh(new THREE.ConeGeometry(.32, .28, 4).rotateY(Math.PI / 4), lam('#3a3a44')); t.position.y = 2.9; g.add(t);
   enFijo(g, x, z); CHOQUES.push({ x, z, r: .25 });
 }
-function banco(x, z, giro = 0) {
+function banco(x, z, giro = 0, sentable = true) {
   const g = new THREE.Group();
   const s = caja(1.7, .1, .5, '#a8743c'); s.position.y = .45; g.add(s);
   const r = caja(1.7, .45, .08, '#a8743c'); r.position.set(0, .75, -.24); g.add(r);
   for (const sx of [-.7, .7]) { const p = caja(.08, .45, .45, '#5a4030'); p.position.set(sx, .22, 0); g.add(p); }
   g.rotation.y = giro; enFijo(g, x, z); CHOQUES.push({ x, z, r: .7 });
+  if (sentable) toque('Banco', x + Math.sin(giro) * 1.1, z + Math.cos(giro) * 1.1, 1.3, 'Sentarse', () => sentarse(x, z, giro));
   return g;
 }
 function valla(x0, z0, x1, z1) {
@@ -433,7 +434,7 @@ for (const p of PUENTES) {
   for (let i = 0; i <= 8; i++) { const a = Math.PI + i * Math.PI / 8; const x = 18 + Math.cos(a) * 4, z = -25.5 + Math.sin(a) * 1.6; const p = cil(.08, .08, .9, '#8a5a34', 6); enFijo(p, x, z, .45); CHOQUES.push({ x, z, r: .3 }); }
   for (let i = 0; i < 8; i++) { const a0 = Math.PI + i * Math.PI / 8, a1 = a0 + Math.PI / 8; const x0 = 18 + Math.cos(a0) * 4, z0 = -25.5 + Math.sin(a0) * 1.6, x1 = 18 + Math.cos(a1) * 4, z1 = -25.5 + Math.sin(a1) * 1.6;
     const t = caja(Math.hypot(x1 - x0, z1 - z0), .08, .08, '#8a5a34'); t.rotation.y = -Math.atan2(z1 - z0, x1 - x0); enFijo(t, (x0 + x1) / 2, (z0 + z1) / 2, .8); }
-  banco(18, -24.6, -2.82);
+  banco(18, -24.6, -2.82, false);
   toque('El mirador', 18, -23.4, 1.5, 'Sentarse a mirar', () => sentarseMirador());
 }
 // Rocas y detalles
@@ -917,7 +918,7 @@ function irA(url) { cerrarDialogo(); $('fundido').style.opacity = 1; setTimeout(
 function aviso(t) { const a = $('aviso'); a.textContent = t; a.style.opacity = 1; clearTimeout(aviso.t); aviso.t = setTimeout(() => { a.style.opacity = 0; }, 2200); }
 function entrarCantina() {
   fundir(() => {
-    dentro = true; cantinaDentro.visible = true; J.x = X0; J.z = 3.8; J.dir = Math.PI; J.ir = null; levantar();
+    levantar(false); dentro = true; cantinaDentro.visible = true; J.x = X0; J.z = 3.8; J.dir = Math.PI; J.ir = null;
     CURVA.uCurva.value = 0; cielo.intensity = .55; sol.intensity = .35; luzFuego.intensity = 22; lamparas.forEach((l) => { l.intensity = 9; });
     escena.background = new THREE.Color('#2a1a12'); escena.fog = null;
     camara.position.set(X0, 8.4, 12.6); mirar.set(X0, .6, -.4); mezclar(true);
@@ -926,16 +927,28 @@ function entrarCantina() {
 function salirCantina() {
   cerrarDialogo();
   fundir(() => {
-    dentro = false; cantinaDentro.visible = false; J.x = cantina.puerta.x; J.z = cantina.puerta.z + .4; J.dir = 0; J.ir = null; levantar();
+    levantar(false); dentro = false; cantinaDentro.visible = false; J.x = cantina.puerta.x; J.z = cantina.puerta.z + .4; J.dir = 0; J.ir = null;
     CURVA.uCurva.value = Number(prm.get('curva')) || 0.0105; cielo.intensity = 1.25; sol.intensity = 1.7; luzFuego.intensity = 0; lamparas.forEach((l) => { l.intensity = 0; });
     escena.background = CIELO; escena.fog = new THREE.Fog(CIELO, 34, 72);
     camara.position.set(J.x, 10.8, J.z + 10.6); mirar.set(J.x, .7, J.z - 1.6); mezclar(false);
   });
 }
-function sentarse(x, z, dir) { cerrarDialogo(); J.x = x; J.z = z; J.dir = dir; J.sentado = true; J.ch.userData.sentado = true; aviso('Toca para levantarte'); }
-function levantar() { J.sentado = false; J.ch.userData.sentado = false; if (modoCam === 'mirador') modoCam = 'normal'; }
+function sentarse(x, z, dir) { cerrarDialogo(); J.antes = { x: J.x, z: J.z }; J.x = x; J.z = z; J.dir = dir; J.sentado = true; J.ch.userData.sentado = true; aviso('Toca para levantarte'); }
+// Al levantarte vuelves al sitio libre desde el que te sentaste (o al hueco libre más cercano).
+function levantar(volver = true) {
+  const estaba = J.sentado;
+  J.sentado = false; J.ch.userData.sentado = false; if (modoCam === 'mirador') modoCam = 'normal';
+  if (!estaba || !volver) { J.antes = null; return; }
+  if (J.antes && libre(J.antes.x, J.antes.z)) { J.x = J.antes.x; J.z = J.antes.z; }
+  else salirDeObstaculo();
+  J.antes = null;
+}
+function salirDeObstaculo() {
+  if (libre(J.x, J.z)) return;
+  for (let r = .4; r < 4; r += .3) for (let a = 0; a < 6.28; a += .4) { const x = J.x + Math.sin(J.dir + a) * r, z = J.z + Math.cos(J.dir + a) * r; if (libre(x, z)) { J.x = x; J.z = z; return; } }
+}
 function sentarseMirador() {
-  J.x = 18; J.z = -24.5; J.dir = -2.82; J.sentado = true; J.ch.userData.sentado = true; modoCam = 'mirador'; miradaM = 1;
+  cerrarDialogo(); J.antes = { x: J.x, z: J.z }; J.x = 18; J.z = -24.5; J.dir = -2.82; J.sentado = true; J.ch.userData.sentado = true; modoCam = 'mirador'; miradaM = 1;
   setTimeout(() => { if (modoCam === 'mirador') hablar('Morrandar', ['La tortuga nada despacio entre las páginas.', 'Gira la cabeza… y te mira. Un rumor grave te hace vibrar los huesos.', 'Parece decir: «Estás en casa».'], null, '#647e55', 90); }, 1800);
 }
 
@@ -1006,7 +1019,7 @@ function moverJugador(dt, t) {
     dx /= len; dz /= len;
     const corre = teclas.has('shift') || (J.ir && Math.hypot(J.ir.x - J.x, J.ir.z - J.z) > 7);
     const v = corre ? 6.4 : 4, nx = J.x + dx * v * dt, nz = J.z + dz * v * dt;
-    if (libre(nx, nz)) { J.x = nx; J.z = nz; J.atasco = 0; } else if (libre(nx, J.z)) J.x = nx; else if (libre(J.x, nz)) J.z = nz;
+    if (libre(nx, nz) || !libre(J.x, J.z)) { J.x = nx; J.z = nz; J.atasco = 0; } else if (libre(nx, J.z)) J.x = nx; else if (libre(J.x, nz)) J.z = nz;
     else if ((J.atasco += dt) > .5) { if (J.ir?.hacer && Math.hypot(J.ir.x - J.x, J.ir.z - J.z) < 2.4) { const f = J.ir.hacer; J.ir = null; f(); } else J.ir = null; J.atasco = 0; }
     J.dir = angLerp(J.dir, Math.atan2(dx, dz), 1 - Math.exp(-14 * dt));
     andando = corre ? 2 : 1;
