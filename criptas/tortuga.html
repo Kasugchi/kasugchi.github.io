@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030002425",
-    "./js/datos.js": "./js/datos.js?v=20261030002425",
-    "./js/firebase.js": "./js/firebase.js?v=20261030002425",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030002425",
-    "./js/ia.js": "./js/ia.js?v=20261030002425",
-    "./js/iconos.js": "./js/iconos.js?v=20261030002425",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030002425",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030002425",
-    "./js/motor.js": "./js/motor.js?v=20261030002425",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030002425",
-    "./js/nube.js": "./js/nube.js?v=20261030002425",
-    "./js/panel.js": "./js/panel.js?v=20261030002425",
-    "./js/planos.js": "./js/planos.js?v=20261030002425",
-    "./js/procedural.js": "./js/procedural.js?v=20261030002425",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030002425",
-    "./js/red.js": "./js/red.js?v=20261030002425",
-    "./js/render.js": "./js/render.js?v=20261030002425",
-    "./js/render3d.js": "./js/render3d.js?v=20261030002425",
-    "./js/reunion.js": "./js/reunion.js?v=20261030002425",
-    "./js/sprites.js": "./js/sprites.js?v=20261030002425",
-    "./js/tablero.js": "./js/tablero.js?v=20261030002425",
-    "./js/ui.js": "./js/ui.js?v=20261030002425",
-    "./js/viajero.js": "./js/viajero.js?v=20261030002425"
+    "./js/acceso.js": "./js/acceso.js?v=20261030003042",
+    "./js/datos.js": "./js/datos.js?v=20261030003042",
+    "./js/firebase.js": "./js/firebase.js?v=20261030003042",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030003042",
+    "./js/ia.js": "./js/ia.js?v=20261030003042",
+    "./js/iconos.js": "./js/iconos.js?v=20261030003042",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030003042",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030003042",
+    "./js/motor.js": "./js/motor.js?v=20261030003042",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030003042",
+    "./js/nube.js": "./js/nube.js?v=20261030003042",
+    "./js/panel.js": "./js/panel.js?v=20261030003042",
+    "./js/planos.js": "./js/planos.js?v=20261030003042",
+    "./js/procedural.js": "./js/procedural.js?v=20261030003042",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030003042",
+    "./js/red.js": "./js/red.js?v=20261030003042",
+    "./js/render.js": "./js/render.js?v=20261030003042",
+    "./js/render3d.js": "./js/render3d.js?v=20261030003042",
+    "./js/reunion.js": "./js/reunion.js?v=20261030003042",
+    "./js/sprites.js": "./js/sprites.js?v=20261030003042",
+    "./js/tablero.js": "./js/tablero.js?v=20261030003042",
+    "./js/ui.js": "./js/ui.js?v=20261030003042",
+    "./js/viajero.js": "./js/viajero.js?v=20261030003042"
   }
 }
 </script>
@@ -606,6 +606,17 @@ let luzLibro;
   luzLibro = new THREE.PointLight(0xb890ff, 10, 9, 1.6); luzLibro.position.y = 2.1; libro.add(luzLibro);
   tope(3.4, 2.2, .9);
 }
+// El camino al pueblo: un arco de piedra con un velo de luz verde
+const portal = new THREE.Group();
+{
+  portal.position.set(-6.6, 0, 7.1); portal.rotation.y = .35; pueblo.add(portal);
+  for (const s of [-1, 1]) portal.add(cil(.2, .28, 2.4, mat.piedra, s * 1.1, 1.2, 0, 8));
+  const arco = new THREE.Mesh(new THREE.TorusGeometry(1.1, .2, 8, 20, Math.PI), mat.piedra); arco.position.y = 2.4; portal.add(arco);
+  const velo = new THREE.Mesh(new THREE.CircleGeometry(1, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(.6, 1.5, .95), transparent: true, opacity: .5, side: THREE.DoubleSide, depthWrite: false }));
+  velo.scale.set(.95, 1.32, 1); velo.position.y = 1.5; portal.add(velo); portal.userData.velo = velo;
+  const luz = new THREE.PointLight(0x9affc0, 6, 6, 1.6); luz.position.y = 1.5; portal.add(luz);
+  tope(-6.6, 7.1, 1);
+}
 const motas = (() => {
   const n = 70, pos = new Float32Array(n * 3), vel = [];
   for (let i = 0; i < n; i++) { pos.set([3.4, 1.6 + Math.random() * 3, 2.2], i * 3); vel.push(Math.random()); }
@@ -881,6 +892,7 @@ const PNJ = [
   { id: 'tablon', nombre: 'Tablón de encargos', obj: decor.tablon, x: 1.6, z: -4.2, radio: 1.8, accion: 'Mirar el tablón' },
   { id: 'marga', nombre: 'Marga la cocinera', fig: figuraPapel(texMarga, 2.3), x: 3.2, z: -6.3, radio: 2.3,
     frases: ['¡Guiso de anguila de tinta! Bueno… de algo.', 'Nadie baja al libro con el estómago vacío.', '¿Otra vez tú? Siéntate, siéntate.'] },
+  { id: 'portal', nombre: 'El camino al pueblo', obj: portal, x: -6.2, z: 5.6, radio: 2.2, accion: 'Bajar al pueblo' },
   { id: 'morrandar', nombre: 'Morrandar', obj: cabeza, x: 14.2, z: .8, radio: 2.2, accion: 'Hablar con Morrandar' }
 ];
 // ---------- Vecinos de papel (llegan con la fama: «Vecinos paseando por la plaza») ----------
@@ -1171,6 +1183,8 @@ const DIALOGOS = {
     ops: [['Entrar', abrirCabana], ['Ver los trofeos', () => mostrar('Tu cabaña', 'Aquí se irán colgando las cabezas de los jefes, las armas raras y las páginas que encuentres. Cuantas más aventuras, más grande la cabaña.', undefined, '<div class="lista"><span>Cráneo de Ugrak, el Gran Chamán</span><span>piso 5</span><span>Hueco para el siguiente jefe</span><span>…</span></div>')], ['Cambiar de héroe (en el baúl)', () => mostrar('El baúl', 'Usa los retratos de arriba para cambiar de héroe. Pronto será aquí dentro, con tu colección.')], ['Salir', cerrarDialogo]] }),
   forja: () => ({ texto: 'La forja está fría y encadenada. Sobre el yunque alguien grabó a cuchillo: «Bruna volverá». Hace tres inviernos.', ops: [['Rescatar a Bruna en las Celdas de Hierro (próximamente)', cerrarDialogo], ['Dejarlo estar', cerrarDialogo]] }),
   tablon: () => tablon(),
+  portal: () => ({ texto: 'Un arco de piedra cubierto de musgo. Al otro lado se oye un río, pájaros… y a alguien silbando.' + (panelSala?.R ? ' Si bajas, saldrás de la sala.' : ''),
+    ops: [['Bajar al pueblo', () => irA('pueblo.html')], ['Todavía no', cerrarDialogo]] }),
   ...Object.fromEntries(Array.from({ length: 8 }, (_, i) => ['vecino' + i, () => ({ texto: FRASES_VECINOS[(i + Math.floor(Math.random() * 3)) % FRASES_VECINOS.length], ops: [['Seguir paseando', cerrarDialogo]] })])),
   marga: () => cantina(),
   morrandar: () => { despertar(); return { texto: uno(['Morrandar abre un ojo del tamaño de una puerta. Un rumor grave te hace vibrar los huesos.', 'La tortuga gira la cabeza hacia ti, muy despacio. Huele a sal, a tinta y a siglos.']),
@@ -1473,6 +1487,7 @@ function bucle() {
     a.piv.rotation.y = a.s * Math.cos(f) * (a.delantera ? .28 : .2);
   }
   despierta = Math.max(0, despierta - dt);
+  portal.userData.velo.rotation.z = t * .6; portal.userData.velo.material.opacity = .42 + Math.sin(t * 2) * .12;
   cabeza.rotation.z = Math.sin(t * .3) * .05 + (despierta > 0 ? Math.sin(t * 2) * .05 + .08 : 0);
   cabeza.rotation.y = Math.sin(t * .17) * .12;
   cabeza.position.y = 3.6 + Math.sin(t * .4 + 1) * .25 + (despierta > 0 ? .8 : 0) * Math.min(1, despierta);
