@@ -120,6 +120,9 @@
   #libreta .mini { border: 0; background: #f2e6c8; border-radius: 999px; font: 800 11px 'Nunito', sans-serif; padding: 2px 8px; margin-left: 4px; cursor: pointer; }
   body:has(#libreta.ver) #aviso { top: auto; bottom: max(90px, env(safe-area-inset-bottom)); z-index: 30; }
   #libreta .vecinos-mapa i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; box-shadow: 0 0 0 2px #fff; }
+  #libreta .datos-vitrina { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  #libreta .datos-vitrina div { background: #f6ecd2; border-radius: 16px; padding: 8px 10px; text-align: center; }
+  #libreta .datos-vitrina b { display: block; font-size: 22px; color: #c0503a; font-variant-numeric: tabular-nums; } #libreta .datos-vitrina span { font-size: 11px; font-weight: 700; color: #8a6a4a; }
   #mapa-cv { position: static; inset: auto; display: block; width: 100%; height: auto; border-radius: 18px; box-shadow: inset 0 0 0 3px #eadcb8; background: #8ccce0; }
   #libreta .canal { display: grid; grid-template-columns: 1fr 1.3fr 34px; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 2px dashed #eadcb8; }
   #libreta .canal span { display: grid; } #libreta .canal small { font-size: 11px; color: #8a6a4a; font-weight: 700; }
@@ -1388,7 +1391,7 @@ function pintarCasa() {
     else if (ajena && M.uso === 'espejo') t('Mirarte al espejo', () => hablar(M.n, ['Te miras en el espejo de otra casa. Te ves… de visita.'], null, '#3f72b8'));
     else if (M.uso === 'dormir') t('Dormir hasta mañana', () => hablar('Tu cama', ['La almohada huele a lavanda. ¿Duermes hasta mañana?'], [['Dormir', () => dormir()], ['Todavía no', cerrarDialogo]], '#3f72b8'));
     else if (M.uso === 'musica') t('Poner música', () => { musicaCasa = !musicaCasa; mezclar(); aviso(musicaCasa ? '♪ ' + DISCOS[disco].nombre : 'Silencio'); });
-    else if (M.uso === 'trofeos') t('Ver tus trofeos', () => irA('cabana.html'));
+    else if (M.uso === 'trofeos') t('Ver tus trofeos', () => abrirLibreta('trofeos'));
     else if (M.uso === 'espejo') t('Mirarte al espejo', () => abrirCreador());
   }
   encenderCasa();
@@ -2476,6 +2479,13 @@ function pintarLibreta() {
     else { escribirA = vec.some((v) => v.uid === escribirA) ? escribirA : vec[0].uid;
       h = tit('Escribir una carta') + `<div class="ops2">${vec.map((v) => `<button class="chip${v.uid === escribirA ? ' si' : ''}" data-l="para" data-v="${v.uid}">Para ${escH(v.nombre)}</button>`).join('')}</div>
         <textarea maxlength="600" placeholder="Querido vecino…" id="texto-carta">${escH($('texto-carta')?.value || '')}</textarea><button class="grande" data-l="enviar">Echarla al buzón</button>`; }
+  } else if (pg === 'trofeos') {
+    const f = fichaP || ficha || {}, tr = (f.cabana?.trofeos || []).slice().reverse(), di = f.diario || {};
+    const dato = (n, t) => `<div><b>${n || 0}</b><span>${t}</span></div>`;
+    h = tit('Tu vitrina') + `<div class="datos-vitrina">${dato(di.misiones, 'misiones')}${dato(di.victorias, 'victorias')}${dato(di.jefes, 'jefes vencidos')}${dato(di.monstruos, 'monstruos')}${dato(di.pisoMax, 'piso más hondo')}</div>`
+      + (tr.length ? `<ul class="lista trofeos">${tr.map((x) => `<li><span>🏆 <b>${escH(x.nombre)}</b></span><small>${escH(x.donde || '')}${x.fecha ? '<br>' + new Date(x.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : ''}</small></li>`).join('')}</ul>`
+        : '<p class="nota">Todavía no hay trofeos. Cada jefe que derrotes en el libro dejará aquí su recuerdo.</p>')
+      + '<p class="nota" style="text-align:center"><a href="cabana.html" style="color:#c0503a;font-weight:800">Ver la cabaña de trofeos en 3D</a></p>';
   } else if (pg === 'mapa') {
     h = tit('Mapa del pueblo') + `<canvas id="mapa-cv" width="${(MAPA.x1 - MAPA.x0) * MAPA.px}" height="${(MAPA.z1 - MAPA.z0) * MAPA.px}"></canvas><p class="nota">El punto rojo eres tú. Los vecinos, ahora mismo:</p><ul class="lista vecinos-mapa">${PNJ.filter((p) => p.id !== 'gato').map((p) => `<li><span><i style="background:${p.def.color}"></i>${escH(p.nombre)}</span><small>${p.presente ? escH(p.zona?.txt || 'por el pueblo') : 'en casa, durmiendo'}</small></li>`).join('')}<li><span><i style="background:${MARGA.color}"></i>Marga</span><small>en la cantina</small></li></ul>`;
   } else if (pg === 'sonido') {
@@ -2497,7 +2507,7 @@ async function accionLibreta(a, v, el) {
   const m = G.m;
   if (a === 'cerrar') return cerrarLibreta();
   if (['pueblo', 'cartas'].includes(a)) cargarGremio();
-  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido', 'mapa'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
+  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido', 'mapa', 'trofeos'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
   if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }
   if (a === 'decorar') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); empezarDeco(); } else aviso('Entra en tu casa para decorarla'); return; }
   if (a === 'aspecto') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); abrirCreador(); } else aviso('El espejo está en tu casa'); return; }
