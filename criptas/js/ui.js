@@ -159,6 +159,22 @@ $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal' && ap
 //  CARGA DE MISIONES
 // =============================================================
 const listas = Promise.all([...D.CAMPANA, 'pruebas'].map((id) => fetch('misiones/' + id + '.json').then((r) => r.json()).then((j) => (app.misiones[id] = j))));
+// Campañas importadas en el taller (config/campana-*): se convierten aquí a misiones jugables.
+app.importadas = [];
+async function cargarImportadas(m) {
+  try {
+    const [lista, C] = await Promise.all([m.listarCampanas(), import('./campanas.js')]);
+    app.importadas = [];
+    for (const c of lista) {
+      try {
+        const res = C.convertirCampana(JSON.parse(c.json), c.id);
+        for (const { def } of res) app.misiones[def.id] = def;
+        app.importadas.push({ id: c.id, nombre: c.nombre, ids: res.map((r) => r.def.id) });
+      } catch (e) { console.warn('Campaña importada sin convertir:', c.id, e.message); }
+    }
+    if (app.sala && !$('#sala').hidden) pintarSala();
+  } catch (e) { console.warn('Sin campañas importadas:', e.message); }
+}
 
 // =============================================================
 //  PORTADA
@@ -365,6 +381,7 @@ import('./nube.js').then((m) => {
       V.avisarAlApuntar((ev) => m.registrarActividad({ ...ev, sala: app.red?.codigo || null }));
       m.registrarActividad({ tipo: 'entrada', donde: 'portada', fecha: Date.now(), mundo: V.mundoActivo() });
       m.leerAnuncio().then(pintarAnuncio);
+      cargarImportadas(m);
     }
     entrarPorReunion();
     if (!$('#nombre').value.trim() && u.displayName) $('#nombre').value = u.displayName.split(' ')[0];
@@ -721,8 +738,9 @@ function pintarSala() {
   $('#lista-jugadores').innerHTML = Object.entries(s.jugadores).map(([id, j]) => `<li class="${j.desconectado ? 'fuera' : ''}">${esc(j.nombre)}${id === miId ? ' (tú)' : ''}</li>`).join('');
   const sel = $('#sel-mision');
   sel.innerHTML = D.CAMPANA.map((id, i) => `<option value="${i}">${i + 1}. ${esc(app.misiones[id]?.titulo || id)}</option>`).join('')
-    + '<option value="pruebas">⚙ Zona de pruebas (5000 monedas, para probar cosas)</option>';
-  sel.value = s.pruebas ? 'pruebas' : String(s.misionIdx);
+    + '<option value="pruebas">⚙ Zona de pruebas (5000 monedas, para probar cosas)</option>'
+    + (app.importadas || []).map((c) => `<option value="imp:${esc(c.id)}">📜 ${esc(c.nombre)} (importada · ${c.ids.length} misiones)</option>`).join('');
+  sel.value = s.importada ? 'imp:' + s.importada : s.pruebas ? 'pruebas' : String(s.misionIdx);
   $('#campo-mision').hidden = !!(s.perdida || s.limbo);
   $('#sala-titulo').textContent = s.perdida ? 'Mazmorra Infinita: elige tus héroes' : s.limbo ? 'Rescate en el Limbo: ¿quién baja?' : 'Elige tus héroes';
   pintarRescate(s);
@@ -736,7 +754,7 @@ function pintarSala() {
   $('#b-empezar').hidden = !manda;
   $('#sala-espera').hidden = manda;
   $('#b-empezar').disabled = !Object.keys(s.eleccion).length || (s.limbo && !s.rescate);
-  $('#b-empezar').textContent = s.limbo ? (s.rescate ? 'Bajar al Limbo a por ' + s.rescate.nombre : 'Elegid a quién rescatar') : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
+  $('#b-empezar').textContent = s.limbo ? (s.rescate ? 'Bajar al Limbo a por ' + s.rescate.nombre : 'Elegid a quién rescatar') : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.importada ? 'Empezar la campaña importada' : s.pruebas ? 'Ir a la zona de pruebas' : s.perdida ? 'Bajar a la Mazmorra Infinita' : s.misionIdx > 0 ? 'Empezar en la misión ' + (s.misionIdx + 1) : 'Empezar la campaña';
 }
 listas.then(() => { if (app.sala && !$('#sala').hidden) pintarSala(); });
 
@@ -811,7 +829,8 @@ function difundirSala() {
 }
 $('#sel-mision').addEventListener('change', (e) => {
   app.sala.pruebas = e.target.value === 'pruebas';
-  if (!app.sala.pruebas) app.sala.misionIdx = +e.target.value;
+  app.sala.importada = e.target.value.startsWith('imp:') ? e.target.value.slice(4) : null;
+  if (!app.sala.pruebas && !app.sala.importada) app.sala.misionIdx = +e.target.value;
   difundirSala();
 });
 $('#sel-dificultad').addEventListener('change', (e) => { app.sala.dificultad = e.target.value; difundirSala(); });
@@ -849,6 +868,12 @@ $('#b-empezar').addEventListener('click', async () => {
     e.dificultad = s.dificultad || 'heroe';
     e.campana = [];
     e.misionIdx = 0;
+  }
+  if (s.importada) {
+    // Campaña importada desde el taller: sus misiones ya están convertidas en app.misiones.
+    const c = (app.importadas || []).find((x) => x.id === s.importada);
+    if (!c) return toast('Esa campaña no está cargada todavía. Espera un momento y vuelve a intentarlo.', 'peligro');
+    e.campana = c.ids.slice(); e.misionIdx = 0; e.importada = c.id;
   }
   if (s.pruebas) {
     // Zona de pruebas: una sola misión que se repite, con dinero de sobra para la tienda.

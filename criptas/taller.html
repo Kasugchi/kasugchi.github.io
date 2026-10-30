@@ -9,30 +9,31 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/acceso.js": "./js/acceso.js?v=20261030172039",
-    "./js/datos.js": "./js/datos.js?v=20261030172039",
-    "./js/firebase.js": "./js/firebase.js?v=20261030172039",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030172039",
-    "./js/ia.js": "./js/ia.js?v=20261030172039",
-    "./js/iconos.js": "./js/iconos.js?v=20261030172039",
-    "./js/insultos.js": "./js/insultos.js?v=20261030172039",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030172039",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030172039",
-    "./js/motor.js": "./js/motor.js?v=20261030172039",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030172039",
-    "./js/nube.js": "./js/nube.js?v=20261030172039",
-    "./js/panel.js": "./js/panel.js?v=20261030172039",
-    "./js/planos.js": "./js/planos.js?v=20261030172039",
-    "./js/procedural.js": "./js/procedural.js?v=20261030172039",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030172039",
-    "./js/red.js": "./js/red.js?v=20261030172039",
-    "./js/render.js": "./js/render.js?v=20261030172039",
-    "./js/render3d.js": "./js/render3d.js?v=20261030172039",
-    "./js/reunion.js": "./js/reunion.js?v=20261030172039",
-    "./js/sprites.js": "./js/sprites.js?v=20261030172039",
-    "./js/tablero.js": "./js/tablero.js?v=20261030172039",
-    "./js/ui.js": "./js/ui.js?v=20261030172039",
-    "./js/viajero.js": "./js/viajero.js?v=20261030172039"
+    "./js/acceso.js": "./js/acceso.js?v=20261030172849",
+    "./js/campanas.js": "./js/campanas.js?v=20261030172849",
+    "./js/datos.js": "./js/datos.js?v=20261030172849",
+    "./js/firebase.js": "./js/firebase.js?v=20261030172849",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030172849",
+    "./js/ia.js": "./js/ia.js?v=20261030172849",
+    "./js/iconos.js": "./js/iconos.js?v=20261030172849",
+    "./js/insultos.js": "./js/insultos.js?v=20261030172849",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030172849",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030172849",
+    "./js/motor.js": "./js/motor.js?v=20261030172849",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030172849",
+    "./js/nube.js": "./js/nube.js?v=20261030172849",
+    "./js/panel.js": "./js/panel.js?v=20261030172849",
+    "./js/planos.js": "./js/planos.js?v=20261030172849",
+    "./js/procedural.js": "./js/procedural.js?v=20261030172849",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030172849",
+    "./js/red.js": "./js/red.js?v=20261030172849",
+    "./js/render.js": "./js/render.js?v=20261030172849",
+    "./js/render3d.js": "./js/render3d.js?v=20261030172849",
+    "./js/reunion.js": "./js/reunion.js?v=20261030172849",
+    "./js/sprites.js": "./js/sprites.js?v=20261030172849",
+    "./js/tablero.js": "./js/tablero.js?v=20261030172849",
+    "./js/ui.js": "./js/ui.js?v=20261030172849",
+    "./js/viajero.js": "./js/viajero.js?v=20261030172849"
   }
 }
 </script>
@@ -98,7 +99,7 @@
     <section id="vista" hidden></section>
     <section>
       <h2>Campañas importadas</h2>
-      <p class="nota">Se guardan en la nube como borrador. Para jugarlas falta convertirlas a mapa (salas con casillas, puertas y monstruos colocados): eso lo hace Claude a partir de aquí.</p>
+      <p class="nota">Se guardan en la nube y el juego las convierte solo a mapas jugables. Para jugarlas: menú del juego → Modo Historia → en el desplegable de misiones, elige la que empieza por 📜. Las decisiones todavía solo se cuentan (no cambian el mundo).</p>
       <ul class="lista-guardadas" id="guardadas" style="list-style:none;padding:0;margin:0"><li class="nota">Cargando…</li></ul>
     </section>
   </div>
@@ -301,9 +302,22 @@ async function listar() {
     });
   } catch (e) { ul.innerHTML = `<li class="nota">No se pudo leer: ${esc(e.message)}</li>`; }
 }
-function ver() {
+async function ver() {
   const t = $('entrada').value; if (!t.trim()) { $('estado-entrada').textContent = 'Pega primero el JSON.'; return; }
-  try { const d = leerJSON(t); actual = { datos: d }; $('estado-entrada').textContent = ''; pintar(d, revisar(d)); }
+  try {
+    const d = leerJSON(t); actual = { datos: d }; $('estado-entrada').textContent = '';
+    const R = revisar(d);
+    // Si no hay errores, se prueba a convertirla a mapas jugables (como hará el juego).
+    if (!R.error.length) {
+      try {
+        const C = await import('./js/campanas.js');
+        const res = C.convertirCampana(d, slug(d.campana?.nombre));
+        R.idea.unshift({ donde: 'Mapas', txt: `✓ Las ${res.length} misiones encajan en un mapa y se pueden jugar. ${res.map((r, i) => `${i + 1}: ${r.def.plano}`).join(' · ')}` });
+        res.forEach((r, i) => r.notas.forEach((n) => R.aviso.push({ donde: `Misión ${i + 1} (al convertir)`, txt: n })));
+      } catch (e) { R.error.push({ donde: 'Mapas', txt: e.message }); }
+    }
+    pintar(d, R);
+  }
   catch (e) { actual = null; $('vista').hidden = true; $('estado-entrada').textContent = '✗ El JSON no se puede leer: ' + e.message; }
 }
 $('b-ver').onclick = ver;

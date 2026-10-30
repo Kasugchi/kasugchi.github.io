@@ -245,7 +245,7 @@ export const borrarCarta = (pid, id) => deleteDoc(doc(db, 'pueblos', pid, 'carta
 //  y solo la escribe el administrador (no hace falta tocar las reglas).
 // =============================================================
 export async function guardarCampana(id, nombre, json, misiones) {
-  return setDoc(doc(db, 'config', 'campana-' + id), { id, nombre, misiones, json, fecha: Date.now(), estado: 'borrador' });
+  return setDoc(doc(db, 'config', 'campana-' + id), { id, nombre, misiones, json, fecha: Date.now(), estado: 'jugable' });
 }
 export async function listarCampanas() {
   const r = await getDocs(collection(db, 'config'));
