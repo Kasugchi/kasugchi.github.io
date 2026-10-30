@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Criptas · Pruebas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #a8dcf5; color: #4a3626; font: 16px/1.4 'Nunito', system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px 40px; }
+  h1 { margin: 0; color: #fff; font-size: 30px; text-shadow: 0 2px 0 rgba(60,90,40,.45); }
+  .sub { margin: 2px 0 20px; color: #fff; font-weight: 600; opacity: .95; }
+  h2 { margin: 26px 0 10px; color: #fff; font-size: 20px; text-shadow: 0 2px 0 rgba(60,90,40,.35); }
+  .lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  .tarjeta { background: #fff8e6; border-radius: 22px; padding: 14px 16px; box-shadow: 0 4px 0 #d9c49a; }
+  .tarjeta b { display: block; font-size: 17px; }
+  .tarjeta p { margin: 4px 0 10px; font-size: 14px; color: #7a6248; }
+  .enlaces { display: flex; flex-wrap: wrap; gap: 6px; }
+  .enlaces a { font-weight: 800; font-size: 14px; text-decoration: none; color: #fff; background: #c0503a; border-radius: 999px; padding: 6px 12px; box-shadow: 0 2px 0 #8a3020; }
+  .enlaces a.claro { background: #f2e6c8; color: #5a4030; box-shadow: 0 2px 0 #d9c49a; }
+  .aviso { font-size: 12px; color: #a0502a; font-weight: 800; }
+</style>
+<style id="cerrojo">body{visibility:hidden}</style>
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/acceso.js": "./js/acceso.js?v=20261030094721",
+    "./js/datos.js": "./js/datos.js?v=20261030094721",
+    "./js/firebase.js": "./js/firebase.js?v=20261030094721",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030094721",
+    "./js/ia.js": "./js/ia.js?v=20261030094721",
+    "./js/iconos.js": "./js/iconos.js?v=20261030094721",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030094721",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030094721",
+    "./js/motor.js": "./js/motor.js?v=20261030094721",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030094721",
+    "./js/nube.js": "./js/nube.js?v=20261030094721",
+    "./js/panel.js": "./js/panel.js?v=20261030094721",
+    "./js/planos.js": "./js/planos.js?v=20261030094721",
+    "./js/procedural.js": "./js/procedural.js?v=20261030094721",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030094721",
+    "./js/red.js": "./js/red.js?v=20261030094721",
+    "./js/render.js": "./js/render.js?v=20261030094721",
+    "./js/render3d.js": "./js/render3d.js?v=20261030094721",
+    "./js/reunion.js": "./js/reunion.js?v=20261030094721",
+    "./js/sprites.js": "./js/sprites.js?v=20261030094721",
+    "./js/tablero.js": "./js/tablero.js?v=20261030094721",
+    "./js/ui.js": "./js/ui.js?v=20261030094721",
+    "./js/viajero.js": "./js/viajero.js?v=20261030094721"
+  }
+}
+</script>
+</head>
+<body>
+<main>
+  <h1>Criptas de Velmor</h1>
+  <p class="sub">Todo lo que hay, en un solo sitio. Esta página no sale en el menú: guárdala en favoritos.</p>
+
+  <h2>🎲 El juego</h2>
+  <div class="lista">
+    <div class="tarjeta"><b>Menú principal</b><p>Mundos, partidas, modos y unirse a una sala.</p><div class="enlaces"><a href="index.html">Abrir</a></div></div>
+    <div class="tarjeta"><b>Morrandar, la tortuga</b><p>La tortuga vista desde fuera: banco, tablón, obras, el Libro y salas con amigos.</p><div class="enlaces"><a href="tortuga.html?elegir">Abrir</a></div></div>
+    <div class="tarjeta"><b>Tu cabaña</b><p>Trofeos, baúl con tus héroes y el rincón tranquilo con gramófono y lluvia.</p><div class="enlaces"><a href="cabana.html">Abrir</a></div></div>
+    <div class="tarjeta"><b>Sala de espera ligera</b><p>Para esperar a los demás sin 3D, gastando muy poco.</p><div class="enlaces"><a href="reunion.html">Abrir</a></div></div>
+    <div class="tarjeta"><b>Panel</b><p>Actividad, jugadores, récords, errores, anuncio y quién tiene acceso. Solo con tu cuenta.</p><div class="enlaces"><a href="panel.html">Abrir</a></div></div>
+  </div>
+
+  <h2>🧪 Pruebas</h2>
+  <div class="lista">
+    <div class="tarjeta"><b>El pueblo</b><p>A pie de calle: vecinos, cantina con tu música, reloj propio, tu personaje y la Túnica del Guardián.</p>
+      <div class="enlaces"><a href="pueblo.html">Abrir</a><a class="claro" href="pueblo.html?hora=16">A las 16:00</a><a class="claro" href="pueblo.html?hora=1">De madrugada</a><a class="claro" href="pueblo.html?rapido=20">Día rápido</a></div></div>
+    <div class="tarjeta"><b>La tortuga por niveles</b><p>Cómo se ve Morrandar recién llegada y en su versión más avanzada. No toca tu partida.</p>
+      <div class="enlaces"><a href="tortuga.html?demo=inicio">Al empezar</a><a href="tortuga.html?demo=ciudad">Ciudad</a></div></div>
+    <div class="tarjeta"><b>Duelo de insultos</b><p>El prototipo del duelo al estilo pirata (el que lanza Rufo).</p><div class="enlaces"><a href="duelo.html">Abrir</a></div></div>
+    <div class="tarjeta"><b>Editor de planos</b><p>Para dibujar mapas de mazmorra a mano.</p><div class="enlaces"><a href="planos.html">Abrir</a></div></div>
+    <div class="tarjeta"><b>Primeras ideas de la base</b><p>Los prototipos de antes de la tortuga: el barco de tinta, el zepelín y la base.</p>
+      <div class="enlaces"><a class="claro" href="barco.html">Barco</a><a class="claro" href="zepelin.html">Zepelín</a><a class="claro" href="base.html">Base</a><a class="claro" href="base-oscura.html">Base oscura</a></div></div>
+    <div class="tarjeta"><b>Mundo de exhibición</b><p>Crea un mundo nuevo, «Morrandar de gala», con la tortuga al completo.</p><p class="aviso">Ocupa una de tus 3 ranuras de mundo.</p><div class="enlaces"><a href="index.html?showcase">Crear</a></div></div>
+  </div>
+</main>
+<script type="module">
+import './js/acceso.js';
+</script>
+</body>
+</html>
