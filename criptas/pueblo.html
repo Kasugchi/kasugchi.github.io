@@ -12,31 +12,32 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030184458",
-    "./js/campanas.js": "./js/campanas.js?v=20261030184458",
-    "./js/datos.js": "./js/datos.js?v=20261030184458",
-    "./js/firebase.js": "./js/firebase.js?v=20261030184458",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030184458",
-    "./js/ia.js": "./js/ia.js?v=20261030184458",
-    "./js/iconos.js": "./js/iconos.js?v=20261030184458",
-    "./js/insultos.js": "./js/insultos.js?v=20261030184458",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030184458",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030184458",
-    "./js/motor.js": "./js/motor.js?v=20261030184458",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030184458",
-    "./js/nube.js": "./js/nube.js?v=20261030184458",
-    "./js/panel.js": "./js/panel.js?v=20261030184458",
-    "./js/planos.js": "./js/planos.js?v=20261030184458",
-    "./js/procedural.js": "./js/procedural.js?v=20261030184458",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030184458",
-    "./js/red.js": "./js/red.js?v=20261030184458",
-    "./js/render.js": "./js/render.js?v=20261030184458",
-    "./js/render3d.js": "./js/render3d.js?v=20261030184458",
-    "./js/reunion.js": "./js/reunion.js?v=20261030184458",
-    "./js/sprites.js": "./js/sprites.js?v=20261030184458",
-    "./js/tablero.js": "./js/tablero.js?v=20261030184458",
-    "./js/ui.js": "./js/ui.js?v=20261030184458",
-    "./js/viajero.js": "./js/viajero.js?v=20261030184458"
+    "./js/acceso.js": "./js/acceso.js?v=20261030221711",
+    "./js/campanas.js": "./js/campanas.js?v=20261030221711",
+    "./js/datos.js": "./js/datos.js?v=20261030221711",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261030221711",
+    "./js/firebase.js": "./js/firebase.js?v=20261030221711",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030221711",
+    "./js/ia.js": "./js/ia.js?v=20261030221711",
+    "./js/iconos.js": "./js/iconos.js?v=20261030221711",
+    "./js/insultos.js": "./js/insultos.js?v=20261030221711",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030221711",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030221711",
+    "./js/motor.js": "./js/motor.js?v=20261030221711",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030221711",
+    "./js/nube.js": "./js/nube.js?v=20261030221711",
+    "./js/panel.js": "./js/panel.js?v=20261030221711",
+    "./js/planos.js": "./js/planos.js?v=20261030221711",
+    "./js/procedural.js": "./js/procedural.js?v=20261030221711",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030221711",
+    "./js/red.js": "./js/red.js?v=20261030221711",
+    "./js/render.js": "./js/render.js?v=20261030221711",
+    "./js/render3d.js": "./js/render3d.js?v=20261030221711",
+    "./js/reunion.js": "./js/reunion.js?v=20261030221711",
+    "./js/sprites.js": "./js/sprites.js?v=20261030221711",
+    "./js/tablero.js": "./js/tablero.js?v=20261030221711",
+    "./js/ui.js": "./js/ui.js?v=20261030221711",
+    "./js/viajero.js": "./js/viajero.js?v=20261030221711"
   }
 }
 </script>
@@ -174,6 +175,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from './js/vendor/addons/utils/BufferGeometryUtils.js';
 import * as Ficha from './js/viajero.js';
 import * as Ins from './js/insultos.js';
+import { NUEVOS as DIA } from './js/dialogos.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -1148,6 +1150,16 @@ const PARES = [
   ['bartolome', 'pip', ['¿Sabéis, joven Pip, que los gallos…?', '¡¿Dónde?!', '… Nada, nada. Falsa alarma.']]
 ];
 const GENERICAS = [['¿Has oído lo del libro?', 'Dicen que en el piso veinte duerme algo enorme.'], ['Qué buen día hace.', 'Morrandar está contenta, se nota.'], ['¿Has visto a {N}?', '¡Siempre anda de aventura!'], ['¿Vienes a la cantina luego?', 'Si Marga no me echa otra vez…']];
+// Diálogos nuevos (js/dialogos.js) sumados a los de arriba: los saludos pasan a ser listas (sale uno al azar),
+// la charla y lo de la amistad engordan el montón, y hay más conversaciones entre vecinos.
+for (const [id, n] of Object.entries(DIA.vecinos)) {
+  const d = VEC[id]; if (!d) continue;
+  if (n.saludo) { d.saludo ||= {}; for (const [f, l] of Object.entries(n.saludo)) d.saludo[f] = [].concat(d.saludo[f] || [], l); }
+  if (n.charla?.length) (d.charla ||= []).push(...n.charla);
+  if (n.amigo?.length) (d.amigo ||= []).push(...n.amigo);
+}
+PARES.push(...DIA.conversaciones.map((c) => [c.a, c.b, c.lineas]));
+GENERICAS.push(...DIA.genericas);
 // Colores de Lumi: empieza gris y cada flor le devuelve uno
 function grisear(ch) { ch.traverse((o) => { if (o.isMesh && !o.userData.ala && o.material !== matSombra) { const m = curvar(o.material.clone()); m.userData.real = m.color.clone(); o.material = m; } }); }
 function pintarLumi(ch) { const k = Math.min(1, EP.lumi / 5); ch.traverse((o) => { const r = o.material?.userData?.real; if (!r) return; const g = r.r * .3 + r.g * .59 + r.b * .11; o.material.color.setRGB(g, g, g).lerp(r, k); }); }
@@ -1909,7 +1921,7 @@ function conversar(p) {
   } else if (e && e.de === id) L.push(uno([`¿Ya le has llevado ${e.cosa} a ${VEC[e.para].nombre}?`, `${VEC[e.para].nombre} estará esperando ${e.cosa}…`]));
   if (primera && id !== 'gato') {
     if (diasFuera >= 3 && !avisoVuelta) { avisoVuelta = true; L.push(`¡${NOMBRE}! ¡Llevas ${diasFuera} días sin aparecer! Pensábamos que te había tragado el libro.`); }
-    const sal = d.saludo?.[franja()]; if (sal) L.push(fmt(sal));
+    const sal = d.saludo?.[franja()]; if (sal) L.push(fmt(uno([].concat(sal))));
     if (CLIMA.p > .3 && id !== 'marga') L.push(uno(CLIMA.tipo === 'nieve' ? ['¡Mira cómo nieva! Mañana hacemos un muñeco, ¿vale?', 'Brrr… Con este frío hasta Morrandar mete la cabeza en el caparazón.', 'La nieve sabe a página en blanco. No me preguntes cómo lo sé.'] : ['¡Menudo chaparrón! Dicen que es Morrandar, que estornuda.', 'Con esta lluvia no se puede ni pescar páginas.', 'Me encanta el olor a tierra mojada. Y a tinta mojada.']));
   }
   // Algo que contar: su manera de ser, lo que recuerda de ti y, si sois amigos, algo más personal
@@ -1977,7 +1989,7 @@ function intentarCharla() {
   for (let i = 0; i < libres.length; i++) for (let j = i + 1; j < libres.length; j++) {
     const a = libres[i], b = libres[j], clave = [a.id, b.id].sort().join('-');
     if (Math.hypot(a.x - b.x, a.z - b.z) > 3.2 || (ultimaCharla[clave] || 0) > performance.now() - 90000) continue;
-    const par = PARES.find(([x, y]) => (x === a.id && y === b.id) || (x === b.id && y === a.id));
+    const pares = PARES.filter(([x, y]) => (x === a.id && y === b.id) || (x === b.id && y === a.id)), par = pares.length ? uno(pares) : null;
     if (!par && Math.random() < .6) continue;
     const [habla1, habla2] = par ? (par[0] === a.id ? [a, b] : [b, a]) : [a, b];
     const lineas = par ? par[2] : uno(GENERICAS);
