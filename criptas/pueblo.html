@@ -300,6 +300,9 @@ const INTERACCION = [];           // { nombre, x, z, r, accion, hacer, dentro }
 const COPAS = new Set(), FAROLAS = [];   // para el cielo: copas de los árboles (estaciones) y farolas (halos de noche)
 const CLIMA = { p: 0, tipo: 'lluvia', ico: '☀', n: 0 };   // lo que hace ahora mismo (lo rellena ambiente())
 let MAT_SUELO = null;
+// La casa grande (la azul) es la del fundador del pueblo; si vives en el pueblo de otro, la tuya está en una parcela.
+const CASA_PRINCIPAL = { letrero: null, puerta: null, buzon: null };
+let MI_PUERTA = null;
 
 // =============================================================
 //  TERRENO: hierba en cuadros, río, playa y las laderas del caparazón
@@ -494,11 +497,12 @@ const cantina = casa(16, -12, { ancho: 8, fondo: 6, alto: 3.2, techo: 2.6, pared
   toque('La cantina', cantina.puerta.x, cantina.puerta.z, 1.5, 'Entrar en la cantina', () => entrarCantina());
 }
 const miCasa = casa(-22, 6, { ancho: 5, fondo: 5, pared: '#f6e6c4', tejado: '#3f72b8', puerta: '#c05a3a' });
-{ const l = letrero('Casa de ' + NOMBRE, 2.8, .5); l.position.set(-22, 2.62, 8.88); fijo.add(l);
+{ const l = letrero('Casa de ' + NOMBRE, 2.8, .5); l.position.set(-22, 2.62, 8.88); fijo.add(l); CASA_PRINCIPAL.letrero = l;
   const buzon = new THREE.Group(); const pb = cil(.05, .05, 1, '#6a4a2a', 6); pb.position.y = .5; buzon.add(pb); const bz = caja(.45, .35, .3, '#d84a3a'); bz.position.y = 1.1; buzon.add(bz); enFijo(buzon, -19.2, 9.6); CHOQUES.push({ x: -19.2, z: 9.6, r: .3 });
   valla(-25.6, 10.4, -23.4, 10.4); valla(-20.6, 10.4, -18.4, 10.4); valla(-25.6, 10.4, -25.6, 3); valla(-18.4, 10.4, -18.4, 3);
-  toque('Tu casa', miCasa.puerta.x, miCasa.puerta.z, 1.5, 'Entrar en tu casa', () => entrarCasa());
-  toque('El buzón', -19.2, 10.4, 1.2, 'Mirar el buzón', () => abrirBuzon());
+  CASA_PRINCIPAL.puerta = toque('Tu casa', miCasa.puerta.x, miCasa.puerta.z, 1.5, 'Entrar en tu casa', () => entrarCasa());
+  CASA_PRINCIPAL.buzon = toque('El buzón', -19.2, 10.4, 1.2, 'Mirar el buzón', () => abrirBuzon());
+  MI_PUERTA = miCasa.puerta;
 }
 // Banco de Madre Hiel: una torre redonda
 {
@@ -658,7 +662,7 @@ function pintarEsfera() {
   toque('La torre del reloj', TX, TZ + 2.1, 1.6, 'Mirar el reloj', () => hablar('La torre del reloj', [`Son las ${horaTexto()} del día ${EP.reloj.dia}.`, uno(['Dicen que la trajo un relojero que se cayó de un cuento con muchas prisas.', 'En Morrandar el tiempo va a su aire. Aquí nadie llega tarde: llega cuando llega.', 'Si quieres que amanezca antes, duerme en tu cama.'])], null, '#3a6a8a'));
 }
 // ---------- Parcelas para la casa de tu familia (pueblo compartido) ----------
-const PARCELAS = [{ x: 28, z: -23 }, { x: 1, z: 7.5 }, { x: -13, z: 13 }];
+const PARCELAS = [{ x: -13, z: 13 }, { x: 1, z: 7.5 }, { x: 28, z: -23 }];
 for (const P of PARCELAS) {
   const g = new THREE.Group(); const palo = cil(.07, .07, 1.3, '#7a5432', 6); palo.position.y = .65; g.add(palo);
   const l = letrero('Parcela libre', 1.6, .5, '#8a5a34'); l.position.set(0, 1.25, .05); g.add(l);
@@ -1934,7 +1938,7 @@ function entrarCantina() {
 function salirCantina() {
   cerrarDialogo(); if (decorando) terminarDeco();
   fundir(() => {
-    const puerta = sala === 'casa' ? (casaAjena?.puerta || miCasa.puerta) : cantina.puerta;
+    const puerta = sala === 'casa' ? (casaAjena?.puerta || MI_PUERTA || miCasa.puerta) : cantina.puerta;
     levantar(false); dentro = false; sala = null; casaAjena = null; cantinaDentro.visible = false; casaDentro.visible = false; avisarLugar();
     luzCasa.intensity = 0; lucesMueble.forEach((l) => { l.intensity = 0; });
     J.x = puerta.x; J.z = puerta.z + .4; J.dir = 0; J.ir = null;
@@ -2169,10 +2173,29 @@ const sinLeer = () => G.cartas.filter((c) => !c.leida).length;
 
 // ---------- Las casas de tu familia, en las parcelas ----------
 const enParcela = [];
+let claveParcelas = '';
 function ponerCasasVecinos() {
+  // Si nadie se ha mudado ni se ha ido, no se reconstruye nada.
+  const clave = JSON.stringify([G.uid, G.pid, G.pueblo?.dueno, Object.keys(G.pueblo?.miembros || {}).sort()]);
+  if (clave === claveParcelas) return; claveParcelas = clave;
   for (const e of enParcela.splice(0)) { e.g.parent?.remove(e.g); e.buzon.parent?.remove(e.buzon); e.cartel.parent?.remove(e.cartel); for (const c of e.choques) { const i = CHOQUES.indexOf(c); if (i >= 0) CHOQUES.splice(i, 1); } }
   for (let i = INTERACCION.length - 1; i >= 0; i--) if (INTERACCION[i].deVecino) INTERACCION.splice(i, 1);
-  const lista = G.pid ? vecinosJugadores() : [];
+  // Todos ven lo mismo: la casa azul es del fundador y el resto, por orden de llegada, en las parcelas.
+  const dueno = G.pid && G.pueblo?.dueno;
+  const lista = G.pid ? Object.entries(G.pueblo?.miembros || {}).filter(([u]) => u !== dueno).map(([uid, d]) => ({ uid, ...d })).sort((a, b) => (a.desde || 0) - (b.desde || 0)) : [];
+  const deOtro = dueno && dueno !== G.uid ? { uid: dueno, nombre: G.pueblo.miembros?.[dueno]?.nombre || 'el fundador' } : null;
+  const ponerLetrero = (txt) => { const l0 = CASA_PRINCIPAL.letrero; if (!l0 || l0.userData.txt === txt) return; const l = letrero(txt, 2.8, .5); l.position.copy(l0.position); l.userData.txt = txt; l0.parent?.remove(l0); fijo.add(l); CASA_PRINCIPAL.letrero = l; };
+  const P0 = CASA_PRINCIPAL.puerta, B0 = CASA_PRINCIPAL.buzon;
+  MI_PUERTA = miCasa.puerta;
+  if (deOtro) {
+    ponerLetrero('Casa de ' + deOtro.nombre);
+    Object.assign(P0, { nombre: 'Casa de ' + deOtro.nombre, accion: 'Entrar en casa de ' + deOtro.nombre, hacer: () => visitarCasa({ v: deOtro, puerta: miCasa.puerta }) });
+    Object.assign(B0, { nombre: 'Buzón de ' + deOtro.nombre, accion: 'Dejarle una carta', hacer: () => abrirLibreta('escribir', deOtro.uid) });
+  } else {
+    ponerLetrero('Casa de ' + NOMBRE);
+    Object.assign(P0, { nombre: 'Tu casa', accion: 'Entrar en tu casa', hacer: () => entrarCasa() });
+    Object.assign(B0, { nombre: 'El buzón', accion: 'Mirar el buzón', hacer: () => abrirBuzon() });
+  }
   const TEJADOS = ['#7a4ab8', '#3a9a6a', '#d8902a'];
   PARCELAS.forEach((P, i) => {
     const v = lista[i];
@@ -2180,13 +2203,20 @@ function ponerCasasVecinos() {
     if (!v) return;
     const antes = CHOQUES.length;
     const c = casa(P.x, P.z, { ancho: 5, fondo: 5, pared: '#f4e2c0', tejado: TEJADOS[i % 3], puerta: '#8a4a2a' });
-    const cartel = letrero('Casa de ' + v.nombre, 2.8, .5); cartel.position.set(P.x, 2.62, P.z + 2.88); fijo.add(cartel);
+    const mia = v.uid === G.uid;
+    const cartel = letrero('Casa de ' + (mia ? NOMBRE : v.nombre), 2.8, .5); cartel.position.set(P.x, 2.62, P.z + 2.88); fijo.add(cartel);
     const buzon = new THREE.Group(); const pb = cil(.05, .05, 1, '#6a4a2a', 6); pb.position.y = .5; buzon.add(pb); const bz = caja(.45, .35, .3, TEJADOS[i % 3]); bz.position.y = 1.1; buzon.add(bz);
     buzon.position.set(P.x + 2.6, 0, P.z + 3.4); fijo.add(buzon); CHOQUES.push({ x: P.x + 2.6, z: P.z + 3.4, r: .3 });
     const e = { g: c.g, buzon, cartel, choques: CHOQUES.slice(antes), v, puerta: c.puerta };
     enParcela.push(e);
-    toque('Casa de ' + v.nombre, c.puerta.x, c.puerta.z, 1.5, 'Entrar en casa de ' + v.nombre, () => visitarCasa(e), { deVecino: true });
-    toque('Buzón de ' + v.nombre, P.x + 2.6, P.z + 4.2, 1.2, 'Dejarle una carta', () => abrirLibreta('escribir', v.uid), { deVecino: true });
+    if (mia) {
+      MI_PUERTA = c.puerta;
+      toque('Tu casa', c.puerta.x, c.puerta.z, 1.5, 'Entrar en tu casa', () => entrarCasa(), { deVecino: true });
+      toque('Tu buzón', P.x + 2.6, P.z + 4.2, 1.2, 'Mirar el buzón', () => abrirBuzon(), { deVecino: true });
+    } else {
+      toque('Casa de ' + v.nombre, c.puerta.x, c.puerta.z, 1.5, 'Entrar en casa de ' + v.nombre, () => visitarCasa(e), { deVecino: true });
+      toque('Buzón de ' + v.nombre, P.x + 2.6, P.z + 4.2, 1.2, 'Dejarle una carta', () => abrirLibreta('escribir', v.uid), { deVecino: true });
+    }
   });
 }
 function visitarCasa(e) {
@@ -2201,17 +2231,24 @@ function subirMiCasa() {
   if (!G.m || !G.pid) return;
   G.m.subirCasa(G.pid, { nombre: NOMBRE, casa: JSON.stringify(EP.casa), aspecto: JSON.stringify(EP.aspecto || ASPECTO_BASE) });
 }
+let cartasAvisadas = 0, primeraCarga = true;
 async function cargarGremio() {
-  const m = G.m; G.cargando = true;
+  const m = G.m; if (!m) return; G.cargando = primeraCarga;
   try {
     G.uid = m.miUid(); G.pid = await m.puebloDondeVivo(); G.pueblo = G.pid ? await m.leerPueblo(G.pid) : null;
     if (G.pid && (!G.pueblo || (G.pueblo.dueno !== G.uid && !G.pueblo.miembros?.[G.uid]))) { G.pid = null; G.pueblo = null; }
-    if (G.pid) { [G.casas, G.cartas] = await Promise.all([m.casasDelPueblo(G.pid), m.misCartas(G.pid)]); subirMiCasa(); }
+    if (G.pid) { [G.casas, G.cartas] = await Promise.all([m.casasDelPueblo(G.pid), m.misCartas(G.pid)]); if (primeraCarga || G.pid !== G.pidSubido) { subirMiCasa(); G.pidSubido = G.pid; } }
     else { G.casas = []; G.cartas = []; }
   } catch (e) { G.error = e.message; }
   G.cargando = false; ponerCasasVecinos(); pintarLibreta(); pintarAvisoCartas();
-  if (sinLeer()) setTimeout(() => aviso(`✉️ Tienes ${sinLeer() > 1 ? sinLeer() + ' cartas' : 'una carta'} en el buzón`), 4200);
+  if (sinLeer() > cartasAvisadas) setTimeout(() => aviso(`✉️ Tienes ${sinLeer() > 1 ? sinLeer() + ' cartas' : 'una carta'} en el buzón`), primeraCarga ? 4200 : 300);
+  cartasAvisadas = sinLeer();
+  // Si vives en el pueblo de otro, apareces delante de tu casa (no de la del fundador)
+  if (primeraCarga && !dentro && MI_PUERTA !== miCasa.puerta && Math.hypot(J.x + 22, J.z - 11.5) < 4) { J.x = MI_PUERTA.x; J.z = MI_PUERTA.z + .8; }
+  primeraCarga = false;
 }
+// Cada minuto (y al abrir «Tu pueblo») se mira si alguien se ha mudado, ha decorado o te ha escrito.
+setInterval(() => { if (G.m && !document.hidden && !decorando) cargarGremio(); }, 60000);
 function pintarAvisoCartas() { $('b-menu').classList.toggle('punto', sinLeer() > 0); }
 
 // ---------- La sala en vivo (la misma de la tortuga) ----------
@@ -2396,6 +2433,7 @@ function pintarLibreta() {
 async function accionLibreta(a, v, el) {
   const m = G.m;
   if (a === 'cerrar') return cerrarLibreta();
+  if (['pueblo', 'cartas'].includes(a)) cargarGremio();
   if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
   if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }
   if (a === 'decorar') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); empezarDeco(); } else aviso('Entra en tu casa para decorarla'); return; }
