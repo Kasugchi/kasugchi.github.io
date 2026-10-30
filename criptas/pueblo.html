@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030005254",
-    "./js/datos.js": "./js/datos.js?v=20261030005254",
-    "./js/firebase.js": "./js/firebase.js?v=20261030005254",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030005254",
-    "./js/ia.js": "./js/ia.js?v=20261030005254",
-    "./js/iconos.js": "./js/iconos.js?v=20261030005254",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030005254",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030005254",
-    "./js/motor.js": "./js/motor.js?v=20261030005254",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030005254",
-    "./js/nube.js": "./js/nube.js?v=20261030005254",
-    "./js/panel.js": "./js/panel.js?v=20261030005254",
-    "./js/planos.js": "./js/planos.js?v=20261030005254",
-    "./js/procedural.js": "./js/procedural.js?v=20261030005254",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030005254",
-    "./js/red.js": "./js/red.js?v=20261030005254",
-    "./js/render.js": "./js/render.js?v=20261030005254",
-    "./js/render3d.js": "./js/render3d.js?v=20261030005254",
-    "./js/reunion.js": "./js/reunion.js?v=20261030005254",
-    "./js/sprites.js": "./js/sprites.js?v=20261030005254",
-    "./js/tablero.js": "./js/tablero.js?v=20261030005254",
-    "./js/ui.js": "./js/ui.js?v=20261030005254",
-    "./js/viajero.js": "./js/viajero.js?v=20261030005254"
+    "./js/acceso.js": "./js/acceso.js?v=20261030091242",
+    "./js/datos.js": "./js/datos.js?v=20261030091242",
+    "./js/firebase.js": "./js/firebase.js?v=20261030091242",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030091242",
+    "./js/ia.js": "./js/ia.js?v=20261030091242",
+    "./js/iconos.js": "./js/iconos.js?v=20261030091242",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030091242",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030091242",
+    "./js/motor.js": "./js/motor.js?v=20261030091242",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030091242",
+    "./js/nube.js": "./js/nube.js?v=20261030091242",
+    "./js/panel.js": "./js/panel.js?v=20261030091242",
+    "./js/planos.js": "./js/planos.js?v=20261030091242",
+    "./js/procedural.js": "./js/procedural.js?v=20261030091242",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030091242",
+    "./js/red.js": "./js/red.js?v=20261030091242",
+    "./js/render.js": "./js/render.js?v=20261030091242",
+    "./js/render3d.js": "./js/render3d.js?v=20261030091242",
+    "./js/reunion.js": "./js/reunion.js?v=20261030091242",
+    "./js/sprites.js": "./js/sprites.js?v=20261030091242",
+    "./js/tablero.js": "./js/tablero.js?v=20261030091242",
+    "./js/ui.js": "./js/ui.js?v=20261030091242",
+    "./js/viajero.js": "./js/viajero.js?v=20261030091242"
   }
 }
 </script>
@@ -246,7 +246,7 @@ const texAgua = (() => {
   for (let i = 0; i < 40; i++) { x.strokeStyle = `rgba(255,255,255,${.08 + rnd() * .14})`; x.lineWidth = 1.5; x.beginPath(); const a = rnd() * 128, b = rnd() * 128; x.moveTo(a, b); x.quadraticCurveTo(a + 6, b - 3, a + 12, b); x.stroke(); }
   const t = new THREE.CanvasTexture(cv); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(40, 40); t.colorSpace = THREE.SRGBColorSpace; return t;
 })();
-const agua = new THREE.Mesh(new THREE.PlaneGeometry(260, 260).rotateX(-Math.PI / 2), curvar(new THREE.MeshLambertMaterial({ map: texAgua, transparent: true, opacity: .9 })));
+const agua = new THREE.Mesh(new THREE.PlaneGeometry(260, 260, 130, 130).rotateX(-Math.PI / 2), curvar(new THREE.MeshLambertMaterial({ map: texAgua, transparent: true, opacity: .9 })));
 agua.position.y = AGUA; escena.add(agua);
 
 // =============================================================
