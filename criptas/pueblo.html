@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030142222",
-    "./js/datos.js": "./js/datos.js?v=20261030142222",
-    "./js/firebase.js": "./js/firebase.js?v=20261030142222",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030142222",
-    "./js/ia.js": "./js/ia.js?v=20261030142222",
-    "./js/iconos.js": "./js/iconos.js?v=20261030142222",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030142222",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030142222",
-    "./js/motor.js": "./js/motor.js?v=20261030142222",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030142222",
-    "./js/nube.js": "./js/nube.js?v=20261030142222",
-    "./js/panel.js": "./js/panel.js?v=20261030142222",
-    "./js/planos.js": "./js/planos.js?v=20261030142222",
-    "./js/procedural.js": "./js/procedural.js?v=20261030142222",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030142222",
-    "./js/red.js": "./js/red.js?v=20261030142222",
-    "./js/render.js": "./js/render.js?v=20261030142222",
-    "./js/render3d.js": "./js/render3d.js?v=20261030142222",
-    "./js/reunion.js": "./js/reunion.js?v=20261030142222",
-    "./js/sprites.js": "./js/sprites.js?v=20261030142222",
-    "./js/tablero.js": "./js/tablero.js?v=20261030142222",
-    "./js/ui.js": "./js/ui.js?v=20261030142222",
-    "./js/viajero.js": "./js/viajero.js?v=20261030142222"
+    "./js/acceso.js": "./js/acceso.js?v=20261030143754",
+    "./js/datos.js": "./js/datos.js?v=20261030143754",
+    "./js/firebase.js": "./js/firebase.js?v=20261030143754",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030143754",
+    "./js/ia.js": "./js/ia.js?v=20261030143754",
+    "./js/iconos.js": "./js/iconos.js?v=20261030143754",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030143754",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030143754",
+    "./js/motor.js": "./js/motor.js?v=20261030143754",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030143754",
+    "./js/nube.js": "./js/nube.js?v=20261030143754",
+    "./js/panel.js": "./js/panel.js?v=20261030143754",
+    "./js/planos.js": "./js/planos.js?v=20261030143754",
+    "./js/procedural.js": "./js/procedural.js?v=20261030143754",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030143754",
+    "./js/red.js": "./js/red.js?v=20261030143754",
+    "./js/render.js": "./js/render.js?v=20261030143754",
+    "./js/render3d.js": "./js/render3d.js?v=20261030143754",
+    "./js/reunion.js": "./js/reunion.js?v=20261030143754",
+    "./js/sprites.js": "./js/sprites.js?v=20261030143754",
+    "./js/tablero.js": "./js/tablero.js?v=20261030143754",
+    "./js/ui.js": "./js/ui.js?v=20261030143754",
+    "./js/viajero.js": "./js/viajero.js?v=20261030143754"
   }
 }
 </script>
@@ -647,7 +647,7 @@ function pintarEsfera() {
   toque('La torre del reloj', TX, TZ + 2.1, 1.6, 'Mirar el reloj', () => hablar('La torre del reloj', [`Son las ${horaTexto()} del día ${EP.reloj.dia}.`, uno(['Dicen que la trajo un relojero que se cayó de un cuento con muchas prisas.', 'En Morrandar el tiempo va a su aire. Aquí nadie llega tarde: llega cuando llega.', 'Si quieres que amanezca antes, duerme en tu cama.'])], null, '#3a6a8a'));
 }
 // ---------- Parcelas para la casa de tu familia (pueblo compartido) ----------
-const PARCELAS = [{ x: -26, z: -3 }, { x: 3, z: 10.5 }, { x: 26.5, z: -21 }];
+const PARCELAS = [{ x: 28, z: -23 }, { x: 1, z: 7.5 }, { x: -13, z: 13 }];
 for (const P of PARCELAS) {
   const g = new THREE.Group(); const palo = cil(.07, .07, 1.3, '#7a5432', 6); palo.position.y = .65; g.add(palo);
   const l = letrero('Parcela libre', 1.6, .5, '#8a5a34'); l.position.set(0, 1.25, .05); g.add(l);
@@ -658,7 +658,7 @@ for (const P of PARCELAS) {
 // ---------- Árboles: repartidos donde no estorban ----------
 const huecoLibre = (x, z, m) => {
   if (alto(x, z) < -.05 || Math.abs(x) > 30.5 || z < -26.5 || z > 15) return false;
-  if (PARCELAS.some((P) => Math.abs(x - P.x) < 4.4 && Math.abs(z - P.z) < 4.6)) return false;
+  if (PARCELAS.some((P) => Math.abs(x - P.x) < 4.4 && z - P.z > -4.6 && z - P.z < 6.8)) return false;   // la casa y su entrada
   if (distRio(x, z) < 3.2 || distCamino(x, z) < 2.3 || Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 3.2) return false;
   for (const c of CHOQUES) { if (c.r) { if (Math.hypot(x - c.x, z - c.z) < c.r + m) return false; } else if (Math.abs(x - c.x) < c.w / 2 + m && Math.abs(z - c.z) < c.d / 2 + m) return false; }
   return true;
@@ -2380,7 +2380,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
+window.pueblo = { CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
 </script>
 </body>
 </html>
