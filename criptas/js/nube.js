@@ -15,7 +15,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, collectionGroup, addDoc, query, limit
+  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, collectionGroup, addDoc, query, limit, where, updateDoc, deleteField
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const auth = getAuth(app);
@@ -170,3 +170,70 @@ export async function esAdmin() {
   if (sinUsuario()) return false;
   try { await getDocs(query(collectionGroup(db, 'partidas'), limit(1))); return true; } catch { return false; }
 }
+
+// =============================================================
+//  PUEBLO COMPARTIDO: un pueblo por grupo (el del que lo funda).
+//    pueblos/{pid}                 { dueno, nombre, miembros: { uid: { nombre, desde, codigo } } }   (pid = uid del dueño)
+//    pueblos/{pid}/casas/{uid}     { nombre, casa (JSON), aspecto (JSON), t }   la casa de cada uno
+//    pueblos/{pid}/cartas/{id}     { de, deNombre, para, texto, fecha, leida }
+//    invitaciones/{codigo}         { pueblo, dueno, fecha }
+//    usuarios/{uid}/ajustes/pueblo { pid }   en qué pueblo vives
+// =============================================================
+const yoUid = () => (usuario ||= auth.currentUser)?.uid || null;
+const docAjustes = () => doc(db, 'usuarios', yoUid(), 'ajustes', 'pueblo');
+export const miUid = yoUid;
+export async function puebloDondeVivo() {
+  if (!yoUid()) return null;
+  try { const d = await getDoc(docAjustes()); return d.exists() ? d.data().pid || null : null; } catch { return null; }
+}
+export async function leerPueblo(pid) {
+  try { const d = await getDoc(doc(db, 'pueblos', pid)); return d.exists() ? { id: pid, ...d.data() } : null; } catch { return null; }
+}
+// Tu propio pueblo: lo crea si aún no existe y te apunta a él.
+export async function fundarPueblo(nombre) {
+  const pid = yoUid(); if (!pid) throw new Error('Entra con tu cuenta de Google.');
+  if (!(await leerPueblo(pid))) await setDoc(doc(db, 'pueblos', pid), { dueno: pid, nombre: 'El pueblo de ' + nombre, miembros: { [pid]: { nombre, desde: Date.now() } }, creado: Date.now() });
+  await setDoc(docAjustes(), { pid });
+  return pid;
+}
+const LETRAS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export async function crearInvitacion(nombre) {
+  const pid = await fundarPueblo(nombre);
+  const codigo = Array.from({ length: 6 }, () => LETRAS[Math.floor(Math.random() * LETRAS.length)]).join('');
+  await setDoc(doc(db, 'invitaciones', codigo), { pueblo: pid, dueno: yoUid(), fecha: Date.now() });
+  return codigo;
+}
+export async function mudarse(codigo, nombre) {
+  codigo = String(codigo || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let inv; try { inv = await getDoc(doc(db, 'invitaciones', codigo)); } catch { inv = null; }
+  if (!inv?.exists()) throw new Error('Ese código no existe.');
+  const pid = inv.data().pueblo;
+  if (pid === yoUid()) { await setDoc(docAjustes(), { pid }); return pid; }
+  await updateDoc(doc(db, 'pueblos', pid), { ['miembros.' + yoUid()]: { nombre, codigo, desde: Date.now() } });
+  await setDoc(docAjustes(), { pid });
+  return pid;
+}
+// Irte: dejas el pueblo del otro y vuelves al tuyo. El dueño, además, puede echar a alguien.
+export async function irseDelPueblo(pid) {
+  if (pid && pid !== yoUid()) {
+    await deleteDoc(doc(db, 'pueblos', pid, 'casas', yoUid())).catch(() => {});
+    await updateDoc(doc(db, 'pueblos', pid), { ['miembros.' + yoUid()]: deleteField() }).catch(() => {});
+  }
+  await setDoc(docAjustes(), { pid: null });
+}
+export const echarDelPueblo = (pid, uid) => updateDoc(doc(db, 'pueblos', pid), { ['miembros.' + uid]: deleteField() });
+export async function subirCasa(pid, datos) {
+  if (!yoUid() || !pid) return;
+  return setDoc(doc(db, 'pueblos', pid, 'casas', yoUid()), { ...datos, t: Date.now() }).catch((e) => console.warn('No se pudo subir la casa:', e.message));
+}
+export async function casasDelPueblo(pid) {
+  try { const r = await getDocs(collection(db, 'pueblos', pid, 'casas')); return r.docs.map((d) => ({ uid: d.id, ...d.data() })); } catch { return []; }
+}
+export async function enviarCarta(pid, para, texto, deNombre) {
+  return addDoc(collection(db, 'pueblos', pid, 'cartas'), { de: yoUid(), deNombre, para, texto: String(texto).slice(0, 600), fecha: Date.now(), leida: false });
+}
+export async function misCartas(pid) {
+  try { const r = await getDocs(query(collection(db, 'pueblos', pid, 'cartas'), where('para', '==', yoUid()))); return r.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => b.fecha - a.fecha); } catch { return []; }
+}
+export const marcarLeida = (pid, id) => updateDoc(doc(db, 'pueblos', pid, 'cartas', id), { leida: true }).catch(() => {});
+export const borrarCarta = (pid, id) => deleteDoc(doc(db, 'pueblos', pid, 'cartas', id)).catch(() => {});

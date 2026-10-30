@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030134831",
-    "./js/datos.js": "./js/datos.js?v=20261030134831",
-    "./js/firebase.js": "./js/firebase.js?v=20261030134831",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030134831",
-    "./js/ia.js": "./js/ia.js?v=20261030134831",
-    "./js/iconos.js": "./js/iconos.js?v=20261030134831",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030134831",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030134831",
-    "./js/motor.js": "./js/motor.js?v=20261030134831",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030134831",
-    "./js/nube.js": "./js/nube.js?v=20261030134831",
-    "./js/panel.js": "./js/panel.js?v=20261030134831",
-    "./js/planos.js": "./js/planos.js?v=20261030134831",
-    "./js/procedural.js": "./js/procedural.js?v=20261030134831",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030134831",
-    "./js/red.js": "./js/red.js?v=20261030134831",
-    "./js/render.js": "./js/render.js?v=20261030134831",
-    "./js/render3d.js": "./js/render3d.js?v=20261030134831",
-    "./js/reunion.js": "./js/reunion.js?v=20261030134831",
-    "./js/sprites.js": "./js/sprites.js?v=20261030134831",
-    "./js/tablero.js": "./js/tablero.js?v=20261030134831",
-    "./js/ui.js": "./js/ui.js?v=20261030134831",
-    "./js/viajero.js": "./js/viajero.js?v=20261030134831"
+    "./js/acceso.js": "./js/acceso.js?v=20261030141509",
+    "./js/datos.js": "./js/datos.js?v=20261030141509",
+    "./js/firebase.js": "./js/firebase.js?v=20261030141509",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030141509",
+    "./js/ia.js": "./js/ia.js?v=20261030141509",
+    "./js/iconos.js": "./js/iconos.js?v=20261030141509",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030141509",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030141509",
+    "./js/motor.js": "./js/motor.js?v=20261030141509",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030141509",
+    "./js/nube.js": "./js/nube.js?v=20261030141509",
+    "./js/panel.js": "./js/panel.js?v=20261030141509",
+    "./js/planos.js": "./js/planos.js?v=20261030141509",
+    "./js/procedural.js": "./js/procedural.js?v=20261030141509",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030141509",
+    "./js/red.js": "./js/red.js?v=20261030141509",
+    "./js/render.js": "./js/render.js?v=20261030141509",
+    "./js/render3d.js": "./js/render3d.js?v=20261030141509",
+    "./js/reunion.js": "./js/reunion.js?v=20261030141509",
+    "./js/sprites.js": "./js/sprites.js?v=20261030141509",
+    "./js/tablero.js": "./js/tablero.js?v=20261030141509",
+    "./js/ui.js": "./js/ui.js?v=20261030141509",
+    "./js/viajero.js": "./js/viajero.js?v=20261030141509"
   }
 }
 </script>
@@ -86,6 +86,50 @@
   .globo { position: fixed; z-index: 6; transform: translate(-50%, -100%); max-width: 220px; background: #fff8e6; color: #4a3626; font: 700 13px/1.3 'Nunito', sans-serif; padding: 6px 12px; border-radius: 16px; box-shadow: 0 3px 0 #d9c49a; pointer-events: none; text-align: center; }
   .globo::after { content: ''; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #fff8e6; border-bottom: 0; }
   .ayuda { left: 12px; bottom: max(10px, env(safe-area-inset-bottom)); color: #fff; font-size: 12px; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,.35); pointer-events: none; }
+    .boton.redondo { width: 46px; height: 46px; padding: 0; font-size: 20px; position: relative; }
+  .boton.punto::after { content: ''; position: absolute; top: 4px; right: 4px; width: 11px; height: 11px; border-radius: 50%; background: #e0503a; box-shadow: 0 0 0 2px #fff8e6; }
+  #libreta { right: 12px; top: calc(max(10px, env(safe-area-inset-top)) + 56px); width: min(400px, calc(100vw - 24px)); max-height: calc(100vh - 90px); overflow: auto; background: #fff8e6; border-radius: 28px; padding: 14px 16px 16px; box-shadow: 0 6px 0 #d9c49a, 0 16px 40px rgba(0,0,0,.25); display: none; touch-action: pan-y; user-select: text; -webkit-user-select: text; }
+  #libreta.ver { display: block; animation: sale .18s ease-out; }
+  @keyframes sale { from { transform: translateY(-8px) scale(.97); opacity: 0; } }
+  #libreta .cab { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  #libreta h2 { flex: 1; margin: 0; font-size: 20px; color: #c0503a; }
+  #libreta .atras, #libreta .cerrar { border: 0; background: #f2e6c8; color: #5a4030; width: 34px; height: 34px; border-radius: 50%; font: 800 18px 'Nunito', sans-serif; cursor: pointer; }
+  #libreta .apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  #libreta .app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; border: 0; background: #f6ecd2; border-radius: 22px; padding: 12px 4px 10px; cursor: pointer; font-family: 'Nunito', sans-serif; color: #5a4030; box-shadow: 0 3px 0 #e2d2aa; }
+  #libreta .app:active { transform: translateY(2px); box-shadow: 0 1px 0 #e2d2aa; }
+  #libreta .app .ico { font-size: 30px; line-height: 1.1; }
+  #libreta .app b { font-size: 13px; }
+  #libreta .app small { font-size: 11px; opacity: .7; font-weight: 700; text-align: center; }
+  #libreta .app.apagada { opacity: .5; }
+  #libreta .app.nueva::after { content: ''; position: absolute; top: 8px; right: 12px; width: 11px; height: 11px; border-radius: 50%; background: #e0503a; }
+  #libreta .nota { margin: 4px 0 10px; font-size: 14px; color: #8a6a4a; font-weight: 600; }
+  #libreta .error { color: #c0402a; font-weight: 700; font-size: 14px; }
+  #libreta .grande { display: block; width: 100%; margin: 8px 0; font: 800 16px 'Nunito', sans-serif; background: #c0503a; color: #fff; border: 0; border-radius: 999px; padding: 11px; cursor: pointer; box-shadow: 0 3px 0 #8a3020; }
+  #libreta .grande.claro { background: #f2e6c8; color: #5a4030; box-shadow: 0 3px 0 #d9c49a; }
+  #libreta .fila { display: flex; gap: 8px; margin: 10px 0 4px; }
+  #libreta input, #libreta textarea { flex: 1; min-width: 0; font: 800 17px 'Nunito', sans-serif; color: #4a3626; background: #fff; border: 2px solid #e2d2aa; border-radius: 16px; padding: 8px 12px; outline: none; }
+  #libreta .codigo-in { letter-spacing: .15em; }
+  #libreta textarea { display: block; width: 100%; height: 130px; margin-top: 10px; font-weight: 600; resize: none; }
+  #libreta .codigo { font: 900 34px 'Nunito', sans-serif; letter-spacing: .18em; color: #3f72b8; text-align: center; margin: 4px 0; user-select: all; }
+  #libreta .lista { list-style: none; margin: 6px 0 10px; padding: 0; }
+  #libreta .lista li { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 4px; border-bottom: 2px dashed #eadcb8; font-weight: 700; font-size: 14px; }
+  #libreta .lista small { opacity: .7; text-align: right; }
+  #libreta .cartas li { cursor: pointer; }
+  #libreta .mini { border: 0; background: #f2e6c8; border-radius: 999px; font: 800 11px 'Nunito', sans-serif; padding: 2px 8px; margin-left: 4px; cursor: pointer; }
+  #libreta .registro { background: #f6ecd2; border-radius: 16px; padding: 8px 12px; font-size: 13px; margin: 6px 0 10px; max-height: 150px; overflow: auto; }
+  #libreta .carta { background: #fffdf4; border-radius: 16px; padding: 14px 16px; margin: 6px 0 10px; font-size: 16px; font-weight: 600; box-shadow: inset 0 0 0 2px #eadcb8; white-space: normal; }
+  #libreta .carta small { display: block; margin-top: 8px; opacity: .6; text-align: right; }
+  #libreta .ops2, #banda .ops2 { display: flex; flex-wrap: wrap; gap: 6px; }
+  #libreta .chip, #banda .chip { font: 800 13px 'Nunito', sans-serif; border: 2px solid transparent; background: #f2e6c8; color: #5a4030; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+  #libreta .chip.si { border-color: #3f72b8; }
+  #libreta .chip.azul, #banda .chip.azul { background: #3f72b8; color: #fff; }
+  #banda { left: 50%; top: calc(max(10px, env(safe-area-inset-top)) + 60px); transform: translateX(-50%); width: min(460px, calc(100vw - 24px)); background: #fff8e6; border-radius: 22px; padding: 10px 14px; box-shadow: 0 4px 0 #d9c49a, 0 10px 24px rgba(0,0,0,.2); font-weight: 700; font-size: 14px; text-align: center; display: none; }
+  #banda.ver { display: block; } #banda .ops2 { justify-content: center; margin-top: 6px; }
+  #b-chat { position: fixed; left: 12px; bottom: max(18px, env(safe-area-inset-bottom)); }
+  #chat { left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(520px, calc(100vw - 24px)); display: none; gap: 8px; z-index: 12; }
+  #chat.ver { display: flex; }
+  #chat input { flex: 1; min-width: 0; font: 700 16px 'Nunito', sans-serif; color: #4a3626; background: #fff8e6; border: 0; border-radius: 999px; padding: 12px 18px; box-shadow: 0 3px 0 #d9c49a; outline: none; }
+  body.decorando #b-chat, body.decorando #chat, body.creando #b-chat, body.creando #chat { display: none !important; }
   @media (max-width: 640px) { .ayuda { display: none; } .boton .txt { display: none; } .titulo { font-size: 18px; } }
   #fundido { position: fixed; inset: 0; background: #1a120c; opacity: 1; pointer-events: none; transition: opacity .6s; z-index: 20; }
   #aviso { top: 64px; left: 50%; transform: translateX(-50%); background: #fff8e6; border-radius: 999px; padding: 6px 16px; font-weight: 800; box-shadow: 0 3px 0 #d9c49a; opacity: 0; transition: opacity .4s; pointer-events: none; }
@@ -96,11 +140,13 @@
 <div id="fundido"></div>
 <div class="ui arriba">
   <div class="titulo">Morrandar<small>el pueblo · prueba</small><span class="hora" id="hora"></span></div>
-  <button class="boton" id="b-sonido" title="Música">🔊</button>
-  <button class="boton" id="b-deco" style="display:none">🪑<span class="txt"> Decorar</span></button>
-  <a class="boton" href="tortuga.html" style="text-decoration:none">🐢<span class="txt"> Tortuga</span></a>
-  <a class="boton" href="index.html" style="text-decoration:none">☰<span class="txt"> Menú</span></a>
+  <button class="boton" id="b-sala" style="display:none"></button>
+  <button class="boton redondo" id="b-menu" aria-label="Tu libreta">☰</button>
 </div>
+<div class="ui" id="libreta"></div>
+<div class="ui" id="banda"></div>
+<button class="ui boton redondo" id="b-chat" style="display:none" aria-label="Escribir">💬</button>
+<form class="ui" id="chat"><input maxlength="140" placeholder="Escribe algo…" autocomplete="off" enterkeyhint="send"><button class="boton">Enviar</button></form>
 <div class="ui" id="aviso"></div>
 <button class="ui boton" id="accion"></button>
 <div class="ui" id="bocadillo"><div class="ops"></div><div class="caja"><span class="nombre"></span><span class="texto"></span><span class="sigue">▼</span></div></div>
@@ -182,7 +228,12 @@ import('./js/nube.js').then(async (m) => {
   if (enNube && fichaP) { juntarPueblo(enNube.pueblo); fichaP = Ficha.fusionar(fichaP, enNube); fichaP.pueblo = EP; guardarPueblo(); }
   Ficha.subirAlGuardar((f) => m.subirFicha(f));
   if (fichaP) m.subirFicha(fichaP);
-}).catch(() => {});
+  G.m = m; cargarGremio();
+  // Si venías de una sala (la tortuga, la mazmorra) o con ?sala=, sigues en ella
+  RED = await import('./js/reunion.js');
+  const cod = (prm.get('sala') || RED.reunionActual() || '').toUpperCase();
+  if (cod.length === 4) conectarSala({ codigo: cod });
+}).catch((e) => { console.warn(e); G.cargando = false; pintarLibreta(); });
 const HORA = () => (prm.has('hora') ? Number(prm.get('hora')) : Math.floor(EP.reloj.min / 60));
 const franja = () => { const h = HORA(); return h < 6 ? 'madrugada' : h < 12 ? 'manana' : h < 20 ? 'tarde' : 'noche'; };
 const fmt = (t) => String(t).replaceAll('{N}', NOMBRE);
@@ -418,7 +469,8 @@ const libro = new THREE.Group();
   for (const s of [-1, 1]) { const p = caja(.88, .08, 1.18, '#fff6dc', { emissive: '#ffe9b0', emissiveIntensity: .25 }); p.position.set(s * .46, .09, 0); p.rotation.z = -s * .12; libro.add(p); }
   libro.position.set(10.6, 1.35, -.6); libro.rotation.x = -.35; vivo.add(libro);
   CHOQUES.push({ x: 10.6, z: -.6, r: .8 });
-  toque('El Libro', 10.6, .6, 2, 'Abrir el libro', () => hablar('El Libro', ['Las páginas se agitan solas. Huele a cripta y a tinta fresca.'], [['Bajar a las mazmorras', () => irA('index.html')], ['Todavía no', cerrarDialogo]], '#7a1a20'));
+  toque('El Libro', 10.6, .6, 2, 'Abrir el libro', () => R ? hablar('El Libro', ['Las páginas se agitan solas. Si bajáis juntos, el libro os traga a todos a la vez.', 'Propón una historia y esperad a que todos digan «¡Listo!».'], [['Proponer la Mazmorra Infinita', () => { R.proponer('infinita'); cerrarDialogo(); }], ['Proponer el Modo Historia', () => { R.proponer('historia'); cerrarDialogo(); }], ['Todavía no', cerrarDialogo]], '#7a1a20')
+    : hablar('El Libro', ['Las páginas se agitan solas. Huele a cripta y a tinta fresca.'], [['Bajar a las mazmorras', () => irA('index.html')], ['Todavía no', cerrarDialogo]], '#7a1a20'));
 }
 // ---------- Edificios ----------
 const cantina = casa(16, -12, { ancho: 8, fondo: 6, alto: 3.2, techo: 2.6, pared: '#f0d2a8', tejado: '#b5522f', puerta: '#7a4a2a', ventanas: [-1, 1] });
@@ -594,9 +646,19 @@ function pintarEsfera() {
   pintarEsfera();
   toque('La torre del reloj', TX, TZ + 2.1, 1.6, 'Mirar el reloj', () => hablar('La torre del reloj', [`Son las ${horaTexto()} del día ${EP.reloj.dia}.`, uno(['Dicen que la trajo un relojero que se cayó de un cuento con muchas prisas.', 'En Morrandar el tiempo va a su aire. Aquí nadie llega tarde: llega cuando llega.', 'Si quieres que amanezca antes, duerme en tu cama.'])], null, '#3a6a8a'));
 }
+// ---------- Parcelas para la casa de tu familia (pueblo compartido) ----------
+const PARCELAS = [{ x: -26, z: -3 }, { x: 3, z: 10.5 }, { x: 26.5, z: -21 }];
+for (const P of PARCELAS) {
+  const g = new THREE.Group(); const palo = cil(.07, .07, 1.3, '#7a5432', 6); palo.position.y = .65; g.add(palo);
+  const l = letrero('Parcela libre', 1.6, .5, '#8a5a34'); l.position.set(0, 1.25, .05); g.add(l);
+  for (const [dx, dz] of [[-2.4, -2.4], [2.4, -2.4], [-2.4, 2.4], [2.4, 2.4]]) { const e = cil(.06, .06, .5, '#c8a070', 5); e.position.set(dx, .25, dz); g.add(e); }
+  g.position.set(P.x, Math.max(0, alto(P.x, P.z)), P.z + 3.2); vivo.add(g); P.cartel = g;
+  P.toque = toque('Parcela libre', P.x, P.z + 3.4, 1.3, 'Leer el cartel', () => P.cartel.visible && hablar('Parcela libre', ['«Se busca vecino. Preferiblemente, de la familia.»', 'Invita a alguien desde tu libreta (☰ → Tu pueblo) y aquí estará su casa.'], null, '#8a5a34'));
+}
 // ---------- Árboles: repartidos donde no estorban ----------
 const huecoLibre = (x, z, m) => {
   if (alto(x, z) < -.05 || Math.abs(x) > 30.5 || z < -26.5 || z > 15) return false;
+  if (PARCELAS.some((P) => Math.abs(x - P.x) < 4.4 && Math.abs(z - P.z) < 4.6)) return false;
   if (distRio(x, z) < 3.2 || distCamino(x, z) < 2.3 || Math.hypot(x - PLAZA.x, z - PLAZA.z) < PLAZA.r + 3.2) return false;
   for (const c of CHOQUES) { if (c.r) { if (Math.hypot(x - c.x, z - c.z) < c.r + m) return false; } else if (Math.abs(x - c.x) < c.w / 2 + m && Math.abs(z - c.z) < c.d / 2 + m) return false; }
   return true;
@@ -1283,7 +1345,7 @@ function cabe(k, cx, cz, r, ignorar = -1) {
 function construir(k) { const g = new THREE.Group(); MUEBLES[k].f(g); return g; }
 function soltar(g) { g.traverse((o) => { if (o.isMesh) o.geometry.dispose(); }); }
 function pintarCasa() {
-  const c = EP.casa;
+  const c = casaVista(), ajena = !!casaAjena;
   texSuelos[c.suelo] ||= texCasa(c.suelo); matSueloCasa.map = texSuelos[c.suelo]; matSueloCasa.needsUpdate = true;
   matParedCasa.color.set(c.pared || PAREDES[0]);
   for (const g of [...casaMuebles.children]) { soltar(g); casaMuebles.remove(g); }
@@ -1298,6 +1360,9 @@ function pintarCasa() {
     if (M.luz && luces < 3) { const l = lucesMueble[luces++]; l.position.set(x, M.luz, z); l.userData.on = true; }
     const t = (accion, hacer) => toque(M.n, x, z, Math.max(w, d) * .5 + .9, accion, hacer, { dentro: 'casa', deCasa: true });
     if (M.uso === 'sentar') t('Sentarse', () => sentarse(x, z, ry));
+    else if (ajena && M.uso === 'dormir') t('Mirar la cama', () => hablar(M.n, [`Es la cama de ${casaAjena.nombre}. ${uno(['Está sin hacer.', 'Huele a su champú.', 'Debajo hay un calcetín desparejado.'])}`], null, '#3f72b8'));
+    else if (ajena && M.uso === 'trofeos') t('Mirar la vitrina', () => hablar(M.n, [`Los trofeos de ${casaAjena.nombre} brillan detrás del cristal. Alguien les ha quitado el polvo hace poco.`], null, '#a07010'));
+    else if (ajena && M.uso === 'espejo') t('Mirarte al espejo', () => hablar(M.n, ['Te miras en el espejo de otra casa. Te ves… de visita.'], null, '#3f72b8'));
     else if (M.uso === 'dormir') t('Dormir hasta mañana', () => hablar('Tu cama', ['La almohada huele a lavanda. ¿Duermes hasta mañana?'], [['Dormir', () => dormir()], ['Todavía no', cerrarDialogo]], '#3f72b8'));
     else if (M.uso === 'musica') t('Poner música', () => { musicaCasa = !musicaCasa; mezclar(); aviso(musicaCasa ? '♪ ' + DISCOS[disco].nombre : 'Silencio'); });
     else if (M.uso === 'trofeos') t('Ver tus trofeos', () => irA('cabana.html'));
@@ -1317,8 +1382,8 @@ function entrarCasa() {
     J.x = celX(PUERTA_CASA[0]); J.z = celZ(PUERTA_CASA[1]) - .7; J.dir = Math.PI; J.ir = null;
     CURVA.uCurva.value = 0; cielo.intensity = .6; sol.intensity = .4;
     escena.background = new THREE.Color('#2a1f18'); escena.fog = null;
-    camara.position.set(X1, 7.4, 9.6); mirar.set(X1, .5, -.5); mezclar();
-    $('b-deco').style.display = '';
+    camara.position.set(X1, 7.4, 9.6); mirar.set(X1, .5, -.5); mezclar(); avisarLugar();
+    if (casaAjena) aviso('Casa de ' + casaAjena.nombre);
   });
 }
 
@@ -1332,7 +1397,7 @@ function empezarDeco() {
 function terminarDeco() {
   if (colocando) cancelarColocar();
   decorando = false; rejilla.visible = false; huellaMesh.visible = false; elegido = -1;
-  $('deco').style.display = 'none'; document.body.classList.remove('decorando'); salirDeObstaculo();
+  $('deco').style.display = 'none'; document.body.classList.remove('decorando'); salirDeObstaculo(); subirMiCasa();
 }
 function quitarFantasma() { if (fantasma) { soltar(fantasma); casaDentro.remove(fantasma); fantasma = null; } }
 function moverFantasma() {
@@ -1425,7 +1490,6 @@ function pintarDeco() {
   caja_.innerHTML = h;
   caja_.querySelectorAll('[data-a]').forEach((el) => el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); accionDeco(el.dataset.a, el.dataset.v); }));
 }
-$('b-deco').addEventListener('click', (e) => { e.stopPropagation(); if (decorando) terminarDeco(); else empezarDeco(); });
 
 // ---------- El buzón: paquetes del libro (botín) y cartas ----------
 function abrirBuzon() {
@@ -1600,8 +1664,7 @@ function mezclar() {
 }
 function blip(f) { if (!A.ctx || !A.on) return; const t = A.ctx.currentTime; nota(A.voz, f, t, .06, .035, 'triangle', .004); }
 function pasito() { if (!A.ctx) return; ruido(dentro ? A.dentro : A.fuera, A.ctx.currentTime, .06, dentro ? .05 : .035, dentro ? 900 : 1800, 'bandpass', 1.2); }
-$('b-sonido').textContent = A.on ? '🔊' : '🔇';
-$('b-sonido').addEventListener('click', (e) => { e.stopPropagation(); A.on = !A.on; guardarLS('criptas_pueblo_sonido', A.on ? '1' : '0'); $('b-sonido').textContent = A.on ? '🔊' : '🔇'; arrancarAudio(); A.master.gain.setTargetAtTime(A.on ? .9 : 0, A.ctx.currentTime, .2); });
+function ponerSonido(on) { A.on = on; guardarLS('criptas_pueblo_sonido', on ? '1' : '0'); arrancarAudio(); A.master.gain.setTargetAtTime(on ? .9 : 0, A.ctx.currentTime, .2); }
 
 // =============================================================
 //  DIÁLOGOS (bocadillo, con voz de "bip")
@@ -1761,7 +1824,7 @@ function irA(url) { cerrarDialogo(); $('fundido').style.opacity = 1; setTimeout(
 function aviso(t) { const a = $('aviso'); a.textContent = t; a.style.opacity = 1; clearTimeout(aviso.t); aviso.t = setTimeout(() => { a.style.opacity = 0; }, 2200); }
 function entrarCantina() {
   fundir(() => {
-    levantar(false); dentro = true; sala = 'cantina'; cantinaDentro.visible = true; J.x = X0; J.z = 3.8; J.dir = Math.PI; J.ir = null;
+    levantar(false); dentro = true; sala = 'cantina'; avisarLugar(); cantinaDentro.visible = true; J.x = X0; J.z = 3.8; J.dir = Math.PI; J.ir = null;
     CURVA.uCurva.value = 0; cielo.intensity = .55; sol.intensity = .35; luzFuego.intensity = 22; lamparas.forEach((l) => { l.intensity = 9; });
     escena.background = new THREE.Color('#2a1a12'); escena.fog = null;
     camara.position.set(X0, 8.4, 12.6); mirar.set(X0, .6, -.4); mezclar();
@@ -1770,8 +1833,8 @@ function entrarCantina() {
 function salirCantina() {
   cerrarDialogo(); if (decorando) terminarDeco();
   fundir(() => {
-    const puerta = sala === 'casa' ? miCasa.puerta : cantina.puerta;
-    levantar(false); dentro = false; sala = null; cantinaDentro.visible = false; casaDentro.visible = false; $('b-deco').style.display = 'none';
+    const puerta = sala === 'casa' ? (casaAjena?.puerta || miCasa.puerta) : cantina.puerta;
+    levantar(false); dentro = false; sala = null; casaAjena = null; cantinaDentro.visible = false; casaDentro.visible = false; avisarLugar();
     luzCasa.intensity = 0; lucesMueble.forEach((l) => { l.intensity = 0; });
     J.x = puerta.x; J.z = puerta.z + .4; J.dir = 0; J.ir = null;
     CURVA.uCurva.value = Number(prm.get('curva')) || 0.0105; cielo.intensity = 1.25; sol.intensity = 1.7; luzFuego.intensity = 0; lamparas.forEach((l) => { l.intensity = 0; });
@@ -1792,7 +1855,7 @@ const OPCIONES = [
 let trajesEspeciales = false;   // la Túnica del Guardián: solo la cuenta del administrador
 let repintarCreador = null;
 function abrirCreador() {
-  creando = true; levantar(false); J.ir = null; modoCam = 'espejo'; J.dir = 0;
+  creando = true; document.body.classList.add('creando'); levantar(false); J.ir = null; modoCam = 'espejo'; J.dir = 0;
   const a = { ...ASPECTO_BASE, ...(EP.aspecto || {}) }, caja_ = $('creador');
   const pintar = () => {
     const opciones = trajesEspeciales || a.traje === 'guardian' ? [...OPCIONES, ['traje', 'Traje', { normal: 'El tuyo', guardian: '✦ Túnica del Guardián' }]] : OPCIONES;
@@ -1805,7 +1868,7 @@ function abrirCreador() {
   repintarCreador = pintar;
   caja_.style.display = 'block'; pintar(); vestirJugador(a);
 }
-function cerrarCreador() { creando = false; $('creador').style.display = 'none'; modoCam = 'normal'; aviso(`¡Qué bien te queda, ${NOMBRE}!`); }
+function cerrarCreador() { subirMiCasa(); creando = false; document.body.classList.remove('creando'); $('creador').style.display = 'none'; modoCam = 'normal'; aviso(`¡Qué bien te queda, ${NOMBRE}!`); }
 // ---------- Dormir en tu cama: a las 7:00 del día siguiente ----------
 function dormir() {
   cerrarDialogo();
@@ -1859,9 +1922,10 @@ const libre = (x, z, r = .32, quien = null) => (dentro ? libreDentro(x, z, r) : 
 const sueloEn = (x, z) => (dentro ? 0 : enMuelle(x, z) ? .36 : enPuente(x, z) ? .21 : Math.max(alto(x, z), -.3));
 const teclas = new Set();
 addEventListener('keydown', (e) => {
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   arrancarAudio();
   if (e.key === 'e' || e.key === 'E' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (enDialogo) avanzarDialogo(); else if (cercano) usar(cercano); return; }
-  if (e.key === 'Escape') { if (enDialogo && !opsDialogo) cerrarDialogo(); return; }
+  if (e.key === 'Escape') { if (libretaPagina) cerrarLibreta(); else if (enDialogo && !opsDialogo) cerrarDialogo(); return; }
   teclas.add(e.key.toLowerCase()); if (J.sentado && /^(w|a|s|d|arrow)/.test(e.key.toLowerCase())) levantar();
 });
 addEventListener('keyup', (e) => teclas.delete(e.key.toLowerCase()));
@@ -1989,6 +2053,283 @@ function pintarEtiquetas() {
 }
 
 // =============================================================
+//  JUNTOS: la libreta (el menú), la sala en vivo, el pueblo
+//  compartido con las casas de tu familia y las cartas.
+// =============================================================
+const G = { m: null, uid: null, pid: null, pueblo: null, casas: [], cartas: [], invitacion: null, cargando: true, error: '' };
+let R = null, RED = null, casaAjena = null;
+const otros = new Map();            // id de la sala -> avatar
+const registro = [];                // lo último que se ha dicho en la sala
+const escH = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const lugarActual = () => (sala === 'casa' ? 'casa:' + (casaAjena?.uid || G.uid || 'yo') : sala || 'fuera');
+const soyDueno = () => G.pueblo && G.pueblo.dueno === G.uid;
+const vecinosJugadores = () => Object.entries(G.pueblo?.miembros || {}).filter(([u]) => u !== G.uid).map(([uid, d]) => ({ uid, ...d })).sort((a, b) => (a.desde || 0) - (b.desde || 0));
+const sinLeer = () => G.cartas.filter((c) => !c.leida).length;
+
+// ---------- Las casas de tu familia, en las parcelas ----------
+const enParcela = [];
+function ponerCasasVecinos() {
+  for (const e of enParcela.splice(0)) { e.g.parent?.remove(e.g); e.buzon.parent?.remove(e.buzon); e.cartel.parent?.remove(e.cartel); for (const c of e.choques) { const i = CHOQUES.indexOf(c); if (i >= 0) CHOQUES.splice(i, 1); } }
+  for (let i = INTERACCION.length - 1; i >= 0; i--) if (INTERACCION[i].deVecino) INTERACCION.splice(i, 1);
+  const lista = G.pid ? vecinosJugadores() : [];
+  const TEJADOS = ['#7a4ab8', '#3a9a6a', '#d8902a'];
+  PARCELAS.forEach((P, i) => {
+    const v = lista[i];
+    P.cartel.visible = !v; P.toque.r = v ? 0 : 1.3;
+    if (!v) return;
+    const antes = CHOQUES.length;
+    const c = casa(P.x, P.z, { ancho: 5, fondo: 5, pared: '#f4e2c0', tejado: TEJADOS[i % 3], puerta: '#8a4a2a' });
+    const cartel = letrero('Casa de ' + v.nombre, 2.8, .5); cartel.position.set(P.x, 2.62, P.z + 2.88); fijo.add(cartel);
+    const buzon = new THREE.Group(); const pb = cil(.05, .05, 1, '#6a4a2a', 6); pb.position.y = .5; buzon.add(pb); const bz = caja(.45, .35, .3, TEJADOS[i % 3]); bz.position.y = 1.1; buzon.add(bz);
+    buzon.position.set(P.x + 2.6, 0, P.z + 3.4); fijo.add(buzon); CHOQUES.push({ x: P.x + 2.6, z: P.z + 3.4, r: .3 });
+    const e = { g: c.g, buzon, cartel, choques: CHOQUES.slice(antes), v, puerta: c.puerta };
+    enParcela.push(e);
+    toque('Casa de ' + v.nombre, c.puerta.x, c.puerta.z, 1.5, 'Entrar en casa de ' + v.nombre, () => visitarCasa(e), { deVecino: true });
+    toque('Buzón de ' + v.nombre, P.x + 2.6, P.z + 4.2, 1.2, 'Dejarle una carta', () => abrirLibreta('escribir', v.uid), { deVecino: true });
+  });
+}
+function visitarCasa(e) {
+  const d = G.casas.find((c) => c.uid === e.v.uid);
+  let casaV = null; try { casaV = d?.casa ? JSON.parse(d.casa) : null; } catch { casaV = null; }
+  if (!casaV) return hablar('La puerta', [`Llamas a la puerta… pero ${e.v.nombre} todavía no ha estrenado su casa.`, 'Cuando entre en el pueblo, su casa se abrirá.'], [['Dejarle una carta', () => { cerrarDialogo(); abrirLibreta('escribir', e.v.uid); }], ['Vale', cerrarDialogo]], '#8a6a4a', 300);
+  casaAjena = { uid: e.v.uid, nombre: e.v.nombre, casa: casaV, puerta: e.puerta };
+  entrarCasa();
+}
+const casaVista = () => (casaAjena ? casaAjena.casa : EP.casa);
+function subirMiCasa() {
+  if (!G.m || !G.pid) return;
+  G.m.subirCasa(G.pid, { nombre: NOMBRE, casa: JSON.stringify(EP.casa), aspecto: JSON.stringify(EP.aspecto || ASPECTO_BASE) });
+}
+async function cargarGremio() {
+  const m = G.m; G.cargando = true;
+  try {
+    G.uid = m.miUid(); G.pid = await m.puebloDondeVivo(); G.pueblo = G.pid ? await m.leerPueblo(G.pid) : null;
+    if (G.pid && (!G.pueblo || (G.pueblo.dueno !== G.uid && !G.pueblo.miembros?.[G.uid]))) { G.pid = null; G.pueblo = null; }
+    if (G.pid) { [G.casas, G.cartas] = await Promise.all([m.casasDelPueblo(G.pid), m.misCartas(G.pid)]); subirMiCasa(); }
+    else { G.casas = []; G.cartas = []; }
+  } catch (e) { G.error = e.message; }
+  G.cargando = false; ponerCasasVecinos(); pintarLibreta(); pintarAvisoCartas();
+  if (sinLeer()) setTimeout(() => aviso(`✉️ Tienes ${sinLeer() > 1 ? sinLeer() + ' cartas' : 'una carta'} en el buzón`), 4200);
+}
+function pintarAvisoCartas() { $('b-menu').classList.toggle('punto', sinLeer() > 0); }
+
+// ---------- La sala en vivo (la misma de la tortuga) ----------
+async function conectarSala(op) {
+  try {
+    RED ||= await import('./js/reunion.js');
+    const u = await G.m?.usuarioListo(); if (!u) throw new Error('Para jugar juntos, entra antes con tu cuenta de Google en el menú del juego.');
+    R = await RED.conectar({ ...op, donde: 'pueblo', clase: 'viajero', x: J.x, z: J.z });
+    R.cambiar({ aspecto: JSON.stringify(EP.aspecto || ASPECTO_BASE), en: lugarActual(), uid: G.uid || '' });
+    R.on('gente', ponerOtros).on('frase', (id, t) => { decirOtro(id, t); }).on('propuesta', pintarBanda).on('juego', pintarBanda)
+      .on('salida', (modo) => irA(R.urlPartida(modo))).on('error', (e) => aviso(e.message));
+    ponerOtros(R.gente()); pintarBanda(); pintarSala();
+    if (op.crear) aviso('Sala ' + R.codigo + ' abierta');
+  } catch (e) { R = null; aviso(e.message); if (/No hay ninguna|plena partida/.test(e.message)) RED?.olvidarReunion(); }
+  pintarSala(); pintarLibreta();
+}
+function salirSala() { if (!R) return; R.salir(); R = null; ponerOtros({}); registro.length = 0; pintarBanda(); pintarSala(); pintarLibreta(); }
+function pintarSala() {
+  const chip = $('b-sala'); $('b-chat').style.display = R ? '' : 'none';
+  if (!R) { chip.style.display = 'none'; $('chat').classList.remove('ver'); return; }
+  const n = Object.keys(R.gente()).length;
+  chip.style.display = ''; chip.textContent = `👥 ${R.codigo}${n > 1 ? ' · ' + n : ''}`;
+}
+function avisarLugar() { R?.cambiar({ en: lugarActual() }); }
+function ponerOtros(gente) {
+  for (const [id, a] of [...otros]) if (!gente[id] || gente[id].donde !== 'pueblo' || gente[id].online === false) { escena.remove(a.ch); a.et.remove(); a.gl.remove(); otros.delete(id); }
+  for (const [id, d] of Object.entries(gente)) {
+    if (id === R?.yo.id || d.donde !== 'pueblo' || d.online === false) continue;
+    let a = otros.get(id);
+    if (!a || a.aspecto !== d.aspecto) {
+      let asp = ASPECTO_BASE; try { asp = { ...ASPECTO_BASE, ...JSON.parse(d.aspecto || '{}') }; } catch { /* el de siempre */ }
+      const ch = chibiViajero(asp);
+      if (a) { escena.remove(a.ch); ch.position.copy(a.ch.position); } else ch.position.set(d.x ?? 0, 0, d.z ?? 0);
+      escena.add(ch);
+      if (!a) { const et = document.createElement('div'); et.className = 'etiqueta'; et.style.background = '#3f72b8'; document.body.appendChild(et); const gl = document.createElement('div'); gl.className = 'globo'; gl.style.display = 'none'; document.body.appendChild(gl); a = { id, et, gl, hasta: 0, dir: 0 }; otros.set(id, a); }
+      a.ch = ch; a.aspecto = d.aspecto;
+    }
+    a.tx = d.x ?? a.tx ?? 0; a.tz = d.z ?? a.tz ?? 0; a.tdir = d.lado ?? 0; a.en = d.en || 'fuera';
+    a.et.textContent = (d.anfitrion ? '★ ' : '') + (d.nombre || 'Viajero');
+  }
+  pintarSala();
+}
+function decirOtro(id, texto) {
+  const nombre = id === R?.yo.id ? NOMBRE : (R?.gente()[id]?.nombre || 'Alguien');
+  registro.push({ nombre, texto }); if (registro.length > 30) registro.shift();
+  const a = id === R?.yo.id ? YO : otros.get(id);
+  if (a) { a.gl.textContent = texto; a.hasta = performance.now() + Math.min(9000, 3500 + texto.length * 70); }
+  if (libretaPagina === 'juntos') pintarLibreta();
+}
+const YO = { gl: (() => { const g = document.createElement('div'); g.className = 'globo'; g.style.display = 'none'; document.body.appendChild(g); return g; })(), hasta: 0 };
+const vProy = new THREE.Vector3();
+function proyectar(el, x, y, z) {
+  vProy.set(x, y - (dentro ? 0 : bajada(z)), z).project(camara);
+  if (vProy.z > 1) { el.style.display = 'none'; return; }
+  el.style.display = 'block'; el.style.left = ((vProy.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - vProy.y) / 2 * innerHeight) + 'px';
+}
+function actualizarJuntos(dt, t) {
+  if (R) R.mover(J.x, J.z, +J.dir.toFixed(2));
+  const aqui = lugarActual(), ahora = performance.now();
+  for (const a of otros.values()) {
+    const ver = a.en === aqui; a.ch.visible = ver;
+    if (!ver) { a.et.style.display = 'none'; a.gl.style.display = 'none'; continue; }
+    const p = a.ch.position, dx = a.tx - p.x, dz = a.tz - p.z, d = Math.hypot(dx, dz);
+    let anda = 0;
+    if (d > 8) { p.x = a.tx; p.z = a.tz; } else if (d > .04) { const v = Math.min(d, 6.4 * dt * (d > 2 ? 1.6 : 1)); p.x += dx / d * v; p.z += dz / d * v; anda = d > 1.5 ? 2 : 1; }
+    p.y = sueloEn(p.x, p.z);
+    a.dir = angLerp(a.dir, a.tdir, 1 - Math.exp(-10 * dt)); a.ch.rotation.y = a.dir;
+    animar(a.ch, dt, anda, t);
+    if (!enDialogo && Math.hypot(p.x - J.x, p.z - J.z) < 12) proyectar(a.et, p.x, p.y + 1.95, p.z); else a.et.style.display = 'none';
+    if (ahora < a.hasta && !enDialogo) proyectar(a.gl, p.x, p.y + 2.6, p.z); else a.gl.style.display = 'none';
+  }
+  if (ahora < YO.hasta && !enDialogo) proyectar(YO.gl, J.ch.position.x, J.ch.position.y + 2.6, J.ch.position.z); else YO.gl.style.display = 'none';
+}
+// Propuestas para bajar juntos al libro (las mismas que en la tortuga)
+function pintarBanda() {
+  const b = $('banda');
+  if (!R) { b.classList.remove('ver'); return; }
+  const p = R.propuesta, gente = Object.values(R.gente()), nombreDe = (id) => R.gente()[id]?.nombre || 'Alguien';
+  if (R.enJuego && !p) { b.innerHTML = `Los demás están en la mazmorra.<div class="ops2"><button class="chip azul" data-b="unirme">Unirme</button></div>`; b.classList.add('ver'); return; }
+  if (!p) { b.classList.remove('ver'); return; }
+  const listos = gente.filter((g) => g.voto === p.n).length, yoListo = R.gente()[R.yo.id]?.voto === p.n;
+  b.innerHTML = `${p.de === R.yo.id ? 'Has propuesto' : `<b>${escH(nombreDe(p.de))}</b> propone`} bajar a <b>${RED.MODOS[p.modo] || p.modo}</b> · ${listos}/${gente.length} listos
+    <div class="ops2">${yoListo ? '' : '<button class="chip azul" data-b="si">¡Listo!</button>'}<button class="chip" data-b="no">Ahora no</button>${p.de === R.yo.id || R.soyAnfitrion() ? '<button class="chip" data-b="retirar">Retirar</button>' : ''}</div>`;
+  b.classList.add('ver');
+}
+$('banda').addEventListener('pointerdown', (e) => {
+  e.stopPropagation(); const a = e.target.closest('[data-b]')?.dataset.b; if (!a || !R) return;
+  if (a === 'si') R.votar(true); if (a === 'no') R.votar(false); if (a === 'retirar') R.retirarPropuesta(); if (a === 'unirme') irA(R.urlPartida('infinita'));
+});
+// El chat: escribes y sale en un bocadillo encima de tu cabeza
+$('b-chat').addEventListener('click', (e) => { e.stopPropagation(); const c = $('chat'); c.classList.toggle('ver'); if (c.classList.contains('ver')) c.querySelector('input').focus(); });
+$('chat').addEventListener('submit', (e) => {
+  e.preventDefault(); const i = $('chat').querySelector('input'), t = i.value.trim(); if (!t || !R) return;
+  R.frase(t); i.value = ''; $('chat').classList.remove('ver'); i.blur();
+});
+$('chat').addEventListener('pointerdown', (e) => e.stopPropagation());
+$('b-sala').addEventListener('click', (e) => { e.stopPropagation(); abrirLibreta('juntos'); });
+
+// ---------- La libreta: el único menú del pueblo ----------
+let libretaPagina = null, cartaAbierta = null, escribirA = null;
+function abrirLibreta(pagina = 'inicio', extra = null) {
+  if (creando || decorando) return;
+  cerrarDialogo(); libretaPagina = pagina; if (pagina === 'escribir') escribirA = extra;
+  $('libreta').classList.add('ver'); pintarLibreta();
+}
+function cerrarLibreta() { libretaPagina = null; cartaAbierta = null; $('libreta').classList.remove('ver'); }
+$('b-menu').addEventListener('click', (e) => { e.stopPropagation(); if (libretaPagina) cerrarLibreta(); else abrirLibreta(); });
+function pintarLibreta() {
+  pintarSala();
+  if (!libretaPagina) return;
+  const L = $('libreta'), pg = libretaPagina, atras = '<button class="atras" data-l="inicio">‹</button>', cerrar = '<button class="cerrar" data-l="cerrar">✕</button>';
+  const tit = (t) => `<div class="cab">${pg === 'inicio' ? '' : atras}<h2>${t}</h2>${cerrar}</div>`;
+  let h = '';
+  if (pg === 'inicio') {
+    const enCasa = sala === 'casa' && !casaAjena;
+    const app = (k, ico, t, sub, extra = '') => `<button class="app${extra}" data-l="${k}"><span class="ico">${ico}</span><b>${t}</b><small>${sub}</small></button>`;
+    h = tit('Tu libreta') + '<div class="apps">' +
+      app('juntos', '👥', 'Jugar juntos', R ? 'Sala ' + R.codigo : 'Con código') +
+      app('pueblo', '🏘', 'Tu pueblo', G.cargando ? '…' : G.pid ? (soyDueno() ? 'Eres el fundador' : 'De ' + escH(G.pueblo?.miembros?.[G.pueblo.dueno]?.nombre || 'otro')) : 'Solo tú') +
+      app('cartas', '✉️', 'Cartas', sinLeer() ? sinLeer() + ' sin leer' : G.pid ? 'Buzón' : 'Con tu familia', sinLeer() ? ' nueva' : '') +
+      app('decorar', '🪑', 'Decorar', enCasa ? 'Tu casa' : 'Entra en tu casa', enCasa ? '' : ' apagada') +
+      app('musica', A.on ? '🔊' : '🔇', 'Música', A.on ? 'Sonando' : 'Apagada') +
+      app('aspecto', '🪞', 'Tu aspecto', enCasa ? 'Al espejo' : 'En el espejo de casa', enCasa ? '' : ' apagada') +
+      app('tortuga', '🐢', 'Morrandar', 'La tortuga') +
+      app('menu', '📖', 'El libro', 'Menú del juego') +
+      app('ayuda', '❔', 'Cómo se juega', 'Controles') + '</div>';
+  } else if (pg === 'juntos') {
+    if (!R) h = tit('Jugar juntos') + `<p class="nota">Abre una sala y pasa el código. Os veréis paseando por el pueblo, podréis escribiros y bajar juntos al libro. Es la misma sala que en la tortuga.</p>
+      <button class="grande" data-l="abrirSala">Abrir sala</button>
+      <form class="fila" data-l="formSala"><input maxlength="4" placeholder="CÓDIGO" autocomplete="off" class="codigo-in"><button class="chip azul">Unirse</button></form>`;
+    else {
+      const gente = Object.values(R.gente()).sort((a, b) => (b.anfitrion - a.anfitrion) || a.nombre.localeCompare(b.nombre));
+      h = tit('Jugar juntos') + `<div class="codigo">${R.codigo}</div><p class="nota">Pasa este código: se entra desde aquí, desde la tortuga o desde el menú del juego.</p>
+        <ul class="lista">${gente.map((g) => `<li><span>${g.anfitrion ? '★ ' : ''}${escH(g.nombre)}${g.id === R.yo.id ? ' (tú)' : ''}</span><small>${g.online === false ? '…de camino' : RED.LUGARES[g.donde] || ''}</small></li>`).join('')}</ul>
+        ${registro.length ? `<div class="registro">${registro.slice(-8).map((r) => `<div><b>${escH(r.nombre)}:</b> ${escH(r.texto)}</div>`).join('')}</div>` : ''}
+        <div class="ops2"><button class="chip azul" data-l="escribirSala">💬 Escribir</button>${RED.GESTOS.slice(0, 3).map((g) => `<button class="chip" data-l="gesto" data-v="${g.id}">${g.icono}</button>`).join('')}</div>
+        <p class="nota" style="margin-top:10px">Bajar juntos al libro:</p><div class="ops2"><button class="chip" data-l="proponer" data-v="infinita">Mazmorra Infinita</button><button class="chip" data-l="proponer" data-v="historia">Modo Historia</button></div>
+        <button class="grande claro" data-l="salirSala">Salir de la sala</button>`;
+    }
+  } else if (pg === 'pueblo') {
+    const vec = vecinosJugadores();
+    if (G.cargando) h = tit('Tu pueblo') + '<p class="nota">Mirando el registro del pueblo…</p>';
+    else if (!G.m || !G.uid) h = tit('Tu pueblo') + '<p class="nota">Para compartir el pueblo, entra con tu cuenta de Google en el menú del juego.</p>';
+    else {
+      const nombreP = G.pueblo?.nombre || 'Tu pueblo';
+      h = tit(escH(nombreP)) + (G.pid
+        ? `<p class="nota">${soyDueno() ? 'Lo fundaste tú. ' : ''}Cada uno tiene su casa y podéis entrar en la de los demás aunque no estén.</p><ul class="lista">
+            <li><span>🏠 ${escH(NOMBRE)} (tú)</span><small>${soyDueno() ? 'fundador' : 'vecino'}</small></li>
+            ${vec.map((v, i) => `<li><span>🏡 ${escH(v.nombre)}</span><small>${v.uid === G.pueblo.dueno ? 'fundador' : i < PARCELAS.length ? 'vecino' : 'sin parcela'}${soyDueno() ? ` <button class="mini" data-l="echar" data-v="${v.uid}">echar</button>` : ''}</small></li>`).join('')}</ul>`
+        : '<p class="nota">Ahora mismo vives solo. Invita a tu familia: cada uno tendrá su casa en una de las parcelas libres, y podréis visitaros aunque el otro no esté.</p>') +
+        (G.pid && !soyDueno() ? '' : `<button class="grande" data-l="invitar">Invitar a alguien</button>${G.invitacion ? `<div class="codigo">${G.invitacion}</div><p class="nota">Que lo meta en «Mudarte a otro pueblo». Sirve para siempre: el código no caduca.</p>` : ''}`) +
+        (G.pid && !soyDueno() ? '<button class="grande claro" data-l="irse">Irte de este pueblo</button>' : `<form class="fila" data-l="formMudarse"><input maxlength="6" placeholder="INVITACIÓN" autocomplete="off" class="codigo-in"><button class="chip azul">Mudarte</button></form><p class="nota">Si te mudas al pueblo de otro, tu casa irá con sus muebles a una de sus parcelas.</p>`) +
+        (G.error ? `<p class="error">${escH(G.error)}</p>` : '');
+    }
+  } else if (pg === 'cartas') {
+    if (!G.pid) h = tit('Cartas') + '<p class="nota">Las cartas van y vienen entre la gente de tu pueblo. Invita a tu familia desde «Tu pueblo» y podréis dejaros cartas aunque no estéis a la vez.</p><button class="grande" data-l="pueblo">Ir a «Tu pueblo»</button>';
+    else if (cartaAbierta) {
+      const c = cartaAbierta;
+      h = tit('Carta de ' + escH(c.deNombre || 'alguien')) + `<div class="carta">${escH(c.texto).replace(/\n/g, '<br>')}<small>${new Date(c.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</small></div>
+        <div class="ops2"><button class="chip azul" data-l="responder" data-v="${c.de}">Responder</button><button class="chip" data-l="tirar" data-v="${c.id}">Tirarla</button><button class="chip" data-l="volverCartas">Guardarla</button></div>`;
+    } else h = tit('Cartas') + (G.cartas.length ? `<ul class="lista cartas">${G.cartas.map((c) => `<li data-l="leer" data-v="${c.id}"><span>${c.leida ? '✉️' : '💌'} <b>${escH(c.deNombre || 'Alguien')}</b> · ${escH(c.texto.slice(0, 34))}${c.texto.length > 34 ? '…' : ''}</span></li>`).join('')}</ul>` : '<p class="nota">No tienes cartas.</p>') +
+      `<button class="grande" data-l="escribir">Escribir una carta</button>`;
+  } else if (pg === 'escribir') {
+    const vec = vecinosJugadores();
+    if (!vec.length) h = tit('Escribir') + '<p class="nota">Aún no vive nadie más en tu pueblo.</p>';
+    else { escribirA = vec.some((v) => v.uid === escribirA) ? escribirA : vec[0].uid;
+      h = tit('Escribir una carta') + `<div class="ops2">${vec.map((v) => `<button class="chip${v.uid === escribirA ? ' si' : ''}" data-l="para" data-v="${v.uid}">Para ${escH(v.nombre)}</button>`).join('')}</div>
+        <textarea maxlength="600" placeholder="Querido vecino…" id="texto-carta">${escH($('texto-carta')?.value || '')}</textarea><button class="grande" data-l="enviar">Echarla al buzón</button>`; }
+  } else if (pg === 'ayuda') {
+    h = tit('Cómo se juega') + `<ul class="lista"><li><span>Andar</span><small>toca o mantén el dedo · WASD o flechas</small></li><li><span>Correr</span><small>toca lejos · Mayús</small></li><li><span>Hablar, entrar, usar</span><small>botón de abajo · E</small></li>
+      <li><span>Tu casa</span><small>dentro, «Decorar» en la libreta</small></li><li><span>Muebles</span><small>Rufo, regalos de vecinos y el buzón</small></li><li><span>Dormir</span><small>en tu cama, hasta las 7:00</small></li></ul>`;
+  }
+  L.innerHTML = h;
+  const inp = L.querySelector('.codigo-in'); inp?.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+}
+async function accionLibreta(a, v, el) {
+  const m = G.m;
+  if (a === 'cerrar') return cerrarLibreta();
+  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
+  if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }
+  if (a === 'decorar') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); empezarDeco(); } else aviso('Entra en tu casa para decorarla'); return; }
+  if (a === 'aspecto') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); abrirCreador(); } else aviso('El espejo está en tu casa'); return; }
+  if (a === 'musica') { ponerSonido(!A.on); return pintarLibreta(); }
+  if (a === 'tortuga') { cerrarLibreta(); return irA('tortuga.html'); }
+  if (a === 'menu') { cerrarLibreta(); return irA('index.html'); }
+  if (a === 'abrirSala') return conectarSala({ crear: true });
+  if (a === 'salirSala') return salirSala();
+  if (a === 'escribirSala') { cerrarLibreta(); $('chat').classList.add('ver'); $('chat').querySelector('input').focus(); return; }
+  if (a === 'gesto') { R?.frase(RED.GESTOS.find((g) => g.id === v)?.icono || '👋'); return; }
+  if (a === 'proponer') { R?.proponer(v); cerrarLibreta(); return; }
+  if (!m) return aviso('Sin conexión con la nube');
+  try {
+    if (a === 'invitar') { G.invitacion = await m.crearInvitacion(NOMBRE); await cargarGremio(); }
+    if (a === 'irse') { await m.irseDelPueblo(G.pid); aviso('Has vuelto a tu pueblo'); await cargarGremio(); }
+    if (a === 'echar') { await m.echarDelPueblo(G.pid, v); await cargarGremio(); }
+    if (a === 'leer') { cartaAbierta = G.cartas.find((c) => c.id === v); if (cartaAbierta && !cartaAbierta.leida) { cartaAbierta.leida = true; m.marcarLeida(G.pid, v); pintarAvisoCartas(); } }
+    if (a === 'volverCartas') cartaAbierta = null;
+    if (a === 'tirar') { m.borrarCarta(G.pid, v); G.cartas = G.cartas.filter((c) => c.id !== v); cartaAbierta = null; }
+    if (a === 'responder') { escribirA = v; libretaPagina = 'escribir'; cartaAbierta = null; }
+    if (a === 'para') { escribirA = v; }
+    if (a === 'enviar') {
+      const t = $('texto-carta')?.value.trim(); if (!t) return aviso('Escribe algo primero');
+      await m.enviarCarta(G.pid, escribirA, t, NOMBRE); $('texto-carta').value = '';
+      aviso('✉️ Carta enviada a ' + (vecinosJugadores().find((x) => x.uid === escribirA)?.nombre || 'tu vecino')); libretaPagina = 'cartas';
+    }
+  } catch (e) { G.error = e.message; aviso(e.message); }
+  pintarLibreta();
+}
+$('libreta').addEventListener('click', (e) => { const b = e.target.closest('[data-l]'); if (!b || b.tagName === 'FORM') return; e.preventDefault(); accionLibreta(b.dataset.l, b.dataset.v, b); });
+$('libreta').addEventListener('submit', async (e) => {
+  e.preventDefault(); const f = e.target, c = f.querySelector('input')?.value.trim().toUpperCase();
+  if (f.dataset.l === 'formSala') { if (c?.length !== 4) return aviso('El código de sala tiene 4 letras'); return conectarSala({ codigo: c }); }
+  if (f.dataset.l === 'formMudarse') {
+    if (!c) return; try { await G.m.mudarse(c, NOMBRE); aviso('🏘 ¡Te has mudado!'); G.invitacion = null; await cargarGremio(); } catch (er) { G.error = er.message; aviso(er.message); pintarLibreta(); }
+  }
+});
+['pointerdown', 'pointermove', 'wheel'].forEach((t) => $('libreta').addEventListener(t, (e) => e.stopPropagation()));
+
+// =============================================================
 //  BUCLE
 // =============================================================
 const mirar = new THREE.Vector3(), mirarObj = new THREE.Vector3(), posObj = new THREE.Vector3();
@@ -2035,11 +2376,11 @@ let ultimo = performance.now();
 render.setAnimationLoop((ahora) => {
   const real = Math.min(1, (ahora - ultimo) / 1000), dt = Math.min(.05, real); ultimo = ahora; const t = ahora / 1000;
   avanzarReloj(real); pintarEsfera(); if ((guardadoReloj -= dt) < 0) { guardadoReloj = 20; guardarPueblo(); }
-  moverJugador(dt, t); moverPNJ(dt, t); animarMundo(dt, t); camaraSigue(dt); buscarCercano();
+  moverJugador(dt, t); moverPNJ(dt, t); animarMundo(dt, t); camaraSigue(dt); buscarCercano(); actualizarJuntos(dt, t);
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
+window.pueblo = { G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
 </script>
 </body>
 </html>

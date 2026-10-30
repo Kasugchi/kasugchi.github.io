@@ -45,7 +45,7 @@ export const GESTOS = [
   { id: 'sentarse', icono: '🪑', nombre: 'Sentarse' }
 ];
 export const MODOS = { infinita: 'la Mazmorra Infinita', historia: 'el Modo Historia', limbo: 'el Limbo, a rescatar a un caído' };
-export const LUGARES = { tortuga: '🐢 en Morrandar', ligera: '📖 esperando', cabana: '🏠 en la cabaña', juego: '⚔ en la mazmorra' };
+export const LUGARES = { pueblo: '🏘 en el pueblo', tortuga: '🐢 en Morrandar', ligera: '📖 esperando', cabana: '🏠 en la cabaña', juego: '⚔ en la mazmorra' };
 
 // Recuerda en este dispositivo si se prefiere la tortuga o la pantalla ligera.
 export const vistaPreferida = () => leer('criptas_vistaReunion', '');
@@ -239,7 +239,7 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
     },
     cambiar(campos) { Object.assign(mio, campos); return update(nodo, campos).catch((e) => emitir('error', traducir(e))); },
     gesto(id) { return update(nodo, { gesto: { id, n: ahora() } }).catch(() => {}); },
-    frase(texto) { return update(nodo, { frase: { texto: String(texto).slice(0, 60), n: ahora() } }).catch(() => {}); },
+    frase(texto) { return update(nodo, { frase: { texto: String(texto).slice(0, 140), n: ahora() } }).catch(() => {}); },
     proponer(modo) {
       const n = ahora();
       return update(r(codigo, 'reunion'), { propuesta: { modo, de: yo.id, n } })
