@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030093057",
-    "./js/datos.js": "./js/datos.js?v=20261030093057",
-    "./js/firebase.js": "./js/firebase.js?v=20261030093057",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030093057",
-    "./js/ia.js": "./js/ia.js?v=20261030093057",
-    "./js/iconos.js": "./js/iconos.js?v=20261030093057",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030093057",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030093057",
-    "./js/motor.js": "./js/motor.js?v=20261030093057",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030093057",
-    "./js/nube.js": "./js/nube.js?v=20261030093057",
-    "./js/panel.js": "./js/panel.js?v=20261030093057",
-    "./js/planos.js": "./js/planos.js?v=20261030093057",
-    "./js/procedural.js": "./js/procedural.js?v=20261030093057",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030093057",
-    "./js/red.js": "./js/red.js?v=20261030093057",
-    "./js/render.js": "./js/render.js?v=20261030093057",
-    "./js/render3d.js": "./js/render3d.js?v=20261030093057",
-    "./js/reunion.js": "./js/reunion.js?v=20261030093057",
-    "./js/sprites.js": "./js/sprites.js?v=20261030093057",
-    "./js/tablero.js": "./js/tablero.js?v=20261030093057",
-    "./js/ui.js": "./js/ui.js?v=20261030093057",
-    "./js/viajero.js": "./js/viajero.js?v=20261030093057"
+    "./js/acceso.js": "./js/acceso.js?v=20261030093547",
+    "./js/datos.js": "./js/datos.js?v=20261030093547",
+    "./js/firebase.js": "./js/firebase.js?v=20261030093547",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030093547",
+    "./js/ia.js": "./js/ia.js?v=20261030093547",
+    "./js/iconos.js": "./js/iconos.js?v=20261030093547",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030093547",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030093547",
+    "./js/motor.js": "./js/motor.js?v=20261030093547",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030093547",
+    "./js/nube.js": "./js/nube.js?v=20261030093547",
+    "./js/panel.js": "./js/panel.js?v=20261030093547",
+    "./js/planos.js": "./js/planos.js?v=20261030093547",
+    "./js/procedural.js": "./js/procedural.js?v=20261030093547",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030093547",
+    "./js/red.js": "./js/red.js?v=20261030093547",
+    "./js/render.js": "./js/render.js?v=20261030093547",
+    "./js/render3d.js": "./js/render3d.js?v=20261030093547",
+    "./js/reunion.js": "./js/reunion.js?v=20261030093547",
+    "./js/sprites.js": "./js/sprites.js?v=20261030093547",
+    "./js/tablero.js": "./js/tablero.js?v=20261030093547",
+    "./js/ui.js": "./js/ui.js?v=20261030093547",
+    "./js/viajero.js": "./js/viajero.js?v=20261030093547"
   }
 }
 </script>
@@ -151,6 +151,7 @@ const diasFuera = EP.ultimaVisita ? Math.floor((Date.now() - EP.ultimaVisita) / 
 EP.ultimaVisita = Date.now(); guardarPueblo();
 import('./js/nube.js').then(async (m) => {
   const u = await m.usuarioListo(); if (!u) return;
+  m.esAdmin?.().then((si) => { trajesEspeciales = si; if (si && creando) repintarCreador?.(); });
   m.vigilarErrores?.(); m.registrarActividad?.({ tipo: 'entrada', donde: 'pueblo', fecha: Date.now(), mundo: Ficha.mundoActivo() });
   const enNube = await m.leerFichaNube();
   if (enNube && fichaP) { juntarPueblo(enNube.pueblo); fichaP = Ficha.fusionar(fichaP, enNube); fichaP.pueblo = EP; guardarPueblo(); }
@@ -657,7 +658,7 @@ const GEO = {
   pierna: new THREE.CapsuleGeometry(.085, .2, 4, 8), zapato: new THREE.SphereGeometry(.1, 8, 6),
   torso: new THREE.CylinderGeometry(.19, .27, .46, 12), brazo: new THREE.CapsuleGeometry(.065, .2, 4, 8), mano: new THREE.SphereGeometry(.072, 8, 6),
   cabeza: new THREE.SphereGeometry(.38, 20, 16), pelo: new THREE.SphereGeometry(.4, 20, 12, 0, Math.PI * 2, 0, Math.PI * .56),
-  ojo: new THREE.SphereGeometry(.05, 10, 8), brillo: new THREE.SphereGeometry(.018, 6, 4), mejilla: new THREE.SphereGeometry(.06, 10, 8)
+  ojo: new THREE.SphereGeometry(.058, 10, 8), brillo: new THREE.SphereGeometry(.018, 6, 4), mejilla: new THREE.SphereGeometry(.06, 10, 8)
 };
 const texSombra = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); const g = x.createRadialGradient(32, 32, 2, 32, 32, 31); g.addColorStop(0, 'rgba(0,0,0,.35)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(cv); })();
 const matSombra = curvar(new THREE.MeshBasicMaterial({ map: texSombra, transparent: true, depthWrite: false }));
@@ -683,11 +684,11 @@ function chibi(o) {
   cabeza.add(new THREE.Mesh(GEO.cabeza, piel));
   const ojos = [];
   for (const s of [-1, 1]) {
-    const ojo = new THREE.Mesh(GEO.ojo, lam('#2a1a14')); ojo.position.set(s * .13, .02, .335); ojo.scale.set(1, 1.4, .6); cabeza.add(ojo); ojos.push(ojo);
-    const br = new THREE.Mesh(GEO.brillo, lam('#ffffff')); br.position.set(s * .13 + .018, .055, .37); cabeza.add(br);
+    const ojo = new THREE.Mesh(GEO.ojo, lam('#2a1a14')); ojo.position.set(s * .13, 0, .34); ojo.scale.set(1, 1.4, .6); cabeza.add(ojo); ojos.push(ojo);
+    const br = new THREE.Mesh(GEO.brillo, lam('#ffffff')); br.position.set(s * .13 + .02, .04, .375); cabeza.add(br);
     const mj = new THREE.Mesh(GEO.mejilla, lam('#ff9a8a')); mj.position.set(s * .22, -.1, .29); mj.scale.set(1, .6, .4); cabeza.add(mj);
   }
-  if (o.pelo !== false) { const cp = new THREE.Mesh(GEO.pelo, pelo); cp.position.set(0, .05, -.03); cp.scale.set(1.05, 1, 1.07); cabeza.add(cp); }
+  if (o.pelo !== false) { const cp = new THREE.Mesh(GEO.pelo, pelo); cp.position.set(0, .06, -.05); cp.rotation.x = -.42; cp.scale.set(1.05, 1, 1.07); cabeza.add(cp); }
   const extra = EXTRAS[o.extra]; if (extra) extra({ g, cuerpo, cabeza, ojos, brazos, pelo, ropa, piel, o });
   if (o.escala) g.scale.setScalar(o.escala);
   g.add(sombra(.45));
@@ -749,8 +750,9 @@ const EXTRAS = {
     const m = curvar(new THREE.MeshLambertMaterial({ color: '#e6eeff', transparent: true, opacity: .55, side: THREE.DoubleSide }));
     for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(.3, 12), m); a.scale.set(1, 1.5, 1); a.position.set(s * .27, .85, -.2); a.rotation.y = s * .6; a.userData.ala = true; cuerpo.add(a); }
   },
-  viajero({ cabeza, pelo, o }) {
+  viajero({ cabeza, cuerpo, brazos, pelo, o }) {
     const a = o.viajero || {};
+    if (a.traje === 'guardian') return tunicaGuardian({ cabeza, cuerpo, brazos });
     if (a.peinado === 'largo') { const m = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .34, 4, 10), pelo); m.position.set(0, -.2, -.22); cabeza.add(m); }
     if (a.peinado === 'coleta') { const m = new THREE.Mesh(new THREE.SphereGeometry(.15, 10, 8), pelo); m.position.set(0, -.04, -.44); cabeza.add(m); }
     if (a.peinado === 'mono') { const m = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 8), pelo); m.position.set(0, .42, -.1); cabeza.add(m); }
@@ -762,6 +764,39 @@ const EXTRAS = {
   },
   guia({ cabeza, ojos, cuerpo }) { for (const o of ojos) o.visible = false; const v = new THREE.Mesh(new THREE.TorusGeometry(.385, .05, 6, 20).rotateX(Math.PI / 2), lam('#f4ead2')); v.position.y = .03; cabeza.add(v); const t = new THREE.Mesh(new THREE.ConeGeometry(.36, .7, 12), lam('#e8e0f0')); t.position.y = .3; cuerpo.add(t); }
 };
+// La Túnica del Guardián: blanca, con ribetes dorados y runas que brillan en los puños
+const texRunas = (() => {
+  const cv = document.createElement('canvas'); cv.width = 256; cv.height = 32; const x = cv.getContext('2d');
+  x.fillStyle = '#f4f0e6'; x.fillRect(0, 0, 256, 32);
+  x.strokeStyle = '#3ad0ff'; x.lineWidth = 2.5; x.lineCap = 'round'; x.shadowColor = '#3ad0ff'; x.shadowBlur = 6;
+  let semillaR = 7; const r = () => ((semillaR = (semillaR * 1103515245 + 12345) >>> 0) / 4294967296);
+  for (let i = 0; i < 10; i++) {                     // cada runa: un trazo vertical y dos o tres trazos en ángulo
+    const cx = 13 + i * 25; x.beginPath(); x.moveTo(cx, 6); x.lineTo(cx, 26);
+    for (let k = 0; k < 2 + (i % 2); k++) { const y0 = 6 + r() * 12, d = (r() < .5 ? -1 : 1) * 7; x.moveTo(cx, y0); x.lineTo(cx + d, y0 + 6 + r() * 4); }
+    x.stroke();
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; return t;
+})();
+function tunicaGuardian({ cabeza, cuerpo, brazos }) {
+  const blanco = lam('#f6f2ea'), oro = lam('#e0b040', { emissive: '#a07010', emissiveIntensity: .25 });
+  for (const m of cuerpo.children) if (m.geometry === GEO.torso) m.material = blanco;
+  const falda = new THREE.Mesh(new THREE.ConeGeometry(.44, .82, 18, 1, true), lam('#f6f2ea', { side: THREE.DoubleSide })); falda.position.y = .42; cuerpo.add(falda);
+  const bajo = new THREE.Mesh(new THREE.TorusGeometry(.425, .025, 6, 24).rotateX(Math.PI / 2), oro); bajo.position.y = .04; cuerpo.add(bajo);
+  const cinto = new THREE.Mesh(new THREE.TorusGeometry(.245, .03, 6, 18).rotateX(Math.PI / 2), oro); cinto.position.y = .5; cuerpo.add(cinto);
+  const broche = bola(.05, '#3ad0ff', { emissive: '#3ad0ff', emissiveIntensity: .8 }, 8); broche.position.set(0, .5, .25); cuerpo.add(broche);
+  const franja = caja(.06, .5, .02, '#e0b040', { emissive: '#a07010', emissiveIntensity: .25 }); franja.position.set(0, .3, .41); franja.rotation.x = -.5; cuerpo.add(franja);
+  // Capucha echada hacia atrás para que se vea la cara, con su borde dorado
+  const capucha = new THREE.Mesh(new THREE.SphereGeometry(.46, 18, 12, 0, Math.PI * 2, 0, Math.PI * .62), blanco); capucha.position.set(0, .04, -.07); capucha.rotation.x = -.5; cabeza.add(capucha);
+  const borde = new THREE.Mesh(new THREE.TorusGeometry(.36, .02, 6, 22), oro); borde.position.set(0, .05, .23); borde.rotation.x = -.45; borde.scale.set(1, 1.1, 1); cabeza.add(borde);
+  const pico = new THREE.Mesh(new THREE.ConeGeometry(.12, .3, 10), blanco); pico.position.set(0, .22, -.48); pico.rotation.x = -2.2; cabeza.add(pico);
+  // Mangas anchas y puños con runas
+  const matRunas = curvar(new THREE.MeshLambertMaterial({ map: texRunas, emissive: '#3ad0ff', emissiveMap: texRunas, emissiveIntensity: .9 }));
+  for (const b of brazos) {
+    for (const m of b.children) if (m.geometry === GEO.brazo) m.material = blanco;
+    const manga = new THREE.Mesh(new THREE.CylinderGeometry(.08, .15, .3, 12, 1, true), lam('#f6f2ea', { side: THREE.DoubleSide })); manga.position.y = -.14; b.add(manga);
+    const puno = new THREE.Mesh(new THREE.CylinderGeometry(.152, .152, .07, 16, 1, true), matRunas); puno.position.y = -.29; b.add(puno);
+  }
+}
 function gato() {
   const g = new THREE.Group(), cuerpo = new THREE.Group(); g.add(cuerpo); const negro = lam('#262230');
   const c = new THREE.Mesh(new THREE.CapsuleGeometry(.14, .3, 4, 8), negro); c.rotation.x = Math.PI / 2; c.position.y = .25; cuerpo.add(c);
@@ -800,7 +835,7 @@ function animar(ch, dt, andando, t) {
 // ---------- El jugador ----------
 // En el pueblo eres tú: un viajero que te creas a tu gusto (se guarda en tu mundo)
 const ASPECTO_BASE = { peinado: 'corto', pelo: '#5a3a22', piel: '#f4cda6', ropa: '#3a8ab0', pantalon: '#3a4a7a', accesorio: 'ninguno' };
-const chibiViajero = (a) => chibi({ ropa: a.ropa, pantalon: a.pantalon, piel: a.piel, pelo: a.peinado === 'rapado' ? false : a.pelo, extra: 'viajero', viajero: a });
+const chibiViajero = (a) => chibi({ ropa: a.ropa, pantalon: a.pantalon, piel: a.piel, pelo: a.peinado === 'rapado' || a.traje === 'guardian' ? false : a.pelo, extra: 'viajero', viajero: a });
 const J = { ch: chibiViajero(EP.aspecto || ASPECTO_BASE), x: -22, z: 11.5, dir: 0, sentado: false, ir: null, atasco: 0, pasoPrevio: 0 };
 escena.add(J.ch);
 function vestirJugador(a) {
@@ -1384,16 +1419,20 @@ const OPCIONES = [
   ['pantalon', 'Pantalón', ['#3a4a7a', '#4a3a2a', '#6a6a74', '#2a2a30', '#8a6a4a', '#e8e0d0']],
   ['accesorio', 'Un detalle', { ninguno: 'Nada', gorro: 'Gorro', panuelo: 'Pañuelo', gafas: 'Gafas', flor: 'Flor' }]
 ];
+let trajesEspeciales = false;   // la Túnica del Guardián: solo la cuenta del administrador
+let repintarCreador = null;
 function abrirCreador() {
   creando = true; levantar(false); J.ir = null; modoCam = 'espejo'; J.dir = 0;
   const a = { ...ASPECTO_BASE, ...(EP.aspecto || {}) }, caja_ = $('creador');
   const pintar = () => {
-    caja_.innerHTML = `<h2>${EP.aspecto ? '¿Te cambias de aspecto?' : `¡Bienvenido a Morrandar, ${NOMBRE}! ¿Cómo eres?`}</h2>` + OPCIONES.map(([k, titulo, vals]) => `<div class="fila"><b>${titulo}</b><div class="ops2">` +
+    const opciones = trajesEspeciales || a.traje === 'guardian' ? [...OPCIONES, ['traje', 'Traje', { normal: 'El tuyo', guardian: '✦ Túnica del Guardián' }]] : OPCIONES;
+    caja_.innerHTML = `<h2>${EP.aspecto ? '¿Te cambias de aspecto?' : `¡Bienvenido a Morrandar, ${NOMBRE}! ¿Cómo eres?`}</h2>` + opciones.map(([k, titulo, vals]) => `<div class="fila"><b>${titulo}</b><div class="ops2">` +
       (Array.isArray(vals) ? vals.map((c) => `<button class="muestra${a[k] === c ? ' si' : ''}" data-k="${k}" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')
         : Object.entries(vals).map(([v, t]) => `<button class="chip${a[k] === v ? ' si' : ''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')) + '</div></div>').join('') + '<button class="listo">¡Listo!</button>';
     caja_.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.stopPropagation(); a[b.dataset.k] = b.dataset.v; vestirJugador(a); pintar(); }));
     caja_.querySelector('.listo').addEventListener('pointerdown', (e) => { e.stopPropagation(); EP.aspecto = { ...a }; guardarPueblo(); cerrarCreador(); });
   };
+  repintarCreador = pintar;
   caja_.style.display = 'block'; pintar(); vestirJugador(a);
 }
 function cerrarCreador() { creando = false; $('creador').style.display = 'none'; modoCam = 'normal'; aviso(`¡Qué bien te queda, ${NOMBRE}!`); }

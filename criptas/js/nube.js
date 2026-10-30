@@ -15,7 +15,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
-  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, addDoc
+  getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, collectionGroup, addDoc, query, limit
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const auth = getAuth(app);
@@ -162,4 +162,11 @@ export function vigilarErrores() {
 // Anuncio para todos en la portada (lo escribe el panel en config/anuncio).
 export async function leerAnuncio() {
   try { const d = (await getDoc(doc(db, 'config', 'anuncio'))).data(); return d?.texto ? d : null; } catch { return null; }
+}
+
+// ¿Es la cuenta del administrador? Solo él puede leer las partidas de todos (lo dicen las
+// reglas de Firestore, para el panel), así que se prueba a leer una: si deja, es él.
+export async function esAdmin() {
+  if (sinUsuario()) return false;
+  try { await getDocs(query(collectionGroup(db, 'partidas'), limit(1))); return true; } catch { return false; }
 }
