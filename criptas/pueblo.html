@@ -12,29 +12,30 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030143754",
-    "./js/datos.js": "./js/datos.js?v=20261030143754",
-    "./js/firebase.js": "./js/firebase.js?v=20261030143754",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030143754",
-    "./js/ia.js": "./js/ia.js?v=20261030143754",
-    "./js/iconos.js": "./js/iconos.js?v=20261030143754",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030143754",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030143754",
-    "./js/motor.js": "./js/motor.js?v=20261030143754",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030143754",
-    "./js/nube.js": "./js/nube.js?v=20261030143754",
-    "./js/panel.js": "./js/panel.js?v=20261030143754",
-    "./js/planos.js": "./js/planos.js?v=20261030143754",
-    "./js/procedural.js": "./js/procedural.js?v=20261030143754",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030143754",
-    "./js/red.js": "./js/red.js?v=20261030143754",
-    "./js/render.js": "./js/render.js?v=20261030143754",
-    "./js/render3d.js": "./js/render3d.js?v=20261030143754",
-    "./js/reunion.js": "./js/reunion.js?v=20261030143754",
-    "./js/sprites.js": "./js/sprites.js?v=20261030143754",
-    "./js/tablero.js": "./js/tablero.js?v=20261030143754",
-    "./js/ui.js": "./js/ui.js?v=20261030143754",
-    "./js/viajero.js": "./js/viajero.js?v=20261030143754"
+    "./js/acceso.js": "./js/acceso.js?v=20261030165219",
+    "./js/datos.js": "./js/datos.js?v=20261030165219",
+    "./js/firebase.js": "./js/firebase.js?v=20261030165219",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030165219",
+    "./js/ia.js": "./js/ia.js?v=20261030165219",
+    "./js/iconos.js": "./js/iconos.js?v=20261030165219",
+    "./js/insultos.js": "./js/insultos.js?v=20261030165219",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030165219",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030165219",
+    "./js/motor.js": "./js/motor.js?v=20261030165219",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030165219",
+    "./js/nube.js": "./js/nube.js?v=20261030165219",
+    "./js/panel.js": "./js/panel.js?v=20261030165219",
+    "./js/planos.js": "./js/planos.js?v=20261030165219",
+    "./js/procedural.js": "./js/procedural.js?v=20261030165219",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030165219",
+    "./js/red.js": "./js/red.js?v=20261030165219",
+    "./js/render.js": "./js/render.js?v=20261030165219",
+    "./js/render3d.js": "./js/render3d.js?v=20261030165219",
+    "./js/reunion.js": "./js/reunion.js?v=20261030165219",
+    "./js/sprites.js": "./js/sprites.js?v=20261030165219",
+    "./js/tablero.js": "./js/tablero.js?v=20261030165219",
+    "./js/ui.js": "./js/ui.js?v=20261030165219",
+    "./js/viajero.js": "./js/viajero.js?v=20261030165219"
   }
 }
 </script>
@@ -159,6 +160,7 @@ import './js/acceso.js';
 import * as THREE from 'three';
 import { mergeGeometries } from './js/vendor/addons/utils/BufferGeometryUtils.js';
 import * as Ficha from './js/viajero.js';
+import * as Ins from './js/insultos.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -1029,7 +1031,7 @@ const VEC = {
     regalos: ['un pollo de goma (con polea)', 'un mapa del tesoro dibujado por él. La X está en su casa', 'su sombrero de pirata (todavía le queda grande)'],
     encargo: { cosa: 'un mapa del tesoro (dibujado por él)', para: 'brumas' },
     gracias: (cosa, de) => `¿¡${cosa}!? ¿De ${de}? ¡Esto es lo más pirata que me ha pasado nunca!`,
-    ops: () => [['Ver los muebles («Muebles Brea»)', () => tienda()], ['¡Acepto el duelo de insultos!', () => hablar('Rufo Brea', ['¡Ja! ¡Prepárate para la humillación más elegante de tu vida!'], [['¡En guardia!', () => irA('duelo.html')], ['Mejor otro día', cerrarDialogo]], '#2f4f7a', 520)],
+    ops: () => [['Ver los muebles («Muebles Brea»)', () => tienda()], ['¡Acepto el duelo de insultos!', () => duelaRufo()], ['Ir a la taberna de los piratas', () => irA('duelo.html')],
       ['¿Qué monstruo de tres cabezas?', () => hablar('Rufo Brea', ['¡Ahí! ¡Detrás de ti! ¡Mira, mira!'], [['Girarse', () => { cerrarDialogo(); J.dir += Math.PI; setTimeout(() => { J.dir -= Math.PI; hablar('…', ['No hay nada. Cuando vuelves a mirar, Rufo silba mirando al cielo.'], null, '#8a7a6a', 300); }, 1300); }]], '#2f4f7a', 520)],
       ['Hoy no, Rufo', cerrarDialogo]],
     dormido: 'Rufo ensaya hasta en sueños: «¡Tienes la gracia de un ancla oxidada!»… y luego ronca.'
@@ -1534,6 +1536,82 @@ function comprar(k) {
   sumarAmistad('rufo', 1); guardarPueblo();
   hablar(nombreCon(R), [uno(['¡Vendido! Te lo dejo en tu baúl. Garantía pirata: si se rompe, ya venía así.', '¡Trato hecho! Si oyes ruidos dentro, no es nada. Seguramente.', '¡Gran elección! Es lo que habría comprado el capitán Brea. Que soy yo.'])], [['Ver más', () => tienda()], ['Ya está', cerrarDialogo]], d.color, d.voz);
   aviso(`${M.e} ${M.n} → tu baúl`);
+}
+
+// ---------- Duelo de insultos con Rufo, dentro del bocadillo (mejor de 3 asaltos) ----------
+// Mismas reglas que duelo.html: al perder un asalto aprendes el insulto o la réplica del rival.
+// Rufo es novato: sabe pocos insultos y solo acierta tu insulto a veces. Las opciones van
+// recortadas para que quepan en los botones del móvil (el texto entero sale en el bocadillo).
+function duelaRufo() {
+  const R = PNJ.find((p) => p.id === 'rufo'), d = VEC.rufo, cu = Ins.cuaderno;
+  const dice = (textos, ops) => hablar(nombreCon(R), textos, ops, d.color, d.voz);
+  const corto = (t) => (t.length <= 30 ? t : t.slice(0, 30).replace(/\s+\S*$/, '') + '…');
+  const mezcla = (l) => l.map((x) => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map((x) => x[1]);
+  const sabe = ['lento', 'loro', 'tiembla', 'chiste', 'pulpo'];
+  const du = { yo: 0, el: 0, ronda: 0, ataca: Math.random() < .5 ? 'el' : 'yo', usados: [] };
+  const aprende = (clase, id) => {
+    if (cu[clase].includes(id)) return;
+    cu[clase].push(id); Ins.guardarCuaderno();
+    aviso(clase === 'insultos' ? '📜 Insulto nuevo en tu cuaderno' : '📜 Réplica nueva en tu cuaderno');
+  };
+  const acabado = () => du.yo >= 2 || du.el >= 2 || du.ronda >= 3;
+  const cierra = (textos) => dice(textos, [[acabado() ? 'Ver el resultado' : 'Siguiente asalto', acabado() ? fin : asalto]]);
+  function asalto() { du.ronda++; if (du.ataca === 'el') ataqueRufo(); else ataqueMio(); }
+  // Rufo te insulta: eliges réplica entre las de tu cuaderno (como mucho 4) o una torpe
+  function ataqueRufo() {
+    let id = uno(sabe.filter((x) => !du.usados.includes(x)));
+    if (!id) { du.usados = []; id = uno(sabe); }
+    du.usados.push(id);
+    const p = Ins.par(id); aprende('insultos', id);
+    const mias = cu.replicas.map(Ins.par).filter(Boolean), buena = mias.find((q) => q.id === id);
+    const otras = mezcla(mias.filter((q) => q.id !== id)).slice(0, buena ? 3 : 4);
+    const ops = mezcla(buena ? [buena, ...otras] : otras).map((q) => [corto(q.r), () => replica(id, q.id, q.r)]);
+    const torpe = uno(Ins.TORPES); ops.push([corto(torpe), () => replica(id, '', torpe)]);
+    dice([`Asalto ${du.ronda}/3 · Rufo: «${p.t}»`], ops);
+  }
+  function replica(id, rid, texto) {
+    const mio = `Tú: «${texto}»`;
+    if (rid === id) {
+      du.yo++; du.ataca = 'yo';
+      return cierra([mio, uno(['¡Arg! ¡Buena esa!', '¡Uf! Esa me la apunto para usarla yo.', '¡¿Cómo?! ¡Esa me la tenía que saber yo!'])]);
+    }
+    if (!rid && Math.random() < .4) {
+      du.ataca = 'yo';
+      return cierra([mio, 'Rufo se queda mirando al techo… y tú también. Asalto en tablas.']);
+    }
+    du.el++; du.ataca = 'el'; aprende('replicas', id);
+    cierra([mio, `${uno(['¡Ja! ¡Te he pillado!', '¡Un punto para el capitán Brea!', '¡Qué mal te ha salido! ¡Y qué bien me ha salido a mí!'])} La buena era: «${Ins.par(id).r}».`]);
+  }
+  // Te toca insultar a ti: eliges entre tus insultos (como mucho 4) o uno torpe
+  function ataqueMio() {
+    const ops = mezcla(cu.insultos.map(Ins.par).filter(Boolean)).slice(0, 4).map((p) => [corto(p.t), () => insulto(p, p.t)]);
+    const torpe = uno(Ins.TORPES); ops.push([corto(torpe), () => insulto(null, torpe)]);
+    dice([`Asalto ${du.ronda}/3 · ¡Te toca insultar!`], ops);
+  }
+  function insulto(p, texto) {
+    const mio = `Tú: «${texto}»`;
+    if (p && Math.random() < .25) {
+      du.el++; du.ataca = 'el'; aprende('replicas', p.id);
+      return cierra([mio, `Rufo: «${p.r}»`, uno(['¡Eso sí me lo sabía!', '¡Lo ensayé con el espantapájaros!'])]);
+    }
+    du.yo++; du.ataca = 'yo';
+    cierra([mio, uno(Ins.NO_SABE)]);
+  }
+  function fin() {
+    const marcador = `Resultado: tú ${du.yo} – Rufo ${du.el}.`;
+    let frase;
+    if (du.yo > du.el) {
+      sumarAmistad('rufo', 1); guardarPueblo(); aviso('♥ Rufo te admira un poco más');
+      frase = uno(['¡Imposible! ¡Esto lo ensayé delante del espantapájaros y siempre ganaba yo!', '¡Me has ganado! Apúntalo en mi lápida: «Perdió con estilo».', 'Vale, vale, eres mejor insultador que yo. Pero yo soy más simpático.']);
+    } else if (du.el > du.yo) {
+      frase = uno(['¡He ganado! ¡He ganado! ¿Lo ha visto alguien? ¿Ni el espantapájaros?', '¡Victoria pirata! Y no te agobies: perder también se aprende. Lo sé por experiencia.', '¡Toma ya! Pero tranquilo, que te queda cuaderno por rellenar.']);
+    } else {
+      frase = uno(['¡Empate! Digamos que he ganado yo… en espíritu.', 'Ni tú ni yo. Muy pirata: nadie paga la ronda.', 'Un empate. Mi madre dice que eso es lo que pasa cuando los dos sois tercos.']);
+    }
+    dice([marcador, frase], [['Otro duelo', duelaRufo], ['Ya vale, Rufo', cerrarDialogo]]);
+  }
+  dice(['¡Ja! ¡Prepárate para la humillación más elegante de tu vida!', `Mejor de 3 asaltos. Tu cuaderno: ${cu.insultos.length} insultos y ${cu.replicas.length} réplicas. Si fallas, aprendes.`],
+    [['¡En guardia!', asalto], ['Mejor otro día', cerrarDialogo]]);
 }
 
 // =============================================================
