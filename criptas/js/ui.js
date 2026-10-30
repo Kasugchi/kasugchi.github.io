@@ -970,6 +970,7 @@ async function entrarPorReunion() {
   catch (e) { app.modo = null; avisoPortada(e.message); }
 }
 $('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html?elegir'; });
+$('#b-pueblo')?.addEventListener('click', () => { location.href = 'pueblo.html'; });
 
 // =============================================================
 //  RED: anfitrión

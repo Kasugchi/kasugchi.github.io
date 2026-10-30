@@ -12,31 +12,31 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030172849",
-    "./js/campanas.js": "./js/campanas.js?v=20261030172849",
-    "./js/datos.js": "./js/datos.js?v=20261030172849",
-    "./js/firebase.js": "./js/firebase.js?v=20261030172849",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030172849",
-    "./js/ia.js": "./js/ia.js?v=20261030172849",
-    "./js/iconos.js": "./js/iconos.js?v=20261030172849",
-    "./js/insultos.js": "./js/insultos.js?v=20261030172849",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030172849",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030172849",
-    "./js/motor.js": "./js/motor.js?v=20261030172849",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030172849",
-    "./js/nube.js": "./js/nube.js?v=20261030172849",
-    "./js/panel.js": "./js/panel.js?v=20261030172849",
-    "./js/planos.js": "./js/planos.js?v=20261030172849",
-    "./js/procedural.js": "./js/procedural.js?v=20261030172849",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030172849",
-    "./js/red.js": "./js/red.js?v=20261030172849",
-    "./js/render.js": "./js/render.js?v=20261030172849",
-    "./js/render3d.js": "./js/render3d.js?v=20261030172849",
-    "./js/reunion.js": "./js/reunion.js?v=20261030172849",
-    "./js/sprites.js": "./js/sprites.js?v=20261030172849",
-    "./js/tablero.js": "./js/tablero.js?v=20261030172849",
-    "./js/ui.js": "./js/ui.js?v=20261030172849",
-    "./js/viajero.js": "./js/viajero.js?v=20261030172849"
+    "./js/acceso.js": "./js/acceso.js?v=20261030173336",
+    "./js/campanas.js": "./js/campanas.js?v=20261030173336",
+    "./js/datos.js": "./js/datos.js?v=20261030173336",
+    "./js/firebase.js": "./js/firebase.js?v=20261030173336",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030173336",
+    "./js/ia.js": "./js/ia.js?v=20261030173336",
+    "./js/iconos.js": "./js/iconos.js?v=20261030173336",
+    "./js/insultos.js": "./js/insultos.js?v=20261030173336",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030173336",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030173336",
+    "./js/motor.js": "./js/motor.js?v=20261030173336",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030173336",
+    "./js/nube.js": "./js/nube.js?v=20261030173336",
+    "./js/panel.js": "./js/panel.js?v=20261030173336",
+    "./js/planos.js": "./js/planos.js?v=20261030173336",
+    "./js/procedural.js": "./js/procedural.js?v=20261030173336",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030173336",
+    "./js/red.js": "./js/red.js?v=20261030173336",
+    "./js/render.js": "./js/render.js?v=20261030173336",
+    "./js/render3d.js": "./js/render3d.js?v=20261030173336",
+    "./js/reunion.js": "./js/reunion.js?v=20261030173336",
+    "./js/sprites.js": "./js/sprites.js?v=20261030173336",
+    "./js/tablero.js": "./js/tablero.js?v=20261030173336",
+    "./js/ui.js": "./js/ui.js?v=20261030173336",
+    "./js/viajero.js": "./js/viajero.js?v=20261030173336"
   }
 }
 </script>
@@ -118,6 +118,11 @@
   #libreta .lista small { opacity: .7; text-align: right; }
   #libreta .cartas li { cursor: pointer; }
   #libreta .mini { border: 0; background: #f2e6c8; border-radius: 999px; font: 800 11px 'Nunito', sans-serif; padding: 2px 8px; margin-left: 4px; cursor: pointer; }
+  body:has(#libreta.ver) #aviso { top: auto; bottom: max(90px, env(safe-area-inset-bottom)); z-index: 30; }
+  #libreta .canal { display: grid; grid-template-columns: 1fr 1.3fr 34px; gap: 10px; align-items: center; padding: 10px 4px; border-bottom: 2px dashed #eadcb8; }
+  #libreta .canal span { display: grid; } #libreta .canal small { font-size: 11px; color: #8a6a4a; font-weight: 700; }
+  #libreta .canal input { width: 100%; accent-color: #c0503a; } #libreta .canal output { text-align: right; font: 800 13px 'Nunito', sans-serif; color: #8a6a4a; font-variant-numeric: tabular-nums; }
+  #libreta .mezcla.muda { opacity: .45; }
   #libreta .registro { background: #f6ecd2; border-radius: 16px; padding: 8px 12px; font-size: 13px; margin: 6px 0 10px; max-height: 150px; overflow: auto; }
   #libreta .carta { background: #fffdf4; border-radius: 16px; padding: 14px 16px; margin: 6px 0 10px; font-size: 16px; font-weight: 600; box-shadow: inset 0 0 0 2px #eadcb8; white-space: normal; }
   #libreta .carta small { display: block; margin-top: 8px; opacity: .6; text-align: right; }
@@ -1640,6 +1645,13 @@ function duelaRufo() {
 //  (todo compuesto en directo; ninguna canción es igual dos veces)
 // =============================================================
 const A = { ctx: null, on: leer('criptas_pueblo_sonido', '1') !== '0' };
+// El mezclador del pueblo (☰ → Sonido): música, ambiente (mar y lluvia) y voces. Se guarda en el dispositivo.
+const MZ = (() => { const b = { musica: 1, ambiente: 1, voces: 1 }; try { return { ...b, ...JSON.parse(leer('criptas_pueblo_mezcla', '{}')) }; } catch { return b; } })();
+function aplicarMezcla() {
+  guardarLS('criptas_pueblo_mezcla', JSON.stringify(MZ));
+  if (!A.ctx) return;
+  mezclar(); A.voz.gain.setTargetAtTime(.9 * MZ.voces, A.ctx.currentTime, .1);
+}
 const mf = (m) => 440 * 2 ** ((m - 69) / 12);
 const DISCOS = [
   { nombre: 'The Quiet Corner', archivo: 'musica/cantina-the-quiet-corner.mp3', bpm: 72 },
@@ -1656,8 +1668,8 @@ function arrancarAudio() {
   const largo = ctx.sampleRate * 2.4, imp = ctx.createBuffer(2, largo, ctx.sampleRate);
   for (let c = 0; c < 2; c++) { const d = imp.getChannelData(c); for (let i = 0; i < largo; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / largo) ** 2.6; }
   const conv = ctx.createConvolver(); conv.buffer = imp; A.rev = ctx.createGain(); A.rev.gain.value = .3; A.rev.connect(conv); conv.connect(A.master);
-  A.fuera = ctx.createGain(); A.dentro = ctx.createGain(); A.voz = ctx.createGain(); A.voz.gain.value = .9;
-  A.fuera.gain.value = jazz() ? 0 : sala ? .3 : 1; A.dentro.gain.value = jazz() ? 1 : 0;
+  A.fuera = ctx.createGain(); A.dentro = ctx.createGain(); A.voz = ctx.createGain(); A.voz.gain.value = .9 * MZ.voces;
+  A.fuera.gain.value = (jazz() ? 0 : sala ? .3 : 1) * MZ.musica; A.dentro.gain.value = (jazz() ? 1 : 0) * MZ.musica;
   for (const g of [A.fuera, A.dentro, A.voz]) { g.connect(A.master); g.connect(A.rev); }
   const n = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const nd = n.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1; A.ruido = n;
   // Olas: ruido filtrado que respira despacio
@@ -1667,7 +1679,7 @@ function arrancarAudio() {
   olas.connect(lp); lp.connect(A.olas); A.olas.connect(A.fuera); olas.start();
   // Las canciones grabadas (las que hagas con IA) suenan por su propio canal, con el mismo fundido
   A.cancion = new Audio(); A.cancion.loop = true; A.cancion.preload = 'auto';
-  A.cancionVol = ctx.createGain(); A.cancionVol.gain.value = jazz() && DISCOS[disco].archivo ? .55 : 0;
+  A.cancionVol = ctx.createGain(); A.cancionVol.gain.value = jazz() && DISCOS[disco].archivo ? .55 * MZ.musica : 0;
   ctx.createMediaElementSource(A.cancion).connect(A.cancionVol); A.cancionVol.connect(A.master);
   ponerCancion();
   A.t0 = ctx.currentTime + .15; A.pasoF = 0; A.pasoD = 0;
@@ -1739,7 +1751,7 @@ function ponerCancion() {
   if (!A.cancion) return;
   const d = DISCOS[disco], t = A.ctx.currentTime, suena = jazz() && !!d.archivo;
   if (d.archivo && !A.cancion.src.endsWith(d.archivo)) { A.cancion.src = d.archivo; A.cancion.currentTime = 0; }
-  A.cancionVol.gain.setTargetAtTime(suena ? .55 : 0, t, .5);
+  A.cancionVol.gain.setTargetAtTime(suena ? .55 * MZ.musica : 0, t, .5);
   clearTimeout(ponerCancion.t);
   if (suena) A.cancion.play().catch(() => {}); else ponerCancion.t = setTimeout(() => A.cancion.pause(), 2000);
 }
@@ -1747,7 +1759,7 @@ function ponerCancion() {
 function jazz() { return sala === 'cantina' || (sala === 'casa' && musicaCasa); }
 function mezclar() {
   if (!A.ctx) return; const t = A.ctx.currentTime;
-  A.fuera.gain.setTargetAtTime(jazz() ? 0 : sala ? .3 : 1, t, .5); A.dentro.gain.setTargetAtTime(jazz() ? 1 : 0, t, .5);
+  A.fuera.gain.setTargetAtTime((jazz() ? 0 : sala ? .3 : 1) * MZ.musica, t, .5); A.dentro.gain.setTargetAtTime((jazz() ? 1 : 0) * MZ.musica, t, .5);
   ponerCancion();
 }
 function blip(f) { if (!A.ctx || !A.on) return; const t = A.ctx.currentTime; nota(A.voz, f, t, .06, .035, 'triangle', .004); }
@@ -2321,7 +2333,7 @@ function pintarLibreta() {
       app('pueblo', '🏘', 'Tu pueblo', G.cargando ? '…' : G.pid ? (soyDueno() ? 'Eres el fundador' : 'De ' + escH(G.pueblo?.miembros?.[G.pueblo.dueno]?.nombre || 'otro')) : 'Solo tú') +
       app('cartas', '✉️', 'Cartas', sinLeer() ? sinLeer() + ' sin leer' : G.pid ? 'Buzón' : 'Con tu familia', sinLeer() ? ' nueva' : '') +
       app('decorar', '🪑', 'Decorar', enCasa ? 'Tu casa' : 'Entra en tu casa', enCasa ? '' : ' apagada') +
-      app('musica', A.on ? '🔊' : '🔇', 'Música', A.on ? 'Sonando' : 'Apagada') +
+      app('sonido', A.on ? '🔊' : '🔇', 'Sonido', A.on ? 'Mezclador' : 'Apagado') +
       app('aspecto', '🪞', 'Tu aspecto', enCasa ? 'Al espejo' : 'En el espejo de casa', enCasa ? '' : ' apagada') +
       app('tortuga', '🐢', 'Morrandar', 'La tortuga') +
       app('menu', '📖', 'El libro', 'Menú del juego') +
@@ -2368,17 +2380,23 @@ function pintarLibreta() {
     else { escribirA = vec.some((v) => v.uid === escribirA) ? escribirA : vec[0].uid;
       h = tit('Escribir una carta') + `<div class="ops2">${vec.map((v) => `<button class="chip${v.uid === escribirA ? ' si' : ''}" data-l="para" data-v="${v.uid}">Para ${escH(v.nombre)}</button>`).join('')}</div>
         <textarea maxlength="600" placeholder="Querido vecino…" id="texto-carta">${escH($('texto-carta')?.value || '')}</textarea><button class="grande" data-l="enviar">Echarla al buzón</button>`; }
+  } else if (pg === 'sonido') {
+    const canal = (k, t, sub) => `<label class="canal"><span><b>${t}</b><small>${sub}</small></span><input type="range" min="0" max="100" step="1" data-mz="${k}" value="${Math.round(MZ[k] * 100)}" id="mz-${k}"><output id="mzv-${k}">${Math.round(MZ[k] * 100)}</output></label>`;
+    h = tit('Sonido') + `<button class="grande${A.on ? ' claro' : ''}" data-l="musica">${A.on ? '🔇 Silenciar todo' : '🔊 Activar el sonido'}</button>
+      <div class="mezcla${A.on ? '' : ' muda'}">${canal('musica', 'Música', 'paseo, cantina y gramófono')}${canal('ambiente', 'Ambiente', 'el mar y la lluvia')}${canal('voces', 'Voces', 'los «bip» de los diálogos')}</div>
+      <p class="nota">Se guarda en este dispositivo.</p>`;
   } else if (pg === 'ayuda') {
     h = tit('Cómo se juega') + `<ul class="lista"><li><span>Andar</span><small>toca o mantén el dedo · WASD o flechas</small></li><li><span>Correr</span><small>toca lejos · Mayús</small></li><li><span>Hablar, entrar, usar</span><small>botón de abajo · E</small></li>
       <li><span>Tu casa</span><small>dentro, «Decorar» en la libreta</small></li><li><span>Muebles</span><small>Rufo, regalos de vecinos y el buzón</small></li><li><span>Dormir</span><small>en tu cama, hasta las 7:00</small></li></ul>`;
   }
   L.innerHTML = h;
+  L.querySelectorAll('[data-mz]').forEach((r) => r.addEventListener('input', () => { MZ[r.dataset.mz] = r.value / 100; $('mzv-' + r.dataset.mz).textContent = r.value; arrancarAudio(); aplicarMezcla(); if (r.dataset.mz === 'voces') blip(520); }));
   const inp = L.querySelector('.codigo-in'); inp?.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
 }
 async function accionLibreta(a, v, el) {
   const m = G.m;
   if (a === 'cerrar') return cerrarLibreta();
-  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
+  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
   if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }
   if (a === 'decorar') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); empezarDeco(); } else aviso('Entra en tu casa para decorarla'); return; }
   if (a === 'aspecto') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); abrirCreador(); } else aviso('El espejo está en tu casa'); return; }
@@ -2591,7 +2609,7 @@ function ambiente(dt, t) {
       const lp = A.ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 6500;
       A.lluvia = A.ctx.createGain(); A.lluvia.gain.value = 0; src.connect(hp); hp.connect(lp); lp.connect(A.lluvia); A.lluvia.connect(A.master); src.start();
     }
-    A.lluvia.gain.setTargetAtTime(pr.tipo === 'lluvia' ? p * (dentro ? .05 : .2) : 0, A.ctx.currentTime, .5);
+    A.lluvia.gain.setTargetAtTime(pr.tipo === 'lluvia' ? p * (dentro ? .05 : .2) * MZ.ambiente : 0, A.ctx.currentTime, .5);
   }
 }
 
@@ -2633,7 +2651,7 @@ function animarMundo(dt, t) {
   for (const m of mariposas) { const u = m.userData; u.fase += dt; m.position.set(u.cx + Math.sin(u.fase * .7) * 2.2, alto(m.position.x, m.position.z) + .9 + Math.sin(u.fase * 2.3) * .3, u.cz + Math.cos(u.fase * .5) * 1.8); m.children[0].rotation.y = Math.sin(u.fase * 18) * .9; m.children[1].rotation.y = -Math.sin(u.fase * 18) * .9; m.rotation.y = u.fase * .6; }
   if (sala === 'cantina') { for (const [i, f] of cantinaDentro.userData.llamas.entries()) f.scale.y = .8 + Math.sin(t * 9 + i * 2) * .2 + Math.random() * .1; luzFuego.intensity = 20 + Math.sin(t * 11) * 3 + Math.random() * 3; }
   // las olas suenan más cerca de la playa
-  if (A.ctx && A.olas) A.olas.gain.setTargetAtTime(dentro ? 0 : .02 + .1 * suave(4, 22, J.z) + .05 * suave(26, 32, Math.abs(J.x)), A.ctx.currentTime, .4);
+  if (A.ctx && A.olas) A.olas.gain.setTargetAtTime(dentro ? 0 : (.02 + .1 * suave(4, 22, J.z) + .05 * suave(26, 32, Math.abs(J.x))) * MZ.ambiente, A.ctx.currentTime, .4);
 }
 actualizarHorarios(true);
 let guardadoReloj = 20;
