@@ -12,29 +12,29 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030091242",
-    "./js/datos.js": "./js/datos.js?v=20261030091242",
-    "./js/firebase.js": "./js/firebase.js?v=20261030091242",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030091242",
-    "./js/ia.js": "./js/ia.js?v=20261030091242",
-    "./js/iconos.js": "./js/iconos.js?v=20261030091242",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030091242",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030091242",
-    "./js/motor.js": "./js/motor.js?v=20261030091242",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030091242",
-    "./js/nube.js": "./js/nube.js?v=20261030091242",
-    "./js/panel.js": "./js/panel.js?v=20261030091242",
-    "./js/planos.js": "./js/planos.js?v=20261030091242",
-    "./js/procedural.js": "./js/procedural.js?v=20261030091242",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030091242",
-    "./js/red.js": "./js/red.js?v=20261030091242",
-    "./js/render.js": "./js/render.js?v=20261030091242",
-    "./js/render3d.js": "./js/render3d.js?v=20261030091242",
-    "./js/reunion.js": "./js/reunion.js?v=20261030091242",
-    "./js/sprites.js": "./js/sprites.js?v=20261030091242",
-    "./js/tablero.js": "./js/tablero.js?v=20261030091242",
-    "./js/ui.js": "./js/ui.js?v=20261030091242",
-    "./js/viajero.js": "./js/viajero.js?v=20261030091242"
+    "./js/acceso.js": "./js/acceso.js?v=20261030093057",
+    "./js/datos.js": "./js/datos.js?v=20261030093057",
+    "./js/firebase.js": "./js/firebase.js?v=20261030093057",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030093057",
+    "./js/ia.js": "./js/ia.js?v=20261030093057",
+    "./js/iconos.js": "./js/iconos.js?v=20261030093057",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030093057",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030093057",
+    "./js/motor.js": "./js/motor.js?v=20261030093057",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030093057",
+    "./js/nube.js": "./js/nube.js?v=20261030093057",
+    "./js/panel.js": "./js/panel.js?v=20261030093057",
+    "./js/planos.js": "./js/planos.js?v=20261030093057",
+    "./js/procedural.js": "./js/procedural.js?v=20261030093057",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030093057",
+    "./js/red.js": "./js/red.js?v=20261030093057",
+    "./js/render.js": "./js/render.js?v=20261030093057",
+    "./js/render3d.js": "./js/render3d.js?v=20261030093057",
+    "./js/reunion.js": "./js/reunion.js?v=20261030093057",
+    "./js/sprites.js": "./js/sprites.js?v=20261030093057",
+    "./js/tablero.js": "./js/tablero.js?v=20261030093057",
+    "./js/ui.js": "./js/ui.js?v=20261030093057",
+    "./js/viajero.js": "./js/viajero.js?v=20261030093057"
   }
 }
 </script>
@@ -46,6 +46,16 @@
   .arriba { top: max(10px, env(safe-area-inset-top)); left: 12px; right: 12px; display: flex; gap: 8px; align-items: center; pointer-events: none; }
   .titulo { flex: 1; color: #fff; font: 800 22px 'Nunito', sans-serif; text-shadow: 0 2px 0 rgba(60,90,40,.45), 0 0 12px rgba(0,0,0,.15); }
   .titulo small { display: block; font-size: 12px; font-weight: 600; opacity: .9; }
+  .hora { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 800; color: #5a4030; background: #fff8e6; border-radius: 999px; padding: 2px 10px; box-shadow: 0 2px 0 #d9c49a; text-shadow: none; }
+  #creador { left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100vw); max-height: 52vh; overflow: auto; background: #fff8e6; border-radius: 28px 28px 0 0; padding: 16px 18px max(16px, env(safe-area-inset-bottom)); box-shadow: 0 -6px 30px rgba(0,0,0,.2); display: none; }
+  #creador h2 { margin: 0 0 8px; font-size: 20px; color: #c0503a; }
+  #creador .fila { margin: 8px 0; }
+  #creador .fila b { display: block; font-size: 13px; color: #8a6a4a; margin-bottom: 4px; }
+  #creador .ops2 { display: flex; flex-wrap: wrap; gap: 6px; }
+  #creador .chip { font: 800 13px 'Nunito', sans-serif; border: 2px solid transparent; background: #f2e6c8; color: #5a4030; border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  #creador .muestra { width: 30px; height: 30px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px #e0d0a8; cursor: pointer; padding: 0; }
+  #creador .chip.si, #creador .muestra.si { border-color: #c0503a; box-shadow: 0 0 0 2px #c0503a; }
+  #creador .listo { width: 100%; margin-top: 10px; font: 800 17px 'Nunito', sans-serif; background: #c0503a; color: #fff; border: 0; border-radius: 999px; padding: 11px; cursor: pointer; box-shadow: 0 3px 0 #8a3020; }
   .boton { pointer-events: auto; font: 800 14px 'Nunito', sans-serif; color: #5a4030; background: #fff8e6; border: 0; border-radius: 999px; padding: 8px 14px; box-shadow: 0 3px 0 #d9c49a; cursor: pointer; }
   .boton:active { transform: translateY(2px); box-shadow: 0 1px 0 #d9c49a; }
   #accion { left: 50%; bottom: max(22px, env(safe-area-inset-bottom)); transform: translateX(-50%); font-size: 17px; padding: 12px 22px; display: none; }
@@ -72,7 +82,7 @@
 <body>
 <div id="fundido"></div>
 <div class="ui arriba">
-  <div class="titulo">Morrandar<small>el pueblo · prueba</small></div>
+  <div class="titulo">Morrandar<small>el pueblo · prueba</small><span class="hora" id="hora"></span></div>
   <button class="boton" id="b-sonido" title="Música">🔊</button>
   <a class="boton" href="tortuga.html" style="text-decoration:none">🐢 Tortuga</a>
   <a class="boton" href="index.html" style="text-decoration:none">☰ Menú</a>
@@ -80,6 +90,7 @@
 <div class="ui" id="aviso"></div>
 <button class="ui boton" id="accion"></button>
 <div class="ui" id="bocadillo"><div class="ops"></div><div class="caja"><span class="nombre"></span><span class="texto"></span><span class="sigue">▼</span></div></div>
+<div class="ui" id="creador"></div>
 <div class="ui ayuda">Toca o mantén pulsado para andar · WASD o flechas · Mayús para correr · E para hablar</div>
 
 <script type="module">
@@ -100,7 +111,7 @@ const guardarLS = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin
 let ficha = null; try { ficha = Ficha.leerFicha(); } catch { ficha = null; }
 const heroeF = ficha?.heroes?.[ficha.activo] || null;
 const CLASE = heroeF?.tipo || leer('criptas_claseBase', 'barbaro');
-const NOMBRE = heroeF?.nombre || ficha?.nombre || leer('criptas_nombre', '') || 'Viajero';
+const NOMBRE = ficha?.nombre || leer('criptas_nombre', '') || heroeF?.nombre || 'Viajero';   // en el pueblo eres tú, no tu héroe
 const DIARIO = ficha?.diario || { misiones: 0, victorias: 0, jefes: 0, monstruos: 0, pisoMax: 0 };
 const FAMA = ficha?.tortuga?.fama ?? 0;
 const TROFEO = ficha?.cabana?.trofeos?.slice(-1)[0] || null;
@@ -116,8 +127,26 @@ function juntarPueblo(otro) {   // lo de otro dispositivo: nos quedamos con lo m
   for (const [k, v] of Object.entries(otro.hoy || {})) if (!EP.hoy[k] || v > EP.hoy[k]) EP.hoy[k] = v;
   const vistos = new Set(EP.regalos.map((r) => r.de + r.nombre)); for (const r of otro.regalos || []) if (!vistos.has(r.de + r.nombre)) EP.regalos.push(r);
   EP.lumi = Math.max(EP.lumi, otro.lumi || 0); EP.ultimaVisita = Math.max(EP.ultimaVisita || 0, otro.ultimaVisita || 0);
+  if (otro.reloj && (otro.reloj.dia * 1440 + otro.reloj.min) > (EP.reloj.dia * 1440 + EP.reloj.min)) EP.reloj = { ...otro.reloj };
+  if (!EP.aspecto && otro.aspecto) EP.aspecto = otro.aspecto;
 }
-const diaHoy = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+// ---------- El reloj del pueblo ----------
+//  El pueblo tiene su propia hora: avanza mientras juegas (un día ≈ 50 min reales;
+//  la noche corre el doble), se para al salir, cada mazmorra suma horas y en tu cama
+//  saltas a las 7:00 del día siguiente. Cada mundo guarda la suya.
+if (!EP.reloj) EP.reloj = { min: 9 * 60, dia: 1 };
+const RITMO = { dia: 60 / 150, noche: 60 / 75 };          // minutos del pueblo por segundo real
+function sumarMinutos(m) { EP.reloj.min += m; while (EP.reloj.min >= 1440) { EP.reloj.min -= 1440; EP.reloj.dia++; } }
+function avanzarReloj(dt) {
+  if (prm.has('hora')) return;
+  const h = EP.reloj.min / 60;
+  sumarMinutos(dt * (h >= 6 && h < 21 ? RITMO.dia : RITMO.noche) * (Number(prm.get('rapido')) || 1));
+}
+const horaTexto = () => { const m = prm.has('hora') ? Number(prm.get('hora')) * 60 : Math.floor(EP.reloj.min); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); };
+// Al volver del libro han pasado unas horas (2 por misión o piso, como mucho 6)
+let horasFuera = 0;
+{ const m = DIARIO.misiones || 0; if (EP.misionesVistas == null) EP.misionesVistas = m; else if (m > EP.misionesVistas) { horasFuera = Math.min(6, (m - EP.misionesVistas) * 2); sumarMinutos(horasFuera * 60); EP.misionesVistas = m; } }
+const diaHoy = () => 'd' + EP.reloj.dia;      // «hoy» es el día del pueblo
 const diasFuera = EP.ultimaVisita ? Math.floor((Date.now() - EP.ultimaVisita) / 864e5) : 0;
 EP.ultimaVisita = Date.now(); guardarPueblo();
 import('./js/nube.js').then(async (m) => {
@@ -128,7 +157,7 @@ import('./js/nube.js').then(async (m) => {
   Ficha.subirAlGuardar((f) => m.subirFicha(f));
   if (fichaP) m.subirFicha(fichaP);
 }).catch(() => {});
-const HORA = () => (prm.has('hora') ? Number(prm.get('hora')) : new Date().getHours());
+const HORA = () => (prm.has('hora') ? Number(prm.get('hora')) : Math.floor(EP.reloj.min / 60));
 const franja = () => { const h = HORA(); return h < 6 ? 'madrugada' : h < 12 ? 'manana' : h < 20 ? 'tarde' : 'noche'; };
 const fmt = (t) => String(t).replaceAll('{N}', NOMBRE);
 let semilla = 20261030; const rnd = () => ((semilla = (semilla * 1103515245 + 12345) >>> 0) / 4294967296);
@@ -379,7 +408,7 @@ const miCasa = casa(-22, 6, { ancho: 5, fondo: 5, pared: '#f6e6c4', tejado: '#3f
 { const l = letrero('Casa de ' + NOMBRE, 2.8, .5); l.position.set(-22, 2.62, 8.88); fijo.add(l);
   const buzon = new THREE.Group(); const pb = cil(.05, .05, 1, '#6a4a2a', 6); pb.position.y = .5; buzon.add(pb); const bz = caja(.45, .35, .3, '#d84a3a'); bz.position.y = 1.1; buzon.add(bz); enFijo(buzon, -19.2, 9.6); CHOQUES.push({ x: -19.2, z: 9.6, r: .3 });
   valla(-25.6, 10.4, -23.4, 10.4); valla(-20.6, 10.4, -18.4, 10.4); valla(-25.6, 10.4, -25.6, 3); valla(-18.4, 10.4, -18.4, 3);
-  toque('Tu casa', miCasa.puerta.x, miCasa.puerta.z, 1.5, 'Entrar en tu casa', () => hablar('Tu casa', ['Huele a madera y a hogar.'], [['Entrar', () => irA('cabana.html')], ['Ahora no', cerrarDialogo]], '#3f72b8'));
+  toque('Tu casa', miCasa.puerta.x, miCasa.puerta.z, 1.5, 'Entrar en tu casa', () => hablar('Tu casa', ['Huele a madera y a hogar.'], [['Entrar', () => irA('cabana.html')], ['Dormir hasta mañana', () => dormir()], ['Cambiarte de aspecto', () => { cerrarDialogo(); abrirCreador(); }], ['Ahora no', cerrarDialogo]], '#3f72b8'));
   toque('El buzón', -19.2, 10.4, 1.2, 'Mirar el buzón', () => hablar('El buzón', [TROFEO ? `Una carta de los vecinos: «Todo el pueblo habla de cómo venciste a ${TROFEO.nombre}.»` : 'Una carta: «¡Bienvenido a Morrandar! Cuando vuelvas de tu primera mazmorra, cuéntanoslo todo.» — Pip'], null, '#d84a3a'));
 }
 // Banco de Madre Hiel: una torre redonda
@@ -508,6 +537,37 @@ for (const p of PUENTES) {
 // Rocas y detalles
 for (const [x, z, s] of [[-30, -5, 1.2], [28, -16, 1], [22, 18, 1], [-10, 14, .7], [-9, -24, .8]]) roca(x, z, s);
 
+// ---------- La torre del reloj ----------
+const esfera = (() => { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; return { cv, t, ultimo: -1 }; })();
+function pintarEsfera() {
+  const m = prm.has('hora') ? Number(prm.get('hora')) * 60 : Math.floor(EP.reloj.min);
+  if (m === esfera.ultimo) return; esfera.ultimo = m;
+  const x = esfera.cv.getContext('2d'), c = 128;
+  x.clearRect(0, 0, 256, 256);
+  x.fillStyle = '#fff8e6'; x.beginPath(); x.arc(c, c, 122, 0, 6.29); x.fill();
+  x.lineWidth = 10; x.strokeStyle = '#8a5a34'; x.stroke();
+  x.fillStyle = '#5a4030'; for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; x.beginPath(); x.arc(c + Math.sin(a) * 100, c - Math.cos(a) * 100, i % 3 ? 5 : 9, 0, 6.29); x.fill(); }
+  const mano = (ang, largo, ancho, col) => { x.strokeStyle = col; x.lineWidth = ancho; x.lineCap = 'round'; x.beginPath(); x.moveTo(c, c); x.lineTo(c + Math.sin(ang) * largo, c - Math.cos(ang) * largo); x.stroke(); };
+  mano(((m / 60) % 12) / 12 * Math.PI * 2, 58, 12, '#3a2a1a');
+  mano((m % 60) / 60 * Math.PI * 2, 88, 7, '#c0503a');
+  x.fillStyle = '#e8c040'; x.beginPath(); x.arc(c, c, 10, 0, 6.29); x.fill();
+  esfera.t.needsUpdate = true;
+  const hud = document.getElementById('hora'); if (hud) { const h = Math.floor(m / 60); hud.textContent = `${h >= 6 && h < 21 ? '☀' : '☾'} ${horaTexto()} · día ${EP.reloj.dia}`; }
+}
+{
+  const TX = 2.6, TZ = -12.4, g = new THREE.Group();
+  const base = caja(2.2, 3, 2.2, '#e8dcc0'); base.position.y = 1.8; g.add(base);
+  const zocalo = caja(2.6, .5, 2.6, '#b8a688'); zocalo.position.y = .25; g.add(zocalo);
+  const cuerpo = caja(2.5, 1.9, 2.5, '#c8b89a'); cuerpo.position.y = 4.25; g.add(cuerpo);
+  const techo = new THREE.Mesh(GEO_TECHO, lam('#3a6a8a', { flatShading: true })); techo.scale.set(1.6, 1.8, 1.6); techo.position.y = 6.1; g.add(techo);
+  const veleta = cil(.04, .04, .8, '#3a3a44', 6); veleta.position.y = 7.3; g.add(veleta);
+  const puerta = caja(.8, 1.4, .1, '#7a4a2a'); puerta.position.set(0, 1.2, 1.12); g.add(puerta);
+  enFijo(g, TX, TZ); CHOQUES.push({ x: TX, z: TZ, w: 2.8, d: 2.8 });
+  const cara = new THREE.Mesh(new THREE.CircleGeometry(.85, 32), curvar(new THREE.MeshLambertMaterial({ map: esfera.t, transparent: true, emissive: '#fff4d0', emissiveIntensity: .25 })));
+  cara.position.set(TX, 4.25, TZ + 1.27); escena.add(cara);
+  pintarEsfera();
+  toque('La torre del reloj', TX, TZ + 2.1, 1.6, 'Mirar el reloj', () => hablar('La torre del reloj', [`Son las ${horaTexto()} del día ${EP.reloj.dia}.`, uno(['Dicen que la trajo un relojero que se cayó de un cuento con muchas prisas.', 'En Morrandar el tiempo va a su aire. Aquí nadie llega tarde: llega cuando llega.', 'Si quieres que amanezca antes, duerme en tu cama.'])], null, '#3a6a8a'));
+}
 // ---------- Árboles: repartidos donde no estorban ----------
 const huecoLibre = (x, z, m) => {
   if (alto(x, z) < -.05 || Math.abs(x) > 30.5 || z < -26.5 || z > 15) return false;
@@ -689,6 +749,17 @@ const EXTRAS = {
     const m = curvar(new THREE.MeshLambertMaterial({ color: '#e6eeff', transparent: true, opacity: .55, side: THREE.DoubleSide }));
     for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(.3, 12), m); a.scale.set(1, 1.5, 1); a.position.set(s * .27, .85, -.2); a.rotation.y = s * .6; a.userData.ala = true; cuerpo.add(a); }
   },
+  viajero({ cabeza, pelo, o }) {
+    const a = o.viajero || {};
+    if (a.peinado === 'largo') { const m = new THREE.Mesh(new THREE.CapsuleGeometry(.22, .34, 4, 10), pelo); m.position.set(0, -.2, -.22); cabeza.add(m); }
+    if (a.peinado === 'coleta') { const m = new THREE.Mesh(new THREE.SphereGeometry(.15, 10, 8), pelo); m.position.set(0, -.04, -.44); cabeza.add(m); }
+    if (a.peinado === 'mono') { const m = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 8), pelo); m.position.set(0, .42, -.1); cabeza.add(m); }
+    if (a.peinado === 'rizos') for (let i = 0; i < 9; i++) { const ang = i / 9 * Math.PI * 2, m = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), pelo); m.position.set(Math.cos(ang) * .34, .18 + (i % 2) * .08, Math.sin(ang) * .34 - .05); if (m.position.z > .2) m.position.y += .12; cabeza.add(m); }
+    if (a.accesorio === 'gorro') { const g = new THREE.Mesh(GEO.pelo, lam(a.ropa || '#c84a3a')); g.scale.set(1.12, .9, 1.12); g.position.y = .1; cabeza.add(g); const pom = bola(.09, '#ffffff', undefined, 8); pom.position.y = .5; cabeza.add(pom); }
+    if (a.accesorio === 'panuelo') { const t = new THREE.Mesh(new THREE.TorusGeometry(.375, .05, 6, 18).rotateX(Math.PI / 2), lam('#d83a3a')); t.position.y = .16; cabeza.add(t); }
+    if (a.accesorio === 'gafas') { for (const s of [-1, 1]) { const r = new THREE.Mesh(new THREE.TorusGeometry(.085, .016, 6, 14), lam('#2a2a2a')); r.position.set(s * .13, .02, .36); cabeza.add(r); } const pu = caja(.08, .016, .016, '#2a2a2a'); pu.position.set(0, .03, .37); cabeza.add(pu); }
+    if (a.accesorio === 'flor') { const f = bola(.08, '#ff7a9a', undefined, 8); f.position.set(.3, .2, .16); cabeza.add(f); const c = bola(.035, '#ffd84a', undefined, 6); c.position.set(.33, .21, .22); cabeza.add(c); }
+  },
   guia({ cabeza, ojos, cuerpo }) { for (const o of ojos) o.visible = false; const v = new THREE.Mesh(new THREE.TorusGeometry(.385, .05, 6, 20).rotateX(Math.PI / 2), lam('#f4ead2')); v.position.y = .03; cabeza.add(v); const t = new THREE.Mesh(new THREE.ConeGeometry(.36, .7, 12), lam('#e8e0f0')); t.position.y = .3; cuerpo.add(t); }
 };
 function gato() {
@@ -727,8 +798,16 @@ function animar(ch, dt, andando, t) {
 }
 
 // ---------- El jugador ----------
-const J = { ch: chibi({ ...(ASPECTO[CLASE] || ASPECTO.barbaro) }), x: -22, z: 11.5, dir: 0, sentado: false, ir: null, atasco: 0, pasoPrevio: 0 };
+// En el pueblo eres tú: un viajero que te creas a tu gusto (se guarda en tu mundo)
+const ASPECTO_BASE = { peinado: 'corto', pelo: '#5a3a22', piel: '#f4cda6', ropa: '#3a8ab0', pantalon: '#3a4a7a', accesorio: 'ninguno' };
+const chibiViajero = (a) => chibi({ ropa: a.ropa, pantalon: a.pantalon, piel: a.piel, pelo: a.peinado === 'rapado' ? false : a.pelo, extra: 'viajero', viajero: a });
+const J = { ch: chibiViajero(EP.aspecto || ASPECTO_BASE), x: -22, z: 11.5, dir: 0, sentado: false, ir: null, atasco: 0, pasoPrevio: 0 };
 escena.add(J.ch);
+function vestirJugador(a) {
+  const viejo = J.ch, sentado = viejo.userData.sentado;
+  J.ch = chibiViajero(a); J.ch.userData.sentado = sentado; J.ch.position.copy(viejo.position); J.ch.rotation.copy(viejo.rotation);
+  escena.remove(viejo); escena.add(J.ch);
+}
 
 // ---------- Los vecinos ----------
 //  Trabajadores (con su oficio y su casa) y vecinos pescados de los libros.
@@ -1295,6 +1374,38 @@ function salirCantina() {
     camara.position.set(J.x, 10.8, J.z + 10.6); mirar.set(J.x, .7, J.z - 1.6); mezclar(false);
   });
 }
+// ---------- Crear tu personaje ----------
+let creando = false;
+const OPCIONES = [
+  ['peinado', 'Peinado', { corto: 'Corto', largo: 'Largo', coleta: 'Coleta', mono: 'Moño', rizos: 'Rizos', rapado: 'Rapado' }],
+  ['pelo', 'Color de pelo', ['#2a1a14', '#5a3a22', '#a0602a', '#e8c860', '#d84a2a', '#e8e8e8', '#5a7ad8', '#d870b0']],
+  ['piel', 'Piel', ['#ffe0c8', '#f4cda6', '#e0a878', '#b07a50', '#7a4a2a']],
+  ['ropa', 'Ropa', ['#d84a3a', '#e8a040', '#f0d050', '#5aae44', '#3a8ab0', '#4a5ab8', '#9a5ac0', '#f4f0e6', '#3a3a44']],
+  ['pantalon', 'Pantalón', ['#3a4a7a', '#4a3a2a', '#6a6a74', '#2a2a30', '#8a6a4a', '#e8e0d0']],
+  ['accesorio', 'Un detalle', { ninguno: 'Nada', gorro: 'Gorro', panuelo: 'Pañuelo', gafas: 'Gafas', flor: 'Flor' }]
+];
+function abrirCreador() {
+  creando = true; levantar(false); J.ir = null; modoCam = 'espejo'; J.dir = 0;
+  const a = { ...ASPECTO_BASE, ...(EP.aspecto || {}) }, caja_ = $('creador');
+  const pintar = () => {
+    caja_.innerHTML = `<h2>${EP.aspecto ? '¿Te cambias de aspecto?' : `¡Bienvenido a Morrandar, ${NOMBRE}! ¿Cómo eres?`}</h2>` + OPCIONES.map(([k, titulo, vals]) => `<div class="fila"><b>${titulo}</b><div class="ops2">` +
+      (Array.isArray(vals) ? vals.map((c) => `<button class="muestra${a[k] === c ? ' si' : ''}" data-k="${k}" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')
+        : Object.entries(vals).map(([v, t]) => `<button class="chip${a[k] === v ? ' si' : ''}" data-k="${k}" data-v="${v}">${t}</button>`).join('')) + '</div></div>').join('') + '<button class="listo">¡Listo!</button>';
+    caja_.querySelectorAll('[data-k]').forEach((b) => b.addEventListener('pointerdown', (e) => { e.stopPropagation(); a[b.dataset.k] = b.dataset.v; vestirJugador(a); pintar(); }));
+    caja_.querySelector('.listo').addEventListener('pointerdown', (e) => { e.stopPropagation(); EP.aspecto = { ...a }; guardarPueblo(); cerrarCreador(); });
+  };
+  caja_.style.display = 'block'; pintar(); vestirJugador(a);
+}
+function cerrarCreador() { creando = false; $('creador').style.display = 'none'; modoCam = 'normal'; aviso(`¡Qué bien te queda, ${NOMBRE}!`); }
+// ---------- Dormir en tu cama: a las 7:00 del día siguiente ----------
+function dormir() {
+  cerrarDialogo();
+  fundir(() => {
+    if (EP.reloj.min >= 7 * 60) EP.reloj.dia++;
+    EP.reloj.min = 7 * 60; actualizarHorarios(true); for (const p of PNJ) p.saludado = false; guardarPueblo(); pintarEsfera();
+    aviso(`☀ Buenos días · día ${EP.reloj.dia}`);
+  });
+}
 function sentarse(x, z, dir) { cerrarDialogo(); J.antes = { x: J.x, z: J.z }; J.x = x; J.z = z; J.dir = dir; J.sentado = true; J.ch.userData.sentado = true; aviso('Toca para levantarte'); }
 // Al levantarte vuelves al sitio libre desde el que te sentaste (o al hueco libre más cercano).
 function levantar(volver = true) {
@@ -1351,6 +1462,7 @@ function aSuelo(cx, cy) {
 let pulsando = false;
 render.domElement.addEventListener('pointerdown', (e) => {
   arrancarAudio();
+  if (creando) return;
   if (enDialogo) { avanzarDialogo(); return; }
   if (J.sentado) { levantar(); return; }
   const p = aSuelo(e.clientX, e.clientY); if (!p) return;
@@ -1365,7 +1477,7 @@ function usar(i) { J.ir = null; if (i.pnj) { const p = i.pnj; J.dir = Math.atan2
 const angLerp = (a, b, k) => { let d = ((b - a + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; return a + d * k; };
 function moverJugador(dt, t) {
   let dx = 0, dz = 0, andando = 0;
-  if (!enDialogo && !J.sentado) {
+  if (!enDialogo && !J.sentado && !creando) {
     if (teclas.has('a') || teclas.has('arrowleft')) dx -= 1;
     if (teclas.has('d') || teclas.has('arrowright')) dx += 1;
     if (teclas.has('w') || teclas.has('arrowup')) dz -= 1;
@@ -1431,7 +1543,7 @@ function moverPNJ(dt, t) {
 // Lo que tienes cerca: el botón de acción
 let cercano = null;
 function buscarCercano() {
-  cercano = null; if (enDialogo || J.sentado) { $('accion').style.display = 'none'; return; }
+  cercano = null; if (enDialogo || J.sentado || creando) { $('accion').style.display = 'none'; return; }
   let mejor = 1e9;
   for (const i of INTERACCION) { if (!!i.dentro !== dentro || (i.pnj && !i.pnj.presente)) continue; const q = posDe(i), d = Math.hypot(q.x - J.x, q.z - J.z), r = i.pnj ? (i.pnj.zona?.alcance || i.r) : i.r; if (d < r && d < mejor) { mejor = d; cercano = i; } }
   const b = $('accion');
@@ -1468,6 +1580,7 @@ let miradaM = 0, parpadeoM = 4;
 camara.position.set(J.x, 10.8, J.z + 10.6); mirar.set(J.x, .7, J.z - 1.6);
 function camaraSigue(dt) {
   if (dentro) { posObj.set(Math.min(X0 + 2.5, Math.max(X0 - 2.5, J.x * .4 + X0 * .6)), 8.4, 12.6); mirarObj.set(posObj.x, .6, -.4); }
+  else if (modoCam === 'espejo') { const lejos = innerWidth > innerHeight ? 5.6 : 4.2; posObj.set(J.x, J.ch.position.y + 1.7, J.z + lejos); mirarObj.set(J.x, J.ch.position.y + (innerWidth > innerHeight ? -.1 : .1), J.z); }
   else if (modoCam === 'mirador') { posObj.set(J.x + 3, J.ch.position.y + 4.6, J.z + 7); mirarObj.set(CABEZA.x + 3, CABEZA.y - 1 - bajada(CABEZA.z), CABEZA.z + 8); }
   else { posObj.set(J.x, J.ch.position.y + 10.8, J.z + 10.6); mirarObj.set(J.x, J.ch.position.y + .7, J.z - 1.6); }
   const k = 1 - Math.exp(-(modoCam === 'mirador' ? 1.6 : 5) * dt);
@@ -1497,13 +1610,16 @@ function animarMundo(dt, t) {
   if (A.ctx && A.olas) A.olas.gain.setTargetAtTime(dentro ? 0 : .02 + .1 * suave(4, 22, J.z) + .05 * suave(26, 32, Math.abs(J.x)), A.ctx.currentTime, .4);
 }
 actualizarHorarios(true);
+let guardadoReloj = 20;
+addEventListener('pagehide', guardarPueblo); document.addEventListener('visibilitychange', () => { if (document.hidden) guardarPueblo(); });
 let ultimo = performance.now();
 render.setAnimationLoop((ahora) => {
-  const dt = Math.min(.05, (ahora - ultimo) / 1000); ultimo = ahora; const t = ahora / 1000;
+  const real = Math.min(1, (ahora - ultimo) / 1000), dt = Math.min(.05, real); ultimo = ahora; const t = ahora / 1000;
+  avanzarReloj(real); pintarEsfera(); if ((guardadoReloj -= dt) < 0) { guardadoReloj = 20; guardarPueblo(); }
   moverJugador(dt, t); moverPNJ(dt, t); animarMundo(dt, t); camaraSigue(dt); buscarCercano();
   render.render(escena, camara); pintarEtiquetas();
 });
-setTimeout(() => { $('fundido').style.opacity = 0; aviso(`Bienvenido a casa, ${NOMBRE}`); }, 250);
+setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
 window.pueblo = { J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
 </script>
 </body>
