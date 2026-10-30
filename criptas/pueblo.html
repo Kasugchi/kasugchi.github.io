@@ -12,31 +12,31 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030173336",
-    "./js/campanas.js": "./js/campanas.js?v=20261030173336",
-    "./js/datos.js": "./js/datos.js?v=20261030173336",
-    "./js/firebase.js": "./js/firebase.js?v=20261030173336",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030173336",
-    "./js/ia.js": "./js/ia.js?v=20261030173336",
-    "./js/iconos.js": "./js/iconos.js?v=20261030173336",
-    "./js/insultos.js": "./js/insultos.js?v=20261030173336",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030173336",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030173336",
-    "./js/motor.js": "./js/motor.js?v=20261030173336",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030173336",
-    "./js/nube.js": "./js/nube.js?v=20261030173336",
-    "./js/panel.js": "./js/panel.js?v=20261030173336",
-    "./js/planos.js": "./js/planos.js?v=20261030173336",
-    "./js/procedural.js": "./js/procedural.js?v=20261030173336",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030173336",
-    "./js/red.js": "./js/red.js?v=20261030173336",
-    "./js/render.js": "./js/render.js?v=20261030173336",
-    "./js/render3d.js": "./js/render3d.js?v=20261030173336",
-    "./js/reunion.js": "./js/reunion.js?v=20261030173336",
-    "./js/sprites.js": "./js/sprites.js?v=20261030173336",
-    "./js/tablero.js": "./js/tablero.js?v=20261030173336",
-    "./js/ui.js": "./js/ui.js?v=20261030173336",
-    "./js/viajero.js": "./js/viajero.js?v=20261030173336"
+    "./js/acceso.js": "./js/acceso.js?v=20261030181130",
+    "./js/campanas.js": "./js/campanas.js?v=20261030181130",
+    "./js/datos.js": "./js/datos.js?v=20261030181130",
+    "./js/firebase.js": "./js/firebase.js?v=20261030181130",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030181130",
+    "./js/ia.js": "./js/ia.js?v=20261030181130",
+    "./js/iconos.js": "./js/iconos.js?v=20261030181130",
+    "./js/insultos.js": "./js/insultos.js?v=20261030181130",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030181130",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030181130",
+    "./js/motor.js": "./js/motor.js?v=20261030181130",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030181130",
+    "./js/nube.js": "./js/nube.js?v=20261030181130",
+    "./js/panel.js": "./js/panel.js?v=20261030181130",
+    "./js/planos.js": "./js/planos.js?v=20261030181130",
+    "./js/procedural.js": "./js/procedural.js?v=20261030181130",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030181130",
+    "./js/red.js": "./js/red.js?v=20261030181130",
+    "./js/render.js": "./js/render.js?v=20261030181130",
+    "./js/render3d.js": "./js/render3d.js?v=20261030181130",
+    "./js/reunion.js": "./js/reunion.js?v=20261030181130",
+    "./js/sprites.js": "./js/sprites.js?v=20261030181130",
+    "./js/tablero.js": "./js/tablero.js?v=20261030181130",
+    "./js/ui.js": "./js/ui.js?v=20261030181130",
+    "./js/viajero.js": "./js/viajero.js?v=20261030181130"
   }
 }
 </script>
@@ -131,6 +131,7 @@
   #libreta .registro { background: #f6ecd2; border-radius: 16px; padding: 8px 12px; font-size: 13px; margin: 6px 0 10px; max-height: 150px; overflow: auto; }
   #libreta .carta { background: #fffdf4; border-radius: 16px; padding: 14px 16px; margin: 6px 0 10px; font-size: 16px; font-weight: 600; box-shadow: inset 0 0 0 2px #eadcb8; white-space: normal; }
   #libreta .carta small { display: block; margin-top: 8px; opacity: .6; text-align: right; }
+  #libreta h3.sub { font-size: 15px; margin: 16px 0 6px; opacity: .8; } #libreta details summary { cursor: pointer; }
   #libreta .ops2, #banda .ops2 { display: flex; flex-wrap: wrap; gap: 6px; }
   #libreta .chip, #banda .chip { font: 800 13px 'Nunito', sans-serif; border: 2px solid transparent; background: #f2e6c8; color: #5a4030; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
   #libreta .chip.si { border-color: #3f72b8; }
@@ -213,6 +214,8 @@ function juntarPueblo(otro) {   // lo de otro dispositivo: nos quedamos con lo m
   EP.buzon = EP.buzon.filter((b) => !EP.recogidos.includes(b.id));
   Object.assign(EP.mueblesDe, otro.mueblesDe || {});
   for (const k of ['mueblesMision', 'mueblesJefe']) if (otro[k] != null) EP[k] = Math.max(EP[k] ?? 0, otro[k]);
+  EP.conocidos = [...new Set([...(EP.conocidos || []), ...(otro.conocidos || [])])];
+  const vistas = new Set((EP.cartasLibro ||= []).map((c) => c.de + '|' + c.texto)); for (const c of otro.cartasLibro || []) if (!vistas.has(c.de + '|' + c.texto)) EP.cartasLibro.push(c);
 }
 // ---------- El reloj del pueblo ----------
 //  El pueblo tiene su propia hora: avanza mientras juegas (un día ≈ 50 min reales;
@@ -241,7 +244,7 @@ import('./js/nube.js').then(async (m) => {
   if (enNube && fichaP) { juntarPueblo(enNube.pueblo); fichaP = Ficha.fusionar(fichaP, enNube); fichaP.pueblo = EP; guardarPueblo(); }
   Ficha.subirAlGuardar((f) => m.subirFicha(f));
   if (fichaP) m.subirFicha(fichaP);
-  G.m = m; cargarGremio();
+  G.m = m; cargarGremio(); cargarCampanasPueblo(m);
   // Si venías de una sala (la tortuga, la mazmorra) o con ?sala=, sigues en ella
   RED = await import('./js/reunion.js');
   const cod = (prm.get('sala') || RED.reunionActual() || '').toUpperCase();
@@ -1295,6 +1298,8 @@ const MUEBLES = {
   corcho: { n: 'Tablero de pistas', e: '🔍', w: 1, d: 1, de: 'regalo', art: 'su tablero de pistas («Caso de la tarta», sin resolver)', f(g) { for (const s of [-1, 1]) pz(g, caja(.05, 1.5, .05, MAD2), s * .4, .75, -.2, -.12); pz(g, caja(.9, .65, .05, '#c8945a'), 0, 1.15, -.15, -.12); const pos = [[-.25, 1.3], [.2, 1.3], [-.1, 1.02], [.25, 1]]; for (const [x, y] of pos) pz(g, caja(.16, .13, .01, '#f4f0e6'), x, y, -.11, -.12); for (let i = 0; i < 3; i++) { const [a, b] = [pos[i], pos[i + 1]]; const l = Math.hypot(b[0] - a[0], b[1] - a[1]); pz(g, caja(l, .012, .01, '#d02a2a'), (a[0] + b[0]) / 2, (a[1] + b[1]) / 2, -.1, -.12, 0, Math.atan2(b[1] - a[1], b[0] - a[0])); } } },
   seta: { n: 'Lámpara de seta', e: '🍄', w: 1, d: 1, de: 'regalo', art: 'una lámpara con forma de seta que brilla de colores', luz: 1.2, f(g) { pz(g, cil(.08, .13, .7, '#f4ead2', 10), 0, .35, 0); const s = new THREE.Mesh(new THREE.SphereGeometry(.4, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), lam('#e85a8a', brilla('#e85a8a', .5))); pz(g, s, 0, .68, 0); for (let i = 0; i < 5; i++) pz(g, bola(.05, '#fff4f8', brilla('#ffffff', .5), 6), Math.cos(i * 1.3) * .26, .88 + (i % 2) * .05, Math.sin(i * 1.3) * .26); } },
   cojin: { n: 'Cojín de gato', e: '🐈', w: 1, d: 1, de: 'regalo', art: 'su cojín favorito (lleno de pelos)', f(g) { pz(g, cil(.38, .42, .14, '#9a5ac0', 16), 0, .07, 0); pz(g, new THREE.Mesh(new THREE.TorusGeometry(.33, .08, 6, 20), lam('#b07ad0')), 0, .15, 0, Math.PI / 2); } },
+  // ---- Recuerdos de campañas importadas (la forma por defecto; el nombre lo pone la campaña) ----
+  recuerdo: { n: 'Recuerdo', e: '📜', w: 1, d: 1, de: 'campana', art: 'un recuerdo de una aventura', luz: .5, f(g) { pz(g, cil(.3, .36, .5, '#8a8a92', 10), 0, .25, 0); pz(g, cil(.36, .36, .06, '#a8a8b0', 10), 0, .53, 0); pz(g, new THREE.Mesh(new THREE.OctahedronGeometry(.2, 0), lam('#e0b040', { ...brilla('#ffcf60', .6), flatShading: true })), 0, .82, 0); } },
   cocina: { n: 'Fogón', e: '🍳', w: 1, d: 1, de: 'regalo', art: 'un fogón pequeñito «para que no vivas de guiso ajeno»', luz: .5, f(g) { pz(g, caja(.8, .85, .6, '#3a3a44'), 0, .43, 0); pz(g, caja(.82, .05, .62, '#2a2a30'), 0, .88, 0); pz(g, caja(.5, .3, .02, '#ff9a40', brilla('#ff7a20', .6)), 0, .35, .31); pz(g, cil(.16, .14, .18, '#8a8a92', 12), .15, .99, 0); pz(g, cil(.12, .12, .02, '#e85a3a', 10), -.2, .92, 0); } }
 };
 const REGALO_MUEBLE = { pip: 'fuerte', hiel: 'hucha', mordo: 'yunque', anzuelo: 'pecera', guia: 'globo', rufo: 'botella', bartolome: 'nabo', escarcha: 'caldero', brumas: 'corcho', lumi: 'seta', gato: 'cojin', marga: 'cocina' };
@@ -1519,16 +1524,69 @@ function pintarDeco() {
 
 // ---------- El buzón: paquetes del libro (botín) y cartas ----------
 function abrirBuzon() {
-  const p = EP.buzon.filter((b) => MUEBLES[b.k]);
-  if (!p.length) return hablar('El buzón', [TROFEO ? `Una carta de los vecinos: «Todo el pueblo habla de cómo venciste a ${TROFEO.nombre}.»` : 'Una carta: «¡Bienvenido a Morrandar! Cuando vuelvas de tu primera mazmorra, cuéntanoslo todo.» — Pip', 'No hay paquetes. Cuando bajes al libro, a veces llega botín para tu casa.'], null, '#d84a3a');
-  hablar('El buzón', [p.length > 1 ? `¡Hay ${p.length} paquetes!` : '¡Hay un paquete!', ...p.map((b) => b.texto + MUEBLES[b.k].art + '.')], [['Llevarlo a casa', () => {
+  const p = EP.buzon.filter((b) => MUEBLES[b.k]), cs = EP.buzon.filter((b) => b.carta);
+  if (!p.length && !cs.length) return hablar('El buzón', [TROFEO ? `Una carta de los vecinos: «Todo el pueblo habla de cómo venciste a ${TROFEO.nombre}.»` : 'Una carta: «¡Bienvenido a Morrandar! Cuando vuelvas de tu primera mazmorra, cuéntanoslo todo.» — Pip', 'No hay paquetes. Cuando bajes al libro, a veces llega botín para tu casa.'], null, '#d84a3a');
+  const L = [[p.length ? (p.length > 1 ? `¡Hay ${p.length} paquetes!` : '¡Hay un paquete!') : '', cs.length ? (cs.length > 1 ? `¡${cs.length} cartas!` : '¡Una carta!') : ''].filter(Boolean).join(' Y '),
+    ...cs.map((b) => `Carta de ${b.carta.de}: «${fmt(b.carta.texto)}»`), ...p.map((b) => b.texto + MUEBLES[b.k].art + '.')];
+  hablar('El buzón', L, [[p.length ? 'Llevarlo a casa' : 'Guardar las cartas', () => {
     for (const b of p) { EP.tengo[b.k] = (EP.tengo[b.k] || 0) + 1; EP.recogidos.push(b.id); }
+    for (const b of cs) { (EP.cartasLibro ||= []).push({ ...b.carta, fecha: Date.now() }); EP.recogidos.push(b.id); }
     EP.buzon = EP.buzon.filter((b) => !EP.recogidos.includes(b.id)); guardarPueblo(); cerrarDialogo();
-    aviso(`📦 ${p.map((b) => MUEBLES[b.k].e).join(' ')} → tu baúl`);
+    aviso(p.length ? `📦 ${p.map((b) => MUEBLES[b.k].e).join(' ')} → tu baúl` : '✉️ Guardadas en la libreta');
   }]], '#d84a3a');
 }
 // Un aviso al llegar si te espera algo
-if (EP.buzon.some((b) => MUEBLES[b.k])) setTimeout(() => aviso('📬 Tienes algo en el buzón'), 3200);
+if (EP.buzon.some((b) => MUEBLES[b.k] || b.carta)) setTimeout(() => aviso('📬 Tienes algo en el buzón'), 3200);
+
+// ---------- Campañas importadas: lo que decidisteis en el libro se nota aquí ----------
+// La sección «pueblo» del JSON de la campaña dice qué pasa con cada marca («rescatado: x», «recuerdo: x»,
+// «acabar la campaña»): un vecino nuevo, un mueble al buzón o una carta. Las marcas están en ficha.campanas.
+const normMarca = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s*:\s*/g, ': ').replace(/\s+/g, ' ').trim();
+const FIN_CAMPANA = ['acabar la campana', 'fin', 'final', 'acabar'];
+const SITIOS = { plaza: [5, -1, 5, 'paseando por la plaza'], huerto: [-2, -17, 2.5, 'mirando el huerto'], rio: [-5.5, 11.5, 2, 'junto al río'],
+  mirador: [14, -22, 2.2, 'junto al mirador'], banco: [18, 10, 2, 'cerca del banco'], cantina: [16, -7.5, 1.6, 'a la puerta de la cantina'] };
+const PALETA = ['#3a6ab0', '#b84a3a', '#4a8a4a', '#8a5ab0', '#d89a3a', '#3a8a8a', '#c06a9a', '#6a6a7a'];
+const hashT = (t) => [...String(t)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+function ponerVecinoCampana(id, v, campana) {
+  if (VEC[id]) return;
+  const h = hashT(v.nombre), [x, z, r, txt] = SITIOS[normMarca(v.donde)] || SITIOS.plaza;
+  const frases = [].concat(v.frases || []).filter(Boolean).slice(0, 12);
+  const d = VEC[id] = { nombre: String(v.nombre).slice(0, 30), color: PALETA[h % 8], voz: 260 + (h % 600), vel: 1,
+    aspecto: { ropa: v.ropa || PALETA[h % 8], pantalon: PALETA[(h >> 3) % 8], pelo: v.pelo || ['#3a2a1a', '#e8c070', '#a04a2a', '#eeeeee', '#1a1a1a'][(h >> 6) % 5] },
+    horario: (hh) => (hh >= 8 && hh < 21 ? zona(x, z, r, txt) : null),
+    saludo: v.saludo ? { manana: v.saludo, tarde: v.saludo, noche: v.saludo } : null,
+    charla: frases.length ? frases : ['Gracias por sacarme de allí, {N}. Este pueblo es raro, pero me gusta.'],
+    recuerdo: () => [`Aún me acuerdo de «${campana}». Qué aventura, {N}.`],
+    dormido: `${v.nombre} se ha ido a dormir. Ha sido un día largo.` };
+  const p = { id, def: d, nombre: d.nombre, color: d.color, voz: d.voz, ch: chibi(d.aspecto), vel: 1, x, z, dir: 0, espera: 1, obj: null, presente: false, zona: null };
+  PNJ.push(p); escena.add(p.ch);
+  toque(d.nombre, 0, 0, 1.7, 'Hablar con ' + d.nombre, () => conversar(p), { pnj: p });
+  return p;
+}
+async function cargarCampanasPueblo(m) {
+  let lista; try { lista = await m.listarCampanas(); } catch { return; }
+  const mias = fichaP?.campanas || {}; let nuevos = 0, cambio = false;
+  for (const c of lista) {
+    let d; try { d = JSON.parse(c.json); } catch { continue; }
+    const P = Array.isArray(d.pueblo) ? d.pueblo : [];
+    // Los muebles se registran siempre: así ves los de las casas de tu familia aunque tú no hayas jugado esa campaña.
+    P.forEach((e, i) => { if (e.mueble?.nombre) { const k = `cp_${c.id}_${i}`; MUEBLES[k] = { ...(MUEBLES[e.mueble.como] || MUEBLES.recuerdo), n: String(e.mueble.nombre).slice(0, 40), e: e.mueble.icono || MUEBLES[e.mueble.como]?.e || '📜', de: 'campana', precio: 0, art: String(e.mueble.nombre).slice(0, 40) + (e.mueble.descripcion ? ` (${String(e.mueble.descripcion).slice(0, 100)})` : '') }; } });
+    const mi = mias[c.id]; if (!mi) continue;
+    const marcas = new Set(Object.values(mi.decisiones || {}).flatMap((x) => String(x.marca || '').split(';')).map(normMarca).filter(Boolean));
+    if (mi.fin) FIN_CAMPANA.forEach((t) => marcas.add(t));
+    P.forEach((e, i) => {
+      if (!marcas.has(normMarca(e.si))) return;
+      const id = `cp_${c.id}_${i}`;
+      if (e.vecino?.nombre) { if (ponerVecinoCampana(id, e.vecino, c.nombre) && !EP.conocidos?.includes(id)) { (EP.conocidos ||= []).push(id); nuevos++; cambio = true; } }
+      if (e.mueble?.nombre && !EP.recogidos.includes(id) && !EP.buzon.some((b) => b.id === id)) { EP.buzon.push({ id, k: id, texto: `De «${c.nombre}», con una nota: «Para que no lo olvides». Dentro: ` }); cambio = true; }
+      const idc = id + '_carta';
+      if (e.carta?.texto && !EP.recogidos.includes(idc) && !EP.buzon.some((b) => b.id === idc)) { EP.buzon.push({ id: idc, carta: { de: String(e.carta.de || c.nombre).slice(0, 40), texto: String(e.carta.texto).slice(0, 600), campana: c.nombre } }); cambio = true; }
+    });
+  }
+  if (nuevos) { actualizarHorarios(); aviso(nuevos > 1 ? `🏡 ${nuevos} vecinos nuevos en el pueblo` : '🏡 Alguien nuevo se ha mudado al pueblo'); }
+  if (cambio) { guardarPueblo(); if (EP.buzon.some((b) => MUEBLES[b.k] || b.carta)) setTimeout(() => aviso('📬 Tienes algo en el buzón'), nuevos ? 2600 : 300); }
+  if (sala === 'casa') pintarCasa();
+}
 
 // ---------- «Muebles Brea»: la tienda de Rufo, con género nuevo cada día ----------
 function stockHoy() {
@@ -2466,6 +2524,7 @@ function pintarLibreta() {
         (G.error ? `<p class="error">${escH(G.error)}</p>` : '');
     }
   } else if (pg === 'cartas') {
+    const libro = (EP.cartasLibro || []).length ? `<h3 class="sub">Cartas de las campañas</h3><ul class="lista cartas">${EP.cartasLibro.slice().reverse().map((c) => `<li><details><summary>📜 <b>${escH(c.de)}</b> · ${escH(c.campana || '')}</summary><div class="carta">${escH(fmt(c.texto)).replace(/\n/g, '<br>')}</div></details></li>`).join('')}</ul>` : '';
     if (!G.pid) h = tit('Cartas') + '<p class="nota">Las cartas van y vienen entre la gente de tu pueblo. Invita a tu familia desde «Tu pueblo» y podréis dejaros cartas aunque no estéis a la vez.</p><button class="grande" data-l="pueblo">Ir a «Tu pueblo»</button>';
     else if (cartaAbierta) {
       const c = cartaAbierta;
@@ -2473,6 +2532,7 @@ function pintarLibreta() {
         <div class="ops2"><button class="chip azul" data-l="responder" data-v="${c.de}">Responder</button><button class="chip" data-l="tirar" data-v="${c.id}">Tirarla</button><button class="chip" data-l="volverCartas">Guardarla</button></div>`;
     } else h = tit('Cartas') + (G.cartas.length ? `<ul class="lista cartas">${G.cartas.map((c) => `<li data-l="leer" data-v="${c.id}"><span>${c.leida ? '✉️' : '💌'} <b>${escH(c.deNombre || 'Alguien')}</b> · ${escH(c.texto.slice(0, 34))}${c.texto.length > 34 ? '…' : ''}</span></li>`).join('')}</ul>` : '<p class="nota">No tienes cartas.</p>') +
       `<button class="grande" data-l="escribir">Escribir una carta</button>`;
+    if (!cartaAbierta) h += libro;
   } else if (pg === 'escribir') {
     const vec = vecinosJugadores();
     if (!vec.length) h = tit('Escribir') + '<p class="nota">Aún no vive nadie más en tu pueblo.</p>';

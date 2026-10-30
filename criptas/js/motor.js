@@ -181,7 +181,7 @@ export function iniciarMision(estado, def) {
   estado.mision = m;
   T.usarPlano(m.plano);
   estado.fase = 'briefing';
-  estado.resultado = null;
+  estado.resultado = null; estado.decision = null;
   estado.flags = {};
   estado.disparados = {};
   estado.revelado = {};
@@ -402,6 +402,12 @@ function ejecutarAccionGuion(estado, a) {
     case 'desbloquear': { const p = estado.puertas.find((x) => x.id === a.puerta); if (p) p.bloqueada = false; break; }
     case 'abrir': { const p = estado.puertas.find((x) => x.id === a.puerta); if (p) { p.abierta = true; p.bloqueada = false; p.descubierta = true; revelar(estado); } break; }
     case 'revelar': revelarSala(estado, a.region); break;
+    // Campañas importadas: una elección de verdad. Se queda pendiente hasta que alguien elija (acción «decidir»).
+    case 'decision':
+      if (estado.mundoCampana?.[a.id]) break;
+      estado.decision = { id: a.id, pregunta: a.pregunta, opciones: a.opciones };
+      ev(estado, { tipo: 'decision', id: a.id });
+      break;
   }
 }
 
@@ -3165,6 +3171,20 @@ export function aplicar(estado, a, jugador, cargarMision) {
     return null;
   }
 
+  // Una decisión de campaña: la toma quien pulse primero y vale para todos (queda en estado.mundoCampana,
+  // y de ahí pasa a la ficha de cada viajero: vecinos, muebles y cartas en el pueblo).
+  if (a.tipo === 'decidir') {
+    const d = estado.decision;
+    if (!d || d.id !== a.id) { const ya = estado.mundoCampana?.[a.id]; return ya ? 'Ya se eligió: «' + ya.texto + '».' : 'No hay nada que decidir.'; }
+    const o = d.opciones[a.opcion]; if (!o) return 'Esa opción no existe.';
+    (estado.mundoCampana ||= {})[d.id] = { opcion: a.opcion, texto: o.texto, marca: o.mundo || null, oro: o.oro || 0 };
+    estado.decision = null;
+    const quien = estado.jugadores?.[jugador]?.nombre || Object.values(estado.heroes).find((h) => h.jugador === jugador)?.nombre || 'Alguien';
+    log(estado, quien + ' decide: ' + o.texto + '.', 'historia');
+    ev(estado, { tipo: 'decidido', id: d.id, quien, texto: o.texto, oro: o.oro || 0 });
+    ponerFlag(estado, d.id); ponerFlag(estado, d.id + '_' + (a.opcion + 1));
+    return null;
+  }
   if (!a.heroe || !puedeControlar(estado, jugador, a.heroe)) return 'Ese héroe no es tuyo.';
   const h = estado.heroes[a.heroe];
 

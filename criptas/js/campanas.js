@@ -149,9 +149,10 @@ export function convertirMision(dis, n, idCampana) {
           if (nuevos.length) acciones.push({ tipo: 'aparecer', monstruos: nuevos });
         } else if ((q = a.match(/^decision ([a-z0-9_]+)$/))) {
           const dc = (dis.decisiones || []).find((x) => x.id === q[1]);
-          if (dc) acciones.push({ tipo: 'historia', texto: `${dc.pregunta}\n\n${(dc.opciones || []).map((o) => '· ' + o.texto).join('\n')}\n\n(Elegid entre todos: muy pronto la elección cambiará vuestro mundo.)` });
-          acciones.push({ tipo: 'flag', nombre: q[1] });
-          notas.push(`La decisión «${q[1]}» se cuenta, pero todavía no cambia nada en el mundo.`);
+          // Se elige en la partida (el primero que pulse); lo que diga «en_el_mundo» llega al pueblo.
+          if (dc?.opciones?.length) acciones.push({ tipo: 'decision', id: q[1], pregunta: dc.pregunta || '¿Qué hacéis?',
+            opciones: dc.opciones.slice(0, 4).map((o) => ({ texto: o.texto || '…', oro: Math.max(0, Math.min(500, +(o.oro_fondo ?? o.oro) || 0)), mundo: o.en_el_mundo ? String(o.en_el_mundo).trim() : null })) });
+          else notas.push(`La decisión «${q[1]}» no tiene opciones: se omite.`);
         } else notas.push(`Guion: «${a}» todavía no se sabe hacer; se omite.`);
       }
       if (acciones.length) disparadores.push({ ...dsp, acciones });

@@ -873,7 +873,7 @@ $('#b-empezar').addEventListener('click', async () => {
     // Campaña importada desde el taller: sus misiones ya están convertidas en app.misiones.
     const c = (app.importadas || []).find((x) => x.id === s.importada);
     if (!c) return toast('Esa campaña no está cargada todavía. Espera un momento y vuelve a intentarlo.', 'peligro');
-    e.campana = c.ids.slice(); e.misionIdx = 0; e.importada = c.id;
+    e.campana = c.ids.slice(); e.misionIdx = 0; e.importada = c.id; e.nombreImportada = c.nombre;
   }
   if (s.pruebas) {
     // Zona de pruebas: una sola misión que se repite, con dinero de sobra para la tienda.
@@ -1047,6 +1047,8 @@ function recibirEstado(e, real) {
   if (real) app.estadoReal = real;
   app.seleccion = null;
   if (primera) app.visto = e.seq;
+  if (app.decidiendo && e.decision?.id !== app.decidiendo) app.cerrarDecision?.();
+  if (primera && e.decision && e.fase === 'mision') app.cola.push({ n: -1, tipo: 'decision' });
   for (const ev of e.eventos) if (ev.n > app.visto && !app.cola.some((x) => x.n === ev.n)) app.cola.push(ev);
   app.visto = Math.max(app.visto, ...app.cola.map((x) => x.n), app.visto);
   irAFase();
@@ -2082,6 +2084,8 @@ async function animar(ev) {
       toast(ev.texto, ev.tono); await espera(1200); break;
     }
     case 'caldero': toast('🎲 ' + ev.dado + ' · ' + ev.texto, ev.tono); await espera(900); break;
+    case 'decision': await elegirDecision(); break;
+    case 'decidido': toast(`${ev.quien} elige: ${ev.texto}${ev.oro ? ` (+${ev.oro} 🪙 al banco)` : ''}`, 'bueno'); await espera(600); break;
     case 'historia':
       app.cerrarModalFuera = null;
       await modal(`<div class="historia"><p>${esc(ev.texto)}</p></div>`, [{ texto: 'Continuar' }]);
@@ -2090,6 +2094,23 @@ async function animar(ev) {
     case 'fin': await mostrarResultado(ev.resultado); break;
     case 'compra': sonar('tesoro'); break;
   }
+}
+
+// Decisión de campaña: el primero que elige decide por todos. Si otro elige antes, el cuadro se cierra solo.
+function elegirDecision() {
+  const d = app.estado?.decision; if (!d || app.decidiendo) return;
+  app.decidiendo = d.id; app.cerrarModalFuera = null;
+  return new Promise((ok) => {
+    const fin = () => { $('#modal').hidden = true; app.decidiendo = null; app.cerrarDecision = null; ok(); };
+    $('#modal-cuerpo').innerHTML = `<div class="historia"><p>${esc(d.pregunta)}</p></div><p class="nota">Lo que elija el primero que pulse vale para todos, y se notará en el pueblo.</p>`
+      + `<div class="fila" style="margin-top:14px;flex-direction:column;align-items:stretch">${d.opciones.map((o, i) => `<button class="btn" data-op="${i}">${esc(o.texto)}${o.oro ? ` · +${o.oro} 🪙` : ''}</button>`).join('')}</div>`;
+    $('#modal').hidden = false;
+    $('#modal-cuerpo').querySelectorAll('[data-op]').forEach((b) => b.addEventListener('click', () => {
+      // Se elige en mitad de la cola de eventos (reproduciendo): la acción se manda igual.
+      const id = d.id, rep = app.reproduciendo; fin(); app.reproduciendo = false; enviar({ tipo: 'decidir', id, opcion: +b.dataset.op }); app.reproduciendo = rep;
+    }));
+    app.cerrarDecision = fin;
+  });
 }
 
 async function mostrarResultado(res) {

@@ -123,7 +123,7 @@ export function normalizar(f) {
   if (!f || typeof f !== 'object') return base;
   const out = { ...base, ...f };
   for (const k of ['cabana', 'tortuga', 'diario']) out[k] = { ...base[k], ...(f[k] || {}) };
-  out.heroes ||= {}; out.registradas ||= {}; out.importados ||= {};
+  out.heroes ||= {}; out.registradas ||= {}; out.importados ||= {}; out.campanas ||= {};
   out.orden = (f.orden || Object.keys(out.heroes)).filter((id) => out.heroes[id]);
   for (const id of Object.keys(out.heroes)) if (!out.orden.includes(id)) out.orden.push(id);
   if (out.activo && !out.heroes[out.activo]) out.activo = null;
@@ -238,7 +238,22 @@ export function sincronizar(f, estado, miId) {
     if (estado.fase === 'final' || h.caido) { fh.prestado = null; cambio = true; }
   }
   if (registrarMision(f, estado, miId)) cambio = true;
+  if (apuntarCampana(f, estado, miId)) cambio = true;
   if (cambio) tocar(f);
+  return cambio;
+}
+// Campañas importadas: lo que se decidió (y si se acabó) queda en la ficha; el pueblo lo convierte en
+// vecinos, muebles y cartas. El oro de una decisión va al banco una sola vez.
+function apuntarCampana(f, estado, miId) {
+  const id = estado.importada;
+  if (!id || !Object.values(estado.heroes).some((h) => h.jugador === miId && !h.ia)) return false;
+  const c = ((f.campanas ||= {})[id] ||= { nombre: estado.nombreImportada || id, decisiones: {}, pagadas: {}, fin: 0 });
+  let cambio = false;
+  for (const [k, d] of Object.entries(estado.mundoCampana || {})) {
+    if (c.decisiones[k]?.opcion !== d.opcion) { c.decisiones[k] = { opcion: d.opcion, texto: d.texto, marca: d.marca }; cambio = true; }
+    if (d.oro && !c.pagadas[k]) { c.pagadas[k] = 1; f.banco = (f.banco || 0) + d.oro; cambio = true; }
+  }
+  if (!c.fin && estado.fase === 'final' && estado.resultado === 'victoria' && !estado.caida) { c.fin = Date.now(); cambio = true; }
   return cambio;
 }
 // Trofeos y diario: una vez por misión terminada.
@@ -383,6 +398,13 @@ export function fusionar(a, b) {
   tn.fama = Math.max(tn.fama || 0, tv.fama || 0);
   for (const k of ['obras', 'historias', 'vistos']) tn[k] = { ...(tv[k] || {}), ...(tn[k] || {}) };
   tn.rescatados = [...new Set([...(tn.rescatados || []), ...(tv.rescatados || [])])];
+  // Campañas: lo decidido en un dispositivo no se pierde en otro (si choca, manda la ficha más nueva).
+  for (const [k, cv] of Object.entries(vieja.campanas || {})) {
+    const cn = (out.campanas[k] ||= copia(cv));
+    cn.decisiones = { ...(cv.decisiones || {}), ...(cn.decisiones || {}) };
+    cn.pagadas = { ...(cv.pagadas || {}), ...(cn.pagadas || {}) };
+    cn.fin = cn.fin || cv.fin || 0;
+  }
   return out;
 }
 

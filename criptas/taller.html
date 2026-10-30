@@ -9,31 +9,31 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/acceso.js": "./js/acceso.js?v=20261030173336",
-    "./js/campanas.js": "./js/campanas.js?v=20261030173336",
-    "./js/datos.js": "./js/datos.js?v=20261030173336",
-    "./js/firebase.js": "./js/firebase.js?v=20261030173336",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030173336",
-    "./js/ia.js": "./js/ia.js?v=20261030173336",
-    "./js/iconos.js": "./js/iconos.js?v=20261030173336",
-    "./js/insultos.js": "./js/insultos.js?v=20261030173336",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030173336",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030173336",
-    "./js/motor.js": "./js/motor.js?v=20261030173336",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030173336",
-    "./js/nube.js": "./js/nube.js?v=20261030173336",
-    "./js/panel.js": "./js/panel.js?v=20261030173336",
-    "./js/planos.js": "./js/planos.js?v=20261030173336",
-    "./js/procedural.js": "./js/procedural.js?v=20261030173336",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030173336",
-    "./js/red.js": "./js/red.js?v=20261030173336",
-    "./js/render.js": "./js/render.js?v=20261030173336",
-    "./js/render3d.js": "./js/render3d.js?v=20261030173336",
-    "./js/reunion.js": "./js/reunion.js?v=20261030173336",
-    "./js/sprites.js": "./js/sprites.js?v=20261030173336",
-    "./js/tablero.js": "./js/tablero.js?v=20261030173336",
-    "./js/ui.js": "./js/ui.js?v=20261030173336",
-    "./js/viajero.js": "./js/viajero.js?v=20261030173336"
+    "./js/acceso.js": "./js/acceso.js?v=20261030181130",
+    "./js/campanas.js": "./js/campanas.js?v=20261030181130",
+    "./js/datos.js": "./js/datos.js?v=20261030181130",
+    "./js/firebase.js": "./js/firebase.js?v=20261030181130",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030181130",
+    "./js/ia.js": "./js/ia.js?v=20261030181130",
+    "./js/iconos.js": "./js/iconos.js?v=20261030181130",
+    "./js/insultos.js": "./js/insultos.js?v=20261030181130",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030181130",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030181130",
+    "./js/motor.js": "./js/motor.js?v=20261030181130",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030181130",
+    "./js/nube.js": "./js/nube.js?v=20261030181130",
+    "./js/panel.js": "./js/panel.js?v=20261030181130",
+    "./js/planos.js": "./js/planos.js?v=20261030181130",
+    "./js/procedural.js": "./js/procedural.js?v=20261030181130",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030181130",
+    "./js/red.js": "./js/red.js?v=20261030181130",
+    "./js/render.js": "./js/render.js?v=20261030181130",
+    "./js/render3d.js": "./js/render3d.js?v=20261030181130",
+    "./js/reunion.js": "./js/reunion.js?v=20261030181130",
+    "./js/sprites.js": "./js/sprites.js?v=20261030181130",
+    "./js/tablero.js": "./js/tablero.js?v=20261030181130",
+    "./js/ui.js": "./js/ui.js?v=20261030181130",
+    "./js/viajero.js": "./js/viajero.js?v=20261030181130"
   }
 }
 </script>
@@ -89,7 +89,7 @@
     <section>
       <h2>1 · Pega o sube la campaña</h2>
       <p class="nota">En el formato de la plantilla de campaña (la que se le pasa a Gemini o a quien sea). Si viene con <code>```json</code> alrededor, no pasa nada.</p>
-      <textarea id="entrada" spellcheck="false" placeholder='{ "campana": { "nombre": "…" }, "misiones": [ … ], "tortuga": [ … ] }'></textarea>
+      <textarea id="entrada" spellcheck="false" placeholder='{ "campana": { "nombre": "…" }, "misiones": [ … ], "pueblo": [ … ] }'></textarea>
       <div class="fila">
         <button id="b-ver">Revisar y ver</button>
         <label class="boton claro">Subir archivo .json<input type="file" id="archivo" accept=".json,.txt,application/json,text/plain"></label>
@@ -99,7 +99,7 @@
     <section id="vista" hidden></section>
     <section>
       <h2>Campañas importadas</h2>
-      <p class="nota">Se guardan en la nube y el juego las convierte solo a mapas jugables. Para jugarlas: menú del juego → Modo Historia → en el desplegable de misiones, elige la que empieza por 📜. Las decisiones todavía solo se cuentan (no cambian el mundo).</p>
+      <p class="nota">Se guardan en la nube y el juego las convierte solo a mapas jugables. Para jugarlas: menú del juego → Modo Historia → en el desplegable de misiones, elige la que empieza por 📜. Las decisiones se eligen en la partida y lo que pongas en «pueblo» aparece después en el pueblo: vecinos nuevos, muebles en el buzón y cartas.</p>
       <ul class="lista-guardadas" id="guardadas" style="list-style:none;padding:0;margin:0"><li class="nota">Cargando…</li></ul>
     </section>
   </div>
@@ -121,8 +121,15 @@ const CAMPOS = {
   mision: ['titulo', 'pergamino', 'objetivo', 'requiere', 'rondas', 'tareas', 'mapa', 'escalera_en', 'salas', 'monstruos', 'trampas', 'errante', 'guion', 'decisiones', 'recompensa', 'matar'],
   sala: ['id', 'nombre', 'que_hay', 'tesoro', 'cerrada_hasta', 'puerta_secreta_a'],
   monstruo: ['id', 'tipo', 'cuantos', 'sala', 'conducta', 'nombre', 'jefe', 'cuerpo', 'ataque', 'defensa'],
-  tortuga: ['si', 'aparece', 'servicio', 'donde']
+  tortuga: ['si', 'aparece', 'servicio', 'donde'],
+  pueblo: ['si', 'vecino', 'mueble', 'carta'],
+  vecino: ['nombre', 'personalidad', 'saludo', 'frases', 'donde', 'ropa', 'pelo'],
+  mueble: ['nombre', 'descripcion', 'como', 'icono'],
+  carta: ['de', 'texto']
 };
+// Lo que entiende el pueblo (pueblo.html): sitios para los vecinos nuevos y formas para los muebles.
+const SITIOS = ['plaza', 'huerto', 'rio', 'río', 'mirador', 'banco', 'cantina'];
+const FORMAS = ['recuerdo', 'cama', 'silla', 'mesa', 'mesaLarga', 'sofa', 'alfombra', 'alfombraR', 'lampara', 'estanteria', 'planta', 'baul', 'gramofono', 'reloj', 'barril', 'timon', 'vitrina', 'espejo', 'canon', 'hamaca', 'loro', 'mapaTesoro', 'cofa', 'ancla', 'cofre', 'estandarte', 'calavera', 'cabezaDragon', 'armadura', 'espadaPiedra', 'fuerte', 'hucha', 'yunque', 'pecera', 'globo', 'botella', 'nabo', 'caldero', 'corcho', 'seta', 'cojin', 'cocina'];
 const SLUG = /^[a-z0-9_]+$/;
 
 // ---------- Leer el texto (sin vallas de Markdown) ----------
@@ -130,7 +137,7 @@ function leerJSON(texto) {
   let t = texto.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
   const i = t.indexOf('{'), j = t.lastIndexOf('}'); if (i > 0 || j < t.length - 1) t = t.slice(i, j + 1);
   const d = JSON.parse(t);
-  if (!d.misiones && d.titulo) return { campana: { nombre: d.titulo }, misiones: [d], tortuga: [] };   // una misión suelta
+  if (!d.misiones && d.titulo) return { campana: { nombre: d.titulo }, misiones: [d], pueblo: [] };   // una misión suelta
   return d;
 }
 
@@ -236,10 +243,22 @@ function revisar(d) {
       }
     }
   });
-  for (const t of d.tortuga || []) {
+  if ((d.tortuga || []).length && !(d.pueblo || []).length) add('aviso', 'Tortuga', 'La sección «tortuga» es la antigua y en el juego no hace nada. Pásala a «pueblo» (vecinos, muebles y cartas) para que las decisiones se noten.');
+  for (const t of (d.pueblo || []).length ? [] : d.tortuga || []) {
     desconocidos(t, CAMPOS.tortuga, 'Tortuga');
     if (t.si !== 'acabar la campaña' && !mundo.has(String(t.si).replace(/\s*:\s*/, ': '))) add('aviso', 'Tortuga', `«${t.si}» no lo produce ninguna decisión.`);
-    if (t.servicio && t.servicio !== 'tú decides') add('idea', 'Tortuga', `Servicio nuevo: ${t.servicio}`);
+  }
+  if (d.pueblo && !Array.isArray(d.pueblo)) add('error', 'Pueblo', '«pueblo» tiene que ser una lista [ … ].');
+  for (const t of Array.isArray(d.pueblo) ? d.pueblo : []) {
+    const P = `Pueblo · ${t.si || '?'}`;
+    desconocidos(t, CAMPOS.pueblo, P); ideas(t, P);
+    const si = String(t.si || '').trim().replace(/\s*:\s*/, ': ');
+    if (!si) add('error', P, 'Falta «si» (qué tiene que pasar).');
+    else if (!/^acabar la campa[nñ]a$/i.test(si) && !mundo.has(si)) add('aviso', P, `«${si}» no lo produce ninguna decisión: nunca pasará.`);
+    if (!t.vecino && !t.mueble && !t.carta) add('error', P, 'No dice qué pasa: pon un «vecino», un «mueble» o una «carta».');
+    if (t.vecino) { desconocidos(t.vecino, CAMPOS.vecino, P + ' · vecino'); if (!t.vecino.nombre) add('error', P, 'El vecino no tiene nombre.'); if (!(t.vecino.frases || []).length) add('aviso', P, 'El vecino no tiene frases: dirá una genérica.'); if (t.vecino.donde && !SITIOS.includes(String(t.vecino.donde).toLowerCase())) add('aviso', P, `Sitio «${t.vecino.donde}» desconocido: estará en la plaza (sitios: plaza, huerto, rio, mirador, banco, cantina).`); }
+    if (t.mueble) { desconocidos(t.mueble, CAMPOS.mueble, P + ' · mueble'); if (!t.mueble.nombre) add('error', P, 'El mueble no tiene nombre.'); if (t.mueble.como && !FORMAS.includes(t.mueble.como)) add('aviso', P, `Forma «${t.mueble.como}» desconocida: será un recuerdo en un pedestal.`); }
+    if (t.carta) { desconocidos(t.carta, CAMPOS.carta, P + ' · carta'); if (!t.carta.texto) add('error', P, 'La carta no tiene texto.'); }
   }
   if (!d.misiones.some((m) => (m.monstruos || []).some((x) => x.jefe))) add('aviso', 'Campaña', 'Ninguna misión tiene jefe.');
   return R;
@@ -256,7 +275,7 @@ function pintar(d, R) {
   v.innerHTML = `<h2>2 · ${esc(c.nombre || 'Sin nombre')}</h2>
     ${c.gancho ? `<p class="pergamino">${esc(c.gancho)}</p>` : ''}
     <div class="fila">${c.tono ? `<span class="chip">${esc(c.tono)}</span>` : ''}${c.villano ? `<span class="chip jefe">Villano: ${esc(c.villano)}</span>` : ''}${c.premio_final ? `<span class="chip verde">Premio: ${esc(c.premio_final)}</span>` : ''}</div>
-    <div class="resumen"><div><b>${ms.length}</b><span>misiones</span></div><div><b>${n('salas')}</b><span>salas</span></div><div><b>${ms.reduce((s, m) => s + (m.monstruos || []).reduce((a, x) => a + (x.cuantos || 1), 0), 0)}</b><span>monstruos</span></div><div><b>${n('decisiones')}</b><span>decisiones</span></div><div><b>${(d.tortuga || []).length}</b><span>cambios en la tortuga</span></div></div>
+    <div class="resumen"><div><b>${ms.length}</b><span>misiones</span></div><div><b>${n('salas')}</b><span>salas</span></div><div><b>${ms.reduce((s, m) => s + (m.monstruos || []).reduce((a, x) => a + (x.cuantos || 1), 0), 0)}</b><span>monstruos</span></div><div><b>${n('decisiones')}</b><span>decisiones</span></div><div><b>${(d.pueblo || []).length}</b><span>cambios en el pueblo</span></div></div>
     <h3>Revisión</h3>
     <ul class="revision" style="margin-top:6px">${R.error.length ? fila(R.error, 'error') : '<li class="ok">✓ Sin errores: se puede importar.</li>'}${fila(R.aviso, 'aviso')}${fila(R.idea, 'idea')}</ul>
     <div class="fila"><button id="b-importar" ${R.error.length ? 'disabled title="Arregla antes los errores en rojo"' : ''}>Importar a la nube</button><span class="nota" id="estado-import">${R.error.length ? `Hay ${R.error.length} error${R.error.length > 1 ? 'es' : ''} en rojo: corrígelos (o pídeselo a quien la escribió) y vuelve a revisar.` : ''}</span></div>
@@ -271,7 +290,8 @@ function pintar(d, R) {
       ${m.guion?.length ? `<div class="bloque"><h4>Guion</h4><ul>${m.guion.map((g) => `<li><b>${esc(g.cuando)}</b> → ${[].concat(g.pasa).map(esc).join(' · ')}</li>`).join('')}</ul></div>` : ''}
       ${(m.decisiones || []).map((dc) => `<div class="decision">⚖ <b>${esc(dc.pregunta)}</b><ul>${(dc.opciones || []).map((o) => `<li>${esc(o.texto)}${o.oro_fondo ? ` <span class="chip verde">+${o.oro_fondo} oro</span>` : ''}${o.en_el_mundo ? ` <span class="chip">${esc(o.en_el_mundo)}</span>` : ''}</li>`).join('')}</ul></div>`).join('')}
     </div>`).join('')}
-    ${(d.tortuga || []).length ? `<div class="mision"><h3>🐢 Cambios en la tortuga</h3><div class="bloque"><ul>${d.tortuga.map((t) => `<li><b>${esc(t.si)}</b> → ${esc(t.aparece)}${t.donde ? ` <small>(${esc(t.donde)})</small>` : ''}${t.servicio ? ` · <i>${esc(t.servicio)}</i>` : ''}</li>`).join('')}</ul></div></div>` : ''}`;
+    ${(d.pueblo || []).length ? `<div class="mision"><h3>🏡 Lo que cambia en el pueblo</h3><div class="bloque"><ul>${d.pueblo.map((t) => `<li><b>${esc(t.si)}</b> →${t.vecino ? ` 🧑 Se muda <b>${esc(t.vecino.nombre)}</b>${t.vecino.donde ? ` <small>(${esc(t.vecino.donde)})</small>` : ''}${(t.vecino.frases || []).length ? `: <i>«${esc(t.vecino.frases[0])}»</i>` : ''}` : ''}${t.mueble ? ` 📦 <b>${esc(t.mueble.nombre)}</b> al buzón${t.mueble.descripcion ? ` <small>(${esc(t.mueble.descripcion)})</small>` : ''}` : ''}${t.carta ? ` ✉️ Carta de ${esc(t.carta.de || '?')}: <i>«${esc(t.carta.texto)}»</i>` : ''}</li>`).join('')}</ul></div></div>`
+      : (d.tortuga || []).length ? `<div class="mision"><h3>🐢 Sección antigua «tortuga» (no hace nada)</h3><div class="bloque"><ul>${d.tortuga.map((t) => `<li><b>${esc(t.si)}</b> → ${esc(t.aparece)}</li>`).join('')}</ul></div></div>` : ''}`;
   $('b-importar').onclick = importar;
   v.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
