@@ -112,10 +112,41 @@
   .sello.puesto:nth-child(even) { transform: rotate(6deg); border-color: #2f6aa0; color: #2f6aa0; }
   .sello span { display: block; font-size: 22px; margin-bottom: 2px; }
   .confeti { position: fixed; top: -20px; width: 12px; height: 18px; z-index: 30; animation: cae 2.8s linear forwards; pointer-events: none; } @keyframes cae { to { transform: translateY(110vh) rotate(720deg); } }
+  .esfera.rojo { background: #e9d9b8; box-shadow: inset 0 0 0 4px #c9b07a; }
+  .reloj.peligro .esfera.rojo { background: var(--ruta); color: #fff; box-shadow: inset 0 0 0 4px #8a2018; }
+  .nota a { color: var(--laton); }
+  .progreso { display: flex; gap: 6px; } .progreso span { width: 34px; height: 8px; border-radius: 4px; background: #e2cf9e; } .progreso .si { background: var(--verde); } .progreso .ya { background: var(--laton); }
+  .pregunta { margin: 0; text-align: center; font: 700 clamp(18px, 2.6vw, 22px)/1.35 var(--texto); max-width: 52ch; text-wrap: balance; }
+  .pregunta b, .lectura b { color: var(--ruta); }
+  .opciones { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 560px; }
+  .op { border: 0; border-radius: 18px; background: var(--crema); color: var(--tinta); font: 800 19px/1.2 var(--texto); padding: 14px 12px; box-shadow: 0 5px 0 #d4bd85; min-height: 60px; font-variant-numeric: tabular-nums; }
+  .op:active { transform: translateY(3px); box-shadow: 0 2px 0 #d4bd85; } .op:disabled { opacity: .6; }
+  .op.bien, .celda.bien { background: #cfe9c4; box-shadow: 0 5px 0 #8fbf80; opacity: 1; }
+  .op.mal, .celda.mal { animation: no .4s; background: #f4c9bd; }
+  .horas { display: block; margin-top: 4px; font-size: 14px; color: var(--ruta); }
+  .tabla-caja { width: 100%; overflow-x: auto; }
+  .tabla { width: 100%; border-collapse: collapse; background: var(--crema); border-radius: 14px; overflow: hidden; font-size: 15px; font-variant-numeric: tabular-nums; }
+  .tabla caption { font: 400 16px var(--display); color: var(--tinta); padding: 4px 0 8px; }
+  .tabla th { background: #3a2a1c; color: var(--papel); text-align: left; padding: 6px 10px; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  .tabla td { padding: 5px 10px; border-top: 1px solid #ead9ad; } .tabla td:last-child, .tabla th:last-child { text-align: right; }
+  .reloj-dib { width: 130px; height: 130px; }
+  .selva { position: relative; padding: 22px; background: #cfe2b0; border-radius: 20px; }
+  .rejilla { display: grid; grid-template-columns: repeat(5, 54px); gap: 5px; }
+  .celda { width: 54px; height: 54px; border: 0; border-radius: 12px; background: #e6efc8; font-size: 28px; box-shadow: 0 3px 0 #a8bd80; }
+  .rosa-v { position: absolute; font: 400 15px var(--display); color: var(--tinta); }
+  .rosa-v.n { top: 3px; left: 50%; transform: translateX(-50%); } .rosa-v.s { bottom: 3px; left: 50%; transform: translateX(-50%); }
+  .rosa-v.e { right: 5px; top: 50%; transform: translateY(-50%); } .rosa-v.o { left: 5px; top: 50%; transform: translateY(-50%); }
+  .sitios { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; } .sitios span { display: grid; justify-items: center; font-size: 34px; background: var(--crema); border-radius: 16px; padding: 6px 10px; min-width: 76px; } .sitios small { font-size: 12px; font-weight: 700; }
+  .lista-pistas { margin: 0; padding: 0 0 0 18px; font-weight: 600; font-size: 16px; display: grid; gap: 4px; max-width: 52ch; }
+  .serie { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; } .serie span { min-width: 58px; padding: 10px 8px; border-radius: 14px; background: var(--crema); font: 400 26px/1 var(--display); text-align: center; box-shadow: 0 4px 0 #d4bd85; }
+  .serie .falta { background: var(--laton); color: #fff; } .serie.grande { font-size: 54px; }
+  .lectura { margin: 0; background: var(--crema); border-radius: 16px; padding: 12px 16px; font-weight: 600; max-width: 56ch; }
   @media (max-width: 560px) {
+    .opciones { grid-template-columns: 1fr; } .rejilla { grid-template-columns: repeat(5, 46px); } .celda { width: 46px; height: 46px; font-size: 24px; }
+    .reloj { padding-right: 10px; } .reloj .esfera { width: 40px; height: 40px; font-size: 17px; }
     .abajo { grid-template-columns: 1fr; }
     .tripulacion { justify-content: center; }
-    .parada text { font-size: 22px; }
+    .parada text { font-size: 30px; stroke-width: 7px; } .parada circle.base { r: 17; }
     .ficha, .cara, .pieza { width: 76px; height: 76px; } .tambor { width: 88px; height: 88px; }
     .habla { grid-template-columns: auto 1fr; } .habla .repetir { grid-column: 1 / -1; justify-self: end; }
     .habla svg { width: 64px; height: 64px; }
@@ -128,8 +159,9 @@
 
 <div class="app">
   <header>
-    <h1><small>Un viaje de Julio Verne</small>La vuelta al mundo en 80 días</h1>
+    <h1><small>Un viaje de Julio Verne · 8 años</small>La vuelta al mundo en 80 días</h1>
     <div class="reloj" aria-live="polite"><div class="esfera" id="dias">80</div><div><b>días</b><span id="donde">En Londres</span></div></div>
+    <div class="reloj" aria-live="polite" title="Cada fallo suma 3 horas"><div class="esfera rojo" id="horas">0</div><div><b>horas</b><span>de retraso</span></div></div>
     <button class="redondo" id="b-pasaporte" aria-label="Pasaporte">🛂</button>
     <button class="redondo" id="b-voz" aria-label="Voz">🔊</button>
   </header>
@@ -150,7 +182,7 @@
     <button class="gran" id="b-seguir"><span class="ico">🎩</span><span id="t-seguir">¡Empezar el viaje!</span></button>
     <div class="tripulacion" id="tripulacion"></div>
   </div>
-  <p class="nota">Boceto para infantil (3 a 6 años): todo se escucha en voz alta y no se puede perder. Cada parada es un juego corto: colores, contar, formas, tamaños, memoria. Los personajes son del libro de Julio Verne (dominio público), dibujados a nuestra manera.</p>
+  <p class="nota">Boceto para 8 años (3.º de primaria): en cada parada, tres retos de lectura, horas, brújula, series, geografía y cuentas. Cada fallo suma 3 horas de retraso. Al final se descubre el truco del libro: viajando hacia el este se gana un día. ¿Llegaréis a tiempo? <a href="infantil.html">Versión infantil (3 a 6 años)</a></p>
 </div>
 
 <script>
@@ -182,22 +214,22 @@ const GENTE = {
 // x, y en el mapa (longitud y latitud de verdad, en un mapa de 1000 × 500)
 const xy = (lat, lon) => [Math.round((lon + 180) / 360 * 1000), Math.round((90 - lat) / 180 * 500)];
 const PARADAS = [
-  { id: 'londres', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fogg', juego: 'maleta', icono: '🧳',
-    intro: 'Soy Phileas Fogg. He apostado a que doy la vuelta al mundo en ochenta días. ¿Me ayudas? Primero, la maleta: mete el paraguas, el sombrero y el reloj.' },
-  { id: 'suez', nombre: 'Suez', p: xy(30, 32.5), quien: 'picaporte', juego: 'barcos', icono: '⛵',
-    intro: '¡Hola! Soy Picaporte. Esto es el canal de Suez, lleno de barcos. ¿Cuántos barcos ves?' },
-  { id: 'bombay', nombre: 'Bombay', p: xy(19, 72.8), quien: 'aouda', juego: 'elefante', icono: '🐘',
-    intro: '¡Socorro! Soy Aouda y me he perdido en la selva. Llévame en el elefante: pisa la flor del color que yo te diga.' },
-  { id: 'hongkong', nombre: 'Hong Kong', p: xy(22.3, 114.2), quien: 'fogg', juego: 'buscar', icono: '🔎',
-    intro: '¡Oh, no! Picaporte se ha perdido en el puerto de Hong Kong. Búscalo: lleva una gorra roja.' },
-  { id: 'yokohama', nombre: 'Yokohama', p: xy(35.4, 139.6), quien: 'picaporte', juego: 'circo', icono: '🥁',
-    intro: '¡Estoy aquí, en un circo de Yokohama! Para salir, toca los tambores igual que yo. ¡Mira y escucha!' },
-  { id: 'sanfrancisco', nombre: 'San Francisco', p: xy(37.8, -122.4), quien: 'aouda', juego: 'vias', icono: '🚂',
-    intro: 'El tren cruza América, pero a la vía le faltan piezas. ¿Cuál encaja en el hueco?' },
-  { id: 'nuevayork', nombre: 'Nueva York', p: xy(40.7, -74), quien: 'fogg', juego: 'lena', icono: '🪵',
-    intro: '¡Hemos perdido el barco! Vamos en otro, pero se queda sin carbón. ¡Echa cinco troncos al fuego!' },
-  { id: 'fin', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fix', juego: 'campana', icono: '🔔',
-    intro: 'Soy el inspector Fix. ¡Corre al club, que el reloj va a dar las ocho! Toca la campana para avisar de que habéis llegado.' }
+  { id: 'londres', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fogg', juego: 'tabla', icono: '🗞',
+    intro: 'Soy Phileas Fogg. He apostado veinte mil libras a que doy la vuelta al mundo en ochenta días. El periódico ha publicado mi plan de viaje: léelo bien antes de salir.' },
+  { id: 'suez', nombre: 'Suez', p: xy(30, 32.5), quien: 'picaporte', juego: 'relojes', icono: '⌚',
+    intro: '¡Hola! Soy Picaporte, el criado del señor Fogg. Mi reloj es de familia y nunca lo cambio: siempre marca la hora de Londres. Ayúdame a saber qué hora es aquí.' },
+  { id: 'bombay', nombre: 'Bombay', p: xy(19, 72.8), quien: 'aouda', juego: 'brujula', icono: '🧭',
+    intro: 'Fogg ha comprado un elefante por dos mil libras para cruzar la selva. En algún lugar está Aouda, que necesita ayuda. Guía al elefante con la brújula.' },
+  { id: 'hongkong', nombre: 'Hong Kong', p: xy(22.3, 114.2), quien: 'fogg', juego: 'pistas', icono: '🔎',
+    intro: 'Picaporte ha desaparecido en el puerto de Hong Kong, y el barco sale pronto. Los testigos dan pistas: léelas y descubre dónde está.' },
+  { id: 'yokohama', nombre: 'Yokohama', p: xy(35.4, 139.6), quien: 'picaporte', juego: 'series', icono: '🎪',
+    intro: '¡Estoy en Yokohama, trabajando en un circo de acróbatas! Para salir, hay que adivinar el número de cada acróbata.' },
+  { id: 'sanfrancisco', nombre: 'San Francisco', p: xy(37.8, -122.4), quien: 'aouda', juego: 'geografia', icono: '🗺',
+    intro: 'Hemos cruzado medio mundo. Antes de subir al tren que cruza América, demuestra que sabes dónde estamos.' },
+  { id: 'nuevayork', nombre: 'Nueva York', p: xy(40.7, -74), quien: 'fogg', juego: 'madera', icono: '🪵',
+    intro: '¡Hemos perdido el barco a Liverpool por cuarenta y cinco minutos! Vamos en un barco de carga, pero el carbón no llega. Hará falta hacer cuentas.' },
+  { id: 'fin', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fix', juego: 'dia', icono: '🕗',
+    intro: 'Soy el inspector Fix. Os detuve en Liverpool por error y Fogg cree que ha llegado un día tarde. Pero esperad… habéis dado la vuelta al mundo hacia el este.' }
 ];
 // Días de cada tramo, como en el libro: 7 + 13 + 16 + 6 + 22 + 7 + 9 = 80
 const TRAMOS = [
@@ -208,8 +240,9 @@ const TRAMOS = [
 // =============================================================
 //  Estado (se recuerda en este navegador, si se puede)
 // =============================================================
-const CLAVE = 'vuelta80_boceto';
-let E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false };
+const CLAVE = 'vuelta80_8anos';
+const nuevo = () => ({ etapa: 0, hecho: [], dias: 80, aouda: false, fix: false, retraso: 0 });
+let E = nuevo();
 try { const g = JSON.parse(localStorage.getItem(CLAVE) || 'null'); if (g && typeof g.etapa === 'number') E = g; } catch { /* sin memoria: se empieza de cero */ }
 const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch { /* sin memoria */ } };
 
@@ -217,9 +250,9 @@ const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } 
 //  Voz y sonidos
 // =============================================================
 let voz = true, ac = null;
-function decir(t) {
+function decir(t, cola = false) {
   if (!voz || !('speechSynthesis' in window)) return;
-  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; u.rate = .92; u.pitch = 1.08; const v = speechSynthesis.getVoices().find((x) => /^es(-|_)ES/i.test(x.lang)) || speechSynthesis.getVoices().find((x) => /^es/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* sin voz */ }
+  try { if (!cola) speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; u.rate = .92; u.pitch = 1.08; const v = speechSynthesis.getVoices().find((x) => /^es(-|_)ES/i.test(x.lang)) || speechSynthesis.getVoices().find((x) => /^es/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* sin voz */ }
 }
 function tono(f, d = .18, tipo = 'triangle', vol = .18) {
   try { ac ||= new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = tipo; o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d); } catch { /* sin sonido */ }
@@ -277,7 +310,9 @@ const vehiculo = svgEl('text', { x: 0, y: 44, 'text-anchor': 'middle', 'font-siz
 function ponerFicha(x, y) { ficha.setAttribute('transform', `translate(${x} ${y - 30})`); }
 const punto = (q, t) => [(1 - t) ** 2 * q.a[0] + 2 * (1 - t) * t * q.c[0] + t * t * q.b[0], (1 - t) ** 2 * q.a[1] + 2 * (1 - t) * t * q.c[1] + t * t * q.b[1]];
 
+function pintarRetraso() { const h = document.getElementById('horas'); h.textContent = E.retraso || 0; h.parentElement.classList.toggle('peligro', (E.retraso || 0) > 18); }
 function pintar() {
+  pintarRetraso();
   marcas.forEach((g, i) => { g.classList.toggle('hecha', E.hecho.includes(i)); g.classList.toggle('ahora', i === E.etapa && E.etapa < 7); });
   marcas[0].classList.toggle('ahora', E.etapa === 0 || E.etapa === 7);
   trazos.forEach((ts, i) => ts.forEach((t) => t.classList.toggle('hecha', i < E.etapa)));
@@ -328,12 +363,13 @@ function abrirParada(i) {
   JUEGOS[P.juego](velo.querySelector('#juego'), dice, () => ganar(i, dice));
 }
 function ganar(i, dice) {
-  fanfarria(); confeti(28);
+  if (i < 7 || (E.retraso || 0) <= 24) { fanfarria(); confeti(28); } else mal();
   if (!E.hecho.includes(i)) E.hecho.push(i);
   if (PARADAS[i].id === 'bombay') E.aouda = true;
   if (PARADAS[i].id === 'fin') E.fix = true;
   const fin = i === 7;
-  const texto = fin ? `¡Habéis llegado justo a tiempo! <b>Ochenta días</b> exactos. ¡Fogg gana la apuesta!` : ['¡Muy bien!', '¡Genial!', '¡Lo has conseguido!', '¡Eres un gran viajero!'][i % 4] + (PARADAS[i].id === 'bombay' ? ' Aouda viaja ahora con nosotros.' : '') + ' ¡Sello en el pasaporte!';
+  const r = E.retraso || 0, aTiempo = r <= 24;
+  const texto = fin ? (aTiempo ? `¡Habéis ganado un día entero! ${r ? `Aunque los despistes os han retrasado <b>${r} horas</b>, ` : 'Sin un solo despiste, '}llegáis al club justo a tiempo. ¡Fogg gana la apuesta!` : `Ni el día ganado os salva: con <b>${r} horas</b> de retraso, llegáis tarde al club. ¡Fogg pierde la apuesta! Pulsa «Otra vuelta» e inténtalo con menos fallos.`) : ['¡Muy bien!', '¡Genial!', '¡Lo has conseguido!', '¡Eres un gran viajero!'][i % 4] + (PARADAS[i].id === 'bombay' ? ' Aouda viaja ahora con nosotros.' : '') + ' ¡Sello en el pasaporte!';
   dice(texto);
   const j = velo.querySelector('#juego');
   j.innerHTML = `<div class="sello puesto" style="width:150px;font-size:16px"><span>${PARADAS[i].icono}</span>${PARADAS[i].nombre}</div>
@@ -349,114 +385,149 @@ function confeti(n) { const cs = ['#c8372d', '#d4a43a', '#4f9a52', '#2f6aa0', '#
 const barajar = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const NUM = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
 
-// Los juegos: cada uno pinta en «a», habla con «dice» y llama a «fin» cuando se completa. Nunca se pierde.
+// Los retos (8 años): en cada parada, tres preguntas. Cada fallo suma 3 horas de retraso y se vuelve a intentar.
+const azar = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const escH = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const hh = (h) => String(((h % 24) + 24) % 24).padStart(2, '0') + ':00';
+const unicos = (l) => [...new Set(l.map(String))];
+function retrasar(h) { E.retraso = (E.retraso || 0) + h; guardar(); pintarRetraso(); }
+function reto(a, dice, fin, preguntas) {
+  let i = 0;
+  const pon = () => {
+    const q = preguntas[i];
+    a.innerHTML = `<div class="progreso">${preguntas.map((_, k) => `<span class="${k < i ? 'si' : k === i ? 'ya' : ''}"></span>`).join('')}</div>
+      ${q.visual || ''}<p class="pregunta">${q.texto}</p>
+      ${q.propias ? '' : `<div class="opciones">${barajar(unicos(q.ops)).map((o) => `<button class="op" data-o="${escH(o)}">${escH(o)}</button>`).join('')}</div>`}`;
+    decir(q.texto.replace(/<[^>]+>/g, ''), true);
+    a.querySelectorAll('.op').forEach((b) => b.onclick = () => {
+      if (b.dataset.o === String(q.buena)) {
+        bien(); b.classList.add('bien'); a.querySelectorAll('.op').forEach((x) => { x.disabled = true; });
+        dice(q.bien || uno(['¡Correcto!', '¡Exacto!', '¡Muy bien!', '¡Eso es!']));
+        if (++i === preguntas.length) setTimeout(fin, 1100); else setTimeout(pon, 1100);
+      } else {
+        mal(); retrasar(3); b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal');
+        dice(`${q.pista || 'Casi. Léelo otra vez con calma.'} <small class="horas">+3 horas de retraso</small>`);
+      }
+    });
+  };
+  setTimeout(pon, 400);
+}
+const uno = (l) => l[Math.floor(Math.random() * l.length)];
+function reloj(h, m = 0) {
+  let s = '<svg viewBox="0 0 120 120" class="reloj-dib" aria-hidden="true"><circle cx="60" cy="60" r="54" fill="#fff6e0" stroke="#3a2a1c" stroke-width="5"/><circle cx="60" cy="60" r="47" fill="none" stroke="#d4a43a" stroke-width="2"/>';
+  for (let k = 1; k <= 12; k++) { const a = k * Math.PI / 6; s += `<text x="${60 + Math.sin(a) * 38}" y="${66 + -Math.cos(a) * 38}" text-anchor="middle" font-size="${k % 3 ? 10 : 15}" font-family="Alfa Slab One, Georgia, serif" fill="#3a2a1c">${k}</text>`; }
+  const ah = ((h % 12) + m / 60) * Math.PI / 6, am = m * Math.PI / 30;
+  s += `<line x1="60" y1="60" x2="${60 + Math.sin(ah) * 24}" y2="${60 - Math.cos(ah) * 24}" stroke="#3a2a1c" stroke-width="6" stroke-linecap="round"/>`;
+  s += `<line x1="60" y1="60" x2="${60 + Math.sin(am) * 36}" y2="${60 - Math.cos(am) * 36}" stroke="#c8372d" stroke-width="3.5" stroke-linecap="round"/><circle cx="60" cy="60" r="4" fill="#3a2a1c"/></svg>`;
+  return s;
+}
+const NOMBRES_TRAMO = ['Londres → Suez', 'Suez → Bombay', 'Bombay → Hong Kong', 'Hong Kong → Yokohama', 'Yokohama → San Francisco', 'San Francisco → Nueva York', 'Nueva York → Londres'];
+const EN_QUE = ['Tren y barco', 'Barco', 'Tren, elefante y barco', 'Barco', 'Barco', 'Tren', 'Barco'];
+
 const JUEGOS = {
-  maleta(a, dice, fin) {
-    const hace = ['☂️', '🎩', '⌚'], nombres = { '☂️': 'el paraguas', '🎩': 'el sombrero', '⌚': 'el reloj' };
-    a.innerHTML = `<div class="maleta">${hace.map((h) => `<span class="hueco" data-h="${h}">${h}</span>`).join('')}</div>
-      <div class="fila">${barajar([...hace, '🍌', '🧸', '🥕']).map((o) => `<button class="ficha" data-o="${o}">${o}</button>`).join('')}</div>`;
-    let n = 0;
-    a.querySelectorAll('.ficha').forEach((b) => b.onclick = () => {
-      const o = b.dataset.o;
-      if (hace.includes(o)) { bien(); b.style.visibility = 'hidden'; a.querySelector(`[data-h="${o}"]`).classList.add('lleno'); dice('¡' + nombres[o][0].toUpperCase() + nombres[o].slice(1) + ', a la maleta!'); if (++n === 3) setTimeout(fin, 900); }
-      else { mal(); b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); dice('Eso no hace falta. Mira las sombras de la maleta.'); }
-    });
+  // Londres: leer la tabla del viaje (como la que publicó el periódico en el libro)
+  tabla(a, dice, fin) {
+    const visual = `<div class="tabla-caja"><table class="tabla"><caption>El plan de viaje de Phileas Fogg</caption><thead><tr><th>Tramo</th><th>Transporte</th><th>Días</th></tr></thead><tbody>
+      ${NOMBRES_TRAMO.map((n, k) => `<tr><td>${n}</td><td>${EN_QUE[k]}</td><td>${TRAMOS[k].dias}</td></tr>`).join('')}</tbody></table></div>`;
+    const pool = [
+      { texto: '¿Cuál es el tramo <b>más largo</b>?', ops: barajar(NOMBRES_TRAMO.filter((n) => n !== NOMBRES_TRAMO[4])).slice(0, 3).concat(NOMBRES_TRAMO[4]), buena: NOMBRES_TRAMO[4], pista: 'Busca el número más grande en la columna «Días».' },
+      { texto: '¿Cuántos días se tarda <b>de Londres a Bombay</b>?', ops: [20, 13, 7, 21], buena: 20, pista: 'Son dos tramos: Londres → Suez y Suez → Bombay. Súmalos.' },
+      { texto: '¿En qué viajan <b>de San Francisco a Nueva York</b>?', ops: ['Tren', 'Barco', 'Elefante', 'Globo'], buena: 'Tren', pista: 'Mira la columna «Transporte». (Y ojo: en el libro no sale ningún globo, eso lo inventó una película).' },
+      { texto: 'Si sumas <b>todos</b> los tramos, ¿cuántos días salen?', ops: [80, 78, 82, 70], buena: 80, pista: 'Suma la columna «Días» poco a poco: 7 + 13 = 20, y sigue.' },
+      { texto: '¿Cuántos días hay <b>de Yokohama a Nueva York</b>?', ops: [29, 22, 7, 30], buena: 29, pista: 'Son dos tramos: Yokohama → San Francisco y San Francisco → Nueva York.' }
+    ];
+    reto(a, dice, fin, barajar(pool).slice(0, 3).map((q) => ({ ...q, visual })));
   },
-  barcos(a, dice, fin) {
-    let ronda = 0;
+  // Suez: el reloj de Picaporte siempre marca la hora de Londres
+  relojes(a, dice, fin) {
+    const h = azar(8, 11);
+    reto(a, dice, fin, [
+      { visual: reloj(h), texto: `El reloj de Picaporte marca la hora de <b>Londres</b>: las ${hh(h)}. En <b>Suez</b> van <b>2 horas por delante</b>. ¿Qué hora es en Suez?`, ops: [hh(h + 2), hh(h - 2), hh(h + 1), hh(h + 3)], buena: hh(h + 2), pista: 'Por delante quiere decir más tarde: suma 2 horas.' },
+      { visual: reloj(h + 1), texto: `Ahora en Londres son las ${hh(h + 1)}. En <b>Bombay</b> van <b>5 horas por delante</b>. ¿Qué hora es en Bombay?`, ops: [hh(h + 6), hh(h - 4), hh(h + 5), hh(h + 7)], buena: hh(h + 6), pista: `Suma 5 horas a las ${hh(h + 1)}.` },
+      { visual: reloj(h + 8), texto: `En <b>Hong Kong</b> son las ${hh(h + 8)}, que van <b>8 horas por delante</b> de Londres. Picaporte no ha cambiado su reloj. ¿Qué hora marca?`, ops: [hh(h), hh(h + 16), hh(h - 1), hh(h + 2)], buena: hh(h), pista: 'Su reloj va con Londres: esta vez hay que restar 8 horas.' }
+    ]);
+  },
+  // Bombay: guiar al elefante por la selva con la brújula
+  brujula(a, dice, fin) {
+    const N = 5; let pos = [0, 4], ronda = 0;
+    const DIR = { norte: [0, -1], sur: [0, 1], este: [1, 0], oeste: [-1, 0] };
     const jugar = () => {
-      const n = 2 + Math.floor(Math.random() * 4);
-      a.innerHTML = `<div class="agua">${Array.from({ length: n }, (_, k) => `<span style="left:${8 + k * (82 / n)}%;top:${20 + (k % 2) * 34}px;animation-delay:${k * .3}s">⛵</span>`).join('')}</div>
-        <div class="fila">${[1, 2, 3, 4, 5, 6].map((k) => `<button class="dados" data-n="${k}"><i>${k}</i><small>${'●'.repeat(k)}</small></button>`).join('')}</div>`;
-      a.querySelectorAll('.dados').forEach((b) => b.onclick = () => {
-        if (+b.dataset.n === n) { bien(); dice(`¡Sí! <b>${NUM[n]}</b> barcos.`); if (++ronda === 2) setTimeout(fin, 1000); else setTimeout(() => { jugar(); dice('¡Vienen más barcos! ¿Cuántos hay ahora?'); }, 1400); }
-        else { mal(); dice('Casi. Cuéntalos con el dedo: uno, dos…'); }
+      let meta, orden;
+      for (let t = 0; t < 50; t++) {
+        const d1 = uno(Object.keys(DIR)), d2 = uno(['norte', 'sur'].includes(d1) ? ['este', 'oeste'] : ['norte', 'sur']);
+        const n1 = azar(1, 3), n2 = azar(1, 3), x = pos[0] + DIR[d1][0] * n1 + DIR[d2][0] * n2, y = pos[1] + DIR[d1][1] * n1 + DIR[d2][1] * n2;
+        if (x >= 0 && x < N && y >= 0 && y < N && (x !== pos[0] || y !== pos[1])) { meta = [x, y]; orden = `Avanza <b>${n1} ${n1 > 1 ? 'casillas' : 'casilla'} al ${d1}</b> y luego <b>${n2} al ${d2}</b>.`; break; }
+      }
+      const ult = ronda === 2;
+      a.innerHTML = `<div class="progreso">${[0, 1, 2].map((k) => `<span class="${k < ronda ? 'si' : k === ronda ? 'ya' : ''}"></span>`).join('')}</div>
+        <div class="selva"><span class="rosa-v n">N</span><span class="rosa-v s">S</span><span class="rosa-v e">E</span><span class="rosa-v o">O</span>
+        <div class="rejilla">${Array.from({ length: N * N }, (_, k) => { const x = k % N, y = Math.floor(k / N), aqui = x === pos[0] && y === pos[1]; return `<button class="celda" data-o="${x},${y}" aria-label="casilla ${x + 1}, ${y + 1}">${aqui ? '🐘' : (x * 7 + y * 3) % 5 === 0 ? '🌴' : ''}</button>`; }).join('')}</div></div>
+        <p class="pregunta">${orden} ¿Dónde acaba el elefante? Toca la casilla.${ult ? ' Allí está Aouda.' : ''}</p>`;
+      decir(orden.replace(/<[^>]+>/g, '') + ' ¿Dónde acaba el elefante?', true);
+      a.querySelectorAll('.celda').forEach((b) => b.onclick = () => {
+        if (b.dataset.o === meta.join(',')) {
+          bien(); b.textContent = ult ? '👩' : '✓'; b.classList.add('bien'); pos = meta;
+          if (++ronda === 3) { dice('¡Me has encontrado! Gracias por salvarme. Viajaré con vosotros.'); setTimeout(fin, 1500); } else { dice('¡Bien! Seguimos por la selva.'); setTimeout(jugar, 1100); }
+        } else { mal(); retrasar(3); b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); dice('Por ahí no. Fíjate en la brújula: el norte está arriba y el este a la derecha. <small class="horas">+3 horas de retraso</small>'); }
       });
     };
-    jugar();
+    setTimeout(jugar, 600);
   },
-  elefante(a, dice, fin) {
-    const C = [['rojo', '#d8402e'], ['azul', '#2f6aa0'], ['amarillo', '#e8c030'], ['verde', '#4f9a52'], ['morado', '#8a4ab0']];
-    const flor = (c) => `<svg viewBox="0 0 70 70">${[0, 72, 144, 216, 288].map((g) => `<ellipse cx="35" cy="17" rx="11" ry="15" fill="${c}" transform="rotate(${g} 35 35)"/>`).join('')}<circle cx="35" cy="35" r="9" fill="#ffe08a"/></svg>`;
-    let paso = 0; const PASOS = 4;
-    const jugar = () => {
-      const tres = barajar(C).slice(0, 3), meta = tres[Math.floor(Math.random() * 3)];
-      a.innerHTML = `<div class="senda">🐘${Array.from({ length: PASOS }, (_, k) => `<span class="paso${k < paso ? ' si' : ''}"></span>`).join('')}🏝</div>
-        <div class="fila">${tres.map(([n, c]) => `<button class="flor" style="background:var(--crema)" data-c="${n}" aria-label="flor ${n}">${flor(c)}</button>`).join('')}</div>`;
-      dice(`¡La flor <b>${meta[0]}</b>! <span class="muestra" style="background:${meta[1]}"></span>`);
-      a.querySelectorAll('.flor').forEach((b) => b.onclick = () => {
-        if (b.dataset.c === meta[0]) { bien(); if (++paso === PASOS) { dice('¡Hemos cruzado la selva! Gracias por salvarme.'); setTimeout(fin, 1400); } else setTimeout(jugar, 500); }
-        else { mal(); dice(`Esa es <b>${b.dataset.c}</b>. Busca la <b>${meta[0]}</b>.`); }
-      });
+  // Hong Kong: ¿dónde está Picaporte? Leer pistas y descartar
+  pistas(a, dice, fin) {
+    const L = [['barco', 'el barco rojo', '🚢'], ['muelle', 'el muelle', '⚓'], ['mercado', 'el mercado', '🏮'], ['faro', 'el faro', '🗼'], ['teatro', 'el teatro', '🎭'], ['te', 'la casa de té', '🍵']];
+    const ronda = (n) => {
+      const sitios = barajar(L).slice(0, n), meta = uno(sitios), otros = barajar(sitios.filter((s) => s !== meta));
+      const testigos = ['Un marinero', 'Una vendedora', 'Un niño', 'El farero', 'Un cocinero'];
+      const pistas = otros.map((s, k) => `${testigos[k]}: «En ${s[1]} no está, de allí vengo yo».`);
+      return {
+        visual: `<div class="sitios">${sitios.map((s) => `<span>${s[2]}<small>${s[1].replace(/^(el|la) /, '')}</small></span>`).join('')}</div><ul class="lista-pistas">${pistas.map((p) => `<li>${p}</li>`).join('')}</ul>`,
+        texto: '¿Dónde está Picaporte?', ops: sitios.map((s) => s[1].charAt(0).toUpperCase() + s[1].slice(1)), buena: meta[1].charAt(0).toUpperCase() + meta[1].slice(1),
+        pista: 'Lee las pistas: cada una descarta un sitio. Busca el que nadie descarta.', bien: `¡Allí estaba, en ${meta[1]}!`
+      };
     };
-    setTimeout(jugar, 2600);
+    reto(a, dice, fin, [ronda(3), ronda(4), ronda(5)]);
   },
-  buscar(a, dice, fin) {
-    const otros = [{ sombrero: 'gorra', color: '#2f6aa0' }, { sombrero: 'gorra', color: '#4f9a52' }, { sombrero: 'copa', color: '#2a2a32' }, { sombrero: 'paja', color: '#e8d08a' }, { sombrero: 'bombin', color: '#5a4a3a' }, { sombrero: 'nada', pelo: '#e8c860' }, { sombrero: 'gorra', color: '#e8c030' }, { sombrero: 'pañuelo', color: '#8a4ab0' }];
-    let ronda = 0;
-    const jugar = () => {
-      const caras = barajar([{ yo: true }, ...barajar(otros).slice(0, ronda ? 8 : 5)]);
-      a.innerHTML = `<div class="caras">${caras.map((c) => `<button class="cara" data-yo="${c.yo ? 1 : 0}" aria-label="${c.yo ? 'Picaporte' : 'otra persona'}">${c.yo ? GENTE.picaporte.svg : cara({ pelo: ['#3a2414', '#8a5a2a', '#1a1410'][Math.floor(Math.random() * 3)], ...c })}</button>`).join('')}</div>`;
-      a.querySelectorAll('.cara').forEach((b) => b.onclick = () => {
-        if (b.dataset.yo === '1') { bien(); if (++ronda === 2) { dice('¡Me has encontrado! Gracias.'); setTimeout(fin, 1200); } else { dice('¡Aquí estoy! … ¡Uy, me he vuelto a perder! Búscame otra vez.'); setTimeout(jugar, 1800); } }
-        else { mal(); dice('Ese no es. Picaporte lleva la <b>gorra roja</b>.'); }
-      });
-    };
-    setTimeout(jugar, 2400);
+  // Yokohama: el circo y sus series de números
+  series(a, dice, fin) {
+    const pasos = barajar([2, 3, 4, 5, 10, 25]).slice(0, 3);
+    reto(a, dice, fin, pasos.map((p, k) => {
+      const ini = p * azar(1, 4) + (k === 2 ? azar(1, p - 1 || 1) : 0), serie = [0, 1, 2, 3].map((n) => ini + n * p), sig = ini + 4 * p;
+      return {
+        visual: `<div class="serie">${serie.map((n) => `<span>${n}</span>`).join('')}<span class="falta">?</span></div>`,
+        texto: `Los acróbatas saltan con números en la camiseta. ¿Qué número le toca al siguiente?`,
+        ops: [sig, sig + 1, sig - 1, sig + p], buena: sig, pista: `Mira cuánto sube cada vez: de ${serie[0]} a ${serie[1]}.`
+      };
+    }));
   },
-  circo(a, dice, fin) {
-    const T = [['#d8402e', 330], ['#2f6aa0', 440], ['#4f9a52', 550]];
-    a.innerHTML = `<div class="fila">${T.map(([c], k) => `<button class="tambor" data-k="${k}" style="background:${c}" aria-label="tambor ${k + 1}"></button>`).join('')}</div>`;
-    const btns = [...a.querySelectorAll('.tambor')];
-    let serie = [], toca = 0, escucha = false, ronda = 0;
-    const luz = (k) => { btns[k].classList.add('luz'); tono(T[k][1], .3, 'square', .1); setTimeout(() => btns[k].classList.remove('luz'), 360); };
-    const mostrar = () => { escucha = false; toca = 0; serie.forEach((k, n) => setTimeout(() => luz(k), 700 + n * 650)); setTimeout(() => { escucha = true; dice('¡Ahora tú!'); }, 800 + serie.length * 650); };
-    const nueva = () => { serie = Array.from({ length: 3 + ronda }, () => Math.floor(Math.random() * 3)); dice(ronda ? '¡Otra más larga! Mira…' : 'Mira bien…'); mostrar(); };
-    btns.forEach((b, k) => b.onclick = () => {
-      if (!escucha) return;
-      luz(k);
-      if (k !== serie[toca]) { mal(); dice('¡Ups! Lo repito. Mira otra vez…'); escucha = false; setTimeout(mostrar, 600); return; }
-      if (++toca === serie.length) { escucha = false; bien(); if (++ronda === 2) { dice('¡Qué ritmo! El público aplaude.'); setTimeout(fin, 1200); } else setTimeout(nueva, 1000); }
-    });
-    setTimeout(nueva, 2600);
+  // San Francisco: geografía del viaje
+  geografia(a, dice, fin) {
+    const pool = [
+      { texto: 'Desde Yokohama habéis cruzado el océano <b>más grande</b> del mundo. ¿Cuál es?', ops: ['Pacífico', 'Atlántico', 'Índico', 'Ártico'], buena: 'Pacífico', pista: 'Es el que está entre Asia y América.' },
+      { texto: '¿En qué continente está <b>San Francisco</b>?', ops: ['América', 'Europa', 'Asia', 'Oceanía'], buena: 'América', pista: 'Mira el mapa: está a la izquierda, al otro lado del océano.' },
+      { texto: 'El tren va de San Francisco a Nueva York. ¿Hacia qué <b>punto cardinal</b> viaja?', ops: ['Este', 'Oeste', 'Norte', 'Sur'], buena: 'Este', pista: 'En el mapa, Nueva York está a la derecha de San Francisco. La derecha es el este.' },
+      { texto: '¿En qué continente están <b>Bombay y Hong Kong</b>?', ops: ['Asia', 'África', 'Europa', 'América'], buena: 'Asia', pista: 'Es el continente más grande del mapa.' },
+      { texto: 'El canal de Suez une dos mares. ¿Cuáles?', ops: ['El Mediterráneo y el mar Rojo', 'El Atlántico y el Pacífico', 'El Cantábrico y el Báltico', 'Ninguno, es un río'], buena: 'El Mediterráneo y el mar Rojo', pista: 'Uno baña España e Italia; el otro tiene nombre de color.' },
+      { texto: 'Para volver de Nueva York a Londres, ¿qué océano hay que cruzar?', ops: ['Atlántico', 'Pacífico', 'Índico', 'Ártico'], buena: 'Atlántico', pista: 'Es el que separa América de Europa.' }
+    ];
+    reto(a, dice, fin, barajar(pool).slice(0, 3));
   },
-  vias(a, dice, fin) {
-    const F = {
-      circulo: (c) => `<circle cx="33" cy="33" r="26" fill="${c}"/>`, cuadrado: (c) => `<rect x="8" y="8" width="50" height="50" rx="4" fill="${c}"/>`,
-      triangulo: (c) => `<path d="M33 6 L60 58 L6 58Z" fill="${c}"/>`, estrella: (c) => `<path d="M33 4 L41 24 L62 25 L45 38 L51 60 L33 47 L15 60 L21 38 L4 25 L25 24Z" fill="${c}"/>`
-    };
-    const nombre = { circulo: 'círculo', cuadrado: 'cuadrado', triangulo: 'triángulo', estrella: 'estrella' };
-    const forma = (k, c) => `<svg viewBox="0 0 66 66">${F[k](c)}</svg>`;
-    let ronda = 0; const orden = barajar(Object.keys(F));
-    const jugar = () => {
-      const meta = orden[ronda], ops = barajar([meta, ...barajar(Object.keys(F).filter((k) => k !== meta)).slice(0, 2)]);
-      a.innerHTML = `<div class="via"><span class="riel"></span><span class="hueco-via">${forma(meta, 'rgba(58,42,28,.2)')}</span><span class="riel"></span>🚂</div>
-        <div class="fila">${ops.map((k) => `<button class="pieza" data-k="${k}" aria-label="${nombre[k]}">${forma(k, '#c8372d')}</button>`).join('')}</div>`;
-      a.querySelectorAll('.pieza').forEach((b) => b.onclick = () => {
-        if (b.dataset.k === meta) { bien(); dice(`¡Encaja! Es un <b>${nombre[meta]}</b>.`); if (++ronda === 3) setTimeout(() => { dice('¡Vía arreglada! ¡Chuu-chuu, a Nueva York!'); setTimeout(fin, 1300); }, 900); else setTimeout(jugar, 1200); }
-        else { mal(); dice(`Ese es un <b>${nombre[b.dataset.k]}</b>. Mira bien el hueco.`); }
-      });
-    };
-    setTimeout(jugar, 2200);
+  // Nueva York: multiplicar y dividir para quemar la madera del barco
+  madera(a, dice, fin) {
+    const k = azar(4, 9), m = azar(3, 8), t = azar(6, 9), hs = azar(4, 8), v = uno([100, 200, 250]), d = azar(3, 5);
+    reto(a, dice, fin, [
+      { visual: '<div class="serie grande">🚢🔥</div>', texto: `¡Se acaba el carbón! Fogg compra el barco para quemar su madera. Necesitáis <b>${k * m} troncos</b> y cada camarote da <b>${k}</b>. ¿Cuántos camarotes hay que quemar?`, ops: [m, m + 1, m - 1, k + m], buena: m, pista: `Es una división: ${k * m} entre ${k}. ¿Qué número por ${k} da ${k * m}?` },
+      { texto: `La caldera gasta <b>${t} troncos cada hora</b>. ¿Cuántos troncos gasta en <b>${hs} horas</b>?`, ops: [t * hs, t * hs + t, t + hs, t * hs - 1], buena: t * hs, pista: `Multiplica: ${t} × ${hs}.` },
+      { texto: `Quedan <b>${v * d} millas</b> hasta Liverpool y el barco recorre <b>${v} millas al día</b>. ¿Cuántos días faltan?`, ops: [d, d + 1, d - 1, d + 2], buena: d, pista: `¿Cuántas veces cabe ${v} en ${v * d}?` }
+    ]);
   },
-  lena(a, dice, fin) {
-    let n = 0;
-    a.innerHTML = `<div class="caldera"><span style="font-size:64px">🚢</span><span class="fuego" id="fuego">🔥</span><span class="contador" id="cuenta">0</span></div>
-      <div class="fila">${Array.from({ length: 5 }, () => '<button class="ficha" aria-label="tronco">🪵</button>').join('')}</div>`;
-    a.querySelectorAll('.ficha').forEach((b) => b.onclick = () => {
-      b.style.visibility = 'hidden'; n++; tono(300 + n * 80); a.querySelector('#cuenta').textContent = n; a.querySelector('#fuego').style.fontSize = 30 + n * 12 + 'px'; decir(NUM[n]);
-      if (n === 5) setTimeout(() => { dice('¡<b>Cinco</b> troncos! El barco va a toda máquina hacia Londres.'); setTimeout(fin, 1600); }, 600);
-    });
-  },
-  campana(a, dice, fin) {
-    let n = 0;
-    a.innerHTML = `<button class="campana" aria-label="campana">🔔</button><div class="contador" id="cuenta"></div>`;
-    a.querySelector('.campana').onclick = (e) => {
-      const b = e.currentTarget; b.classList.remove('suena'); void b.offsetWidth; b.classList.add('suena'); tono(880, .6, 'sine', .2); n++;
-      a.querySelector('#cuenta').textContent = '🕗'.repeat(Math.min(n, 3));
-      if (n === 1) dice('¡Tilín! ¡Otra vez, más fuerte!'); if (n === 2) dice('¡Tilín, tilín! ¡Una más!');
-      if (n === 3) setTimeout(fin, 700);
-    };
+  // Londres: el día que se ganó viajando hacia el este
+  dia(a, dice, fin) {
+    reto(a, dice, fin, [
+      { visual: '<p class="lectura">Habéis viajado <b>siempre hacia el este</b>. Cada vez que cruzáis una zona horaria hacia el este, adelantáis el reloj <b>una hora</b>: vuestros días han durado un poquito menos. La Tierra tiene <b>24 zonas horarias</b>.</p>', texto: 'Si en cada zona ganáis una hora, ¿cuántas horas habéis ganado en toda la vuelta?', ops: [24, 12, 80, 1], buena: 24, pista: 'Una hora por cada zona, y hay 24 zonas.' },
+      { texto: '¿Y cuántas horas tiene <b>un día</b>?', ops: [24, 12, 60, 100], buena: 24, pista: 'Piensa en un día entero: de medianoche a medianoche.' },
+      { texto: 'Entonces, ¿cuántos días habéis ganado sin daros cuenta?', ops: ['1 día', '24 días', 'Ninguno', 'Medio día'], buena: '1 día', pista: '24 horas son exactamente…' }
+    ]);
   }
 };
 
@@ -474,12 +545,12 @@ function abrirPasaporte() {
   document.body.appendChild(velo);
   decir(E.hecho.length === 8 ? '¡Pasaporte completo! Has dado la vuelta al mundo.' : `Tienes ${E.hecho.length} sellos de ocho.`);
   velo.querySelector('#b-cerrar').onclick = cerrarEscena;
-  velo.querySelector('#b-borrar').onclick = () => { E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false }; guardar(); cerrarEscena(); pintar(); };
+  velo.querySelector('#b-borrar').onclick = () => { E = nuevo(); guardar(); cerrarEscena(); pintar(); };
 }
 document.getElementById('b-pasaporte').addEventListener('click', abrirPasaporte);
 document.getElementById('b-seguir').addEventListener('click', () => {
   if (viajando) return;
-  if (E.etapa >= 8) { E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false }; guardar(); pintar(); return abrirParada(0); }
+  if (E.etapa >= 8) { E = nuevo(); guardar(); pintar(); return abrirParada(0); }
   abrirParada(E.etapa);
 });
 addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarEscena(); });

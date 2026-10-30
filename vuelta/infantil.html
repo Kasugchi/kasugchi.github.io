@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1d4e5a">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<title>La vuelta al mundo en 80 días</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Baloo+2:wght@500;700;800&display=swap">
+<style>
+  /* Un cartel de viajes de 1872 hecho juego: el mar alrededor, el mapa de papel en el centro, sellos de pasaporte. Un solo look, a propósito. */
+  :root {
+    --mar: #1d4e5a; --mar2: #163f49; --papel: #f1dfb4; --tierra: #e2c486; --tinta: #3a2a1c;
+    --ruta: #c8372d; --laton: #d4a43a; --crema: #fff6e0; --verde: #4f9a52; --suave: #8a6e4c;
+    --display: 'Alfa Slab One', 'Rockwell', Georgia, serif;
+    --texto: 'Baloo 2', 'Trebuchet MS', system-ui, sans-serif;
+    color-scheme: light;
+  }
+  html, body { height: 100%; }
+  body { background: radial-gradient(ellipse at 50% 0%, var(--mar), var(--mar2) 75%); color: var(--crema); font: 500 18px/1.35 var(--texto);
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 24px; box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  button { font-family: var(--texto); cursor: pointer; }
+  button:focus-visible { outline: 4px solid var(--laton); outline-offset: 3px; }
+  .app { max-width: 980px; margin: 0 auto; display: grid; gap: 14px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  h1 { flex: 1 1 260px; margin: 0; font: 400 clamp(26px, 5vw, 42px)/1 var(--display); letter-spacing: .01em; color: var(--papel); text-shadow: 0 3px 0 rgba(0,0,0,.25); text-wrap: balance; }
+  h1 small { display: block; font: 700 15px/1.3 var(--texto); color: var(--laton); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px; text-shadow: none; }
+  .reloj { display: flex; align-items: center; gap: 10px; background: var(--crema); color: var(--tinta); border-radius: 999px; padding: 6px 16px 6px 6px; box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+  .reloj .esfera { width: 46px; height: 46px; border-radius: 50%; background: var(--laton); display: grid; place-items: center; font: 400 20px var(--display); color: var(--tinta); box-shadow: inset 0 0 0 4px #b3862a; font-variant-numeric: tabular-nums; }
+  .reloj b { display: block; font-size: 15px; line-height: 1.1; } .reloj span { font-size: 13px; color: var(--suave); }
+  .redondo { width: 54px; height: 54px; border: 0; border-radius: 50%; background: var(--crema); font-size: 26px; box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+  .redondo:active, .gran:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.25); }
+
+  /* El mapa */
+  .mapa { position: relative; background: var(--papel); border-radius: 22px; padding: 8px; box-shadow: 0 10px 0 rgba(0,0,0,.18), inset 0 0 0 3px #d8bf86; }
+  .mapa svg { display: block; width: 100%; height: auto; }
+  .tierra { fill: var(--tierra); stroke: var(--tinta); stroke-width: 2; stroke-linejoin: round; }
+  .olas path { fill: none; stroke: #c9b07a; stroke-width: 2; stroke-linecap: round; }
+  .ruta { fill: none; stroke: var(--ruta); stroke-width: 4; stroke-dasharray: 2 12; stroke-linecap: round; opacity: .35; }
+  .ruta.hecha { opacity: 1; stroke-dasharray: none; stroke-width: 5; }
+  .parada circle.base { fill: var(--crema); stroke: var(--tinta); stroke-width: 3; }
+  .parada.hecha circle.base { fill: var(--verde); }
+  .parada.ahora circle.base { fill: var(--laton); }
+  .parada.ahora .anillo { fill: none; stroke: var(--ruta); stroke-width: 4; animation: latido 1.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes latido { 50% { transform: scale(1.35); opacity: .3; } }
+  .parada text { font: 400 17px var(--display); fill: var(--tinta); paint-order: stroke; stroke: var(--papel); stroke-width: 5px; }
+  .parada { cursor: default; } .parada.ahora { cursor: pointer; }
+  .viajeros { transition: none; }
+  .rosa { font: 400 15px var(--display); fill: var(--tinta); }
+
+  .abajo { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+  .gran { border: 0; border-radius: 999px; background: var(--ruta); color: #fff; font: 800 clamp(20px, 3.4vw, 26px)/1.1 var(--texto); padding: 18px 28px; box-shadow: 0 6px 0 #8a2018; display: flex; align-items: center; gap: 12px; justify-content: center; }
+  .gran .ico { font-size: 1.4em; }
+  .gran:disabled { background: #9a8a70; box-shadow: 0 6px 0 #6a5c48; }
+  .tripulacion { display: flex; gap: 6px; align-items: flex-end; }
+  .tripulacion figure { margin: 0; text-align: center; font-size: 12px; font-weight: 700; color: var(--papel); }
+  .tripulacion figure.falta { opacity: .28; filter: grayscale(1); }
+  .tripulacion svg { width: 58px; height: 58px; display: block; }
+  .nota { margin: 0; font-size: 14px; color: #bcd3cf; max-width: 70ch; }
+
+  /* La escena (cada parada) */
+  .velo { position: fixed; inset: 0; background: rgba(10,30,36,.62); display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px)); z-index: 20; }
+  .escena { width: min(680px, 100%); max-height: 100%; overflow: auto; background: var(--papel); color: var(--tinta); border-radius: 28px; padding: 18px; box-shadow: 0 14px 0 rgba(0,0,0,.25); display: grid; gap: 14px; animation: sube .25s ease-out; }
+  @keyframes sube { from { transform: translateY(20px) scale(.97); opacity: 0; } }
+  .lugar { display: flex; align-items: center; gap: 10px; }
+  .lugar h2 { margin: 0; flex: 1; font: 400 clamp(22px, 4vw, 30px)/1 var(--display); color: var(--ruta); }
+  .sello-mini { font: 700 13px var(--texto); letter-spacing: .12em; text-transform: uppercase; color: var(--suave); }
+  .habla { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; }
+  .habla svg { width: 84px; height: 84px; }
+  .bocadillo { position: relative; background: var(--crema); border-radius: 22px; padding: 12px 16px; font: 700 clamp(17px, 2.6vw, 21px)/1.3 var(--texto); box-shadow: inset 0 0 0 3px #e6d29e; min-width: 0; }
+  .bocadillo b { color: var(--ruta); }
+  .juego { min-height: 200px; display: grid; gap: 14px; justify-items: center; align-content: center; }
+  .fila { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+  .ficha { width: 84px; height: 84px; border: 0; border-radius: 22px; background: var(--crema); font-size: 46px; line-height: 1; box-shadow: 0 5px 0 #d4bd85; display: grid; place-items: center; }
+  .ficha:active { transform: translateY(3px); box-shadow: 0 2px 0 #d4bd85; }
+  .ficha.mal { animation: no .4s; } @keyframes no { 25% { transform: translateX(-8px) rotate(-4deg); } 75% { transform: translateX(8px) rotate(4deg); } }
+  .ficha.bien { background: #cfe9c4; box-shadow: 0 5px 0 #8fbf80; }
+  .maleta { display: flex; gap: 10px; padding: 14px 18px 18px; background: #8a5a34; border-radius: 18px 18px 22px 22px; box-shadow: inset 0 -6px 0 #6a4224; position: relative; }
+  .maleta::before { content: ''; position: absolute; left: 50%; top: -18px; transform: translateX(-50%); width: 70px; height: 22px; border: 6px solid #5a3a22; border-bottom: 0; border-radius: 14px 14px 0 0; }
+  .hueco { width: 76px; height: 76px; border-radius: 16px; background: #a8744a; display: grid; place-items: center; font-size: 44px; filter: grayscale(1); opacity: .35; }
+  .hueco.lleno { filter: none; opacity: 1; background: var(--crema); animation: pop .35s; } @keyframes pop { 50% { transform: scale(1.18); } }
+  .agua { width: 100%; max-width: 520px; height: 130px; border-radius: 20px; background: repeating-linear-gradient(170deg, #7fb6bf 0 14px, #8cc1c9 14px 28px); position: relative; overflow: hidden; }
+  .agua span { position: absolute; font-size: 46px; animation: mece 2.4s ease-in-out infinite; } @keyframes mece { 50% { transform: translateY(-6px) rotate(3deg); } }
+  .dados { width: 72px; height: 72px; border-radius: 18px; padding: 8px; background: var(--crema); border: 0; box-shadow: 0 5px 0 #d4bd85; display: grid; gap: 2px; align-content: center; justify-items: center; }
+  .dados i { font-style: normal; font: 400 26px/1 var(--display); color: var(--tinta); } .dados small { font-size: 11px; letter-spacing: 1px; color: var(--ruta); line-height: 1; }
+  .senda { display: flex; gap: 6px; align-items: center; font-size: 34px; } .senda .paso { width: 42px; height: 10px; border-radius: 5px; background: #d9c38f; } .senda .paso.si { background: var(--verde); }
+  .flor { width: 92px; height: 92px; border: 0; border-radius: 50%; display: grid; place-items: center; box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+  .flor svg { width: 70px; height: 70px; }
+  .muestra { display: inline-block; width: 26px; height: 26px; border-radius: 50%; vertical-align: -6px; box-shadow: inset 0 0 0 3px rgba(0,0,0,.15); }
+  .caras { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .cara { width: 92px; height: 92px; border: 0; padding: 4px; border-radius: 22px; background: var(--crema); box-shadow: 0 5px 0 #d4bd85; } .cara svg { width: 100%; height: 100%; }
+  .tambor { width: 104px; height: 104px; border: 0; border-radius: 50%; box-shadow: 0 7px 0 rgba(0,0,0,.25), inset 0 0 0 8px rgba(255,255,255,.35); transition: transform .1s, filter .1s; }
+  .tambor.luz { transform: scale(1.12); filter: brightness(1.45); }
+  .via { display: flex; align-items: center; gap: 0; } .via .riel { width: 90px; height: 22px; background: repeating-linear-gradient(90deg, #6a4224 0 8px, transparent 8px 18px), linear-gradient(#9a9a9a 0 4px, transparent 4px 18px, #9a9a9a 18px 22px); }
+  .via .hueco-via { width: 96px; height: 96px; border-radius: 18px; border: 4px dashed var(--ruta); display: grid; place-items: center; }
+  .via svg, .pieza svg { width: 66px; height: 66px; }
+  .pieza { width: 92px; height: 92px; border: 0; border-radius: 20px; background: var(--crema); box-shadow: 0 5px 0 #d4bd85; display: grid; place-items: center; }
+  .caldera { display: flex; align-items: flex-end; gap: 16px; } .fuego { font-size: 30px; transition: font-size .3s; } .contador { font: 400 54px/1 var(--display); color: var(--ruta); min-width: 1.2em; text-align: center; font-variant-numeric: tabular-nums; }
+  .campana { font-size: 96px; width: 150px; height: 150px; border-radius: 50%; border: 0; background: var(--laton); box-shadow: 0 8px 0 #9a7420; }
+  .campana.suena { animation: tilin .5s; } @keyframes tilin { 25% { transform: rotate(-14deg); } 75% { transform: rotate(14deg); } }
+  .pie { display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  .chico { border: 0; background: transparent; color: var(--suave); font-weight: 700; font-size: 15px; padding: 8px; }
+
+  /* Pasaporte */
+  .pasaporte { background: #2f5a3a; color: var(--crema); }
+  .pasaporte h2 { color: var(--laton); }
+  .sellos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .sello { aspect-ratio: 1; max-width: 100%; border-radius: 50%; border: 3px dashed rgba(255,246,224,.3); display: grid; place-items: center; text-align: center; font: 400 12px/1.1 var(--display); padding: 6px; color: rgba(255,246,224,.35); }
+  .sello.puesto { border: 4px double var(--ruta); color: var(--ruta); background: var(--crema); transform: rotate(-8deg); }
+  .sello.puesto:nth-child(even) { transform: rotate(6deg); border-color: #2f6aa0; color: #2f6aa0; }
+  .sello span { display: block; font-size: 22px; margin-bottom: 2px; }
+  .confeti { position: fixed; top: -20px; width: 12px; height: 18px; z-index: 30; animation: cae 2.8s linear forwards; pointer-events: none; } @keyframes cae { to { transform: translateY(110vh) rotate(720deg); } }
+  @media (max-width: 560px) {
+    .abajo { grid-template-columns: 1fr; }
+    .tripulacion { justify-content: center; }
+    .parada text { font-size: 22px; }
+    .ficha, .cara, .pieza { width: 76px; height: 76px; } .tambor { width: 88px; height: 88px; }
+    .habla { grid-template-columns: auto 1fr; } .habla .repetir { grid-column: 1 / -1; justify-self: end; }
+    .habla svg { width: 64px; height: 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+
+<div class="app">
+  <header>
+    <h1><small>Un viaje de Julio Verne</small>La vuelta al mundo en 80 días</h1>
+    <div class="reloj" aria-live="polite"><div class="esfera" id="dias">80</div><div><b>días</b><span id="donde">En Londres</span></div></div>
+    <button class="redondo" id="b-pasaporte" aria-label="Pasaporte">🛂</button>
+    <button class="redondo" id="b-voz" aria-label="Voz">🔊</button>
+  </header>
+
+  <div class="mapa">
+    <svg viewBox="0 30 1000 380" role="img" aria-label="Mapa del viaje: Londres, Suez, Bombay, Hong Kong, Yokohama, San Francisco, Nueva York y vuelta a Londres">
+      <g class="olas" id="olas"></g>
+      <g id="tierras"></g>
+      <g id="rutas"></g>
+      <g id="paradas"></g>
+      <g class="viajeros" id="viajeros"></g>
+      <text class="rosa" x="955" y="390" text-anchor="middle">N</text>
+      <path d="M955 396 l8 18 -8 -5 -8 5 z" fill="var(--ruta)"/>
+    </svg>
+  </div>
+
+  <div class="abajo">
+    <button class="gran" id="b-seguir"><span class="ico">🎩</span><span id="t-seguir">¡Empezar el viaje!</span></button>
+    <div class="tripulacion" id="tripulacion"></div>
+  </div>
+  <p class="nota">Boceto para infantil (3 a 6 años): todo se escucha en voz alta y no se puede perder. Cada parada es un juego corto: colores, contar, formas, tamaños, memoria. Los personajes son del libro de Julio Verne (dominio público), dibujados a nuestra manera.</p>
+</div>
+
+<script>
+// =============================================================
+//  Personajes (dibujados con SVG) y paradas del viaje
+// =============================================================
+const PIEL = '#f6cfa8';
+function cara({ sombrero = 'nada', color = '#3a3a44', pelo = '#5a3a22', bigote = false, flor = false, piel = PIEL, gafas = false } = {}) {
+  let s = `<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="58" r="30" fill="${piel}" stroke="#3a2a1c" stroke-width="3"/>`;
+  s += `<path d="M22 52 Q24 28 50 26 Q76 28 78 52 Q70 38 50 38 Q30 38 22 52Z" fill="${pelo}"/>`;
+  s += `<circle cx="39" cy="58" r="4.5" fill="#2a1c12"/><circle cx="61" cy="58" r="4.5" fill="#2a1c12"/><circle cx="40.5" cy="56.5" r="1.4" fill="#fff"/><circle cx="62.5" cy="56.5" r="1.4" fill="#fff"/>`;
+  s += `<circle cx="33" cy="68" r="5" fill="#f2a38a" opacity=".7"/><circle cx="67" cy="68" r="5" fill="#f2a38a" opacity=".7"/>`;
+  s += bigote ? `<path d="M38 72 Q44 66 50 70 Q56 66 62 72 Q56 70 50 74 Q44 70 38 72Z" fill="${pelo}"/>` : `<path d="M42 72 Q50 79 58 72" fill="none" stroke="#3a2a1c" stroke-width="3" stroke-linecap="round"/>`;
+  if (gafas) s += `<circle cx="39" cy="58" r="8" fill="none" stroke="#3a2a1c" stroke-width="2.5"/><circle cx="61" cy="58" r="8" fill="none" stroke="#3a2a1c" stroke-width="2.5"/><path d="M47 58h6" stroke="#3a2a1c" stroke-width="2.5"/>`;
+  if (sombrero === 'copa') s += `<rect x="30" y="4" width="40" height="30" rx="3" fill="${color}" stroke="#1a1a1a" stroke-width="2"/><rect x="30" y="24" width="40" height="6" fill="#c8372d"/><ellipse cx="50" cy="34" rx="32" ry="6" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>`;
+  if (sombrero === 'gorra') s += `<path d="M24 40 Q26 18 50 18 Q74 18 76 40Z" fill="${color}" stroke="#1a1a1a" stroke-width="2"/><path d="M68 38 Q88 38 92 44 L66 44Z" fill="${color}" stroke="#1a1a1a" stroke-width="2"/><circle cx="50" cy="17" r="4" fill="${color}"/>`;
+  if (sombrero === 'bombin') s += `<path d="M28 36 Q28 12 50 12 Q72 12 72 36Z" fill="${color}" stroke="#1a1a1a" stroke-width="2"/><ellipse cx="50" cy="36" rx="30" ry="5" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>`;
+  if (sombrero === 'paja') s += `<ellipse cx="50" cy="34" rx="36" ry="8" fill="${color}" stroke="#8a6a2a" stroke-width="2"/><path d="M32 34 Q34 16 50 16 Q66 16 68 34Z" fill="${color}" stroke="#8a6a2a" stroke-width="2"/><rect x="33" y="27" width="34" height="5" fill="#2f6aa0"/>`;
+  if (sombrero === 'pañuelo') s += `<path d="M20 50 Q22 20 50 20 Q78 20 80 50 Q72 32 50 32 Q28 32 20 50Z" fill="${color}" stroke="#1a1a1a" stroke-width="2"/>`;
+  if (flor) s += `<g transform="translate(74 34)"><circle r="7" fill="#e85a8a"/><circle r="3" fill="#ffd84a"/></g>`;
+  return s + '</svg>';
+}
+const GENTE = {
+  fogg: { nombre: 'Phileas Fogg', svg: cara({ sombrero: 'copa', color: '#2a2a32', pelo: '#8a6a4a', bigote: true }) },
+  picaporte: { nombre: 'Picaporte', svg: cara({ sombrero: 'gorra', color: '#d8402e', pelo: '#3a2414' }) },
+  aouda: { nombre: 'Aouda', svg: cara({ sombrero: 'pañuelo', color: '#e8a040', pelo: '#1a1410', flor: true, piel: '#d9a57a' }) },
+  fix: { nombre: 'El inspector Fix', svg: cara({ sombrero: 'bombin', color: '#5a4a3a', pelo: '#3a3030', bigote: true, gafas: true }) }
+};
+// x, y en el mapa (longitud y latitud de verdad, en un mapa de 1000 × 500)
+const xy = (lat, lon) => [Math.round((lon + 180) / 360 * 1000), Math.round((90 - lat) / 180 * 500)];
+const PARADAS = [
+  { id: 'londres', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fogg', juego: 'maleta', icono: '🧳',
+    intro: 'Soy Phileas Fogg. He apostado a que doy la vuelta al mundo en ochenta días. ¿Me ayudas? Primero, la maleta: mete el paraguas, el sombrero y el reloj.' },
+  { id: 'suez', nombre: 'Suez', p: xy(30, 32.5), quien: 'picaporte', juego: 'barcos', icono: '⛵',
+    intro: '¡Hola! Soy Picaporte. Esto es el canal de Suez, lleno de barcos. ¿Cuántos barcos ves?' },
+  { id: 'bombay', nombre: 'Bombay', p: xy(19, 72.8), quien: 'aouda', juego: 'elefante', icono: '🐘',
+    intro: '¡Socorro! Soy Aouda y me he perdido en la selva. Llévame en el elefante: pisa la flor del color que yo te diga.' },
+  { id: 'hongkong', nombre: 'Hong Kong', p: xy(22.3, 114.2), quien: 'fogg', juego: 'buscar', icono: '🔎',
+    intro: '¡Oh, no! Picaporte se ha perdido en el puerto de Hong Kong. Búscalo: lleva una gorra roja.' },
+  { id: 'yokohama', nombre: 'Yokohama', p: xy(35.4, 139.6), quien: 'picaporte', juego: 'circo', icono: '🥁',
+    intro: '¡Estoy aquí, en un circo de Yokohama! Para salir, toca los tambores igual que yo. ¡Mira y escucha!' },
+  { id: 'sanfrancisco', nombre: 'San Francisco', p: xy(37.8, -122.4), quien: 'aouda', juego: 'vias', icono: '🚂',
+    intro: 'El tren cruza América, pero a la vía le faltan piezas. ¿Cuál encaja en el hueco?' },
+  { id: 'nuevayork', nombre: 'Nueva York', p: xy(40.7, -74), quien: 'fogg', juego: 'lena', icono: '🪵',
+    intro: '¡Hemos perdido el barco! Vamos en otro, pero se queda sin carbón. ¡Echa cinco troncos al fuego!' },
+  { id: 'fin', nombre: 'Londres', p: xy(51.5, -.1), quien: 'fix', juego: 'campana', icono: '🔔',
+    intro: 'Soy el inspector Fix. ¡Corre al club, que el reloj va a dar las ocho! Toca la campana para avisar de que habéis llegado.' }
+];
+// Días de cada tramo, como en el libro: 7 + 13 + 16 + 6 + 22 + 7 + 9 = 80
+const TRAMOS = [
+  { dias: 7, en: '🚂', c: [560, 112] }, { dias: 13, en: '🚢', c: [655, 212] }, { dias: 16, en: '🚢', c: [760, 225] },
+  { dias: 6, en: '🚢', c: [865, 188] }, { dias: 22, en: '🚢', pacifico: true }, { dias: 7, en: '🚂', c: [228, 118] }, { dias: 9, en: '🚢', c: [400, 78] }
+];
+
+// =============================================================
+//  Estado (se recuerda en este navegador, si se puede)
+// =============================================================
+const CLAVE = 'vuelta80_boceto';
+let E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false };
+try { const g = JSON.parse(localStorage.getItem(CLAVE) || 'null'); if (g && typeof g.etapa === 'number') E = g; } catch { /* sin memoria: se empieza de cero */ }
+const guardar = () => { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch { /* sin memoria */ } };
+
+// =============================================================
+//  Voz y sonidos
+// =============================================================
+let voz = true, ac = null;
+function decir(t) {
+  if (!voz || !('speechSynthesis' in window)) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = 'es-ES'; u.rate = .92; u.pitch = 1.08; const v = speechSynthesis.getVoices().find((x) => /^es(-|_)ES/i.test(x.lang)) || speechSynthesis.getVoices().find((x) => /^es/i.test(x.lang)); if (v) u.voice = v; speechSynthesis.speak(u); } catch { /* sin voz */ }
+}
+function tono(f, d = .18, tipo = 'triangle', vol = .18) {
+  try { ac ||= new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime; o.type = tipo; o.frequency.value = f; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d); } catch { /* sin sonido */ }
+}
+const bien = () => { tono(660); setTimeout(() => tono(880), 110); };
+const mal = () => tono(220, .25, 'sine', .14);
+const fanfarria = () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tono(f, .3), i * 140));
+document.getElementById('b-voz').addEventListener('click', (e) => { voz = !voz; e.currentTarget.textContent = voz ? '🔊' : '🔇'; if (!voz) try { speechSynthesis.cancel(); } catch { /* nada */ } });
+
+// =============================================================
+//  El mapa
+// =============================================================
+const NS = 'http://www.w3.org/2000/svg';
+const TIERRAS = [
+  'M40 92 L120 70 L250 60 L330 76 L344 108 L316 128 L296 150 L276 170 L252 182 L236 200 L258 214 L236 216 L204 196 L178 172 L152 152 L122 124 L74 112 Z',
+  'M342 40 L410 34 L402 70 L362 82 Z',
+  'M256 226 L302 220 L350 250 L340 290 L312 330 L292 372 L276 376 L270 330 L256 282 Z',
+  'M472 112 L492 86 L540 70 L600 70 L606 110 L574 122 L540 126 L510 130 L482 132 Z',
+  'M486 96 L500 90 L504 112 L492 114 Z',
+  'M470 146 L520 136 L582 150 L602 186 L632 200 L602 250 L586 300 L560 332 L540 332 L526 282 L510 242 L472 216 L456 180 Z',
+  'M600 72 L700 50 L850 54 L962 70 L952 110 L902 130 L882 160 L852 190 L822 196 L802 222 L790 240 L772 214 L742 206 L726 232 L706 232 L692 196 L652 178 L622 166 L604 150 L594 130 L604 110 Z',
+  'M602 160 L642 166 L652 190 L622 206 Z',
+  'M878 136 L896 128 L906 150 L886 172 Z',
+  'M822 300 L902 290 L922 330 L882 362 L832 346 Z'
+];
+function svgEl(tag, at, padre) { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); padre?.appendChild(e); return e; }
+const gOlas = document.getElementById('olas');
+for (let i = 0; i < 26; i++) { const x = (i * 157) % 960 + 20, y = 60 + (i * 97) % 330; svgEl('path', { d: `M${x} ${y} q8 -7 16 0 q8 7 16 0` }, gOlas); }
+TIERRAS.forEach((d) => svgEl('path', { d, class: 'tierra' }, document.getElementById('tierras')));
+// Cada tramo es una curva; el del Pacífico sale por la derecha y entra por la izquierda.
+function curva(a, c, b) { return { a, c, b }; }
+const CURVAS = TRAMOS.map((t, i) => {
+  const A = PARADAS[i].p, B = PARADAS[i + 1].p;
+  return t.pacifico ? [curva(A, [950, 125], [1010, 140]), curva([-10, 140], [80, 128], B)] : [curva(A, t.c, B)];
+});
+const gRutas = document.getElementById('rutas');
+const trazos = CURVAS.map((cs) => cs.map((q) => svgEl('path', { d: `M${q.a} Q${q.c} ${q.b}`, class: 'ruta' }, gRutas)));
+const gParadas = document.getElementById('paradas');
+const marcas = PARADAS.slice(0, 7).map((p, i) => {
+  const g = svgEl('g', { class: 'parada', tabindex: '-1' }, gParadas);
+  svgEl('circle', { cx: p.p[0], cy: p.p[1], r: 15, class: 'anillo' }, g);
+  svgEl('circle', { cx: p.p[0], cy: p.p[1], r: 13, class: 'base' }, g);
+  const debajo = ['bombay', 'hongkong', 'suez', 'londres'].includes(p.id);
+  const t = svgEl('text', { x: p.p[0], y: p.p[1] + (debajo ? 36 : -22), 'text-anchor': p.id === 'londres' ? 'end' : 'middle' }, g); t.textContent = p.nombre;
+  if (p.id === 'londres') t.setAttribute('x', p.p[0] - 18);
+  g.addEventListener('click', () => { if (!viajando && (i === E.etapa || (i === 0 && E.etapa === 7))) abrirParada(E.etapa); });
+  return g;
+});
+// Fogg y Picaporte en el mapa
+const gViaj = document.getElementById('viajeros');
+const ficha = svgEl('g', {}, gViaj);
+svgEl('circle', { cx: 0, cy: 0, r: 25, fill: '#fff6e0', stroke: '#3a2a1c', 'stroke-width': 3 }, ficha);
+const foto = svgEl('g', { transform: 'translate(-22 -24) scale(.44)' }, ficha); foto.innerHTML = GENTE.fogg.svg.replace(/<\/?svg[^>]*>/g, '');
+const vehiculo = svgEl('text', { x: 0, y: 44, 'text-anchor': 'middle', 'font-size': 26 }, ficha);
+function ponerFicha(x, y) { ficha.setAttribute('transform', `translate(${x} ${y - 30})`); }
+const punto = (q, t) => [(1 - t) ** 2 * q.a[0] + 2 * (1 - t) * t * q.c[0] + t * t * q.b[0], (1 - t) ** 2 * q.a[1] + 2 * (1 - t) * t * q.c[1] + t * t * q.b[1]];
+
+function pintar() {
+  marcas.forEach((g, i) => { g.classList.toggle('hecha', E.hecho.includes(i)); g.classList.toggle('ahora', i === E.etapa && E.etapa < 7); });
+  marcas[0].classList.toggle('ahora', E.etapa === 0 || E.etapa === 7);
+  trazos.forEach((ts, i) => ts.forEach((t) => t.classList.toggle('hecha', i < E.etapa)));
+  const P = PARADAS[Math.min(E.etapa, 7)];
+  if (!viajando) { ponerFicha(...P.p); vehiculo.textContent = ''; }
+  document.getElementById('dias').textContent = E.dias;
+  document.getElementById('donde').textContent = E.etapa >= 8 ? '¡De vuelta!' : 'En ' + P.nombre;
+  const b = document.getElementById('b-seguir'), t = document.getElementById('t-seguir');
+  b.querySelector('.ico').textContent = E.etapa >= 8 ? '🌍' : P.icono;
+  t.textContent = E.etapa === 0 ? '¡Empezar el viaje!' : E.etapa >= 8 ? '¡Otra vuelta al mundo!' : 'Ayudar en ' + P.nombre;
+  b.disabled = viajando;
+  const trip = [['fogg', true], ['picaporte', true], ['aouda', E.aouda], ['fix', E.fix]];
+  document.getElementById('tripulacion').innerHTML = trip.map(([k, si]) => `<figure class="${si ? '' : 'falta'}">${GENTE[k].svg}<figcaption>${GENTE[k].nombre.replace('El inspector ', '')}</figcaption></figure>`).join('');
+}
+let viajando = false;
+function viajar(i, alLlegar) {
+  viajando = true; pintar();
+  const cs = CURVAS[i], dur = 2600 + TRAMOS[i].dias * 60, t0 = performance.now(), d0 = E.dias;
+  vehiculo.textContent = TRAMOS[i].en; tono(392, .5, 'sine', .1);
+  (function paso(ahora) {
+    const k = Math.min(1, (ahora - t0) / dur), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+    let p;
+    if (cs.length === 1) p = punto(cs[0], e); else p = e < .5 ? punto(cs[0], e * 2) : punto(cs[1], (e - .5) * 2);
+    ponerFicha(...p);
+    document.getElementById('dias').textContent = Math.round(d0 - TRAMOS[i].dias * e);
+    if (k < 1) requestAnimationFrame(paso); else { E.dias = d0 - TRAMOS[i].dias; viajando = false; guardar(); alLlegar(); }
+  })(t0);
+}
+
+// =============================================================
+//  La escena de cada parada
+// =============================================================
+let velo = null;
+function cerrarEscena() { velo?.remove(); velo = null; try { speechSynthesis.cancel(); } catch { /* nada */ } }
+function abrirParada(i) {
+  const P = PARADAS[i], G = GENTE[P.quien];
+  cerrarEscena();
+  velo = document.createElement('div'); velo.className = 'velo';
+  velo.innerHTML = `<section class="escena" role="dialog" aria-label="${P.nombre}">
+    <div class="lugar"><h2>${P.nombre}</h2><span class="sello-mini">Parada ${Math.min(i + 1, 8)} de 8</span></div>
+    <div class="habla">${G.svg}<div class="bocadillo" id="dice"></div><button class="redondo repetir" aria-label="Repetir">🔁</button></div>
+    <div class="juego" id="juego"></div>
+    <div class="pie"><button class="chico" id="b-volver">← Volver al mapa</button><span class="sello-mini">${G.nombre}</span></div></section>`;
+  document.body.appendChild(velo);
+  const dice = (t, leer = true) => { velo && (velo.querySelector('#dice').innerHTML = t); if (leer) decir(t.replace(/<[^>]+>/g, '')); velo && (velo.querySelector('.repetir').onclick = () => decir(t.replace(/<[^>]+>/g, ''))); };
+  velo.querySelector('#b-volver').onclick = cerrarEscena;
+  dice(P.intro);
+  JUEGOS[P.juego](velo.querySelector('#juego'), dice, () => ganar(i, dice));
+}
+function ganar(i, dice) {
+  fanfarria(); confeti(28);
+  if (!E.hecho.includes(i)) E.hecho.push(i);
+  if (PARADAS[i].id === 'bombay') E.aouda = true;
+  if (PARADAS[i].id === 'fin') E.fix = true;
+  const fin = i === 7;
+  const texto = fin ? `¡Habéis llegado justo a tiempo! <b>Ochenta días</b> exactos. ¡Fogg gana la apuesta!` : ['¡Muy bien!', '¡Genial!', '¡Lo has conseguido!', '¡Eres un gran viajero!'][i % 4] + (PARADAS[i].id === 'bombay' ? ' Aouda viaja ahora con nosotros.' : '') + ' ¡Sello en el pasaporte!';
+  dice(texto);
+  const j = velo.querySelector('#juego');
+  j.innerHTML = `<div class="sello puesto" style="width:150px;font-size:16px"><span>${PARADAS[i].icono}</span>${PARADAS[i].nombre}</div>
+    <button class="gran" id="b-sigue"><span class="ico">${fin ? '🏆' : TRAMOS[i]?.en || '🗺'}</span>${fin ? 'Ver el pasaporte' : 'Seguir el viaje'}</button>`;
+  E.etapa = i + 1; guardar();
+  j.querySelector('#b-sigue').onclick = () => {
+    cerrarEscena();
+    if (fin) { pintar(); return abrirPasaporte(); }
+    viajar(i, () => { pintar(); decir('¡Hemos llegado a ' + PARADAS[i + 1].nombre + '!'); setTimeout(() => abrirParada(i + 1), 700); });
+  };
+}
+function confeti(n) { const cs = ['#c8372d', '#d4a43a', '#4f9a52', '#2f6aa0', '#fff6e0']; for (let k = 0; k < n; k++) { const c = document.createElement('i'); c.className = 'confeti'; c.style.left = Math.random() * 100 + 'vw'; c.style.background = cs[k % cs.length]; c.style.animationDelay = Math.random() * .6 + 's'; document.body.appendChild(c); setTimeout(() => c.remove(), 3600); } }
+const barajar = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const NUM = ['cero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis'];
+
+// Los juegos: cada uno pinta en «a», habla con «dice» y llama a «fin» cuando se completa. Nunca se pierde.
+const JUEGOS = {
+  maleta(a, dice, fin) {
+    const hace = ['☂️', '🎩', '⌚'], nombres = { '☂️': 'el paraguas', '🎩': 'el sombrero', '⌚': 'el reloj' };
+    a.innerHTML = `<div class="maleta">${hace.map((h) => `<span class="hueco" data-h="${h}">${h}</span>`).join('')}</div>
+      <div class="fila">${barajar([...hace, '🍌', '🧸', '🥕']).map((o) => `<button class="ficha" data-o="${o}">${o}</button>`).join('')}</div>`;
+    let n = 0;
+    a.querySelectorAll('.ficha').forEach((b) => b.onclick = () => {
+      const o = b.dataset.o;
+      if (hace.includes(o)) { bien(); b.style.visibility = 'hidden'; a.querySelector(`[data-h="${o}"]`).classList.add('lleno'); dice('¡' + nombres[o][0].toUpperCase() + nombres[o].slice(1) + ', a la maleta!'); if (++n === 3) setTimeout(fin, 900); }
+      else { mal(); b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); dice('Eso no hace falta. Mira las sombras de la maleta.'); }
+    });
+  },
+  barcos(a, dice, fin) {
+    let ronda = 0;
+    const jugar = () => {
+      const n = 2 + Math.floor(Math.random() * 4);
+      a.innerHTML = `<div class="agua">${Array.from({ length: n }, (_, k) => `<span style="left:${8 + k * (82 / n)}%;top:${20 + (k % 2) * 34}px;animation-delay:${k * .3}s">⛵</span>`).join('')}</div>
+        <div class="fila">${[1, 2, 3, 4, 5, 6].map((k) => `<button class="dados" data-n="${k}"><i>${k}</i><small>${'●'.repeat(k)}</small></button>`).join('')}</div>`;
+      a.querySelectorAll('.dados').forEach((b) => b.onclick = () => {
+        if (+b.dataset.n === n) { bien(); dice(`¡Sí! <b>${NUM[n]}</b> barcos.`); if (++ronda === 2) setTimeout(fin, 1000); else setTimeout(() => { jugar(); dice('¡Vienen más barcos! ¿Cuántos hay ahora?'); }, 1400); }
+        else { mal(); dice('Casi. Cuéntalos con el dedo: uno, dos…'); }
+      });
+    };
+    jugar();
+  },
+  elefante(a, dice, fin) {
+    const C = [['rojo', '#d8402e'], ['azul', '#2f6aa0'], ['amarillo', '#e8c030'], ['verde', '#4f9a52'], ['morado', '#8a4ab0']];
+    const flor = (c) => `<svg viewBox="0 0 70 70">${[0, 72, 144, 216, 288].map((g) => `<ellipse cx="35" cy="17" rx="11" ry="15" fill="${c}" transform="rotate(${g} 35 35)"/>`).join('')}<circle cx="35" cy="35" r="9" fill="#ffe08a"/></svg>`;
+    let paso = 0; const PASOS = 4;
+    const jugar = () => {
+      const tres = barajar(C).slice(0, 3), meta = tres[Math.floor(Math.random() * 3)];
+      a.innerHTML = `<div class="senda">🐘${Array.from({ length: PASOS }, (_, k) => `<span class="paso${k < paso ? ' si' : ''}"></span>`).join('')}🏝</div>
+        <div class="fila">${tres.map(([n, c]) => `<button class="flor" style="background:var(--crema)" data-c="${n}" aria-label="flor ${n}">${flor(c)}</button>`).join('')}</div>`;
+      dice(`¡La flor <b>${meta[0]}</b>! <span class="muestra" style="background:${meta[1]}"></span>`);
+      a.querySelectorAll('.flor').forEach((b) => b.onclick = () => {
+        if (b.dataset.c === meta[0]) { bien(); if (++paso === PASOS) { dice('¡Hemos cruzado la selva! Gracias por salvarme.'); setTimeout(fin, 1400); } else setTimeout(jugar, 500); }
+        else { mal(); dice(`Esa es <b>${b.dataset.c}</b>. Busca la <b>${meta[0]}</b>.`); }
+      });
+    };
+    setTimeout(jugar, 2600);
+  },
+  buscar(a, dice, fin) {
+    const otros = [{ sombrero: 'gorra', color: '#2f6aa0' }, { sombrero: 'gorra', color: '#4f9a52' }, { sombrero: 'copa', color: '#2a2a32' }, { sombrero: 'paja', color: '#e8d08a' }, { sombrero: 'bombin', color: '#5a4a3a' }, { sombrero: 'nada', pelo: '#e8c860' }, { sombrero: 'gorra', color: '#e8c030' }, { sombrero: 'pañuelo', color: '#8a4ab0' }];
+    let ronda = 0;
+    const jugar = () => {
+      const caras = barajar([{ yo: true }, ...barajar(otros).slice(0, ronda ? 8 : 5)]);
+      a.innerHTML = `<div class="caras">${caras.map((c) => `<button class="cara" data-yo="${c.yo ? 1 : 0}" aria-label="${c.yo ? 'Picaporte' : 'otra persona'}">${c.yo ? GENTE.picaporte.svg : cara({ pelo: ['#3a2414', '#8a5a2a', '#1a1410'][Math.floor(Math.random() * 3)], ...c })}</button>`).join('')}</div>`;
+      a.querySelectorAll('.cara').forEach((b) => b.onclick = () => {
+        if (b.dataset.yo === '1') { bien(); if (++ronda === 2) { dice('¡Me has encontrado! Gracias.'); setTimeout(fin, 1200); } else { dice('¡Aquí estoy! … ¡Uy, me he vuelto a perder! Búscame otra vez.'); setTimeout(jugar, 1800); } }
+        else { mal(); dice('Ese no es. Picaporte lleva la <b>gorra roja</b>.'); }
+      });
+    };
+    setTimeout(jugar, 2400);
+  },
+  circo(a, dice, fin) {
+    const T = [['#d8402e', 330], ['#2f6aa0', 440], ['#4f9a52', 550]];
+    a.innerHTML = `<div class="fila">${T.map(([c], k) => `<button class="tambor" data-k="${k}" style="background:${c}" aria-label="tambor ${k + 1}"></button>`).join('')}</div>`;
+    const btns = [...a.querySelectorAll('.tambor')];
+    let serie = [], toca = 0, escucha = false, ronda = 0;
+    const luz = (k) => { btns[k].classList.add('luz'); tono(T[k][1], .3, 'square', .1); setTimeout(() => btns[k].classList.remove('luz'), 360); };
+    const mostrar = () => { escucha = false; toca = 0; serie.forEach((k, n) => setTimeout(() => luz(k), 700 + n * 650)); setTimeout(() => { escucha = true; dice('¡Ahora tú!'); }, 800 + serie.length * 650); };
+    const nueva = () => { serie = Array.from({ length: 3 + ronda }, () => Math.floor(Math.random() * 3)); dice(ronda ? '¡Otra más larga! Mira…' : 'Mira bien…'); mostrar(); };
+    btns.forEach((b, k) => b.onclick = () => {
+      if (!escucha) return;
+      luz(k);
+      if (k !== serie[toca]) { mal(); dice('¡Ups! Lo repito. Mira otra vez…'); escucha = false; setTimeout(mostrar, 600); return; }
+      if (++toca === serie.length) { escucha = false; bien(); if (++ronda === 2) { dice('¡Qué ritmo! El público aplaude.'); setTimeout(fin, 1200); } else setTimeout(nueva, 1000); }
+    });
+    setTimeout(nueva, 2600);
+  },
+  vias(a, dice, fin) {
+    const F = {
+      circulo: (c) => `<circle cx="33" cy="33" r="26" fill="${c}"/>`, cuadrado: (c) => `<rect x="8" y="8" width="50" height="50" rx="4" fill="${c}"/>`,
+      triangulo: (c) => `<path d="M33 6 L60 58 L6 58Z" fill="${c}"/>`, estrella: (c) => `<path d="M33 4 L41 24 L62 25 L45 38 L51 60 L33 47 L15 60 L21 38 L4 25 L25 24Z" fill="${c}"/>`
+    };
+    const nombre = { circulo: 'círculo', cuadrado: 'cuadrado', triangulo: 'triángulo', estrella: 'estrella' };
+    const forma = (k, c) => `<svg viewBox="0 0 66 66">${F[k](c)}</svg>`;
+    let ronda = 0; const orden = barajar(Object.keys(F));
+    const jugar = () => {
+      const meta = orden[ronda], ops = barajar([meta, ...barajar(Object.keys(F).filter((k) => k !== meta)).slice(0, 2)]);
+      a.innerHTML = `<div class="via"><span class="riel"></span><span class="hueco-via">${forma(meta, 'rgba(58,42,28,.2)')}</span><span class="riel"></span>🚂</div>
+        <div class="fila">${ops.map((k) => `<button class="pieza" data-k="${k}" aria-label="${nombre[k]}">${forma(k, '#c8372d')}</button>`).join('')}</div>`;
+      a.querySelectorAll('.pieza').forEach((b) => b.onclick = () => {
+        if (b.dataset.k === meta) { bien(); dice(`¡Encaja! Es un <b>${nombre[meta]}</b>.`); if (++ronda === 3) setTimeout(() => { dice('¡Vía arreglada! ¡Chuu-chuu, a Nueva York!'); setTimeout(fin, 1300); }, 900); else setTimeout(jugar, 1200); }
+        else { mal(); dice(`Ese es un <b>${nombre[b.dataset.k]}</b>. Mira bien el hueco.`); }
+      });
+    };
+    setTimeout(jugar, 2200);
+  },
+  lena(a, dice, fin) {
+    let n = 0;
+    a.innerHTML = `<div class="caldera"><span style="font-size:64px">🚢</span><span class="fuego" id="fuego">🔥</span><span class="contador" id="cuenta">0</span></div>
+      <div class="fila">${Array.from({ length: 5 }, () => '<button class="ficha" aria-label="tronco">🪵</button>').join('')}</div>`;
+    a.querySelectorAll('.ficha').forEach((b) => b.onclick = () => {
+      b.style.visibility = 'hidden'; n++; tono(300 + n * 80); a.querySelector('#cuenta').textContent = n; a.querySelector('#fuego').style.fontSize = 30 + n * 12 + 'px'; decir(NUM[n]);
+      if (n === 5) setTimeout(() => { dice('¡<b>Cinco</b> troncos! El barco va a toda máquina hacia Londres.'); setTimeout(fin, 1600); }, 600);
+    });
+  },
+  campana(a, dice, fin) {
+    let n = 0;
+    a.innerHTML = `<button class="campana" aria-label="campana">🔔</button><div class="contador" id="cuenta"></div>`;
+    a.querySelector('.campana').onclick = (e) => {
+      const b = e.currentTarget; b.classList.remove('suena'); void b.offsetWidth; b.classList.add('suena'); tono(880, .6, 'sine', .2); n++;
+      a.querySelector('#cuenta').textContent = '🕗'.repeat(Math.min(n, 3));
+      if (n === 1) dice('¡Tilín! ¡Otra vez, más fuerte!'); if (n === 2) dice('¡Tilín, tilín! ¡Una más!');
+      if (n === 3) setTimeout(fin, 700);
+    };
+  }
+};
+
+// =============================================================
+//  Pasaporte
+// =============================================================
+function abrirPasaporte() {
+  cerrarEscena();
+  velo = document.createElement('div'); velo.className = 'velo';
+  const lista = PARADAS.map((p, i) => `<div class="sello${E.hecho.includes(i) ? ' puesto' : ''}"><span>${E.hecho.includes(i) ? p.icono : '·'}</span>${p.nombre}</div>`).join('');
+  velo.innerHTML = `<section class="escena pasaporte" role="dialog" aria-label="Pasaporte">
+    <div class="lugar"><h2>Pasaporte</h2><span class="sello-mini" style="color:var(--papel)">${E.hecho.length} de 8 sellos</span></div>
+    <div class="sellos">${lista}</div>
+    <div class="pie"><button class="chico" id="b-cerrar" style="color:var(--papel)">← Volver al mapa</button><button class="chico" id="b-borrar" style="color:var(--laton)">Empezar de nuevo</button></div></section>`;
+  document.body.appendChild(velo);
+  decir(E.hecho.length === 8 ? '¡Pasaporte completo! Has dado la vuelta al mundo.' : `Tienes ${E.hecho.length} sellos de ocho.`);
+  velo.querySelector('#b-cerrar').onclick = cerrarEscena;
+  velo.querySelector('#b-borrar').onclick = () => { E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false }; guardar(); cerrarEscena(); pintar(); };
+}
+document.getElementById('b-pasaporte').addEventListener('click', abrirPasaporte);
+document.getElementById('b-seguir').addEventListener('click', () => {
+  if (viajando) return;
+  if (E.etapa >= 8) { E = { etapa: 0, hecho: [], dias: 80, aouda: false, fix: false }; guardar(); pintar(); return abrirParada(0); }
+  abrirParada(E.etapa);
+});
+addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarEscena(); });
+if ('speechSynthesis' in window) try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => speechSynthesis.getVoices(); } catch { /* nada */ }
+pintar();
+</script>
+
+</body>
+</html>
