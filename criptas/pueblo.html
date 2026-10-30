@@ -12,32 +12,34 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030221711",
-    "./js/campanas.js": "./js/campanas.js?v=20261030221711",
-    "./js/datos.js": "./js/datos.js?v=20261030221711",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261030221711",
-    "./js/firebase.js": "./js/firebase.js?v=20261030221711",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030221711",
-    "./js/ia.js": "./js/ia.js?v=20261030221711",
-    "./js/iconos.js": "./js/iconos.js?v=20261030221711",
-    "./js/insultos.js": "./js/insultos.js?v=20261030221711",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030221711",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030221711",
-    "./js/motor.js": "./js/motor.js?v=20261030221711",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030221711",
-    "./js/nube.js": "./js/nube.js?v=20261030221711",
-    "./js/panel.js": "./js/panel.js?v=20261030221711",
-    "./js/planos.js": "./js/planos.js?v=20261030221711",
-    "./js/procedural.js": "./js/procedural.js?v=20261030221711",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030221711",
-    "./js/red.js": "./js/red.js?v=20261030221711",
-    "./js/render.js": "./js/render.js?v=20261030221711",
-    "./js/render3d.js": "./js/render3d.js?v=20261030221711",
-    "./js/reunion.js": "./js/reunion.js?v=20261030221711",
-    "./js/sprites.js": "./js/sprites.js?v=20261030221711",
-    "./js/tablero.js": "./js/tablero.js?v=20261030221711",
-    "./js/ui.js": "./js/ui.js?v=20261030221711",
-    "./js/viajero.js": "./js/viajero.js?v=20261030221711"
+    "./js/acceso.js": "./js/acceso.js?v=20261030223933",
+    "./js/campanas.js": "./js/campanas.js?v=20261030223933",
+    "./js/datos.js": "./js/datos.js?v=20261030223933",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261030223933",
+    "./js/firebase.js": "./js/firebase.js?v=20261030223933",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030223933",
+    "./js/ia.js": "./js/ia.js?v=20261030223933",
+    "./js/iconos.js": "./js/iconos.js?v=20261030223933",
+    "./js/insultos.js": "./js/insultos.js?v=20261030223933",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030223933",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030223933",
+    "./js/motor.js": "./js/motor.js?v=20261030223933",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261030223933",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261030223933",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030223933",
+    "./js/nube.js": "./js/nube.js?v=20261030223933",
+    "./js/panel.js": "./js/panel.js?v=20261030223933",
+    "./js/planos.js": "./js/planos.js?v=20261030223933",
+    "./js/procedural.js": "./js/procedural.js?v=20261030223933",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030223933",
+    "./js/red.js": "./js/red.js?v=20261030223933",
+    "./js/render.js": "./js/render.js?v=20261030223933",
+    "./js/render3d.js": "./js/render3d.js?v=20261030223933",
+    "./js/reunion.js": "./js/reunion.js?v=20261030223933",
+    "./js/sprites.js": "./js/sprites.js?v=20261030223933",
+    "./js/tablero.js": "./js/tablero.js?v=20261030223933",
+    "./js/ui.js": "./js/ui.js?v=20261030223933",
+    "./js/viajero.js": "./js/viajero.js?v=20261030223933"
   }
 }
 </script>
@@ -176,6 +178,7 @@ import { mergeGeometries } from './js/vendor/addons/utils/BufferGeometryUtils.js
 import * as Ficha from './js/viajero.js';
 import * as Ins from './js/insultos.js';
 import { NUEVOS as DIA } from './js/dialogos.js';
+import { mueblesExtra } from './js/muebles-extra.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -1315,7 +1318,9 @@ const MUEBLES = {
   recuerdo: { n: 'Recuerdo', e: '📜', w: 1, d: 1, de: 'campana', art: 'un recuerdo de una aventura', luz: .5, f(g) { pz(g, cil(.3, .36, .5, '#8a8a92', 10), 0, .25, 0); pz(g, cil(.36, .36, .06, '#a8a8b0', 10), 0, .53, 0); pz(g, new THREE.Mesh(new THREE.OctahedronGeometry(.2, 0), lam('#e0b040', { ...brilla('#ffcf60', .6), flatShading: true })), 0, .82, 0); } },
   cocina: { n: 'Fogón', e: '🍳', w: 1, d: 1, de: 'regalo', art: 'un fogón pequeñito «para que no vivas de guiso ajeno»', luz: .5, f(g) { pz(g, caja(.8, .85, .6, '#3a3a44'), 0, .43, 0); pz(g, caja(.82, .05, .62, '#2a2a30'), 0, .88, 0); pz(g, caja(.5, .3, .02, '#ff9a40', brilla('#ff7a20', .6)), 0, .35, .31); pz(g, cil(.16, .14, .18, '#8a8a92', 12), .15, .99, 0); pz(g, cil(.12, .12, .02, '#e85a3a', 10), -.2, .92, 0); } }
 };
-const REGALO_MUEBLE = { pip: 'fuerte', hiel: 'hucha', mordo: 'yunque', anzuelo: 'pecera', guia: 'globo', rufo: 'botella', bartolome: 'nabo', escarcha: 'caldero', brumas: 'corcho', lumi: 'seta', gato: 'cojin', marga: 'cocina' };
+// Muebles de los lotes extra (js/muebles-extra*.js); no pisan los que ya existen
+{ const ex = mueblesExtra({ THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO }); for (const k in ex) if (!MUEBLES[k]) MUEBLES[k] = ex[k]; }
+const REGALO_MUEBLE ={ pip: 'fuerte', hiel: 'hucha', mordo: 'yunque', anzuelo: 'pecera', guia: 'globo', rufo: 'botella', bartolome: 'nabo', escarcha: 'caldero', brumas: 'corcho', lumi: 'seta', gato: 'cojin', marga: 'cocina' };
 const SUELOS = { madera: 'Madera', clara: 'Madera clara', baldosa: 'Baldosa', ajedrez: 'Ajedrez', moqueta: 'Moqueta' };
 const PAREDES = ['#f6e6c4', '#cfe8d0', '#cfe0f4', '#f4d4d8', '#e0d4f0', '#f4ead2', '#c8a070', '#9ab0a0'];
 function texCasa(tipo) {
@@ -1363,7 +1368,7 @@ if (!EP.casa) {
 }
 // El botín de las mazmorras llega al buzón: algo por misión (a veces) y algo especial por cada jefe
 {
-  const m = DIARIO.misiones || 0, j = DIARIO.jefes || 0, COMUN = ['cofre', 'estandarte', 'calavera'], JEFE = ['cabezaDragon', 'armadura', 'espadaPiedra'];
+  const m = DIARIO.misiones || 0, j = DIARIO.jefes || 0, COMUN = Object.keys(MUEBLES).filter((k) => MUEBLES[k].de === 'botin'), JEFE = Object.keys(MUEBLES).filter((k) => MUEBLES[k].de === 'jefe');
   if (EP.mueblesMision == null) EP.mueblesMision = Math.max(0, m - 1);
   if (EP.mueblesJefe == null) EP.mueblesJefe = Math.max(0, j - 1);
   const meter = (id, k, texto) => { if (!EP.recogidos.includes(id) && !EP.buzon.some((b) => b.id === id)) EP.buzon.push({ id, k, texto }); };
