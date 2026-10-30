@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criptas · Taller de campañas</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/acceso.js": "./js/acceso.js?v=20261030172039",
+    "./js/datos.js": "./js/datos.js?v=20261030172039",
+    "./js/firebase.js": "./js/firebase.js?v=20261030172039",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030172039",
+    "./js/ia.js": "./js/ia.js?v=20261030172039",
+    "./js/iconos.js": "./js/iconos.js?v=20261030172039",
+    "./js/insultos.js": "./js/insultos.js?v=20261030172039",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030172039",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030172039",
+    "./js/motor.js": "./js/motor.js?v=20261030172039",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030172039",
+    "./js/nube.js": "./js/nube.js?v=20261030172039",
+    "./js/panel.js": "./js/panel.js?v=20261030172039",
+    "./js/planos.js": "./js/planos.js?v=20261030172039",
+    "./js/procedural.js": "./js/procedural.js?v=20261030172039",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030172039",
+    "./js/red.js": "./js/red.js?v=20261030172039",
+    "./js/render.js": "./js/render.js?v=20261030172039",
+    "./js/render3d.js": "./js/render3d.js?v=20261030172039",
+    "./js/reunion.js": "./js/reunion.js?v=20261030172039",
+    "./js/sprites.js": "./js/sprites.js?v=20261030172039",
+    "./js/tablero.js": "./js/tablero.js?v=20261030172039",
+    "./js/ui.js": "./js/ui.js?v=20261030172039",
+    "./js/viajero.js": "./js/viajero.js?v=20261030172039"
+  }
+}
+</script>
+<style>
+  :root { --fondo: #1f1611; --papel: #efe2c0; --papel2: #f7eed6; --tinta: #2a1d14; --suave: #7a6a55; --lacre: #9a2a20; --azul: #3a6ab0; --verde: #3d7a3a; --ambar: #b07a10; --linea: rgba(80,50,20,.22); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px max(16px, env(safe-area-inset-left)); color: var(--papel); }
+  header h1 { flex: 1; margin: 0; font: 600 22px Georgia, serif; }
+  header a { color: var(--papel); opacity: .8; }
+  main { max-width: 1000px; margin: 0 auto; padding: 0 16px 60px; display: grid; gap: 16px; }
+  section { background: var(--papel); border-radius: 10px; padding: 16px 18px; box-shadow: 0 6px 18px rgba(0,0,0,.35); min-width: 0; }
+  h2 { margin: 0 0 10px; font: 600 19px Georgia, serif; }
+  h3 { margin: 0; font: 600 17px Georgia, serif; }
+  .nota { color: var(--suave); font-size: 14px; margin: 4px 0 10px; }
+  textarea { width: 100%; height: 220px; font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; background: var(--papel2); border: 1px solid var(--linea); border-radius: 8px; padding: 10px; color: var(--tinta); resize: vertical; }
+  .fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  button, .boton { font: 600 14px system-ui, sans-serif; border: 0; border-radius: 8px; padding: 9px 14px; background: var(--lacre); color: #fff; cursor: pointer; }
+  button.claro, .boton.claro { background: transparent; color: var(--tinta); box-shadow: inset 0 0 0 1px var(--linea); }
+  button:disabled { opacity: .45; cursor: default; }
+  .boton input { display: none; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(80,50,20,.1); margin: 2px 4px 2px 0; }
+  .chip.jefe { background: var(--lacre); color: #fff; }
+  .chip.azul { background: var(--azul); color: #fff; }
+  .chip.verde { background: var(--verde); color: #fff; }
+  .revision { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .revision li { padding: 6px 10px; border-radius: 6px; font-size: 14px; }
+  .revision .error { background: #f3c9c0; } .revision .aviso { background: #f1e0b0; } .revision .idea { background: #d6e4f4; } .revision .ok { background: #cfe4c6; }
+  .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
+  .resumen div { background: var(--papel2); border-radius: 8px; padding: 8px 10px; } .resumen b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; } .resumen span { font-size: 12px; color: var(--suave); }
+  .mision { border-top: 2px dashed var(--linea); padding-top: 14px; margin-top: 14px; display: grid; gap: 8px; }
+  .mision .cab { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .mision .num { font: 700 13px system-ui; color: #fff; background: var(--tinta); border-radius: 999px; padding: 2px 9px; }
+  .pergamino { margin: 0; background: var(--papel2); border-left: 4px solid var(--lacre); padding: 8px 12px; font-style: italic; font-family: Georgia, serif; }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; } @media (max-width: 700px) { .dos { grid-template-columns: 1fr; } }
+  .bloque h4 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--suave); }
+  .bloque ul { margin: 0; padding-left: 18px; font-size: 14px; } .bloque li { margin: 2px 0; }
+  .decision { background: var(--papel2); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+  .lista-guardadas li { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--linea); flex-wrap: wrap; }
+  #taller:not([hidden]) { display: grid; gap: 16px; }
+  #cerrojo-admin { text-align: center; padding: 40px 16px; }
+</style>
+<style id="cerrojo">body{visibility:hidden}</style>
+</head>
+<body>
+<header>
+  <h1>Criptas de Velmor · Taller de campañas</h1>
+  <a href="panel.html">Panel</a> <a href="pruebas.html">Pruebas</a>
+</header>
+<main>
+  <section id="cerrojo-admin"><p class="nota">Comprobando que eres el administrador…</p></section>
+  <div id="taller" hidden>
+    <section>
+      <h2>1 · Pega o sube la campaña</h2>
+      <p class="nota">En el formato de la plantilla de campaña (la que se le pasa a Gemini o a quien sea). Si viene con <code>```json</code> alrededor, no pasa nada.</p>
+      <textarea id="entrada" spellcheck="false" placeholder='{ "campana": { "nombre": "…" }, "misiones": [ … ], "tortuga": [ … ] }'></textarea>
+      <div class="fila">
+        <button id="b-ver">Revisar y ver</button>
+        <label class="boton claro">Subir archivo .json<input type="file" id="archivo" accept=".json,.txt,application/json,text/plain"></label>
+        <span class="nota" id="estado-entrada"></span>
+      </div>
+    </section>
+    <section id="vista" hidden></section>
+    <section>
+      <h2>Campañas importadas</h2>
+      <p class="nota">Se guardan en la nube como borrador. Para jugarlas falta convertirlas a mapa (salas con casillas, puertas y monstruos colocados): eso lo hace Claude a partir de aquí.</p>
+      <ul class="lista-guardadas" id="guardadas" style="list-style:none;padding:0;margin:0"><li class="nota">Cargando…</li></ul>
+    </section>
+  </div>
+</main>
+<script type="module">
+import './js/acceso.js';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---------- Lo que entiende el juego (según la plantilla y js/datos.js) ----------
+const MONSTRUOS = ['trasgo', 'orco', 'esqueleto', 'zombi', 'momia', 'guerrero', 'gargola', 'hechicero', 'chaman', 'sacerdotisa', 'ilusionista', 'ojo', 'bruja', 'bestias', 'lobo', 'fantasma', 'golem', 'mercader'];
+const TRAMPAS = ['foso', 'lanza', 'bloque'];
+const MAPAS = ['clasico', 'cuevas', 'torre', 'fortaleza', 'cripta', 'barco'];
+const CONDUCTAS = ['agresivo', 'guardian', 'espera', 'lanzador'];
+const OBJETIVOS = ['escalera', 'matar', 'escapar'];
+const EN_EL_MUNDO = ['rescatado', 'perdido', 'recuerdo'];
+const CAMPOS = {
+  campana: ['nombre', 'gancho', 'tono', 'villano', 'se_abre', 'leyenda', 'premio_final'],
+  mision: ['titulo', 'pergamino', 'objetivo', 'requiere', 'rondas', 'tareas', 'mapa', 'escalera_en', 'salas', 'monstruos', 'trampas', 'errante', 'guion', 'decisiones', 'recompensa', 'matar'],
+  sala: ['id', 'nombre', 'que_hay', 'tesoro', 'cerrada_hasta', 'puerta_secreta_a'],
+  monstruo: ['id', 'tipo', 'cuantos', 'sala', 'conducta', 'nombre', 'jefe', 'cuerpo', 'ataque', 'defensa'],
+  tortuga: ['si', 'aparece', 'servicio', 'donde']
+};
+const SLUG = /^[a-z0-9_]+$/;
+
+// ---------- Leer el texto (sin vallas de Markdown) ----------
+function leerJSON(texto) {
+  let t = texto.trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+  const i = t.indexOf('{'), j = t.lastIndexOf('}'); if (i > 0 || j < t.length - 1) t = t.slice(i, j + 1);
+  const d = JSON.parse(t);
+  if (!d.misiones && d.titulo) return { campana: { nombre: d.titulo }, misiones: [d], tortuga: [] };   // una misión suelta
+  return d;
+}
+
+// ---------- Revisar: errores (no se puede jugar), avisos (se adapta) e ideas ----------
+function revisar(d) {
+  const R = { error: [], aviso: [], idea: [] };
+  const add = (tipo, donde, txt) => R[tipo].push({ donde, txt });
+  const desconocidos = (obj, lista, donde) => { for (const k of Object.keys(obj || {})) if (!k.startsWith('_') && !lista.includes(k)) add('aviso', donde, `Campo «${k}» que el juego no conoce: se ignorará o habrá que adaptarlo.`); };
+  const ideas = (obj, donde) => { for (const [k, v] of Object.entries(obj || {})) if (k === '_idea') add('idea', donde, String(v)); };
+  if (!d || typeof d !== 'object') { add('error', 'General', 'No es un JSON con forma de campaña.'); return R; }
+  if (!d.campana?.nombre) add('error', 'Campaña', 'Falta campana.nombre.');
+  desconocidos(d.campana, CAMPOS.campana, 'Campaña'); ideas(d.campana, 'Campaña');
+  if (!Array.isArray(d.misiones) || !d.misiones.length) { add('error', 'Campaña', 'No hay misiones.'); return R; }
+  const mundo = new Set();   // lo que las decisiones dejan en el mundo
+  d.misiones.forEach((m, n) => {
+    const D = `Misión ${n + 1}${m.titulo ? ' · ' + m.titulo : ''}`;
+    desconocidos(m, CAMPOS.mision, D); ideas(m, D);
+    if (!m.titulo) add('error', D, 'Falta el título.');
+    if (!m.pergamino) add('aviso', D, 'Falta el pergamino (el texto de inicio).');
+    if (!OBJETIVOS.includes(m.objetivo)) add('error', D, `Objetivo «${m.objetivo}» desconocido (escalera, matar o escapar).`);
+    if (m.objetivo === 'escapar' && !(m.rondas > 0)) add('error', D, 'Objetivo «escapar» sin número de rondas.');
+    if (m.objetivo === 'escapar' && (m.tareas || []).some((t) => /aguant|sobreviv/i.test(t))) add('aviso', D, '«Escapar» en el juego es llegar a la salida antes de que se acaben las rondas, no aguantar: revisa las tareas.');
+    if (m.mapa && !MAPAS.includes(m.mapa)) add('aviso', D, `Mapa «${m.mapa}» desconocido: se usará uno parecido.`);
+    const salas = m.salas || [], ids = new Set();
+    if (!salas.length) add('error', D, 'No tiene salas.');
+    for (const s of salas) {
+      desconocidos(s, CAMPOS.sala, `${D} · sala ${s.id || '?'}`);
+      if (!s.id || !SLUG.test(s.id)) add('error', D, `Sala con id «${s.id ?? ''}» no válido (minúsculas, sin tildes ni espacios).`);
+      if (ids.has(s.id)) add('error', D, `Sala «${s.id}» repetida.`); ids.add(s.id);
+      if (s.puerta_secreta_a && !salas.some((x) => x.id === s.puerta_secreta_a)) add('error', D, `La sala «${s.id}» tiene una puerta secreta a «${s.puerta_secreta_a}», que no existe.`);
+    }
+    if (m.escalera_en && !ids.has(m.escalera_en)) add('error', D, `La escalera está en «${m.escalera_en}», que no es ninguna sala.`);
+    const mons = m.monstruos || [], idsM = new Set();
+    for (const x of mons) {
+      desconocidos(x, CAMPOS.monstruo, `${D} · ${x.id || x.tipo}`);
+      if (!MONSTRUOS.includes(x.tipo)) add('error', D, `Monstruo de tipo «${x.tipo}» que no existe.`);
+      if (!ids.has(x.sala)) add('error', D, `${x.nombre || x.tipo} está en la sala «${x.sala}», que no existe.`);
+      if (x.conducta && !CONDUCTAS.includes(x.conducta)) add('aviso', D, `Conducta «${x.conducta}» desconocida para ${x.nombre || x.tipo}.`);
+      if (x.id) { if (idsM.has(x.id)) add('error', D, `Monstruo «${x.id}» repetido.`); idsM.add(x.id); }
+    }
+    if (m.objetivo === 'matar' && !mons.some((x) => x.jefe)) add('aviso', D, 'Objetivo «matar» pero ningún monstruo es jefe.');
+    for (const t of m.trampas || []) { if (!TRAMPAS.includes(t.tipo)) add('error', D, `Trampa «${t.tipo}» que no existe.`); if (!ids.has(t.sala)) add('error', D, `Trampa en la sala «${t.sala}», que no existe.`); }
+    if (m.errante && !MONSTRUOS.includes(m.errante)) add('aviso', D, `Monstruo errante «${m.errante}» desconocido.`);
+    // Guion: cada «cuando» y cada «pasa»
+    const regla = [];   // { evento, acciones } ya entendidos, para ver si se puede terminar
+    for (const g of m.guion || []) {
+      const c = String(g.cuando || '').trim(); let ev = null;
+      let r;
+      if ((r = c.match(/^(?:ver|buscar en|pisar)(?: la)?(?: sala| casilla)? (?:de |en )?([a-z0-9_]+)$/))) ev = { t: 'sala', id: r[1] };
+      else if ((r = c.match(/^abrir la puerta de ([a-z0-9_]+)$/))) ev = { t: 'sala', id: r[1] };
+      else if ((r = c.match(/^matar a ([a-z0-9_]+)$/))) ev = { t: 'matar', id: r[1] };
+      else if ((r = c.match(/^pistas? ([a-z0-9_]+)(?: y ([a-z0-9_]+))?$/))) ev = { t: 'pista', ids: [r[1], r[2]].filter(Boolean) };
+      else if (/^cae un h[eé]roe$/.test(c)) ev = { t: 'cae' };
+      if (!ev) add('aviso', D, `No entiendo el «cuando»: «${c}».`);
+      else if (ev.t === 'sala' && !ids.has(ev.id)) add('error', D, `El guion habla de la sala «${ev.id}», que no existe.`);
+      else if (ev.t === 'matar' && !idsM.has(ev.id)) add('error', D, `El guion espera matar a «${ev.id}», y no hay ningún monstruo con ese id.`);
+      if (/pisar la casilla/.test(c)) add('aviso', D, `«${c}»: en el juego se pisa una sala entera; se usará «ver la sala».`);
+      const acc = [];
+      for (const p of [].concat(g.pasa || [])) {
+        const a = String(p).trim(); let q;
+        if (/^(historia|mensaje):/.test(a)) continue;
+        if ((q = a.match(/^pista ([a-z0-9_]+)$/))) acc.push({ t: 'pista', id: q[1] });
+        else if ((q = a.match(/^(?:abrir|desbloquear)(?: la(?: puerta de)?)? ([a-z0-9_]+)$/))) { acc.push({ t: 'abrir', id: q[1] }); if (!ids.has(q[1])) add('error', D, `«${a}»: no hay ninguna sala «${q[1]}».`); }
+        else if ((q = a.match(/^revelar(?: la)? sala ([a-z0-9_]+)$/))) { if (!ids.has(q[1])) add('error', D, `«${a}»: no hay ninguna sala «${q[1]}».`); }
+        else if ((q = a.match(/^decision ([a-z0-9_]+)$/))) { acc.push({ t: 'pista', id: q[1] }); if (!(m.decisiones || []).some((x) => x.id === q[1])) add('error', D, `«${a}»: no hay ninguna decisión «${q[1]}».`); }
+        else if ((q = a.match(/^aparecen? (\d+) ([a-zñ]+?)s? en(?: la)?(?: sala)? ([a-z0-9_]+)$/))) { if (!MONSTRUOS.some((x) => q[2].startsWith(x))) add('aviso', D, `«${a}»: tipo de monstruo dudoso.`); if (!ids.has(q[3])) add('error', D, `«${a}»: no hay ninguna sala «${q[3]}».`); }
+        else if (/^despertar/.test(a) || /^rondas extra \d+$/.test(a)) { /* vale */ }
+        else add('aviso', D, `No entiendo lo que «pasa»: «${a}».`);
+      }
+      if (ev) regla.push({ ev, acc });
+    }
+    // ¿Se puede terminar? Se abren salas con lo que se consigue en las salas a las que ya se llega.
+    const abiertas = new Set(salas.filter((s) => !s.cerrada_hasta).map((s) => s.id)), pistas = new Set();
+    for (let vuelta = 0; vuelta < 30; vuelta++) {
+      const antes = abiertas.size + pistas.size;
+      for (const s of salas) {
+        if (abiertas.has(s.id) && s.tesoro?.pista) pistas.add(s.tesoro.pista);
+        if (abiertas.has(s.id) && s.puerta_secreta_a) abiertas.add(s.puerta_secreta_a);
+        if (!abiertas.has(s.id) && s.cerrada_hasta && pistas.has(s.cerrada_hasta)) abiertas.add(s.id);
+      }
+      for (const { ev, acc } of regla) {
+        const ocurre = ev.t === 'sala' ? abiertas.has(ev.id) : ev.t === 'matar' ? abiertas.has(mons.find((x) => x.id === ev.id)?.sala) : ev.t === 'pista' ? ev.ids.every((p) => pistas.has(p)) : false;
+        if (!ocurre) continue;
+        for (const a of acc) { if (a.t === 'pista') pistas.add(a.id); if (a.t === 'abrir') abiertas.add(a.id); }
+      }
+      if (abiertas.size + pistas.size === antes) break;
+    }
+    for (const s of salas) if (!abiertas.has(s.id)) {
+      const dentro = mons.filter((x) => x.sala === s.id && regla.some((r) => r.ev.t === 'matar' && r.ev.id === x.id));
+      add('error', D, `La sala «${s.id}» nunca se abre: necesita «${s.cerrada_hasta}» y no hay forma de conseguirlo${dentro.length ? ` (lo da matar a ${dentro.map((x) => x.nombre || x.id).join(', ')}, que está DENTRO de esa misma sala)` : ''}.`);
+    }
+    if (m.escalera_en && ids.has(m.escalera_en) && !abiertas.has(m.escalera_en)) add('error', D, 'No se puede llegar a la escalera: la misión no se puede terminar.');
+    for (const r of [].concat(m.requiere || [])) if (!pistas.has(r)) add('error', D, `Para salir hace falta «${r}», y no se consigue nunca.`);
+    // Decisiones
+    for (const dc of m.decisiones || []) {
+      if (!dc.id || !SLUG.test(dc.id)) add('error', D, `Decisión con id «${dc.id ?? ''}» no válido.`);
+      if (!(dc.opciones?.length >= 2)) add('error', D, `La decisión «${dc.id}» necesita al menos dos opciones.`);
+      if (!(m.guion || []).some((g) => [].concat(g.pasa || []).some((p) => String(p).trim() === 'decision ' + dc.id))) add('aviso', D, `La decisión «${dc.id}» no la lanza nadie en el guion.`);
+      for (const o of dc.opciones || []) for (const e of String(o.en_el_mundo || '').split(';').map((x) => x.trim()).filter(Boolean)) {
+        const [tipo, id] = e.split(':').map((x) => x.trim());
+        if (!EN_EL_MUNDO.includes(tipo)) add('aviso', D, `«${e}»: el tipo «${tipo}» es nuevo (el juego conoce rescatado, perdido y recuerdo).`);
+        mundo.add(tipo + ': ' + id);
+      }
+    }
+  });
+  for (const t of d.tortuga || []) {
+    desconocidos(t, CAMPOS.tortuga, 'Tortuga');
+    if (t.si !== 'acabar la campaña' && !mundo.has(String(t.si).replace(/\s*:\s*/, ': '))) add('aviso', 'Tortuga', `«${t.si}» no lo produce ninguna decisión.`);
+    if (t.servicio && t.servicio !== 'tú decides') add('idea', 'Tortuga', `Servicio nuevo: ${t.servicio}`);
+  }
+  if (!d.misiones.some((m) => (m.monstruos || []).some((x) => x.jefe))) add('aviso', 'Campaña', 'Ninguna misión tiene jefe.');
+  return R;
+}
+
+// ---------- Pintar el preview ----------
+let actual = null;
+const slug = (t) => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'campana';
+function pintar(d, R) {
+  const v = $('vista'), c = d.campana || {}, ms = d.misiones || [];
+  const n = (k) => ms.reduce((s, m) => s + (m[k] || []).length, 0);
+  const fila = (lista, clase) => lista.map((x) => `<li class="${clase}"><b>${esc(x.donde)}:</b> ${esc(x.txt)}</li>`).join('');
+  v.hidden = false;
+  v.innerHTML = `<h2>2 · ${esc(c.nombre || 'Sin nombre')}</h2>
+    ${c.gancho ? `<p class="pergamino">${esc(c.gancho)}</p>` : ''}
+    <div class="fila">${c.tono ? `<span class="chip">${esc(c.tono)}</span>` : ''}${c.villano ? `<span class="chip jefe">Villano: ${esc(c.villano)}</span>` : ''}${c.premio_final ? `<span class="chip verde">Premio: ${esc(c.premio_final)}</span>` : ''}</div>
+    <div class="resumen"><div><b>${ms.length}</b><span>misiones</span></div><div><b>${n('salas')}</b><span>salas</span></div><div><b>${ms.reduce((s, m) => s + (m.monstruos || []).reduce((a, x) => a + (x.cuantos || 1), 0), 0)}</b><span>monstruos</span></div><div><b>${n('decisiones')}</b><span>decisiones</span></div><div><b>${(d.tortuga || []).length}</b><span>cambios en la tortuga</span></div></div>
+    <h3>Revisión</h3>
+    <ul class="revision" style="margin-top:6px">${R.error.length ? fila(R.error, 'error') : '<li class="ok">✓ Sin errores: se puede importar.</li>'}${fila(R.aviso, 'aviso')}${fila(R.idea, 'idea')}</ul>
+    <div class="fila"><button id="b-importar" ${R.error.length ? 'disabled title="Arregla antes los errores en rojo"' : ''}>Importar a la nube</button><span class="nota" id="estado-import">${R.error.length ? `Hay ${R.error.length} error${R.error.length > 1 ? 'es' : ''} en rojo: corrígelos (o pídeselo a quien la escribió) y vuelve a revisar.` : ''}</span></div>
+    ${ms.map((m, i) => `<div class="mision"><div class="cab"><span class="num">${i + 1}</span><h3>${esc(m.titulo)}</h3>
+      <span class="chip azul">${esc(m.objetivo)}${m.rondas ? ' · ' + m.rondas + ' rondas' : ''}</span><span class="chip">${esc(m.mapa || 'mapa libre')}</span><span class="chip verde">${m.recompensa ?? '?'} oro</span></div>
+      ${m.pergamino ? `<p class="pergamino">${esc(m.pergamino)}</p>` : ''}
+      <div class="dos">
+        <div class="bloque"><h4>Salas</h4><ul>${(m.salas || []).map((s) => `<li><b>${esc(s.nombre || s.id)}</b>${s.id === m.escalera_en ? ' 🪜' : ''}${s.cerrada_hasta ? ` 🔒 <small>(${esc(s.cerrada_hasta)})</small>` : ''} — ${esc(s.que_hay || '')}${s.tesoro ? ` <small>· 💰 ${esc(Object.entries(s.tesoro).filter(([k]) => k !== 'texto').map(([k, x]) => k + ': ' + x).join(', '))}</small>` : ''}</li>`).join('')}</ul></div>
+        <div class="bloque"><h4>Monstruos y trampas</h4><div>${(m.monstruos || []).map((x) => `<span class="chip${x.jefe ? ' jefe' : ''}">${x.cuantos > 1 ? x.cuantos + '× ' : ''}${esc(x.nombre || x.tipo)}${x.nombre ? ' (' + esc(x.tipo) + ')' : ''} · ${esc(x.sala)}</span>`).join('')}${(m.trampas || []).map((t) => `<span class="chip">⚠ ${esc(t.tipo)} · ${esc(t.sala)}</span>`).join('')}</div>
+          ${m.tareas?.length ? `<h4 style="margin-top:8px">Tareas</h4><ul>${m.tareas.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}</div>
+      </div>
+      ${m.guion?.length ? `<div class="bloque"><h4>Guion</h4><ul>${m.guion.map((g) => `<li><b>${esc(g.cuando)}</b> → ${[].concat(g.pasa).map(esc).join(' · ')}</li>`).join('')}</ul></div>` : ''}
+      ${(m.decisiones || []).map((dc) => `<div class="decision">⚖ <b>${esc(dc.pregunta)}</b><ul>${(dc.opciones || []).map((o) => `<li>${esc(o.texto)}${o.oro_fondo ? ` <span class="chip verde">+${o.oro_fondo} oro</span>` : ''}${o.en_el_mundo ? ` <span class="chip">${esc(o.en_el_mundo)}</span>` : ''}</li>`).join('')}</ul></div>`).join('')}
+    </div>`).join('')}
+    ${(d.tortuga || []).length ? `<div class="mision"><h3>🐢 Cambios en la tortuga</h3><div class="bloque"><ul>${d.tortuga.map((t) => `<li><b>${esc(t.si)}</b> → ${esc(t.aparece)}${t.donde ? ` <small>(${esc(t.donde)})</small>` : ''}${t.servicio ? ` · <i>${esc(t.servicio)}</i>` : ''}</li>`).join('')}</ul></div></div>` : ''}`;
+  $('b-importar').onclick = importar;
+  v.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ---------- Importar y listar (nube) ----------
+let nube = null;
+async function importar() {
+  if (!actual) return;
+  const b = $('b-importar'); b.disabled = true; $('estado-import').textContent = 'Guardando…';
+  try {
+    const id = slug(actual.datos.campana?.nombre);
+    await nube.guardarCampana(id, actual.datos.campana?.nombre || id, JSON.stringify(actual.datos), actual.datos.misiones.length);
+    $('estado-import').textContent = `✓ Importada como «${id}».`; listar();
+  } catch (e) { $('estado-import').textContent = 'No se pudo guardar: ' + e.message; b.disabled = false; }
+}
+async function listar() {
+  const ul = $('guardadas');
+  try {
+    const l = await nube.listarCampanas();
+    ul.innerHTML = l.length ? l.map((c) => `<li><span><b>${esc(c.nombre)}</b> <span class="chip">${c.misiones} misiones</span><span class="chip">${esc(c.estado)}</span> <small class="nota">${new Date(c.fecha).toLocaleString('es-ES')}</small></span>
+      <span><button class="claro" data-ver="${esc(c.id)}">Ver</button> <button class="claro" data-borrar="${esc(c.id)}">Borrar</button></span></li>`).join('') : '<li class="nota">Todavía no hay ninguna.</li>';
+    ul.querySelectorAll('[data-ver]').forEach((b) => b.onclick = () => { const c = l.find((x) => x.id === b.dataset.ver); $('entrada').value = JSON.stringify(JSON.parse(c.json), null, 2); ver(); });
+    ul.querySelectorAll('[data-borrar]').forEach((b) => {
+      b.onclick = async () => {
+        if (b.dataset.seguro !== '1') { b.dataset.seguro = '1'; b.textContent = '¿Seguro? Toca otra vez'; return; }
+        await nube.borrarCampana(b.dataset.borrar); listar();
+      };
+    });
+  } catch (e) { ul.innerHTML = `<li class="nota">No se pudo leer: ${esc(e.message)}</li>`; }
+}
+function ver() {
+  const t = $('entrada').value; if (!t.trim()) { $('estado-entrada').textContent = 'Pega primero el JSON.'; return; }
+  try { const d = leerJSON(t); actual = { datos: d }; $('estado-entrada').textContent = ''; pintar(d, revisar(d)); }
+  catch (e) { actual = null; $('vista').hidden = true; $('estado-entrada').textContent = '✗ El JSON no se puede leer: ' + e.message; }
+}
+$('b-ver').onclick = ver;
+$('archivo').onchange = async (e) => { const f = e.target.files[0]; if (!f) return; $('entrada').value = await f.text(); ver(); };
+
+// ---------- Solo el administrador ----------
+import('./js/nube.js').then(async (m) => {
+  nube = m;
+  const u = await m.usuarioListo();
+  if (!u || !(await m.esAdmin())) { $('cerrojo-admin').innerHTML = '<h2>Solo para el administrador</h2><p class="nota">Esta página es el taller donde se importan campañas nuevas. Entra con la cuenta de administrador.</p><p><a href="index.html">Volver al juego</a></p>'; return; }
+  $('cerrojo-admin').hidden = true; $('taller').hidden = false; listar();
+}).catch((e) => { $('cerrojo-admin').innerHTML = `<p class="nota">No se pudo conectar: ${esc(e.message)}</p>`; });
+</script>
+</body>
+</html>

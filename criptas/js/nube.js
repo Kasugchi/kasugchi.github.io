@@ -237,3 +237,18 @@ export async function misCartas(pid) {
 }
 export const marcarLeida = (pid, id) => updateDoc(doc(db, 'pueblos', pid, 'cartas', id), { leida: true }).catch(() => {});
 export const borrarCarta = (pid, id) => deleteDoc(doc(db, 'pueblos', pid, 'cartas', id)).catch(() => {});
+
+// =============================================================
+//  CAMPAÑAS IMPORTADAS (taller.html, solo admin): config/campana-{id}
+//  { id, nombre, misiones, json (texto), fecha, estado }
+//  Van en «config» porque esa colección ya la lee cualquiera con sesión
+//  y solo la escribe el administrador (no hace falta tocar las reglas).
+// =============================================================
+export async function guardarCampana(id, nombre, json, misiones) {
+  return setDoc(doc(db, 'config', 'campana-' + id), { id, nombre, misiones, json, fecha: Date.now(), estado: 'borrador' });
+}
+export async function listarCampanas() {
+  const r = await getDocs(collection(db, 'config'));
+  return r.docs.filter((d) => d.id.startsWith('campana-')).map((d) => d.data()).sort((a, b) => b.fecha - a.fecha);
+}
+export const borrarCampana = (id) => deleteDoc(doc(db, 'config', 'campana-' + id));
