@@ -16,6 +16,14 @@
   .sub { margin: 0 0 16px; opacity: .7; font-style: italic; }
   .arriba { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
   .ir { flex: none; color: #1c120b; background: radial-gradient(ellipse at 50% 40%, #efdcb2, #c2a87c); border: 1px solid #1c120b; padding: 7px 12px; border-radius: 4px; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+  .eleccion { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 0 0 16px; }
+  .eleccion button { text-align: center; cursor: pointer; color: #f1e2c4; background: rgba(24,14,10,.9); border: 1px solid rgba(214,160,100,.5); border-radius: 6px; padding: 14px 12px; font: 15px 'IM Fell English', Georgia, serif; box-shadow: 0 8px 20px rgba(0,0,0,.5); }
+  .eleccion button:hover { border-color: #e8b070; background: rgba(60,30,20,.9); }
+  .eleccion .ico { display: block; font-size: 34px; line-height: 1.2; }
+  .eleccion b { display: block; font: 19px 'IM Fell English SC', Georgia, serif; margin: 4px 0 2px; color: #ffd890; }
+  .eleccion small { opacity: .75; }
+  .eleccion button.aqui { border-color: #ffd890; box-shadow: 0 0 0 1px #ffd890, 0 8px 20px rgba(0,0,0,.5); }
+  @media (max-width: 420px) { .eleccion small { display: none; } .eleccion b { font-size: 16px; } }
   nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 0; }
   nav a { color: #f1e2c4; border: 1px solid rgba(214,160,100,.45); padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 15px; }
   #fundido { position: fixed; inset: 0; background: #1a0c2a; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 60; }
@@ -23,29 +31,29 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/acceso.js": "./js/acceso.js?v=20261030141948",
-    "./js/datos.js": "./js/datos.js?v=20261030141948",
-    "./js/firebase.js": "./js/firebase.js?v=20261030141948",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030141948",
-    "./js/ia.js": "./js/ia.js?v=20261030141948",
-    "./js/iconos.js": "./js/iconos.js?v=20261030141948",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030141948",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030141948",
-    "./js/motor.js": "./js/motor.js?v=20261030141948",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030141948",
-    "./js/nube.js": "./js/nube.js?v=20261030141948",
-    "./js/panel.js": "./js/panel.js?v=20261030141948",
-    "./js/planos.js": "./js/planos.js?v=20261030141948",
-    "./js/procedural.js": "./js/procedural.js?v=20261030141948",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030141948",
-    "./js/red.js": "./js/red.js?v=20261030141948",
-    "./js/render.js": "./js/render.js?v=20261030141948",
-    "./js/render3d.js": "./js/render3d.js?v=20261030141948",
-    "./js/reunion.js": "./js/reunion.js?v=20261030141948",
-    "./js/sprites.js": "./js/sprites.js?v=20261030141948",
-    "./js/tablero.js": "./js/tablero.js?v=20261030141948",
-    "./js/ui.js": "./js/ui.js?v=20261030141948",
-    "./js/viajero.js": "./js/viajero.js?v=20261030141948"
+    "./js/acceso.js": "./js/acceso.js?v=20261030142222",
+    "./js/datos.js": "./js/datos.js?v=20261030142222",
+    "./js/firebase.js": "./js/firebase.js?v=20261030142222",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030142222",
+    "./js/ia.js": "./js/ia.js?v=20261030142222",
+    "./js/iconos.js": "./js/iconos.js?v=20261030142222",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030142222",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030142222",
+    "./js/motor.js": "./js/motor.js?v=20261030142222",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030142222",
+    "./js/nube.js": "./js/nube.js?v=20261030142222",
+    "./js/panel.js": "./js/panel.js?v=20261030142222",
+    "./js/planos.js": "./js/planos.js?v=20261030142222",
+    "./js/procedural.js": "./js/procedural.js?v=20261030142222",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030142222",
+    "./js/red.js": "./js/red.js?v=20261030142222",
+    "./js/render.js": "./js/render.js?v=20261030142222",
+    "./js/render3d.js": "./js/render3d.js?v=20261030142222",
+    "./js/reunion.js": "./js/reunion.js?v=20261030142222",
+    "./js/sprites.js": "./js/sprites.js?v=20261030142222",
+    "./js/tablero.js": "./js/tablero.js?v=20261030142222",
+    "./js/ui.js": "./js/ui.js?v=20261030142222",
+    "./js/viajero.js": "./js/viajero.js?v=20261030142222"
   }
 }
 </script>
@@ -54,8 +62,13 @@
 <body>
 <div id="fundido"></div>
 <main>
-  <div class="arriba"><h1>Sala de espera</h1><a class="ir" id="ir-morrandar" href="tortuga.html">🐢 Ir a Morrandar</a></div>
-  <p class="sub">La pantalla ligera: aquí no hay tortuga en 3D, solo la sala. Gasta muy poco.</p>
+  <h1>La sala</h1>
+  <p class="sub">Ya estás dentro. ¿Dónde esperas a los demás? Desde cualquier sitio podéis hablar y bajar juntos al libro.</p>
+  <div class="eleccion">
+    <button id="elige-tortuga"><span class="ico">🐢</span><b>Morrandar</b><small>Pasead por la tortuga</small></button>
+    <button id="elige-pueblo"><span class="ico">🏘</span><b>El pueblo</b><small>Vuestras casas y los vecinos</small></button>
+    <button id="elige-aqui" class="aqui"><span class="ico">⚔</span><b>Esperar aquí</b><small>Sin 3D, listos para la mazmorra</small></button>
+  </div>
   <div id="sala"></div>
   <nav><a href="index.html">← Menú del juego</a></nav>
 </main>
@@ -71,10 +84,12 @@ const panel = crearPanel({
   cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
   irA: (url) => { document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 700); }
 });
-document.getElementById('ir-morrandar').addEventListener('click', (e) => {
-  e.preventDefault(); const c = panel.R?.codigo;
-  document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = 'tortuga.html' + (c ? '?sala=' + c : ''); }, 700);
-});
+// Elegir dónde esperar: la tortuga, el pueblo o aquí mismo (la sala va contigo)
+const ir = (pagina) => { const c = panel.R?.codigo || new URLSearchParams(location.search).get('sala') || '';
+  document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = pagina + (c ? '?sala=' + c : ''); }, 700); };
+document.getElementById('elige-tortuga').addEventListener('click', () => ir('tortuga.html'));
+document.getElementById('elige-pueblo').addEventListener('click', () => ir('pueblo.html'));
+document.getElementById('elige-aqui').addEventListener('click', () => document.querySelector('.reu-panel .chat-in')?.focus());
 </script>
 </body>
 </html>

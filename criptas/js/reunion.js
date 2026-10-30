@@ -303,7 +303,9 @@ const CSS = `
 .reu-panel li small { opacity: .7; }
 .reu-panel .frases { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .reu-panel .frases button { font-size: 14px; padding: 5px 6px; }
-.reu-panel .registro { font-size: 13px; opacity: .85; max-height: 120px; overflow: auto; }
+.reu-panel .registro { font-size: 14px; opacity: .9; max-height: 180px; overflow: auto; }
+.reu-panel .chat { flex-wrap: nowrap; }
+.reu-panel .chat-in { flex: 1; min-width: 0; width: auto; font: 16px 'IM Fell English', Georgia, serif; letter-spacing: 0; text-transform: none; }
 .reu-panel .registro div { padding: 1px 0; }
 .reu-panel .error { color: #ff9a80; }
 .reu-panel hr { border: 0; border-top: 1px solid rgba(214,160,100,.25); margin: 10px 0; }
@@ -331,7 +333,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
   const registro = [];
   const nombreDe = (id) => (R?.gente()[id]?.nombre) || 'Alguien';
 
-  function anotar(t) { registro.push(t); if (registro.length > 8) registro.shift(); pintar(); }
+  function anotar(t) { registro.push(t); if (registro.length > 30) registro.shift(); pintar(); }
 
   async function entrar(opciones) {
     if (ocupado) return;
@@ -368,6 +370,14 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
   }
 
   function pintar() {
+    // Lo que estés escribiendo no se pierde cuando la sala se repinta
+    const prev = panel.querySelector('.chat-in'), texto = prev?.value || '', foco = prev && document.activeElement === prev;
+    pintarSinPerder();
+    const nuevo = panel.querySelector('.chat-in');
+    if (nuevo) { nuevo.value = texto; if (foco) { nuevo.focus(); nuevo.setSelectionRange(texto.length, texto.length); } }
+    const reg = panel.querySelector('.registro'); if (reg) reg.scrollTop = reg.scrollHeight;
+  }
+  function pintarSinPerder() {
     pintarBanda();
     if (boton) boton.textContent = R ? `👥 ${R.codigo}` : '👥';
     const err = error ? `<p class="error">${esc(error)}</p>` : '';
@@ -382,21 +392,22 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
     }
     const gente = Object.values(R.gente()).sort((a, b) => (b.anfitrion - a.anfitrion) || a.nombre.localeCompare(b.nombre));
     const otraVista = donde === 'ligera'
-      ? '<button class="claro" data-r="vista" data-v="tortuga">🐢 Ir a Morrandar</button>'
+      ? ''
       : '<button class="claro" data-r="vista" data-v="ligera">📖 Esperar en pantalla ligera</button>';
     panel.innerHTML = `<h3>Sala</h3><div class="codigo">${R.codigo}</div><p class="nota">Pasa este código: se entra desde «Unirse» aquí o en el menú del juego.</p>
       <ul>${gente.map((g) => `<li><span>${g.anfitrion ? '★ ' : ''}${esc(g.nombre)}${g.id === R.yo.id ? ' (tú)' : ''}</span><small>${g.online === false ? '…cambiando de sitio' : LUGARES[g.donde] || ''}</small></li>`).join('')}</ul>
       <div class="frases">${FRASES.map((f, i) => `<button data-r="frase" data-i="${i}">${esc(f)}</button>`).join('')}</div>
       <div class="fila">${GESTOS.map((g) => `<button class="claro" data-r="gesto" data-g="${g.id}" title="${g.nombre}">${g.icono}</button>`).join('')}</div>
       ${proponer ? `<hr><p>Proponer bajar al libro:</p><div class="fila"><button data-r="proponer" data-m="infinita">Mazmorra Infinita</button><button data-r="proponer" data-m="historia">Modo Historia</button>${gente.some((g) => g.caidos > 0) ? '<button data-r="proponer" data-m="limbo">Rescate en el Limbo</button>' : ''}</div>` : ''}
-      ${registro.length ? `<hr><div class="registro">${registro.map((t) => `<div>${t}</div>`).join('')}</div>` : ''}
+      <hr>${registro.length ? `<div class="registro">${registro.map((t) => `<div>${t}</div>`).join('')}</div>` : '<p class="nota">Aquí sale lo que os vais diciendo.</p>'}
+      <form class="fila chat" data-r="chat"><input class="chat-in" maxlength="140" placeholder="Escribe algo…" autocomplete="off" enterkeyhint="send"><button>Enviar</button></form>
       <hr><div class="fila">${otraVista}<button class="claro" data-r="salir">Salir de la sala</button></div>${err}`;
   }
 
   function accion(e) {
     const b = e.target.closest('[data-r]'); if (!b) return;
     const a = b.dataset.r;
-    if (a === 'form') return;
+    if (a === 'form' || a === 'chat') return;
     e.preventDefault();
     if (a === 'abrir') return entrar({ crear: true });
     if (!R) return;
@@ -414,6 +425,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
   banda.addEventListener('click', accion);
   panel.addEventListener('submit', (e) => {
     e.preventDefault();
+    if (R && e.target.dataset.r === 'chat') { const i = e.target.querySelector('input'), t = i.value.trim(); if (t) { R.frase(t); i.value = ''; } return; }
     const c = panel.querySelector('input')?.value.trim().toUpperCase();
     if (c?.length !== 4) { error = 'El código tiene 4 letras.'; return pintar(); }
     entrar({ codigo: c });
