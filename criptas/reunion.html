@@ -14,6 +14,8 @@
   main { max-width: 520px; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 16px 40px; }
   h1 { font: 30px 'IM Fell English SC', Georgia, serif; margin: 0 0 2px; letter-spacing: .04em; }
   .sub { margin: 0 0 16px; opacity: .7; font-style: italic; }
+  .arriba { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+  .ir { flex: none; color: #1c120b; background: radial-gradient(ellipse at 50% 40%, #efdcb2, #c2a87c); border: 1px solid #1c120b; padding: 7px 12px; border-radius: 4px; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
   nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 0; }
   nav a { color: #f1e2c4; border: 1px solid rgba(214,160,100,.45); padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 15px; }
   #fundido { position: fixed; inset: 0; background: #1a0c2a; opacity: 0; pointer-events: none; transition: opacity 1s; z-index: 60; }
@@ -21,29 +23,29 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/acceso.js": "./js/acceso.js?v=20261030141509",
-    "./js/datos.js": "./js/datos.js?v=20261030141509",
-    "./js/firebase.js": "./js/firebase.js?v=20261030141509",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030141509",
-    "./js/ia.js": "./js/ia.js?v=20261030141509",
-    "./js/iconos.js": "./js/iconos.js?v=20261030141509",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030141509",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030141509",
-    "./js/motor.js": "./js/motor.js?v=20261030141509",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030141509",
-    "./js/nube.js": "./js/nube.js?v=20261030141509",
-    "./js/panel.js": "./js/panel.js?v=20261030141509",
-    "./js/planos.js": "./js/planos.js?v=20261030141509",
-    "./js/procedural.js": "./js/procedural.js?v=20261030141509",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030141509",
-    "./js/red.js": "./js/red.js?v=20261030141509",
-    "./js/render.js": "./js/render.js?v=20261030141509",
-    "./js/render3d.js": "./js/render3d.js?v=20261030141509",
-    "./js/reunion.js": "./js/reunion.js?v=20261030141509",
-    "./js/sprites.js": "./js/sprites.js?v=20261030141509",
-    "./js/tablero.js": "./js/tablero.js?v=20261030141509",
-    "./js/ui.js": "./js/ui.js?v=20261030141509",
-    "./js/viajero.js": "./js/viajero.js?v=20261030141509"
+    "./js/acceso.js": "./js/acceso.js?v=20261030141948",
+    "./js/datos.js": "./js/datos.js?v=20261030141948",
+    "./js/firebase.js": "./js/firebase.js?v=20261030141948",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030141948",
+    "./js/ia.js": "./js/ia.js?v=20261030141948",
+    "./js/iconos.js": "./js/iconos.js?v=20261030141948",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030141948",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030141948",
+    "./js/motor.js": "./js/motor.js?v=20261030141948",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030141948",
+    "./js/nube.js": "./js/nube.js?v=20261030141948",
+    "./js/panel.js": "./js/panel.js?v=20261030141948",
+    "./js/planos.js": "./js/planos.js?v=20261030141948",
+    "./js/procedural.js": "./js/procedural.js?v=20261030141948",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030141948",
+    "./js/red.js": "./js/red.js?v=20261030141948",
+    "./js/render.js": "./js/render.js?v=20261030141948",
+    "./js/render3d.js": "./js/render3d.js?v=20261030141948",
+    "./js/reunion.js": "./js/reunion.js?v=20261030141948",
+    "./js/sprites.js": "./js/sprites.js?v=20261030141948",
+    "./js/tablero.js": "./js/tablero.js?v=20261030141948",
+    "./js/ui.js": "./js/ui.js?v=20261030141948",
+    "./js/viajero.js": "./js/viajero.js?v=20261030141948"
   }
 }
 </script>
@@ -52,7 +54,7 @@
 <body>
 <div id="fundido"></div>
 <main>
-  <h1>Sala de espera</h1>
+  <div class="arriba"><h1>Sala de espera</h1><a class="ir" id="ir-morrandar" href="tortuga.html">🐢 Ir a Morrandar</a></div>
   <p class="sub">La pantalla ligera: aquí no hay tortuga en 3D, solo la sala. Gasta muy poco.</p>
   <div id="sala"></div>
   <nav><a href="index.html">← Menú del juego</a></nav>
@@ -63,11 +65,15 @@ import { crearPanel } from './js/reunion.js';
 import * as Ficha from './js/viajero.js';
 const leer = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const ficha = Ficha.fichaOCrear(leer('criptas_nombre', '') || 'Viajero');
-crearPanel({
+const panel = crearPanel({
   donde: 'ligera', fijo: document.getElementById('sala'),
   datos: () => ({ clase: ficha.heroes[ficha.activo]?.tipo || leer('criptas_claseBase', 'barbaro'), caidos: ficha.orden.filter((id) => ficha.heroes[id]?.caido).length }),
   cabana: () => ({ nombre: ficha.nombre, trofeos: ficha.cabana.trofeos.slice(-12), diario: ficha.diario }),
   irA: (url) => { document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = url; }, 700); }
+});
+document.getElementById('ir-morrandar').addEventListener('click', (e) => {
+  e.preventDefault(); const c = panel.R?.codigo;
+  document.getElementById('fundido').style.opacity = 1; setTimeout(() => { location.href = 'tortuga.html' + (c ? '?sala=' + c : ''); }, 700);
 });
 </script>
 </body>

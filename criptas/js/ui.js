@@ -906,15 +906,8 @@ async function volverAReunion() {
   } catch { salirAPortada(); }
 }
 async function elegirVistaReunion(codigo) {
-  const m = await Reu();
-  let v = m.vistaPreferida();
-  if (!v) {
-    app.cerrarModalFuera = () => {};
-    const i = await modal(`<h2>Sala ${esc(codigo)}</h2><p>Os estáis reuniendo antes de bajar al libro. ¿Dónde esperas?</p><p class="nota">Se recuerda en este dispositivo. Se puede cambiar desde la sala.</p>`,
-      [{ texto: '🐢 Ir a Morrandar' }, { texto: '📖 Esperar en la sala (ligera)', clase: 'claro' }]);
-    v = i === 1 ? 'ligera' : 'tortuga';
-    m.ponerVista(v);
-  }
+  // Al unirte con código desde el menú, siempre a la sala de espera (desde ahí, «Ir a Morrandar»).
+  const m = await Reu(), v = 'ligera';
   m.recordarReunion(codigo);
   location.href = m.paginaDeVista(v) + '?sala=' + codigo;
 }
