@@ -12,31 +12,31 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030181130",
-    "./js/campanas.js": "./js/campanas.js?v=20261030181130",
-    "./js/datos.js": "./js/datos.js?v=20261030181130",
-    "./js/firebase.js": "./js/firebase.js?v=20261030181130",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030181130",
-    "./js/ia.js": "./js/ia.js?v=20261030181130",
-    "./js/iconos.js": "./js/iconos.js?v=20261030181130",
-    "./js/insultos.js": "./js/insultos.js?v=20261030181130",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030181130",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030181130",
-    "./js/motor.js": "./js/motor.js?v=20261030181130",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030181130",
-    "./js/nube.js": "./js/nube.js?v=20261030181130",
-    "./js/panel.js": "./js/panel.js?v=20261030181130",
-    "./js/planos.js": "./js/planos.js?v=20261030181130",
-    "./js/procedural.js": "./js/procedural.js?v=20261030181130",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030181130",
-    "./js/red.js": "./js/red.js?v=20261030181130",
-    "./js/render.js": "./js/render.js?v=20261030181130",
-    "./js/render3d.js": "./js/render3d.js?v=20261030181130",
-    "./js/reunion.js": "./js/reunion.js?v=20261030181130",
-    "./js/sprites.js": "./js/sprites.js?v=20261030181130",
-    "./js/tablero.js": "./js/tablero.js?v=20261030181130",
-    "./js/ui.js": "./js/ui.js?v=20261030181130",
-    "./js/viajero.js": "./js/viajero.js?v=20261030181130"
+    "./js/acceso.js": "./js/acceso.js?v=20261030184458",
+    "./js/campanas.js": "./js/campanas.js?v=20261030184458",
+    "./js/datos.js": "./js/datos.js?v=20261030184458",
+    "./js/firebase.js": "./js/firebase.js?v=20261030184458",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030184458",
+    "./js/ia.js": "./js/ia.js?v=20261030184458",
+    "./js/iconos.js": "./js/iconos.js?v=20261030184458",
+    "./js/insultos.js": "./js/insultos.js?v=20261030184458",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261030184458",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030184458",
+    "./js/motor.js": "./js/motor.js?v=20261030184458",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030184458",
+    "./js/nube.js": "./js/nube.js?v=20261030184458",
+    "./js/panel.js": "./js/panel.js?v=20261030184458",
+    "./js/planos.js": "./js/planos.js?v=20261030184458",
+    "./js/procedural.js": "./js/procedural.js?v=20261030184458",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261030184458",
+    "./js/red.js": "./js/red.js?v=20261030184458",
+    "./js/render.js": "./js/render.js?v=20261030184458",
+    "./js/render3d.js": "./js/render3d.js?v=20261030184458",
+    "./js/reunion.js": "./js/reunion.js?v=20261030184458",
+    "./js/sprites.js": "./js/sprites.js?v=20261030184458",
+    "./js/tablero.js": "./js/tablero.js?v=20261030184458",
+    "./js/ui.js": "./js/ui.js?v=20261030184458",
+    "./js/viajero.js": "./js/viajero.js?v=20261030184458"
   }
 }
 </script>
@@ -154,6 +154,7 @@
 <div class="ui arriba">
   <div class="titulo">Morrandar<small>el pueblo · prueba</small><span class="hora" id="hora"></span></div>
   <button class="boton" id="b-sala" style="display:none"></button>
+  <button class="boton" id="b-campamento" style="display:none">⚔️ Al campamento</button>
   <button class="boton redondo" id="b-menu" aria-label="Tu libreta">☰</button>
 </div>
 <div class="ui" id="libreta"></div>
@@ -1538,6 +1539,18 @@ function abrirBuzon() {
 // Un aviso al llegar si te espera algo
 if (EP.buzon.some((b) => MUEBLES[b.k] || b.carta)) setTimeout(() => aviso('📬 Tienes algo en el buzón'), 3200);
 
+// ---------- Entre misión y misión: has subido del campamento y la partida te espera ----------
+// El campamento (index.html) deja apuntada la partida en «criptas_vuelta»; al volver se retoma tal cual.
+const VUELTA = (() => { try {
+  const v = JSON.parse(localStorage.getItem('criptas_vuelta') || 'null'), hay = JSON.parse(localStorage.getItem('criptas_partidas') || '{}')[v?.id];
+  return v?.id && hay && Date.now() - (v.fecha || 0) < 2 * 864e5 ? v : null; } catch { return null; } })();
+function volverCampamento() {
+  if (!VUELTA) return;
+  try { localStorage.removeItem('criptas_vuelta'); } catch { /* sin almacenamiento */ }
+  irA('index.html?retomar=' + encodeURIComponent(VUELTA.id));
+}
+if (VUELTA) { const b = $('b-campamento'); b.style.display = ''; b.onclick = volverCampamento; setTimeout(() => aviso('⚔️ La partida os espera en el campamento'), 1800); }
+
 // ---------- Campañas importadas: lo que decidisteis en el libro se nota aquí ----------
 // La sección «pueblo» del JSON de la campaña dice qué pasa con cada marca («rescatado: x», «recuerdo: x»,
 // «acabar la campaña»): un vecino nuevo, un mueble al buzón o una carta. Las marcas están en ficha.campanas.
@@ -2485,6 +2498,7 @@ function pintarLibreta() {
     const enCasa = sala === 'casa' && !casaAjena;
     const app = (k, ico, t, sub, extra = '') => `<button class="app${extra}" data-l="${k}"><span class="ico">${ico}</span><b>${t}</b><small>${sub}</small></button>`;
     h = tit('Tu libreta') + '<div class="apps">' +
+      (VUELTA ? app('campamento', '⚔️', 'Volver al campamento', 'La partida os espera', ' nueva') : '') +
       app('juntos', '👥', 'Jugar juntos', R ? 'Sala ' + R.codigo : 'Con código') +
       app('pueblo', '🏘', 'Tu pueblo', G.cargando ? '…' : G.pid ? (soyDueno() ? 'Eres el fundador' : 'De ' + escH(G.pueblo?.miembros?.[G.pueblo.dueno]?.nombre || 'otro')) : 'Solo tú') +
       app('cartas', '✉️', 'Cartas', sinLeer() ? sinLeer() + ' sin leer' : G.pid ? 'Buzón' : 'Con tu familia', sinLeer() ? ' nueva' : '') +
@@ -2566,6 +2580,7 @@ function pintarLibreta() {
 async function accionLibreta(a, v, el) {
   const m = G.m;
   if (a === 'cerrar') return cerrarLibreta();
+  if (a === 'campamento') return volverCampamento();
   if (['pueblo', 'cartas'].includes(a)) cargarGremio();
   if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido', 'mapa', 'trofeos'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
   if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }

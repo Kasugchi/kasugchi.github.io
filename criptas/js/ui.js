@@ -504,6 +504,7 @@ async function continuarPartida(id) {
   if (!g) return;
   await listas;
   app.partidaId = id;
+  try { localStorage.removeItem('criptas_vuelta'); } catch { /* sin almacenamiento */ }
   if (g.modo === 'invitado') {
     avisoPortada('Entrando en la sala ' + g.codigo + '…');
     try { await unirseComoInvitado(g.codigo); avisoPortada(''); }
@@ -940,12 +941,16 @@ async function elegirVistaReunion(codigo) {
 // Llegada desde el libro de Morrandar (index.html?jugar=historia|infinita|limbo): directo a elegir héroes.
 let jugarPendiente = new URLSearchParams(location.search).get('jugar');
 if (jugarPendiente) history.replaceState(null, '', location.pathname);
+// Vuelta desde el pueblo (index.html?retomar=ID): la partida sigue en el campamento, tal cual se dejó.
+let retomarPendiente = new URLSearchParams(location.search).get('retomar');
+if (retomarPendiente) history.replaceState(null, '', location.pathname);
 function entrarPorLibro() {
   const modo = jugarPendiente; jugarPendiente = null;
   if (!modo || app.modo) return;
   document.querySelector(`#portada [data-modo="${modo}"][data-donde="local"]`)?.click();
 }
 async function entrarPorReunion() {
+  if (retomarPendiente && !app.modo) { const id = retomarPendiente; retomarPendiente = null; reunionPendiente = null; return continuarPartida(id); }
   entrarPorLibro();
   const r = reunionPendiente;
   if (!r || app.modo) return;
@@ -971,6 +976,14 @@ async function entrarPorReunion() {
 }
 $('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html?elegir'; });
 $('#b-pueblo')?.addEventListener('click', () => { location.href = 'pueblo.html'; });
+// Desde el campamento, al pueblo: la partida queda guardada y el pueblo ofrece volver justo aquí.
+$('#b-ir-pueblo')?.addEventListener('click', () => {
+  const e = app.estadoReal || app.estado; if (e) guardarPartida(e);
+  if (!app.partidaId || !todasLasPartidas()[app.partidaId]) return toast('No se ha podido guardar la partida.', 'peligro');
+  const codigo = app.red?.codigo || null;
+  try { localStorage.setItem('criptas_vuelta', JSON.stringify({ id: app.partidaId, codigo, fecha: Date.now() })); } catch { /* sin almacenamiento */ }
+  location.href = 'pueblo.html' + (codigo ? '?sala=' + codigo : '');
+});
 
 // =============================================================
 //  RED: anfitrión
