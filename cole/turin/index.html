@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cuentos de Adela Turín</title><link rel="stylesheet" href="estilo.css"></head>
+<body><main>
+<div class="cab"><a href="../index.html">← Cole</a></div>
+<h1>📖 Juegos de los cuentos de Adela Turín</h1>
+<p class="nota">Tres juegos para primaria (8 a 10 años) sobre igualdad, reparto y convivencia, inspirados en la colección «A favor de las niñas».</p>
+<div class="rejilla" id="j"></div>
+<section class="tarjeta"><h2>Guía para el profesorado</h2>
+<ul><li><b>Duración:</b> unos 5 a 10 minutos por juego.</li><li><b>Valores:</b> corresponsabilidad, reconocimiento del trabajo, libertad de elección, resiliencia.</li><li><b>Matemáticas (Una feliz catástrofe):</b> multiplicar, repartir, restar y sumar con un objetivo.</li><li><b>Matemáticas (La casa de todos):</b> sumar tiempos y comparar diferencias.</li><li><b>Idea de aula:</b> tras jugar, cada alumno anota qué tareas hace en casa y se comparan en grupo.</li></ul>
+<p class="nota">Son juegos originales inspirados en los libros; no reproducen su texto. Se recomienda leer los cuentos antes o después.</p></section>
+</main><script src="comun.js"></script>
+<script>
+const L = [['arturo.html', '🐢', 'El caparazón justo', 'Arturo y Clementina', 'Elige qué es lo justo en 5 situaciones.', 5], ['catastrofe.html', '🐭', 'El nuevo hogar de los ratones', 'Una feliz catástrofe', 'Resuelve retos de mates para reconstruir la casa.', 3], ['juntos.html', '🐢🐭', 'La casa de todos', 'Los dos cuentos', 'Reparte las tareas para que sea justo.', 3]];
+const S = sellos();
+document.getElementById('j').innerHTML = L.map((l) => `<a class="tarjeta" style="text-decoration:none;color:inherit;display:block" href="${l[0]}"><div class="grande">${l[1]}</div><h2>${esc(l[2])}</h2><p class="nota">${esc(l[3])}</p><p>${esc(l[4])}</p><p>${S[l[0].split('.')[0]] ? estrellasTxt(S[l[0].split('.')[0]], l[5]) : 'Sin jugar'}</p></a>`).join('');
+</script></body></html>

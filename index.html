@@ -112,14 +112,13 @@ const APPS = [
     chips: ['Juego', 'Multijugador', 'Campaña de 5 misiones']
   },
   {
-    name: 'La vuelta al mundo en 80 días',
-    url: 'vuelta/',
-    icon: 'vuelta/icono.svg',
-    desc: 'Boceto de juego educativo: ayuda a Phileas Fogg a dar la vuelta al mundo resolviendo retos de horas, brújula, geografía y cuentas.',
-    chips: ['8 años', 'Boceto', 'Con voz'],
-    extra: [{ label: 'Versión infantil (3-6)', url: 'vuelta/infantil.html' }]
-  }
-];
+    name: 'Cole',
+    url: 'cole/',
+    icon: 'cole/vuelta/icono.svg',
+    desc: 'Juegos educativos para primaria: La vuelta al mundo en 80 días y tres juegos sobre los cuentos de Adela Turín (igualdad y valores).',
+    chips: ['8-10 años', 'Colegio', 'Con voz'],
+    extra: [{ label: 'La vuelta al mundo', url: 'cole/vuelta/' }, { label: 'Cuentos de Adela Turín', url: 'cole/turin/' }]
+  }];
 
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 document.getElementById('count').textContent = APPS.length + (APPS.length === 1 ? ' app' : ' apps');

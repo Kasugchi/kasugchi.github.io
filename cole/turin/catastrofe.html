@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El nuevo hogar de los ratones</title><link rel="stylesheet" href="estilo.css"></head>
+<body><main>
+<div class="cab"><a href="index.html">← Volver</a><span id="est" aria-live="polite"></span></div>
+<h1>🐭 El nuevo hogar de los ratones</h1>
+<p class="nota">Juego inspirado en <i>Una feliz catástrofe</i>, de Adela Turín. Una familia de ratones se queda sin casa y tiene que empezar de cero. ¡Ayuda con tus mates!</p>
+<div id="juego"></div>
+</main>
+<script src="comun.js"></script>
+<script>
+const J = document.getElementById('juego'); let fallos = 0, paso = 0; const TOTAL = 5;
+function cab() { document.getElementById('est').textContent = `Reto ${Math.min(paso + 1, TOTAL)} de ${TOTAL}`; return `<div class="pasos">${Array.from({ length: TOTAL }, (_, k) => `<span class="${k < paso ? 'si' : k === paso ? 'ya' : ''}"></span>`).join('')}</div>`; }
+function pregunta(emoji, texto, buena, ops, pista) {
+  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">${emoji}</div><p><b>${texto}</b></p>
+   <div class="opciones">${barajar([...new Set(ops.concat(buena).map(String))]).map((o) => `<button class="op">${esc(o)}</button>`).join('')}</div><p class="fb" role="status"></p></section>`;
+  J.querySelectorAll('.op').forEach((b) => b.onclick = () => {
+    const fb = J.querySelector('.fb');
+    if (b.textContent === String(buena)) { b.classList.add('bien'); J.querySelectorAll('.op').forEach((x) => x.disabled = true); fb.textContent = '✅ ¡Muy bien!'; setTimeout(() => { paso++; siguiente(); }, 1000); }
+    else { fallos++; b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); b.disabled = true; fb.textContent = '🤔 ' + pista; }
+  });
+}
+const RETOS = [
+  () => { const b = azar(3, 6), m = azar(6, 12); pregunta('🌰', `Florentina encuentra ${b} bolsas con ${m} migas de pan cada una. ¿Cuántas migas tiene en total?`, b * m, [b * m + m, b * m - b, b + m, b * m + 2], `Multiplica: ${b} × ${m}. O suma ${m} ${b} veces.`); },
+  () => { const h = azar(4, 8), c = azar(3, 6); pregunta('🐭', `Hay ${h} ratoncitos y ${h * c} migas para repartir en partes iguales. ¿Cuántas migas toca a cada uno?`, c, [c + 1, c - 1, c + 2, h], `Reparte: ${h * c} ÷ ${h}. ¿Cuántas veces cabe ${h} en ${h * c}?`); },
+  () => { const t = azar(2, 4) * 5 + 5; pregunta('📏', `Florentina necesita una pared de ${t} cm. Tiene una tabla de ${t - 7} cm. ¿Cuántos centímetros más necesita?`, 7, [6, 8, 17, 5], `Resta: ${t} − ${t - 7}.`); },
+  () => construir(),
+  () => ordenar()
+];
+function construir() {
+  const M = [['🪵 Palito', 3], ['🧵 Hilo', 5], ['📦 Cartón', 8], ['🧱 Piedra', 10], ['🍂 Hojas', 2], ['🪨 Guijarro', 4]];
+  const meta = [13, 15, 17, 18, 20][azar(0, 4)]; let sel = new Set();
+  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">🏠</div><p><b>El techo necesita exactamente ${meta} puntos de resistencia.</b> Elige materiales para sumar justo ${meta}.</p>
+    <div id="mat">${M.map((m, k) => `<button class="chip" data-k="${k}" aria-pressed="false">${m[0]} (${m[1]})</button>`).join('')}</div>
+    <p>Suma: <b id="sum">0</b> / ${meta}</p><button class="btn" id="ok">Construir</button><p class="fb" role="status"></p></section>`;
+  const sumar = () => [...sel].reduce((a, k) => a + M[k][1], 0);
+  J.querySelectorAll('.chip').forEach((c) => c.onclick = () => { const k = +c.dataset.k; sel.has(k) ? sel.delete(k) : sel.add(k); c.classList.toggle('sel'); c.setAttribute('aria-pressed', sel.has(k)); document.getElementById('sum').textContent = sumar(); });
+  document.getElementById('ok').onclick = () => { const fb = J.querySelector('.fb'), s = sumar();
+    if (s === meta) { fb.textContent = '✅ ¡El techo aguanta!'; setTimeout(() => { paso++; siguiente(); }, 1000); }
+    else { fallos++; fb.textContent = s < meta ? `🤔 Faltan ${meta - s} puntos. Añade algo.` : `🤔 Te pasas por ${s - meta}. Quita algo.`; } };
+  if (!subsetOk(M.map((m) => m[1]), meta)) construir();
+}
+function subsetOk(a, t) { for (let m = 1; m < 1 << a.length; m++) { let s = 0; for (let k = 0; k < a.length; k++) if (m >> k & 1) s += a[k]; if (s === t) return true; } return false; }
+function ordenar() {
+  const P = ['Buscar un sitio seguro', 'Reunir materiales', 'Levantar paredes y techo', 'Cenar juntos en la casa nueva']; let n = 0;
+  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">🔨</div><p><b>Toca los pasos en el orden correcto para construir el hogar.</b></p>
+    <div>${barajar(P).map((p) => `<button class="chip">${esc(p)}</button>`).join('')}</div><p class="fb" role="status"></p></section>`;
+  J.querySelectorAll('.chip').forEach((c) => c.onclick = () => { const fb = J.querySelector('.fb');
+    if (c.textContent === P[n]) { c.classList.add('hecho'); c.disabled = true; n++; fb.textContent = `✅ Paso ${n}`; if (n === P.length) setTimeout(() => { paso++; siguiente(); }, 900); }
+    else { fallos++; fb.textContent = '🤔 Ese paso va en otro momento. ¿Qué haría falta antes?'; } });
+}
+function siguiente() { if (paso >= TOTAL) return fin(); RETOS[paso](); }
+function fin() {
+  const est = fallos === 0 ? 3 : fallos <= 3 ? 2 : 1; ponSello('catastrofe', est); confeti();
+  document.getElementById('est').textContent = estrellasTxt(est, 3);
+  J.innerHTML = `<section class="tarjeta"><div class="grande">🏡</div><h2>¡Hogar nuevo!</h2><p>${estrellasTxt(est, 3)} · ${fallos} ${fallos === 1 ? 'tropiezo' : 'tropiezos'}. Los ratones ya tienen casa gracias a tu cabeza.</p>
+   <h3>Para pensar y comentar</h3><ul><li>Cuando algo sale mal, ¿quién aprende a hacer cosas nuevas?</li><li>¿Qué cosas sabes hacer que antes no sabías?</li><li>¿Por qué una «catástrofe» puede acabar siendo «feliz»?</li></ul>
+   <button class="btn" onclick="fallos=0;paso=0;siguiente()">Jugar otra vez</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
+}
+siguiente();
+</script></body></html>

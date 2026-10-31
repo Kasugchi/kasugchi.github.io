@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>La casa de todos</title><link rel="stylesheet" href="estilo.css">
+<style>.pers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.pers button{font:inherit;font-weight:700;background:#fff;border:3px solid var(--tinta);border-radius:12px;padding:8px;min-height:64px;cursor:pointer}.pers button:focus-visible{outline:4px solid var(--azul)}.pers .min{display:block;font-size:14px;font-weight:400}</style></head>
+<body><main>
+<div class="cab"><a href="index.html">← Volver</a><span id="est"></span></div>
+<h1>🐢🐭 La casa de todos</h1>
+<p class="nota">Juego que une <i>Arturo y Clementina</i> y <i>Una feliz catástrofe</i>. En una casa viven tres personas. Reparte las 9 tareas de la semana para que nadie trabaje mucho más que los demás.</p>
+<section class="tarjeta"><p><b>1.</b> Toca una tarea. <b>2.</b> Toca a quién se la das. Cada tarea indica los minutos que lleva.</p>
+<div id="tareas"></div><div class="pers" id="pers"></div>
+<p>Diferencia entre quien más y quien menos tiene: <b id="dif">0</b> min</p>
+<div class="barra" aria-hidden="true"><i id="bar" style="width:0"></i></div>
+<button class="btn" id="ok" style="margin-top:12px">Comprobar el reparto</button><button class="btn" id="otra" style="margin-top:12px;background:#fff">Otra semana</button>
+<p class="fb" id="fb" role="status"></p></section></main>
+<script src="comun.js"></script>
+<script>
+const NOM = ['🐢 Arturo', '🐢 Clementina', '🐭 Florentina'];
+const T = [['🍳 Cocinar', 45], ['🧹 Barrer', 20], ['🛒 Hacer la compra', 40], ['🧺 Poner la lavadora', 15], ['🍽️ Fregar los platos', 25], ['🌷 Regar el jardín', 15], ['📚 Leer cuento a los peques', 20], ['🔧 Arreglar lo que se rompe', 30], ['🗑️ Sacar la basura', 10]];
+let tareas, asig, sel;
+function nueva() { tareas = barajar(T).map(([n, m]) => [n, m + 5 * azar(-1, 1)]); asig = tareas.map(() => -1); sel = -1; dib(); document.getElementById('fb').textContent = ''; }
+const tot = () => NOM.map((_, p) => tareas.reduce((a, t, k) => a + (asig[k] === p ? t[1] : 0), 0));
+function dib() {
+  document.getElementById('tareas').innerHTML = tareas.map((t, k) => `<button class="chip${sel === k ? ' sel' : ''}${asig[k] >= 0 ? ' hecho' : ''}" data-k="${k}" aria-pressed="${sel === k}">${esc(t[0])} · ${t[1]} min${asig[k] >= 0 ? ' → ' + esc(NOM[asig[k]].slice(3)) : ''}</button>`).join('');
+  const s = tot();
+  document.getElementById('pers').innerHTML = NOM.map((n, p) => `<button data-p="${p}">${esc(n)}<span class="min">${s[p]} min</span></button>`).join('');
+  const d = Math.max(...s) - Math.min(...s); document.getElementById('dif').textContent = d;
+  document.getElementById('bar').style.width = Math.max(0, 100 - d * 1.5) + '%';
+  document.querySelectorAll('#tareas .chip').forEach((c) => c.onclick = () => { sel = +c.dataset.k; dib(); });
+  document.querySelectorAll('#pers button').forEach((b) => b.onclick = () => { if (sel < 0) { document.getElementById('fb').textContent = 'Primero toca una tarea.'; return; } asig[sel] = +b.dataset.p; sel = -1; dib(); });
+}
+document.getElementById('ok').onclick = () => {
+  const fb = document.getElementById('fb'); const s = tot();
+  if (asig.includes(-1)) { fb.textContent = '🤔 Quedan tareas sin repartir.'; return; }
+  const d = Math.max(...s) - Math.min(...s), tt = s.reduce((a, b) => a + b, 0);
+  if (d <= 10) { fb.textContent = `✅ ¡Reparto justo! Cada uno ronda ${Math.round(tt / 3)} minutos. Nadie hace de «la que lo hace todo».`; ponSello('juntos', d <= 5 ? 3 : 2); confeti(); }
+  else { const mas = NOM[s.indexOf(Math.max(...s))].slice(3); fb.textContent = `🤔 ${mas} tiene ${Math.max(...s) - Math.min(...s)} minutos más que quien menos. Pasa alguna tarea a otra persona. (Pista: el total es ${tt} min; entre 3 son ${Math.round(tt / 3)} min cada uno.)`; }
+};
+document.getElementById('otra').onclick = nueva;
+nueva();
+</script></body></html>

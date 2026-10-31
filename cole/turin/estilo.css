@@ -1,0 +1,30 @@
+:root{--papel:#fff6e0;--tinta:#3a2a1c;--verde:#4f9a52;--rojo:#c8372d;--oro:#d4a43a;--azul:#2f6aa0;--sombra:0 4px 0 rgba(58,42,28,.25)}
+*{box-sizing:border-box}
+body{margin:0;background:#f3e3bd;color:var(--tinta);font:18px/1.45 "Trebuchet MS",Verdana,sans-serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1,h2{font-family:Georgia,"Times New Roman",serif;margin:.2em 0}
+.cab{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.cab a{color:var(--tinta)}
+.tarjeta{background:var(--papel);border:3px solid var(--tinta);border-radius:16px;padding:16px;margin:12px 0;box-shadow:var(--sombra)}
+.btn,.op{font:inherit;font-weight:700;background:var(--oro);color:var(--tinta);border:3px solid var(--tinta);border-radius:12px;padding:12px 16px;min-height:48px;cursor:pointer;box-shadow:var(--sombra);text-align:left}
+.btn:active,.op:active{transform:translateY(2px)}
+.btn:focus-visible,.op:focus-visible,a:focus-visible{outline:4px solid var(--azul);outline-offset:2px}
+.opciones{display:grid;gap:10px;margin-top:12px}
+.op{background:#fff}
+.op.bien{background:#bfe6b8}.op.mal{background:#f5c0b9;animation:sacude .3s}
+.op:disabled{cursor:default}
+@keyframes sacude{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.barra{height:20px;background:#e8d6aa;border:3px solid var(--tinta);border-radius:12px;overflow:hidden}
+.barra>i{display:block;height:100%;background:var(--verde);transition:width .4s}
+.pasos{display:flex;gap:6px;margin:8px 0}.pasos span{flex:1;height:10px;border-radius:6px;background:#e8d6aa;border:2px solid var(--tinta)}
+.pasos .si{background:var(--verde)}.pasos .ya{background:var(--oro)}
+.grande{font-size:64px;text-align:center;line-height:1.1}
+.nota{font-size:15px;opacity:.85}
+.fb{margin-top:10px;font-weight:700;min-height:1.4em}
+.rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.chip{display:inline-block;background:#fff;border:3px solid var(--tinta);border-radius:999px;padding:8px 14px;margin:4px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
+.chip.sel{background:var(--oro)}.chip.hecho{opacity:.45}
+.confeti{position:fixed;top:-20px;width:10px;height:14px;animation:cae 1.8s linear forwards;z-index:9}
+@keyframes cae{to{transform:translateY(110vh) rotate(540deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:480px){body{font-size:17px}}

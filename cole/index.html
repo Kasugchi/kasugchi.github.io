@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cole · juegos para aprender</title><link rel="icon" href="vuelta/icono.svg" type="image/svg+xml">
+<style>
+:root{--pizarra:#2f4a3a;--tiza:#f7f4ea;--madera:#b07a45;--amarillo:#f2c744;--rojo:#d9503f;--azul:#3f7fbf}
+*{box-sizing:border-box}
+body{margin:0;background:#e9dcc0;color:#2b2b2b;font:18px/1.45 "Trebuchet MS",Verdana,sans-serif}
+header{background:var(--pizarra);color:var(--tiza);border-bottom:14px solid var(--madera);padding:28px 16px 22px;text-align:center}
+header h1{margin:0;font:700 clamp(30px,7vw,52px) "Comic Sans MS","Chalkboard SE",cursive;letter-spacing:1px}
+header p{margin:6px auto 0;max-width:560px;opacity:.9}
+.regla{height:14px;background:repeating-linear-gradient(90deg,var(--amarillo) 0 38px,#2b2b2b 38px 40px)}
+main{max-width:900px;margin:0 auto;padding:16px}
+h2{font:700 24px "Comic Sans MS","Chalkboard SE",cursive;margin:22px 0 8px;display:flex;align-items:center;gap:8px}
+.lista{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.cuaderno{background:#fffdf3 repeating-linear-gradient(transparent 0 27px,#cfe0f0 27px 28px);border:3px solid #2b2b2b;border-left:18px solid var(--rojo);border-radius:6px 14px 14px 6px;padding:14px;box-shadow:0 5px 0 rgba(0,0,0,.2);display:flex;flex-direction:column;gap:6px}
+.cuaderno h3{margin:0;font:700 21px "Comic Sans MS","Chalkboard SE",cursive}
+.cuaderno p{margin:0}
+.etq{display:flex;flex-wrap:wrap;gap:6px;margin:0;padding:0;list-style:none}
+.etq li{background:var(--amarillo);border:2px solid #2b2b2b;border-radius:999px;padding:1px 10px;font-size:14px;font-weight:700}
+.acc{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:6px}
+.acc a{background:var(--azul);color:#fff;text-decoration:none;font-weight:700;border:3px solid #2b2b2b;border-radius:10px;padding:8px 14px;min-height:44px;display:inline-flex;align-items:center;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.acc a.sec{background:#fff;color:#2b2b2b}
+.acc a:focus-visible{outline:4px solid var(--amarillo);outline-offset:2px}
+.ico{font-size:40px;line-height:1}
+footer{text-align:center;padding:18px;font-size:14px;opacity:.75}
+a.volver{color:var(--tiza)}
+</style></head>
+<body>
+<header><a class="volver" href="../">← Inicio</a><h1>🎒 Cole</h1><p>Juegos para aprender jugando: geografía, mates, lectura y valores. Para primaria.</p></header>
+<div class="regla"></div>
+<main>
+<h2>🌍 Geografía y mates</h2>
+<div class="lista">
+ <article class="cuaderno"><div class="ico" aria-hidden="true">🎈</div><h3>La vuelta al mundo en 80 días</h3>
+  <p>Ayuda a Phileas Fogg a ganar su apuesta: horas, brújula, series, geografía y cuentas.</p>
+  <ul class="etq"><li>8 años</li><li>Con voz</li><li>Mates</li></ul>
+  <div class="acc"><a href="vuelta/">Jugar (8 años)</a><a class="sec" href="vuelta/infantil.html">Versión 3-6 años</a></div></article>
+</div>
+<h2>📖 Cuentos y valores</h2>
+<p>Tres juegos de primaria (8 a 10 años) inspirados en los cuentos de Adela Turín.</p>
+<div class="lista">
+ <article class="cuaderno"><div class="ico" aria-hidden="true">🐢</div><h3>El caparazón justo</h3><p><i>Arturo y Clementina</i>: elige qué es lo más justo en cinco situaciones.</p><ul class="etq"><li>Igualdad</li><li>Convivencia</li></ul><div class="acc"><a href="turin/arturo.html">Jugar</a></div></article>
+ <article class="cuaderno"><div class="ico" aria-hidden="true">🐭</div><h3>El nuevo hogar de los ratones</h3><p><i>Una feliz catástrofe</i>: reconstruye la casa con multiplicaciones, repartos y sumas.</p><ul class="etq"><li>Mates</li><li>Resiliencia</li></ul><div class="acc"><a href="turin/catastrofe.html">Jugar</a></div></article>
+ <article class="cuaderno"><div class="ico" aria-hidden="true">🏠</div><h3>La casa de todos</h3><p>Los dos cuentos juntos: reparte las tareas de la semana para que sea justo.</p><ul class="etq"><li>Corresponsabilidad</li><li>Sumar tiempos</li></ul><div class="acc"><a href="turin/juntos.html">Jugar</a><a class="sec" href="turin/">Guía del profe</a></div></article>
+</div>
+</main>
+<footer>Tu progreso se guarda solo en este navegador.</footer>
+</body></html>

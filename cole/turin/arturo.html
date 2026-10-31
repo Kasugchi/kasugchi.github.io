@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>El caparazón justo</title><link rel="stylesheet" href="estilo.css"></head>
+<body><main>
+<div class="cab"><a href="index.html">← Volver</a><span id="est" aria-live="polite"></span></div>
+<h1>🐢 El caparazón justo</h1>
+<p class="nota">Juego inspirado en <i>Arturo y Clementina</i>, de Adela Turín. Ayuda a Clementina y Arturo a vivir mejor juntos.</p>
+<div id="juego"></div>
+</main>
+<script src="comun.js"></script>
+<script>
+const ESC = [
+ { e: '🍽️', t: 'Arturo y Clementina han comido. Los platos están sucios y Arturo dice: «Estoy cansado, que lo recoja ella».', ops: [
+   ['Clementina recoge todo sola y sin quejarse.', 0, 'Si siempre recoge la misma persona, esa persona acaba agotada.'],
+   ['Recogen los dos juntos, y mientras tanto charlan.', 1, 'Eso es: las tareas de la casa son de todos los que viven en ella.'],
+   ['Arturo lo recoge todo solo, para compensar.', 0, 'Casi. Cargar con todo tampoco es justo: lo mejor es repartir.']] },
+ { e: '🌷', t: 'La flor del jardín gana un premio. La plantó Clementina, pero Arturo dice a todos: «¡La planté yo!».', ops: [
+   ['Clementina se calla para no armar lío.', 0, 'Callarse hace que su trabajo no se vea. Merece que se sepa.'],
+   ['Clementina cuenta con calma que la plantó ella, y Arturo reconoce su error.', 1, 'Muy bien: decir la verdad con calma y reconocer el trabajo de los demás.'],
+   ['Clementina arranca la flor, enfadada.', 0, 'El enfado se entiende, pero estropear la flor no arregla nada.']] },
+ { e: '🎨', t: 'Clementina quiere apuntarse a clases de pintura. Arturo dice: «Eso no es para una tortuga como tú».', ops: [
+   ['Arturo la anima y le ayuda a buscar una academia.', 1, '¡Eso es! Cada persona puede elegir lo que le gusta, sea chico o chica.'],
+   ['Clementina deja la idea para otro día, otro día, otro día…', 0, 'Si renunciamos a lo que nos gusta por lo que digan otros, perdemos algo nuestro.'],
+   ['Arturo le dice que pinte solo cuando él tenga tiempo.', 0, 'Los sueños de cada uno no esperan al horario de otro.']] },
+ { e: '🏖️', t: 'Llega el verano. Arturo ha elegido el viaje sin preguntar a nadie.', ops: [
+   ['Deciden juntos: cada uno propone un sitio y buscan uno que guste a los dos.', 1, 'Decidir entre los dos es lo justo, porque el viaje es de los dos.'],
+   ['Siempre elige Arturo, porque «él sabe más».', 0, 'Saber más no da derecho a decidir solo.'],
+   ['Siempre elige Clementina, para cambiar las cosas.', 0, 'Casi. Mejor que mande uno u otro es decidir entre los dos, por turnos o de común acuerdo.']] },
+ { e: '💬', t: 'Clementina está triste porque siente que no la escuchan. ¿Qué le conviene hacer?', ops: [
+   ['Decirle a Arturo, con calma, qué le duele y qué necesita que cambie.', 1, 'Poner palabras a lo que sentimos es el primer paso para arreglar las cosas.'],
+   ['Guardárselo todo dentro.', 0, 'Lo que no se cuenta no se puede arreglar.'],
+   ['Gritar y romper cosas.', 0, 'Gritar no ayuda a que nos entiendan.']] }
+];
+let i = 0, pts = 0, falló = false;
+const J = document.getElementById('juego');
+function pon() {
+  if (i === ESC.length) return fin();
+  const s = ESC[i]; falló = false;
+  document.getElementById('est').textContent = `Escena ${i + 1} de ${ESC.length}`;
+  J.innerHTML = `<div class="pasos">${ESC.map((_, k) => `<span class="${k < i ? 'si' : k === i ? 'ya' : ''}"></span>`).join('')}</div>
+   <section class="tarjeta"><div class="grande" aria-hidden="true">${s.e}</div><p><b>${esc(s.t)}</b></p><p>¿Qué es lo más justo?</p>
+   <div class="opciones">${barajar(s.ops).map((o, k) => `<button class="op" data-k="${k}">${esc(o[0])}</button>`).join('')}</div><p class="fb" id="fb" role="status"></p></section>`;
+  const lista = [...J.querySelectorAll('.op')];
+  const orden = lista.map((b) => s.ops.find((o) => o[0] === b.textContent));
+  lista.forEach((b, k) => b.onclick = () => {
+    const o = orden[k], fb = document.getElementById('fb');
+    if (o[1]) { b.classList.add('bien'); lista.forEach((x) => x.disabled = true); if (!falló) pts++; fb.textContent = '✅ ' + o[2];
+      const sig = document.createElement('button'); sig.className = 'btn'; sig.textContent = i === ESC.length - 1 ? 'Ver resultado' : 'Siguiente →'; sig.style.marginTop = '12px'; sig.onclick = () => { i++; pon(); }; fb.after(sig); sig.focus(); }
+    else { falló = true; b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); b.disabled = true; fb.textContent = '🤔 ' + o[2] + ' Prueba otra vez.'; }
+  });
+}
+function fin() {
+  document.getElementById('est').textContent = estrellasTxt(pts, ESC.length);
+  ponSello('arturo', pts); if (pts >= 3) confeti();
+  J.innerHTML = `<section class="tarjeta"><div class="grande">🏆</div><h2>${pts} de ${ESC.length} a la primera</h2>
+   <p>${pts === ESC.length ? '¡Perfecto! Has sabido repartir, escuchar y reconocer.' : 'Has pensado cada situación hasta dar con lo justo. ¡Eso es lo que importa!'}</p>
+   <h3>Para pensar y comentar</h3><ul><li>¿Por qué Clementina tardó tanto en decir lo que sentía?</li><li>¿Qué cosas haces en casa? ¿Y las demás personas de tu familia?</li><li>¿Has visto alguna vez que algo «no es para chicas» o «no es para chicos»? ¿Es verdad?</li></ul>
+   <button class="btn" onclick="i=0;pts=0;pon()">Jugar otra vez</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
+}
+pon();
+</script></body></html>
