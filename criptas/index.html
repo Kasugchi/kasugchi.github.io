@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="version" content="20261031100952">
+<meta name="version" content="20261031101755">
+
 
 
 
@@ -163,38 +164,40 @@
 <script type="importmap" id="versiones">
 {
   "imports": {
-    "./js/acceso.js": "./js/acceso.js?v=20261031100952",
-    "./js/campanas.js": "./js/campanas.js?v=20261031100952",
-    "./js/datos.js": "./js/datos.js?v=20261031100952",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261031100952",
-    "./js/firebase.js": "./js/firebase.js?v=20261031100952",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031100952",
-    "./js/ia.js": "./js/ia.js?v=20261031100952",
-    "./js/iconos.js": "./js/iconos.js?v=20261031100952",
-    "./js/insultos.js": "./js/insultos.js?v=20261031100952",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261031100952",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031100952",
-    "./js/motor.js": "./js/motor.js?v=20261031100952",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031100952",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031100952",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031100952",
-    "./js/nube.js": "./js/nube.js?v=20261031100952",
-    "./js/panel.js": "./js/panel.js?v=20261031100952",
-    "./js/planos.js": "./js/planos.js?v=20261031100952",
-    "./js/procedural.js": "./js/procedural.js?v=20261031100952",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261031100952",
-    "./js/red.js": "./js/red.js?v=20261031100952",
-    "./js/render.js": "./js/render.js?v=20261031100952",
-    "./js/render3d.js": "./js/render3d.js?v=20261031100952",
-    "./js/reunion.js": "./js/reunion.js?v=20261031100952",
-    "./js/sprites.js": "./js/sprites.js?v=20261031100952",
-    "./js/tablero.js": "./js/tablero.js?v=20261031100952",
-    "./js/ui.js": "./js/ui.js?v=20261031100952",
-    "./js/viajero.js": "./js/viajero.js?v=20261031100952"
+    "./js/acceso.js": "./js/acceso.js?v=20261031101755",
+    "./js/campanas.js": "./js/campanas.js?v=20261031101755",
+    "./js/cocina.js": "./js/cocina.js?v=20261031101755",
+    "./js/datos.js": "./js/datos.js?v=20261031101755",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261031101755",
+    "./js/firebase.js": "./js/firebase.js?v=20261031101755",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031101755",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261031101755",
+    "./js/ia.js": "./js/ia.js?v=20261031101755",
+    "./js/iconos.js": "./js/iconos.js?v=20261031101755",
+    "./js/insultos.js": "./js/insultos.js?v=20261031101755",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261031101755",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031101755",
+    "./js/motor.js": "./js/motor.js?v=20261031101755",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031101755",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031101755",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031101755",
+    "./js/nube.js": "./js/nube.js?v=20261031101755",
+    "./js/panel.js": "./js/panel.js?v=20261031101755",
+    "./js/planos.js": "./js/planos.js?v=20261031101755",
+    "./js/procedural.js": "./js/procedural.js?v=20261031101755",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261031101755",
+    "./js/red.js": "./js/red.js?v=20261031101755",
+    "./js/render.js": "./js/render.js?v=20261031101755",
+    "./js/render3d.js": "./js/render3d.js?v=20261031101755",
+    "./js/reunion.js": "./js/reunion.js?v=20261031101755",
+    "./js/sprites.js": "./js/sprites.js?v=20261031101755",
+    "./js/tablero.js": "./js/tablero.js?v=20261031101755",
+    "./js/ui.js": "./js/ui.js?v=20261031101755",
+    "./js/viajero.js": "./js/viajero.js?v=20261031101755"
   }
 }
 </script>
-<link rel="stylesheet" href="estilo.css?v=20261031100952">
+<link rel="stylesheet" href="estilo.css?v=20261031101755">
 </head>
 <body>
 
@@ -211,6 +214,7 @@
         <input id="nombre" class="nombre" maxlength="20" autocomplete="nickname" placeholder="Aventurero" style="height:48px;border-radius:6px;border:2px solid var(--pergamino-osc);background:#f3e7c9;color:var(--tinta);font:600 18px var(--f-texto);padding:0 12px">
       </label>
     </div>
+    <details class="pergamino" id="admin-box" hidden><summary style="cursor:pointer;font-weight:700">🛠 Herramientas de administrador</summary><div id="admin-lista"></div></details>
     <div class="pergamino anuncio" id="anuncio" hidden></div>
     <div class="pergamino" id="mundos"></div>
     <div class="pergamino menu" id="menu-morrandar">
@@ -400,6 +404,17 @@
       <button class="btn">Seguir yo</button>
     </div>
 
-<script type="module" src="js/ui.js?v=20261031100952"></script>
+<script type="module">
+// Backoffice: solo se muestra si la cuenta es la del administrador (el resultado se recuerda en esta pestaña).
+import('./js/nube.js').then(async (m) => {
+  let es = null; try { es = sessionStorage.getItem('criptas_admin'); } catch (e) { }
+  if (es === null) { await m.usuarioListo(); es = (await m.esAdmin()) ? '1' : '0'; try { sessionStorage.setItem('criptas_admin', es); } catch (e) { } }
+  if (es !== '1') return;
+  const { HERRAMIENTAS } = await import('./js/herramientas.js');
+  document.getElementById('admin-lista').innerHTML = HERRAMIENTAS.map((g) => `<h4 style="margin:12px 0 4px">${g.grupo}</h4><div style="display:grid;gap:6px">${g.items.map((i) => `<a href="${i.href}" style="display:block;color:inherit;text-decoration:none;padding:8px 10px;border-radius:6px;background:rgba(80,50,20,.1)"><b>${i.ico} ${i.t}</b><br><small>${i.d}</small></a>`).join('')}</div>`).join('');
+  document.getElementById('admin-box').hidden = false;
+}).catch(() => { });
+</script>
+<script type="module" src="js/ui.js?v=20261031101755"></script>
 </body>
 </html>
