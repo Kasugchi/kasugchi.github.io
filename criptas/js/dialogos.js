@@ -268,8 +268,297 @@ export const NUEVOS = {
     "En mis años oscuros nadie me sonreía. Verte venir me alegra el día, {N}.",
     "Si algún hechizo te sale al revés en el libro, ven a mí. Lo arreglaremos."
    ]
+  },
+  "brumas": {
+   "saludo": {
+    "noche": [
+     "(voz en off) El reloj dio las diez. Un callejón oscuro y los pasos de {N}.",
+     "(voz en off) Niebla espesa sobre Morrandar. Solo los duros salían a pasear.",
+     "Buenas noches, {N}. Su gabardina no hace ruido; buena señal para investigar."
+    ],
+    "madrugada": [
+     "(voz en off) Las cuatro en punto. Hora de atar cabos o tropezar con ellos.",
+     "(voz en off) La farola parpadeaba como un testigo nervioso. Y ahí llegó {N}.",
+     "La noche es fría, muchacho. Los secretos no duermen y yo tampoco."
+    ]
+   },
+   "charla": [
+    "(voz en off) El caparazón de Morrandar vibraba. Las tortugas guardan silencio.",
+    "Encontré una miga sospechosa junto al banco de Hiel. Caso en desarrollo.",
+    "(voz en off) Sir Bartolomé rima todo lo que ve. Sospecho que oculta una pista.",
+    "El gato Tintero estuvo en la escena del crimen. Su coartada: una siesta.",
+    "(voz en off) La lluvia borraba las huellas, salvo la huella de una sola bota.",
+    "Rufo me ofreció grog para brindar. Rechacé; nubla el olfato policial.",
+    "(voz en off) Escarcha hornea galletas a medianoche. La harina deja marcas.",
+    "Si alguien sabe quién escribió mi última página, que no me lo diga aún."
+   ],
+   "amigo": [
+    "(voz en off) En esta ciudad de papel, {N} era la única pista que no fallaba.",
+    "Le confiaría mi libreta de notas, muchacho. Y eso no se lo digo a nadie.",
+    "(voz en off) Había encontrado un socio de fiar bajo la luna de Morrandar."
+   ]
+  },
+  "lumi": {
+   "saludo": {
+    "manana": [
+     "¡Buenos días, {N}! El cielo tiene un color celeste que da ganas de pintar.",
+     "¡Hola! Las flores del huerto se han despertado con un amarillo precioso.",
+     "¡Mira qué brillo! Hoy el agua del río parece un espejo de acuarela."
+    ],
+    "tarde": [
+     "¡Hola, {N}! He encontrado una piedrita que tiene tres tonos de gris.",
+     "¡Buenas tardes! Estaba dibujando a Morrandar con tiza verde en el suelo.",
+     "¡Qué alegría verte! El sol de la tarde pinta todo de naranja suave."
+    ]
+   },
+   "charla": [
+    "Cuando llegué del libro era casi blanca y negra. Ahora tengo mejillas rosas.",
+    "A veces toco una hoja marchita y le vuelve una pizca de verde.",
+    "Doña Escarcha me regaló un tarro con purpurina dorada. Brilla mucho.",
+    "Pip me ayudó a buscar flores rojas, pero se distrajo persiguiendo un pato.",
+    "El señor Bartolomé me dejó pintar una rima con tiza violeta en su valla.",
+    "Si Morrandar pasa cerca de un arcoíris, ¿crees que se le pintará el lomo?",
+    "El gatito Tintero tiene el pelo del negro más brillante que he visto.",
+    "En las mazmorras del libro hay piedras oscuras, pero aquí todo se ilumina."
+   ],
+   "amigo": [
+    "He dibujado a {N} en una página limpia con todos mis lápices favoritos.",
+    "Cuando estás aquí, el pueblo parece pintado con los colores más alegres.",
+    "Toma esta margarita de pétalos brillantes; la guardé para dártela a ti."
+   ]
+  },
+  "gato": {
+   "charla": [
+    "Se sube al banco de Madre Hiel y bosteza enseñando unos colmillos blancos.",
+    "Miau… Miau.",
+    "Persigue una brizna de hierba levantada por el viento y da un salto cómico.",
+    "Prrr... prrr... Ronronea tan fuerte que parece un motor diminuto.",
+    "Se sienta sobre una bota vieja abandonada y no tiene intención de moverse.",
+    "Mira fijamente hacia el mirador como si viera algo flotando en el aire.",
+    "Te huele la punta de la bota, estornuda una vez y se sienta a lavarse.",
+    "Se tumba boca arriba en un charco de sol caliente sobre las maderas."
+   ],
+   "amigo": [
+    "Apoya su cabeza suavemente en tu mano y cierra los ojos despacito.",
+    "Prrr... Te sigue tres pasos, se sienta sobre tu pie y te mira con cariño.",
+    "Deja caer una pequeña pluma azul a tus pies y emite un maullido dulce."
+   ]
+  },
+  "marga": {
+   "saludo": {
+    "manana": [
+     "¡Arriba ese ánimo, {N}! Hay pan crujiente y mermelada recién hecha.",
+     "Buenos días, corazón. Una taza bien caliente para empezar con fuerza.",
+     "El sol asoma por la barra. Tómate algo antes de que empiece el trajín."
+    ],
+    "tarde": [
+     "¡Pasa al fondo, {N}! La sopa del mediodía ha salido para chuparse los dedos.",
+     "Buenas tardes. Descansa los pies un rato, que el suelo está fresquito.",
+     "Entra, entra. Tengo una jarra de infusión fría que te va a revivir."
+    ],
+    "noche": [
+     "Buenas noches, viajero. La lumbre sigue encendida y el guiso caliente.",
+     "Pasa y siéntate junto a la chimenea. La noche fuera viene helada.",
+     "¡Qué alegría verte a estas horas! Te pongo un plato reconfortante."
+    ],
+    "madrugada": [
+     "A estas horas el café se sirve en silencio. Tómate una taza con calma.",
+     "¿Noche dura en las páginas? Siéntate; la cocina nunca se apaga.",
+     "La madrugada es para descansar el alma. Come algo caliente, anda."
+    ]
+   },
+   "charla": [
+    "Pip intentó cambiarme una manzana mordida por un pastel entero. Qué lince.",
+    "Madre Hiel baja a desayunar puntual como un reloj de cuco. Sin falta.",
+    "Mordo pide siempre una taza extra grande para calentar sus manazas.",
+    "El inspector mira cada miga con lupa. Me da una risa que casi me delato.",
+    "Sir Bartolomé me pidió una empanada rimando cinco estrofas. Se le enfrió.",
+    "A veces Morrandar se sumerge un palmo y los platos tintinean solos.",
+    "Escarcha me ofreció levadura especial. Le dije que aprecio mi cocina viva.",
+    "El Anzuelo me contó que pescó la mesa de mi rincón en un libro de viajes."
+   ],
+   "amigo": [
+    "Esta tarta de manzana la he guardado en el horno solo para ti, {N}.",
+    "En esta cantina siempre tendrás una silla reservada y plato caliente.",
+    "Tener clientes es mi trabajo, pero tener amigos como tú es mi suerte."
+   ]
   }
  },
- "conversaciones": [],
- "genericas": []
+ "conversaciones": [
+  {
+   "a": "pip",
+   "b": "mordo",
+   "lineas": [
+    "¡Mordo! ¿Me haces una espada de hierro que brille mucho?",
+    "Primero aprende a no perder tus botas, renacuajo.",
+    "¡Es que una espada ayuda a encontrar botas perdidas!"
+   ]
+  },
+  {
+   "a": "escarcha",
+   "b": "bartolome",
+   "lineas": [
+    "Caballero, pruebe esta galleta de anís y romero.",
+    "Temo a vuestro manjar, señora de la magia, / que altera mi salud y causa vil neuralgia.",
+    "¡Qué exagerado! Solo le saldrían un par de plumas en el sombrero."
+   ]
+  },
+  {
+   "a": "hiel",
+   "b": "rufo",
+   "lineas": [
+    "Niño, ¿cuántas monedas llevas ahorradas en tu saco?",
+    "¡Los corsarios no ahorramos, gastamos todo en pertrechos!",
+    "Por eso los corsarios viejos acaban durmiendo bajo el muelle."
+   ]
+  },
+  {
+   "a": "brumas",
+   "b": "escarcha",
+   "lineas": [
+    "(voz en off) El olor a canela delataba a la sospechosa.",
+    "Inspector, deje de narrar y tómese un bollo, que le sienta mal la noche.",
+    "Un detective en servicio nunca acepta sobornos con azúcar glas."
+   ]
+  },
+  {
+   "a": "anzuelo",
+   "b": "lumi",
+   "lineas": [
+    "Hoy he pescado una hoja con un dibujo de flores muy raras.",
+    "¡Déjame verla! Seguro que les falta un poco de color violeta.",
+    "Toda tuya, pequeña. Haz que broten bien bonitas."
+   ]
+  },
+  {
+   "a": "guia",
+   "b": "pip",
+   "lineas": [
+    "El viento dice que hoy pisas con un pie más ligero que el otro.",
+    "¡Es que sigo con una sola bota! ¿Morrandar sabe dónde está?",
+    "Morrandar siente tus pasitos y se ríe bajito bajo la tierra."
+   ]
+  },
+  {
+   "a": "mordo",
+   "b": "hiel",
+   "lineas": [
+    "Hiel, necesito extender el pagaré del carbón hasta el viernes.",
+    "El carbón quema hoy y las deudas queman siempre. Tráeme intereses.",
+    "Te traeré tres bisagras de bronce pulido y quedamos en paz."
+   ]
+  },
+  {
+   "a": "brumas",
+   "b": "rufo",
+   "lineas": [
+    "(voz en off) El joven aspirante a bribón merodeaba sin rumbo fijo.",
+    "¡No merodeo, patrullo mi cubierta! ¿Quieres batirte en duelo?",
+    "Solo me bato con la verdad, muchacho. Y suele doler más que un sable."
+   ]
+  },
+  {
+   "a": "bartolome",
+   "b": "lumi",
+   "lineas": [
+    "Dulcísima niña que pinta las flores, / colmáis este suelo de vivos colores.",
+    "¡He pintado una flor amarilla en tu armadura para que no se oxide!",
+    "Llevaré vuestro nardo con noble altivez, / brillando en mi pecho una y otra vez."
+   ]
+  },
+  {
+   "a": "anzuelo",
+   "b": "mordo",
+   "lineas": [
+    "Mordo, el anzuelo grande se me dobló con un tomo pesado.",
+    "Te dije que no pescaras diccionarios. Tráelo y lo pongo al rojo."
+   ]
+  },
+  {
+   "a": "guia",
+   "b": "bartolome",
+   "lineas": [
+    "Tus pasos resuenan a hierro y a miedo con plumas.",
+    "Si un gallo cantare en la cuesta empinada, / mi lanza de nabo sería quebrada.",
+    "Tranquilo, caballero. Solo es la brisa entre los sauces."
+   ]
+  },
+  {
+   "a": "brumas",
+   "b": "mordo",
+   "lineas": [
+    "Herrero, ¿dónde estuvo entre las dos y las tres de la madrugada?",
+    "Cazando ranas para Escarcha en el río. Pregúntale a los sapos.",
+    "(voz en off) Su coartada era viscosa, pero encajaba con el fango."
+   ]
+  },
+  {
+   "a": "pip",
+   "b": "lumi",
+   "lineas": [
+    "¡Lumi! Si pintas mi pie descalzo de negro, ¿parecerá una bota?",
+    "¡Se te va a manchar con el barro y quedará todo marrón!",
+    "Vaya... Entonces mejor ayúdame a buscarla detrás del molino."
+   ]
+  },
+  {
+   "a": "anzuelo",
+   "b": "escarcha",
+   "lineas": [
+    "Ayer saqué del agua un pergamino que chisporroteaba, vecina.",
+    "¡Vaya por Dios! Era mi lista de la compra encantada. Tráela acá."
+   ]
+  },
+  {
+   "a": "brumas",
+   "b": "hiel",
+   "lineas": [
+    "(voz en off) La banquera contaba monedas en la penumbra. Parecía impasible.",
+    "Inspector, si no va a abrir una cuenta, deje de mirar la caja fuerte.",
+    "Solo busco huellas sospechosas, señora. La tarta sigue sin aparecer."
+   ]
+  }
+ ],
+ "genericas": [
+  [
+   "¿Sentiste ese temblor esta mañana?",
+   "Sí, Morrandar se estaba rascando con una roca marina."
+  ],
+  [
+   "Dicen que en el libro hay pasillos enteros de cristal.",
+   "Yo no bajo ni loco; me dan miedo las alturas y los trasgos."
+  ],
+  [
+   "Huele a pan recién horneado por toda la plaza.",
+   "Marga lleva desde el alba con el horno a tope."
+  ],
+  [
+   "¿Has probado las nuevas galletas del pueblo?",
+   "Me da miedo que me salgan escamas o me ponga a croar."
+  ],
+  [
+   "¿Viste salir a {N} hacia las mazmorras?",
+   "Iba con paso firme. Seguro que vuelve con buen botín."
+  ],
+  [
+   "El río baja hoy con mucha espuma blanca.",
+   "El Viejo Anzuelo dice que pican páginas de libros de tormentas."
+  ],
+  [
+   "Pip sigue saltando por ahí a la pata coja.",
+   "A este paso se le va a gastar el único calcetín que le queda."
+  ],
+  [
+   "Esta noche se oían martillazos en la herrería.",
+   "Mordo no duerme cuando el metal se le pone rebelde."
+  ],
+  [
+   "¿Qué tal las vistas desde el mirador?",
+   "Se ven las nubes pasar rozando las patas de la tortuga."
+  ],
+  [
+   "Parece que refresca bastante al caer el sol.",
+   "Mejor nos vamos pidiendo un tazón caliente en la cantina."
+  ]
+ ]
 };
