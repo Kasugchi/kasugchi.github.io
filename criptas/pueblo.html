@@ -12,34 +12,34 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261030223933",
-    "./js/campanas.js": "./js/campanas.js?v=20261030223933",
-    "./js/datos.js": "./js/datos.js?v=20261030223933",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261030223933",
-    "./js/firebase.js": "./js/firebase.js?v=20261030223933",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261030223933",
-    "./js/ia.js": "./js/ia.js?v=20261030223933",
-    "./js/iconos.js": "./js/iconos.js?v=20261030223933",
-    "./js/insultos.js": "./js/insultos.js?v=20261030223933",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261030223933",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261030223933",
-    "./js/motor.js": "./js/motor.js?v=20261030223933",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261030223933",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261030223933",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261030223933",
-    "./js/nube.js": "./js/nube.js?v=20261030223933",
-    "./js/panel.js": "./js/panel.js?v=20261030223933",
-    "./js/planos.js": "./js/planos.js?v=20261030223933",
-    "./js/procedural.js": "./js/procedural.js?v=20261030223933",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261030223933",
-    "./js/red.js": "./js/red.js?v=20261030223933",
-    "./js/render.js": "./js/render.js?v=20261030223933",
-    "./js/render3d.js": "./js/render3d.js?v=20261030223933",
-    "./js/reunion.js": "./js/reunion.js?v=20261030223933",
-    "./js/sprites.js": "./js/sprites.js?v=20261030223933",
-    "./js/tablero.js": "./js/tablero.js?v=20261030223933",
-    "./js/ui.js": "./js/ui.js?v=20261030223933",
-    "./js/viajero.js": "./js/viajero.js?v=20261030223933"
+    "./js/acceso.js": "./js/acceso.js?v=20261031093315",
+    "./js/campanas.js": "./js/campanas.js?v=20261031093315",
+    "./js/datos.js": "./js/datos.js?v=20261031093315",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261031093315",
+    "./js/firebase.js": "./js/firebase.js?v=20261031093315",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031093315",
+    "./js/ia.js": "./js/ia.js?v=20261031093315",
+    "./js/iconos.js": "./js/iconos.js?v=20261031093315",
+    "./js/insultos.js": "./js/insultos.js?v=20261031093315",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261031093315",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031093315",
+    "./js/motor.js": "./js/motor.js?v=20261031093315",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031093315",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031093315",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031093315",
+    "./js/nube.js": "./js/nube.js?v=20261031093315",
+    "./js/panel.js": "./js/panel.js?v=20261031093315",
+    "./js/planos.js": "./js/planos.js?v=20261031093315",
+    "./js/procedural.js": "./js/procedural.js?v=20261031093315",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261031093315",
+    "./js/red.js": "./js/red.js?v=20261031093315",
+    "./js/render.js": "./js/render.js?v=20261031093315",
+    "./js/render3d.js": "./js/render3d.js?v=20261031093315",
+    "./js/reunion.js": "./js/reunion.js?v=20261031093315",
+    "./js/sprites.js": "./js/sprites.js?v=20261031093315",
+    "./js/tablero.js": "./js/tablero.js?v=20261031093315",
+    "./js/ui.js": "./js/ui.js?v=20261031093315",
+    "./js/viajero.js": "./js/viajero.js?v=20261031093315"
   }
 }
 </script>
@@ -1179,8 +1179,9 @@ for (const [id, d] of Object.entries(VEC)) {
 // Marga, dentro de la cantina
 const MARGA = { id: 'marga', def: VEC.marga, nombre: 'Marga', color: VEC.marga.color, voz: VEC.marga.voz, presente: true, ch: chibi(VEC.marga.aspecto) };
 // Dónde está cada uno según la hora (se mira al cargar y cada medio minuto)
+const CAMP = [], ASIGNA = {}, CAP_SITIO = 2, MAX_CAMP = 10; let repartoClave = '';
 function actualizarHorarios(inicio = false) {
-  const h = HORA();
+  const h = HORA(); repartirCampana();
   for (const p of PNJ) {
     const z = p.def.horario(h), antes = p.presente;
     p.zona = z; p.presente = !!z; p.ch.visible = !!z;
@@ -1574,22 +1575,41 @@ if (VUELTA) { const b = $('b-campamento'); b.style.display = ''; b.onclick = vol
 const normMarca = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s*:\s*/g, ': ').replace(/\s+/g, ' ').trim();
 const FIN_CAMPANA = ['acabar la campana', 'fin', 'final', 'acabar'];
 const SITIOS = { plaza: [5, -1, 5, 'paseando por la plaza'], huerto: [-2, -17, 2.5, 'mirando el huerto'], rio: [-5.5, 11.5, 2, 'junto al río'],
-  mirador: [14, -22, 2.2, 'junto al mirador'], banco: [18, 10, 2, 'cerca del banco'], cantina: [16, -7.5, 1.6, 'a la puerta de la cantina'] };
+  mirador: [14, -22, 2.2, 'junto al mirador'], banco: [18, 10, 2, 'cerca del banco'], cantina: [16, -7.5, 1.6, 'a la puerta de la cantina'],
+  // Rincones libres (comprobados contra los choques del mapa) para repartir cuando un sitio se llena
+  r1: [-15, 1, 2.5, 'dando un paseo'], r2: [-4.5, 2.5, 2.2, 'tomando el aire'], r3: [6, -12.5, 2.2, 'mirando las nubes'], r4: [9, 5.5, 2.2, 'dando un paseo'],
+  r5: [-10.5, -18.5, 2.2, 'cerca del huerto'], r6: [19.5, -.5, 2, 'tomando el aire'], r7: [1.5, 8.5, 2, 'mirando el río'], r8: [-22.5, 13, 2.2, 'dando un paseo'] };
+// Reparto de los vecinos de campaña: caben 2 por sitio y solo hay MAX_CAMP a la vez; el resto «está de viaje» y va rotando por días.
+// Los de siempre (Rufo, Hiel, Mordo…) no entran aquí: nunca se van. Un vecino de campaña con oficio lleva «fijo: true» y tampoco rota.
+function repartirCampana() {
+  if (!CAMP.length) return;
+  const clave = EP.reloj.dia + '|' + CAMP.length; if (clave === repartoClave) return; repartoClave = clave;
+  const fijos = CAMP.filter((id) => VEC[id].fijo), resto = CAMP.filter((id) => !VEC[id].fijo), hueco = Math.max(0, MAX_CAMP - fijos.length);
+  let vis = resto;
+  if (resto.length > hueco) { const ini = (EP.reloj.dia * 3) % resto.length; vis = Array.from({ length: hueco }, (_, i) => resto[(ini + i) % resto.length]); }
+  const hoy = new Set([...fijos, ...vis]), uso = {}, orden = Object.keys(SITIOS);
+  for (const id of CAMP) {
+    if (!hoy.has(id)) { delete ASIGNA[id]; continue; }
+    const pref = VEC[id].sitio, s = [pref, ...orden.filter((o) => o !== pref)].find((o) => (uso[o] || 0) < CAP_SITIO) || pref;
+    uso[s] = (uso[s] || 0) + 1; const [x, z, r, txt] = SITIOS[s]; ASIGNA[id] = zona(x, z, r, txt);
+  }
+}
 const PALETA = ['#3a6ab0', '#b84a3a', '#4a8a4a', '#8a5ab0', '#d89a3a', '#3a8a8a', '#c06a9a', '#6a6a7a'];
 const hashT = (t) => [...String(t)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
 function ponerVecinoCampana(id, v, campana) {
   if (VEC[id]) return;
-  const h = hashT(v.nombre), [x, z, r, txt] = SITIOS[normMarca(v.donde)] || SITIOS.plaza;
+  const sitio = SITIOS[normMarca(v.donde)] ? normMarca(v.donde) : 'plaza', h = hashT(v.nombre), [x, z] = SITIOS[sitio];
   const frases = [].concat(v.frases || []).filter(Boolean).slice(0, 12);
   const d = VEC[id] = { nombre: String(v.nombre).slice(0, 30), color: PALETA[h % 8], voz: 260 + (h % 600), vel: 1,
     aspecto: { ropa: v.ropa || PALETA[h % 8], pantalon: PALETA[(h >> 3) % 8], pelo: v.pelo || ['#3a2a1a', '#e8c070', '#a04a2a', '#eeeeee', '#1a1a1a'][(h >> 6) % 5] },
-    horario: (hh) => (hh >= 8 && hh < 21 ? zona(x, z, r, txt) : null),
+    sitio, fijo: !!v.fijo,
+    horario: (hh) => (hh >= 8 && hh < 21 ? ASIGNA[id] || null : null),
     saludo: v.saludo ? { manana: v.saludo, tarde: v.saludo, noche: v.saludo } : null,
     charla: frases.length ? frases : ['Gracias por sacarme de allí, {N}. Este pueblo es raro, pero me gusta.'],
     recuerdo: () => [`Aún me acuerdo de «${campana}». Qué aventura, {N}.`],
     dormido: `${v.nombre} se ha ido a dormir. Ha sido un día largo.` };
   const p = { id, def: d, nombre: d.nombre, color: d.color, voz: d.voz, ch: chibi(d.aspecto), vel: 1, x, z, dir: 0, espera: 1, obj: null, presente: false, zona: null };
-  PNJ.push(p); escena.add(p.ch);
+  PNJ.push(p); escena.add(p.ch); CAMP.push(id);
   toque(d.nombre, 0, 0, 1.7, 'Hablar con ' + d.nombre, () => conversar(p), { pnj: p });
   return p;
 }
@@ -2867,7 +2887,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA };
+window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, ponerVecinoCampana, CAMP, ASIGNA };
 </script>
 </body>
 </html>
