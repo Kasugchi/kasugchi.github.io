@@ -12,36 +12,36 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261031101755",
-    "./js/campanas.js": "./js/campanas.js?v=20261031101755",
-    "./js/cocina.js": "./js/cocina.js?v=20261031101755",
-    "./js/datos.js": "./js/datos.js?v=20261031101755",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261031101755",
-    "./js/firebase.js": "./js/firebase.js?v=20261031101755",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031101755",
-    "./js/herramientas.js": "./js/herramientas.js?v=20261031101755",
-    "./js/ia.js": "./js/ia.js?v=20261031101755",
-    "./js/iconos.js": "./js/iconos.js?v=20261031101755",
-    "./js/insultos.js": "./js/insultos.js?v=20261031101755",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261031101755",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031101755",
-    "./js/motor.js": "./js/motor.js?v=20261031101755",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031101755",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031101755",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031101755",
-    "./js/nube.js": "./js/nube.js?v=20261031101755",
-    "./js/panel.js": "./js/panel.js?v=20261031101755",
-    "./js/planos.js": "./js/planos.js?v=20261031101755",
-    "./js/procedural.js": "./js/procedural.js?v=20261031101755",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261031101755",
-    "./js/red.js": "./js/red.js?v=20261031101755",
-    "./js/render.js": "./js/render.js?v=20261031101755",
-    "./js/render3d.js": "./js/render3d.js?v=20261031101755",
-    "./js/reunion.js": "./js/reunion.js?v=20261031101755",
-    "./js/sprites.js": "./js/sprites.js?v=20261031101755",
-    "./js/tablero.js": "./js/tablero.js?v=20261031101755",
-    "./js/ui.js": "./js/ui.js?v=20261031101755",
-    "./js/viajero.js": "./js/viajero.js?v=20261031101755"
+    "./js/acceso.js": "./js/acceso.js?v=20261031102054",
+    "./js/campanas.js": "./js/campanas.js?v=20261031102054",
+    "./js/cocina.js": "./js/cocina.js?v=20261031102054",
+    "./js/datos.js": "./js/datos.js?v=20261031102054",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261031102054",
+    "./js/firebase.js": "./js/firebase.js?v=20261031102054",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031102054",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261031102054",
+    "./js/ia.js": "./js/ia.js?v=20261031102054",
+    "./js/iconos.js": "./js/iconos.js?v=20261031102054",
+    "./js/insultos.js": "./js/insultos.js?v=20261031102054",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261031102054",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031102054",
+    "./js/motor.js": "./js/motor.js?v=20261031102054",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031102054",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031102054",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031102054",
+    "./js/nube.js": "./js/nube.js?v=20261031102054",
+    "./js/panel.js": "./js/panel.js?v=20261031102054",
+    "./js/planos.js": "./js/planos.js?v=20261031102054",
+    "./js/procedural.js": "./js/procedural.js?v=20261031102054",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261031102054",
+    "./js/red.js": "./js/red.js?v=20261031102054",
+    "./js/render.js": "./js/render.js?v=20261031102054",
+    "./js/render3d.js": "./js/render3d.js?v=20261031102054",
+    "./js/reunion.js": "./js/reunion.js?v=20261031102054",
+    "./js/sprites.js": "./js/sprites.js?v=20261031102054",
+    "./js/tablero.js": "./js/tablero.js?v=20261031102054",
+    "./js/ui.js": "./js/ui.js?v=20261031102054",
+    "./js/viajero.js": "./js/viajero.js?v=20261031102054"
   }
 }
 </script>
@@ -181,6 +181,7 @@ import * as Ficha from './js/viajero.js';
 import * as Ins from './js/insultos.js';
 import { NUEVOS as DIA } from './js/dialogos.js';
 import { mueblesExtra } from './js/muebles-extra.js';
+import { RECETAS, EFECTOS, menuHoy } from './js/cocina.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -202,7 +203,7 @@ const uno = (l) => l[Math.floor(Math.random() * l.length)];
 // Lo que pasa en el pueblo se guarda en la ficha del mundo (ficha.pueblo) y viaja con la cuenta.
 let fichaP = null; try { fichaP = Ficha.fichaOCrear(NOMBRE); } catch { fichaP = null; }
 const EP = (() => { const p = fichaP ? (fichaP.pueblo ||= {}) : {}; p.amistad ||= {}; p.hoy ||= {}; p.hitos ||= {}; p.regalos ||= []; p.cogidas ||= {}; p.flores ||= 0; p.lumi ||= 0; if (p.encargo === undefined) p.encargo = null;
-  p.tengo ||= {}; p.buzon ||= []; p.recogidos ||= []; p.mueblesDe ||= {}; return p; })();
+  p.platos ||= {}; p.recetas ||= {}; p.tengo ||= {}; p.buzon ||= []; p.recogidos ||= []; p.mueblesDe ||= {}; return p; })();
 let sala = null, musicaCasa = false;   // dónde estás por dentro: 'cantina', 'casa' o fuera (null)
 function guardarPueblo() { if (!fichaP) return; try { fichaP.pueblo = EP; Ficha.tocar(fichaP); Ficha.guardarFicha(fichaP); } catch { /* sin almacenamiento */ } }
 function juntarPueblo(otro) {   // lo de otro dispositivo: nos quedamos con lo más avanzado
@@ -221,6 +222,9 @@ function juntarPueblo(otro) {   // lo de otro dispositivo: nos quedamos con lo m
   const ids = new Set(EP.buzon.map((b) => b.id)); for (const b of otro.buzon || []) if (!ids.has(b.id)) EP.buzon.push(b);
   EP.buzon = EP.buzon.filter((b) => !EP.recogidos.includes(b.id));
   Object.assign(EP.mueblesDe, otro.mueblesDe || {});
+  for (const [k, v] of Object.entries(otro.recetas || {})) EP.recetas[k] = Math.max(EP.recetas[k] || 0, v);
+  for (const [k, v] of Object.entries(otro.platos || {})) EP.platos[k] = Math.max(EP.platos[k] || 0, v);
+  if (otro.comida && (!EP.comida || otro.comida.dia > EP.comida.dia)) EP.comida = otro.comida;
   for (const k of ['mueblesMision', 'mueblesJefe']) if (otro[k] != null) EP[k] = Math.max(EP[k] ?? 0, otro[k]);
   EP.conocidos = [...new Set([...(EP.conocidos || []), ...(otro.conocidos || [])])];
   const vistas = new Set((EP.cartasLibro ||= []).map((c) => c.de + '|' + c.texto)); for (const c of otro.cartasLibro || []) if (!vistas.has(c.de + '|' + c.texto)) EP.cartasLibro.push(c);
@@ -1135,7 +1139,7 @@ const VEC = {
     recuerdo: () => [D.misiones ? `Me han contado que llevas ${D.misiones} bajadas al libro. Con ese trajín, necesitas un buen café.` : null],
     regalos: ['su receta secreta de guiso (le falta un ingrediente a propósito)', 'una taza con tu nombre', 'una llave de la cantina. «Por si algún día llegas tarde»'],
     gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? ¡Esto va directo a la olla!`,
-    ops: () => [['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, '#e8584a', 480)],
+    ops: () => [['🍲 Ver el menú de hoy', () => menuMarga()], ['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, '#e8584a', 480)],
       ['¿Qué suena?', () => hablar('Marga', [DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
       ['Nada, gracias', cerrarDialogo]]
   }
@@ -1666,6 +1670,52 @@ function comprar(k) {
   aviso(`${M.e} ${M.n} → tu baúl`);
 }
 
+// ---------- La cocina de Marga: menú del día, comer aquí o llevarse el plato para regalarlo ----------
+// Efectos de comida: duran hasta que duermas (el día del pueblo cambia). Las recetas están en js/cocina.js.
+const efecto = (t) => !!EP.comida && EP.comida.dia === EP.reloj.dia && RECETAS[EP.comida.id]?.efecto === t;
+const platosGuardados = () => Object.entries(EP.platos).filter(([k, n]) => n > 0 && RECETAS[k]).map(([k]) => k);
+const HABLA_MARGA = () => [VEC.marga.color, VEC.marga.voz];
+function menuMarga() {
+  const [col, voz] = HABLA_MARGA(), oro = fichaP?.banco || 0, hoy = menuHoy(EP.reloj.dia);
+  const ops = hoy.map((k) => { const r = RECETAS[k]; return [`${r.e} ${r.n} · ${r.precio} 🪙${r.flores ? ' + ' + r.flores + ' 🌸' : ''}`, () => pedirPlato(k)]; });
+  ops.push(['Hoy no, gracias', cerrarDialogo]);
+  hablar(nombreCon(MARGA), [uno(['Esto es lo que hay hoy, y lo que hay es bueno.', 'Hoy he cocinado de todo un poco. Sobre todo un poco.', 'Pide, pide, que la cocina no se enciende sola.']), `Pagas del fondo común: tienes ${oro} 🪙${EP.flores ? ` y ${EP.flores} 🌸` : ''}.`], ops, col, voz);
+}
+function pedirPlato(k) {
+  const r = RECETAS[k], [col, voz] = HABLA_MARGA();
+  if (!fichaP) return aviso('No hay partida donde guardarlo');
+  if ((fichaP.banco || 0) < r.precio) return hablar(nombreCon(MARGA), ['Cariño, así no me salen las cuentas.', `Te faltan ${r.precio - fichaP.banco} 🪙.`], null, col, voz);
+  if ((r.flores || 0) > EP.flores) return hablar(nombreCon(MARGA), [`Para esto necesito ${r.flores} 🌸 y tú traes ${EP.flores}. Hay flores por todo el pueblo.`], null, col, voz);
+  hablar(nombreCon(MARGA), [`${r.e} ${r.n}. ${r.nota}`, r.efecto ? EFECTOS[r.efecto] : 'No hace nada especial. Solo sabe bien.'], [
+    ['Me lo como aquí', () => servirPlato(k, true)], ['Para llevar', () => servirPlato(k, false)], ['Mejor no', cerrarDialogo]], col, voz);
+}
+function servirPlato(k, aqui) {
+  const r = RECETAS[k], [col, voz] = HABLA_MARGA();
+  fichaP.banco -= r.precio; EP.flores -= r.flores || 0;
+  const nuevo = !EP.recetas[k]; EP.recetas[k] = (EP.recetas[k] || 0) + 1; sumarAmistad('marga', 1);
+  if (aqui) { EP.comida = { id: k, dia: EP.reloj.dia }; } else EP.platos[k] = (EP.platos[k] || 0) + 1;
+  guardarPueblo();
+  hablar(nombreCon(MARGA), [aqui ? uno(['¡Que aproveche! Despacito, que quema.', 'Come, come, que te veo flaco de tanto libro.']) : 'Te lo envuelvo. Que no se enfríe antes de llegar, ¿eh?'], null, col, voz);
+  aviso(aqui ? `${r.e} ${r.efecto ? EFECTOS[r.efecto] : '¡Qué rico!'}` : `${r.e} ${r.n} → para llevar`);
+  if (nuevo) setTimeout(() => aviso('📖 Receta nueva en tu recetario'), 2400);
+}
+// Regalar un plato a un vecino: +1 de amistad (+3 si es su favorito), uno al día por vecino
+function regalarPlato(p) {
+  const d = p.def, hoy = EP.reloj.dia, clave = 'plato_' + p.id;
+  if (EP.hoy[clave] === hoy) return hablar(nombreCon(p), [uno(['Ya me has traído algo hoy. Si como más, exploto.', 'Hoy ya he comido de tu mano. Vuelve mañana, ¿vale?'])], null, d.color, d.voz);
+  const ops = platosGuardados().slice(0, 5).map((k) => { const r = RECETAS[k]; return [`${r.e} ${r.n} (${EP.platos[k]})`, () => darPlato(p, k)]; });
+  ops.push(['Ahora no', cerrarDialogo]);
+  hablar(nombreCon(p), ['¿Eso es para mí? ¿Qué me has traído?'], ops, d.color, d.voz);
+}
+function darPlato(p, k) {
+  const d = p.def, r = RECETAS[k], fav = r.fav.includes(p.id);
+  EP.platos[k]--; EP.hoy['plato_' + p.id] = EP.reloj.dia; sumarAmistad(p.id, fav ? 3 : 1); guardarPueblo();
+  hablar(nombreCon(p), [p.id === 'gato' ? (fav ? 'Se come el plato entero y te mira. Después, te frota la cabeza en el tobillo.' : 'Lo huele, lo prueba y se lo piensa. Se lo come igualmente.')
+    : fav ? uno([`¡${r.n}! ¡Mi plato favorito! ¿Cómo lo sabías, {N}?`.replace('{N}', NOMBRE), '¡Esto es justo lo que necesitaba! Te debo una. Bueno, dos.'])
+    : uno([`¡${r.n}! Qué detalle, {N}. Muchas gracias.`.replace('{N}', NOMBRE), 'Qué rico. No es lo que más me gusta, pero me ha alegrado el día.'])], null, d.color, d.voz);
+  aviso(fav ? `♥♥♥ ${p.nombre} adora ese plato` : `♥ ${p.nombre} lo agradece`);
+}
+
 // ---------- Duelo de insultos con Rufo, dentro del bocadillo (mejor de 3 asaltos) ----------
 // Mismas reglas que duelo.html: al perder un asalto aprendes el insulto o la réplica del rival.
 // Rufo es novato: sabe pocos insultos y solo acierta tu insulto a veces. Las opciones van
@@ -1938,7 +1988,7 @@ function conversar(p) {
   p.hablando = true;
   if (p !== MARGA) { p.dir = Math.atan2(J.x - p.x, J.z - p.z); J.dir = Math.atan2(p.x - J.x, p.z - J.z); }
   const primera = EP.hoy[id] !== hoy;
-  if (primera) { EP.hoy[id] = hoy; sumarAmistad(id, 1); }
+  if (primera) { EP.hoy[id] = hoy; sumarAmistad(id, efecto('amistad') ? 2 : 1); }
   const L = [], ops = [];
   // Un encargo que le traes… o que te dio
   const e = EP.encargo; let entregado = false;
@@ -1980,6 +2030,7 @@ function conversar(p) {
     L.push(`Oye, ¿me harías un favor? ¿Le llevas ${x.cosa} a ${VEC[x.para].nombre}?`);
     ops.push(['¡Claro, se lo llevo!', () => { EP.encargo = { de: id, para: x.para, cosa: x.cosa, fecha: Date.now() }; guardarPueblo(); hablar(nombreCon(p), ['¡Gracias! Eres un sol.'], null, d.color, d.voz); aviso('📦 ' + x.cosa + ' → ' + VEC[x.para].nombre); }], ['Ahora no puedo', cerrarDialogo]);
   } else if (d.ops) ops.push(...(d.ops(am) || []));
+  if (id !== 'marga' && platosGuardados().length) { if (!ops.length) ops.push(['Nada, gracias', cerrarDialogo]); ops.unshift(['🍲 Regalarle un plato', () => regalarPlato(p)]); }
   guardarPueblo();
   hablar(nombreCon(p), L, ops.length ? ops : null, d.color, d.voz);
 }
@@ -1992,7 +2043,7 @@ function llamar(p) {
 function cogerFlor(clave) {
   const hoy = diaHoy();
   if (EP.cogidas[clave] === hoy) return aviso('De aquí ya cogiste hoy');
-  if (EP.flores >= 5) return aviso('No te caben más flores');
+  if (EP.flores >= (efecto('flores') ? 8 : 5)) return aviso('No te caben más flores');
   EP.flores++; EP.cogidas[clave] = hoy; guardarPueblo(); aviso(`🌸 Has cogido una flor (${EP.flores})`);
 }
 const COLORES_LUMI = ['¡Me ha vuelto el rosa!', '¡Me ha vuelto el amarillo!', '¡Me ha vuelto el azul!', '¡Me ha vuelto el verde!', '¡Y el violeta! ¡Ya tengo todos mis colores!'];
@@ -2192,7 +2243,7 @@ function moverJugador(dt, t) {
   if (len) {
     dx /= len; dz /= len;
     const corre = teclas.has('shift') || (J.ir && Math.hypot(J.ir.x - J.x, J.ir.z - J.z) > 7);
-    const v = corre ? 6.4 : 4, nx = J.x + dx * v * dt, nz = J.z + dz * v * dt;
+    const v = (corre ? 6.4 : 4) * (efecto('veloz') ? 1.25 : 1), nx = J.x + dx * v * dt, nz = J.z + dz * v * dt;
     if (libre(nx, nz) || !libre(J.x, J.z)) { J.x = nx; J.z = nz; J.atasco = 0; } else if (libre(nx, J.z)) J.x = nx; else if (libre(J.x, nz)) J.z = nz;
     else if ((J.atasco += dt) > .5) { if (J.ir?.hacer && Math.hypot(J.ir.x - J.x, J.ir.z - J.z) < 2.4) { const f = J.ir.hacer; J.ir = null; f(); } else J.ir = null; J.atasco = 0; }
     J.dir = angLerp(J.dir, Math.atan2(dx, dz), 1 - Math.exp(-14 * dt));
@@ -2542,6 +2593,7 @@ function pintarLibreta() {
       app('pueblo', '🏘', 'Tu pueblo', G.cargando ? '…' : G.pid ? (soyDueno() ? 'Eres el fundador' : 'De ' + escH(G.pueblo?.miembros?.[G.pueblo.dueno]?.nombre || 'otro')) : 'Solo tú') +
       app('cartas', '✉️', 'Cartas', sinLeer() ? sinLeer() + ' sin leer' : G.pid ? 'Buzón' : 'Con tu familia', sinLeer() ? ' nueva' : '') +
       app('decorar', '🪑', 'Decorar', enCasa ? 'Tu casa' : 'Entra en tu casa', enCasa ? '' : ' apagada') +
+      app('recetas', '🍲', 'Recetario', `${Object.keys(EP.recetas).length}/${Object.keys(RECETAS).length} probados`) +
       app('mapa', '🗺', 'Mapa', 'Dónde está cada uno') +
       app('sonido', A.on ? '🔊' : '🔇', 'Sonido', A.on ? 'Mezclador' : 'Apagado') +
       app('aspecto', '🪞', 'Tu aspecto', enCasa ? 'Al espejo' : 'En el espejo de casa', enCasa ? '' : ' apagada') +
@@ -2592,6 +2644,11 @@ function pintarLibreta() {
     else { escribirA = vec.some((v) => v.uid === escribirA) ? escribirA : vec[0].uid;
       h = tit('Escribir una carta') + `<div class="ops2">${vec.map((v) => `<button class="chip${v.uid === escribirA ? ' si' : ''}" data-l="para" data-v="${v.uid}">Para ${escH(v.nombre)}</button>`).join('')}</div>
         <textarea maxlength="600" placeholder="Querido vecino…" id="texto-carta">${escH($('texto-carta')?.value || '')}</textarea><button class="grande" data-l="enviar">Echarla al buzón</button>`; }
+  } else if (pg === 'recetas') {
+    const lista = Object.entries(RECETAS).sort((x, y) => !!EP.recetas[y[0]] - !!EP.recetas[x[0]]), hoyMenu = menuHoy(EP.reloj.dia);
+    h = tit('Recetario de Marga') + `<p class="nota">Cada plato que pruebas queda apuntado. Hoy en la cantina: ${hoyMenu.map((k) => RECETAS[k].e + ' ' + escH(RECETAS[k].n)).join(' · ')}.</p><ul class="lista">${lista.map(([k, r]) => EP.recetas[k]
+      ? `<li><span>${r.e} <b>${escH(r.n)}</b><br><small>${r.efecto ? escH(EFECTOS[r.efecto]) : 'Sabe rico, sin más.'} · pedido ${EP.recetas[k]} ${EP.recetas[k] === 1 ? 'vez' : 'veces'}</small></span></li>`
+      : `<li><span>❔ <b>Sin probar</b><br><small>Pásate por la cantina cuando salga en el menú.</small></span></li>`).join('')}</ul>`;
   } else if (pg === 'trofeos') {
     const f = fichaP || ficha || {}, tr = (f.cabana?.trofeos || []).slice().reverse(), di = f.diario || {};
     const dato = (n, t) => `<div><b>${n || 0}</b><span>${t}</span></div>`;
@@ -2621,7 +2678,7 @@ async function accionLibreta(a, v, el) {
   if (a === 'cerrar') return cerrarLibreta();
   if (a === 'campamento') return volverCampamento();
   if (['pueblo', 'cartas'].includes(a)) cargarGremio();
-  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido', 'mapa', 'trofeos'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
+  if (['inicio', 'juntos', 'pueblo', 'cartas', 'ayuda', 'sonido', 'mapa', 'trofeos', 'recetas'].includes(a)) { libretaPagina = a; cartaAbierta = null; return pintarLibreta(); }
   if (a === 'escribir') { libretaPagina = 'escribir'; return pintarLibreta(); }
   if (a === 'decorar') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); empezarDeco(); } else aviso('Entra en tu casa para decorarla'); return; }
   if (a === 'aspecto') { if (sala === 'casa' && !casaAjena) { cerrarLibreta(); abrirCreador(); } else aviso('El espejo está en tu casa'); return; }
@@ -2889,7 +2946,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
+window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
 </script>
 </body>
 </html>
