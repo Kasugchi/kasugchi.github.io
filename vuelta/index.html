@@ -466,7 +466,7 @@ const JUEGOS = {
       decir(orden.replace(/<[^>]+>/g, '') + ' ¿Dónde acaba el elefante?', true);
       a.querySelectorAll('.celda').forEach((b) => b.onclick = () => {
         if (b.dataset.o === meta.join(',')) {
-          bien(); b.textContent = ult ? '👩' : '✓'; b.classList.add('bien'); pos = meta;
+          bien(); a.querySelectorAll('.celda').forEach((x) => { x.disabled = true; }); b.textContent = ult ? '👩' : '✓'; b.classList.add('bien'); pos = meta;
           if (++ronda === 3) { dice('¡Me has encontrado! Gracias por salvarme. Viajaré con vosotros.'); setTimeout(fin, 1500); } else { dice('¡Bien! Seguimos por la selva.'); setTimeout(jugar, 1100); }
         } else { mal(); retrasar(3); b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); dice('Por ahí no. Fíjate en la brújula: el norte está arriba y el este a la derecha. <small class="horas">+3 horas de retraso</small>'); }
       });
