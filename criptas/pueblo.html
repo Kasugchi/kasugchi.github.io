@@ -12,36 +12,36 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261031102054",
-    "./js/campanas.js": "./js/campanas.js?v=20261031102054",
-    "./js/cocina.js": "./js/cocina.js?v=20261031102054",
-    "./js/datos.js": "./js/datos.js?v=20261031102054",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261031102054",
-    "./js/firebase.js": "./js/firebase.js?v=20261031102054",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031102054",
-    "./js/herramientas.js": "./js/herramientas.js?v=20261031102054",
-    "./js/ia.js": "./js/ia.js?v=20261031102054",
-    "./js/iconos.js": "./js/iconos.js?v=20261031102054",
-    "./js/insultos.js": "./js/insultos.js?v=20261031102054",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261031102054",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031102054",
-    "./js/motor.js": "./js/motor.js?v=20261031102054",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031102054",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031102054",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031102054",
-    "./js/nube.js": "./js/nube.js?v=20261031102054",
-    "./js/panel.js": "./js/panel.js?v=20261031102054",
-    "./js/planos.js": "./js/planos.js?v=20261031102054",
-    "./js/procedural.js": "./js/procedural.js?v=20261031102054",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261031102054",
-    "./js/red.js": "./js/red.js?v=20261031102054",
-    "./js/render.js": "./js/render.js?v=20261031102054",
-    "./js/render3d.js": "./js/render3d.js?v=20261031102054",
-    "./js/reunion.js": "./js/reunion.js?v=20261031102054",
-    "./js/sprites.js": "./js/sprites.js?v=20261031102054",
-    "./js/tablero.js": "./js/tablero.js?v=20261031102054",
-    "./js/ui.js": "./js/ui.js?v=20261031102054",
-    "./js/viajero.js": "./js/viajero.js?v=20261031102054"
+    "./js/acceso.js": "./js/acceso.js?v=20261031103131",
+    "./js/campanas.js": "./js/campanas.js?v=20261031103131",
+    "./js/cocina.js": "./js/cocina.js?v=20261031103131",
+    "./js/datos.js": "./js/datos.js?v=20261031103131",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261031103131",
+    "./js/firebase.js": "./js/firebase.js?v=20261031103131",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031103131",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261031103131",
+    "./js/ia.js": "./js/ia.js?v=20261031103131",
+    "./js/iconos.js": "./js/iconos.js?v=20261031103131",
+    "./js/insultos.js": "./js/insultos.js?v=20261031103131",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261031103131",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031103131",
+    "./js/motor.js": "./js/motor.js?v=20261031103131",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031103131",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031103131",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031103131",
+    "./js/nube.js": "./js/nube.js?v=20261031103131",
+    "./js/panel.js": "./js/panel.js?v=20261031103131",
+    "./js/planos.js": "./js/planos.js?v=20261031103131",
+    "./js/procedural.js": "./js/procedural.js?v=20261031103131",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261031103131",
+    "./js/red.js": "./js/red.js?v=20261031103131",
+    "./js/render.js": "./js/render.js?v=20261031103131",
+    "./js/render3d.js": "./js/render3d.js?v=20261031103131",
+    "./js/reunion.js": "./js/reunion.js?v=20261031103131",
+    "./js/sprites.js": "./js/sprites.js?v=20261031103131",
+    "./js/tablero.js": "./js/tablero.js?v=20261031103131",
+    "./js/ui.js": "./js/ui.js?v=20261031103131",
+    "./js/viajero.js": "./js/viajero.js?v=20261031103131"
   }
 }
 </script>
@@ -535,7 +535,7 @@ const miCasa = casa(-22, 6, { ancho: 5, fondo: 5, pared: '#f6e6c4', tejado: '#3f
   const v2 = v.clone(); v2.position.set(-1.3, 2.4, 1.9); v2.rotation.y = -.6; g.add(v2);
   enFijo(g, 18, 4); CHOQUES.push({ x: 18, z: 4, r: 2.6 });
   const l = letrero('Banco de Madre Hiel', 2.8, .5, '#5a3a6a'); l.position.set(18, 2.75, 6.36); fijo.add(l);
-  toque('El banco', 18, 7.1, 1.4, 'Llamar a la puerta', () => { const h = PNJ.find((x) => x.id === 'hiel'); if (!h.presente) hablar('La puerta', [VEC.hiel.dormido], null, '#8a6a4a', 300); else hablar('Madre Hiel', ['En la prueba del pueblo todavía no abro la ventanilla. Ve a la tortuga si necesitas el banco.'], null, '#6a4a92', 300); });
+  toque('El banco', 18, 7.1, 1.4, 'Llamar a la puerta', () => { const h = PNJ.find((x) => x.id === 'hiel'); if (!h.presente) hablar('La puerta', [VEC.hiel.dormido], null, '#8a6a4a', 300); else bancoHiel(); });
 }
 // Puesto de Mordo
 {
@@ -1010,6 +1010,7 @@ const VEC = {
     nombre: 'Madre Hiel', color: '#6a4a92', voz: 300, vel: .9,
     aspecto: { ropa: '#7a5aa2', pantalon: '#4a3a5a', pelo: '#eeeeee', extra: 'hiel' },
     horario: (h) => (h >= 8 && h < 20 ? zona(17, 8.6, 2.2, 'en el banco') : h >= 20 ? zona(6, 0, 3.5, 'tomando el fresco en la plaza') : null),
+    ops: () => [['🏦 Ir a la ventanilla', () => bancoHiel()], ['Nada, gracias', cerrarDialogo]],
     saludo: { manana: 'Madrugas, ¿eh? Así me gusta. El oro no se gana durmiendo.', tarde: 'Pasa, pasa. Tu oro está donde lo dejaste.', noche: 'Fuera de horario no atiendo. Pero charlar es gratis… por ahora.' },
     charla: ['Guardo vuestro oro. Si no volvéis, también lo guardo.', 'Un diente por cada cien monedas… es broma. O no.', 'Escarcha jura que sus galletas no convierten a nadie en rana. Ayer el cartero croaba.', 'Vivo encima del banco. Así nadie me roba. Ni me visita, que también lo agradezco.'],
     amigo: ['De joven fui pirata, ¿sabes? No se lo digas a Rufo, que no me dejaría en paz.', 'Me alegro de que vuelvas siempre, {N}. A mi edad, eso vale más que el oro. … No le digas a nadie que he dicho eso.'],
@@ -1669,6 +1670,35 @@ function comprar(k) {
   hablar(nombreCon(R), [uno(['¡Vendido! Te lo dejo en tu baúl. Garantía pirata: si se rompe, ya venía así.', '¡Trato hecho! Si oyes ruidos dentro, no es nada. Seguramente.', '¡Gran elección! Es lo que habría comprado el capitán Brea. Que soy yo.'])], [['Ver más', () => tienda()], ['Ya está', cerrarDialogo]], d.color, d.voz);
   aviso(`${M.e} ${M.n} → tu baúl`);
 }
+
+// ---------- La ventanilla de Madre Hiel (la misma del banco de la tortuga, con tu ficha de viajero) ----------
+// Cada héroe guarda lo suyo; el fondo común es del pueblo (tienda, cocina, obras). Las reglas del 40 % son las de viajero.js.
+function bancoHiel(aviso = '') {
+  const H = PNJ.find((x) => x.id === 'hiel'), d = VEC.hiel, col = d.color, voz = d.voz;
+  if (!H.presente) return hablar('La puerta', [d.dormido], null, '#8a6a4a', 300);
+  if (!/banco/.test(H.zona?.txt || '')) return hablar(nombreCon(H), ['Fuera de horario no atiendo. La ventanilla abre de ocho a ocho, como las buenas deudas.', 'Pásate mañana, {N}.'.replace('{N}', NOMBRE)], null, col, voz);
+  if (!fichaP) return aviso_('No hay partida donde guardarlo');
+  const h = fichaP.heroes?.[fichaP.activo];
+  if (!h) return hablar(nombreCon(H), ['Guardo vuestro oro. Pero tú no tienes héroes en tu ficha: tráeme alguno de las mazmorras.'], null, col, voz);
+  const hecho = (f) => (n) => () => { const e = f(fichaP, h.id, n); if (!e) { Ficha.guardarFicha(fichaP); guardarPueblo(); } bancoHiel(e || ''); };
+  const guardar = hecho(Ficha.guardarEnSuBanco), sacar = hecho(Ficha.sacarDeSuBanco), aportar = hecho(Ficha.depositar), tomar = hecho(Ficha.retirar);
+  const maxA = Math.min(Ficha.maxAporte(fichaP, h), h.oro + (h.banco || 0)), maxR = Ficha.maxRetiro(fichaP, h), ops = [];
+  if (!h.prestado) {
+    if (h.oro > 0) ops.push([`Guardar en su banco lo de la bolsa (${h.oro})`, guardar(h.oro)]);
+    if (h.banco > 0) ops.push([`Sacar de su banco a la bolsa (${h.banco})`, sacar(h.banco)]);
+    if (maxA > 0) ops.push([`Aportar ${maxA} al fondo común`, aportar(maxA)]);
+    if (maxA > 50) ops.push(['Aportar 50 al fondo común', aportar(50)]);
+    if (maxR > 0) ops.push([`Sacar ${maxR} del fondo común`, tomar(maxR)]);
+  }
+  ops.push(['Ya está, gracias', cerrarDialogo]);
+  const cuentas = `🪙 Bolsa de ${h.nombre}: ${h.oro} · Su banco: ${h.banco || 0} · Fondo común: ${fichaP.banco || 0}`;
+  const L = [];
+  if (aviso) L.push(aviso);
+  L.push(h.prestado ? `${h.nombre} está en una partida: su oro lo lleva encima. Vuelve cuando acabe.` : cuentas);
+  if (!aviso) L.push('Cada uno guarda lo suyo y el fondo común es del pueblo. Por misión, cada héroe pone como mucho el 40 % de lo suyo y saca como mucho el 40 % del fondo.');
+  hablar(nombreCon(H), L, ops, col, voz);
+}
+const aviso_ = (t) => aviso(t);
 
 // ---------- La cocina de Marga: menú del día, comer aquí o llevarse el plato para regalarlo ----------
 // Efectos de comida: duran hasta que duermas (el día del pueblo cambia). Las recetas están en js/cocina.js.
@@ -2946,7 +2976,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
+window.pueblo = { CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
 </script>
 </body>
 </html>
