@@ -13,11 +13,12 @@ const FUERA = (C) => !C.dentro();
 export const LISTA = [
   { grupo: '📣 Para todos', items: [
     { id: 'limpiar', ico: '🧹', t: 'Quitar todos los efectos', todos: 1 },
-    { id: 'patos', ico: '🦆', t: 'Lluvia de patos', todos: 1 },
+    { id: 'patos', ico: '🦆', t: 'Todos se vuelven patos', todos: 1 },
     { id: 'ranas', ico: '🐸', t: 'Lluvia de ranas', todos: 1 },
     { id: 'quesos', ico: '🧀', t: 'Lluvia de quesos', todos: 1 },
-    { id: 'calabazas', ico: '🎃', t: 'Lluvia de calabazas', todos: 1 },
-    { id: 'fuegos', ico: '🎆', t: 'Fuegos artificiales', todos: 1 },
+    { id: 'calabazas', ico: '🎃', t: 'Calabaza en la cabeza', todos: 1 },
+    { id: 'fuegos', ico: '🎆', t: 'Fuegos artificiales (de noche)', todos: 1 },
+    { id: 'aurora', ico: '🌌', t: 'Noche de aurora', todos: 1 },
     { id: 'fiesta', ico: '💃', t: 'Fiesta: todos bailan', todos: 1 },
     { id: 'globos', ico: '🎈', t: 'Lluvia de globos', todos: 1 },
     { id: 'gallina', ico: '🐔', t: 'Gallina gigante', todos: 1 },
@@ -50,6 +51,26 @@ export function iniciarPoderes(C) {
   const estado = { vuelo: 0, turbo: 0, coloso: 0, minimo: 0, saltarin: 0 };
   let alt = 0, saltoV = 0, saltoY = 0;
   const P = { vel: 1 };
+  // El cielo de noche: pueblo.html lee cielo.v (0 día normal … 1 noche cerrada) para oscurecer luces y colores.
+  const cielo = { v: 0 };
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(150, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide, transparent: true, depthWrite: false, fog: false, uniforms: { uV: { value: 0 }, uT: { value: 0 } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `varying vec3 vP; uniform float uV; uniform float uT;
+      float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+      void main(){
+        vec3 d = normalize(vP); float y = clamp(d.y * .5 + .5, 0., 1.);
+        vec3 col = mix(vec3(.30,.10,.42), vec3(.015,.02,.09), smoothstep(.40,.88,y));
+        col += vec3(.55,.18,.40) * smoothstep(.55,.43,y) * .55;
+        float a = sin(d.x * 5. + uT * .35) * .5 + sin(d.x * 11. - uT * .5 + d.z * 3.) * .3;
+        float band = smoothstep(.0,.35, .5 - abs(y - .62 - a * .07)) * smoothstep(.45,.62,y);
+        col += mix(vec3(.1,.95,.55), vec3(.55,.3,.95), clamp(a + .5, 0., 1.)) * band * .85;
+        vec2 g = floor(vec2(atan(d.x, d.z) * 90., d.y * 140.)); float st = step(.985, h(g)) * smoothstep(.5,.7,y);
+        col += vec3(1.,.97,.85) * st * (.6 + .4 * sin(uT * 3. + h(g) * 40.));
+        gl_FragColor = vec4(col, uV);
+      }`
+  }));
+  sky.renderOrder = -2; sky.frustumCulled = false; sky.visible = false; escena.add(sky);
 
   // ---------- sonido ----------
   let ctx;
@@ -107,7 +128,7 @@ export function iniciarPoderes(C) {
   function fuegos() {
     if (!FUERA(C)) return C.aviso('Se oyen fuegos artificiales fuera…');
     let t0 = 0, siguiente = 0; const nubes = [];
-    activos.push({ upd(dt) {
+    activos.push({ noche: 1, upd(dt) {
       t0 += dt;
       if (t0 > siguiente && siguiente < 7) { siguiente += .7 + Math.random() * .4; const cx = J.x + (Math.random() - .5) * 18, cz = J.z - 4 - Math.random() * 8, cy = 11 + Math.random() * 4;
         const n = 70, pos = new Float32Array(n * 3), vel = []; const col = new THREE.Color().setHSL(Math.random(), 1, .6);
@@ -118,13 +139,54 @@ export function iniciarPoderes(C) {
       for (const f of nubes) { f.edad += dt; const p = f.g.attributes.position; for (let i = 0; i < f.vel.length; i++) { f.vel[i][1] -= 4 * dt; p.array[i * 3] += f.vel[i][0] * dt; p.array[i * 3 + 1] += f.vel[i][1] * dt; p.array[i * 3 + 2] += f.vel[i][2] * dt; } p.needsUpdate = true; f.m.opacity = Math.max(0, 1 - f.edad / 1.7); }
       for (const f of nubes) if (f.edad > 1.7) { escena.remove(f.pts); f.g.dispose(); f.m.dispose(); f.muerto = true; }
       for (let i = nubes.length - 1; i >= 0; i--) if (nubes[i].muerto) nubes.splice(i, 1);
-      return t0 > 9 && !nubes.length;
+      return t0 > 11 && !nubes.length;
     }, fin() { for (const f of nubes) { escena.remove(f.pts); f.g.dispose(); f.m.dispose(); } } });
+  }
+  // Disfraces: a todos (tú, los vecinos y los demás jugadores) les cambia el cuerpo o la cabeza un rato.
+  const mat = (c, o = {}) => new THREE.MeshLambertMaterial({ color: c, ...o });
+  const esfera = (r, c, x, y, z, sx = 1, sy = 1, sz = 1) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 14, 10), mat(c)); m.position.set(x, y, z); m.scale.set(sx, sy, sz); return m; };
+  function hacerPato() {
+    const g = new THREE.Group(); g.userData.pod = 'pato';
+    g.add(esfera(.5, '#ffd83a', 0, .55, 0, 1, .8, 1.3), esfera(.3, '#ffd83a', 0, 1.15, .5), esfera(.07, '#1a1a1a', -.13, 1.22, .74), esfera(.07, '#1a1a1a', .13, 1.22, .74));
+    const pico = new THREE.Mesh(new THREE.ConeGeometry(.11, .3, 8), mat('#ff8c1a')); pico.rotation.x = Math.PI / 2; pico.scale.set(1.5, 1, .7); pico.position.set(0, 1.12, .88); g.add(pico);
+    const cola = new THREE.Mesh(new THREE.ConeGeometry(.16, .4, 6), mat('#f5c518')); cola.rotation.x = -1.2; cola.position.set(0, .75, -.72); g.add(cola);
+    for (const sx of [-1, 1]) { g.add(esfera(.22, '#f2c516', sx * .5, .6, -.05, .5, .8, 1.2)); const pie = new THREE.Mesh(new THREE.BoxGeometry(.2, .05, .3), mat('#ff8c1a')); pie.position.set(sx * .18, .03, .08); g.add(pie); }
+    g.scale.setScalar(1.15); return g;
+  }
+  function hacerCalabaza() {
+    const g = new THREE.Group(); g.userData.pod = 'calabaza';
+    const c = esfera(.62, '#f08a2a', 0, 0, 0, 1.15, .95, 1.15); g.add(c);
+    for (const a of [-.7, 0, .7]) { const g2 = esfera(.62, '#e2761a', 0, 0, 0, .5, .97, 1.17); g2.rotation.y = a; g.add(g2); }
+    const tallo = new THREE.Mesh(new THREE.CylinderGeometry(.07, .1, .3, 6), mat('#4d7a2a')); tallo.position.y = .62; tallo.rotation.z = .25; g.add(tallo);
+    const luz = { emissive: '#ffcf40', emissiveIntensity: .9 };
+    for (const sx of [-1, 1]) { const o = new THREE.Mesh(new THREE.ConeGeometry(.12, .2, 3), mat('#ffd860', luz)); o.position.set(sx * .24, .1, .72); o.rotation.x = Math.PI / 2; g.add(o); }
+    const b = new THREE.Mesh(new THREE.BoxGeometry(.5, .1, .1), mat('#ffd860', luz)); b.position.set(0, -.2, .72); g.add(b);
+    g.position.set(0, 1.5, 0); return g;
+  }
+  function disfraz(tipo, dur) {
+    const todos = () => [J.ch, ...PNJ.map((p) => p.ch), ...[...otros.values()].map((o) => o.ch)].filter(Boolean);
+    const puestos = []; let t0 = 0, sig = 0;
+    const quitar = () => { for (const { ch, g, ocultos } of puestos) { ch.remove(g); for (const o of ocultos) o.visible = true; delete ch.userData.podDisfraz; } puestos.length = 0; };
+    const poner = (ch) => {
+      const g = tipo === 'pato' ? hacerPato() : hacerCalabaza(), ocultos = [];
+      if (tipo === 'pato') for (const o of ch.children) if (o.visible) { o.visible = false; ocultos.push(o); }
+      ch.add(g); ch.userData.podDisfraz = tipo; puestos.push({ ch, g, ocultos });
+    };
+    activos.push({ upd(dt, t) {
+      t0 += dt; for (const ch of todos()) if (ch.userData.podDisfraz !== tipo) poner(ch);
+      puestos.forEach(({ g }, i) => { if (tipo === 'pato') { g.rotation.z = Math.sin(t * 9 + i) * .14; g.position.y = Math.abs(Math.sin(t * 9 + i)) * .06; } else g.rotation.y = Math.sin(t * 1.5 + i) * .25; });
+      if (t0 > sig) { sig += tipo === 'pato' ? .9 + Math.random() * .8 : 1.6; if (tipo === 'pato') cuac(); else nota(140 + Math.random() * 60, .5, 'triangle', .05, 90); }
+      return t0 > dur;
+    }, fin: quitar });
+  }
+  function aurora() {
+    let t0 = 0; nota(220, .8, 'sine', .06, 440); setTimeout(() => nota(330, .8, 'sine', .05, 660), 300);
+    activos.push({ noche: 1, upd(dt) { t0 += dt; return t0 > 22; } });
   }
   function fiesta() {
     const todos = () => [J.ch, ...PNJ.map((p) => p.ch), ...[...otros.values()].map((o) => o.ch)].filter(Boolean);
     const luz = new THREE.PointLight('#ff40c0', 60, 45, 1.4); escena.add(luz); let t0 = 0, sig = 0; const escala = [0, 4, 7, 9, 12, 9, 7, 4];
-    activos.push({ upd(dt, t) {
+    activos.push({ noche: 1, upd(dt, t) {
       t0 += dt; luz.color.setHSL((t0 * .6) % 1, 1, .55); luz.position.set(J.x, 7, J.z + 1); luz.intensity = 55 + Math.sin(t0 * 9) * 15;
       if (t0 > sig) { sig += .21; nota(330 * Math.pow(2, escala[Math.floor(t0 / .21) % 8] / 12), .16, 'triangle', .05); }
       if (!C.dentro()) [J.ch, ...PNJ.map((p) => p.ch)].forEach((ch, i) => { ch.position.y = alSuelo(ch.position.x, ch.position.z) + Math.abs(Math.sin(t * 8 + i)) * .55; ch.rotation.z = Math.sin(t * 8 + i) * .22; if (ch !== J.ch) ch.rotation.y += dt * 4; });
@@ -166,12 +228,13 @@ export function iniciarPoderes(C) {
   function ejecutar(id, arg, deId) {
     switch (id) {
       case 'limpiar': limpiar(deId === C.getR()?.yo.id || !C.getR()); break;
-      case 'patos': lluvia('🦆', 40, 8, 1.2, cuac); break;
+      case 'patos': disfraz('pato', 25); C.aviso('🦆 ¡Cuac! Todos se han vuelto patos'); break;
       case 'ranas': lluvia('🐸', 40, 8, 1.1, () => nota(180, .08, 'square', .04, 260)); break;
       case 'quesos': lluvia('🧀', 40, 8, 1.1, () => nota(880, .06, 'sine', .04)); break;
-      case 'calabazas': lluvia('🎃', 36, 8, 1.3, () => nota(110, .12, 'triangle', .06)); break;
+      case 'calabazas': disfraz('calabaza', 25); C.aviso('🎃 ¡Calabaza en la cabeza!'); break;
       case 'globos': globos(); break;
       case 'fuegos': fuegos(); break;
+      case 'aurora': aurora(); break;
       case 'fiesta': fiesta(); break;
       case 'gallina': desfile('🐔', 10, 5.5, 9, () => { nota(700, .1, 'sawtooth', .05, 420); }); C.aviso('🐔 ¡COCOROCÓÓÓ!'); break;
       case 'ovni': desfile('🛸', 9, 11, 8, () => nota(300 + Math.random() * 200, .2, 'sine', .04, 900)); C.aviso('🛸 …Hola, humanos.'); break;
@@ -213,6 +276,10 @@ export function iniciarPoderes(C) {
   // ---------- cada fotograma (al final del bucle, tras mover a todos) ----------
   function tick(dt, t) {
     for (let i = activos.length - 1; i >= 0; i--) { let fin = false; try { fin = activos[i].upd(dt, t); } catch { fin = true; } if (fin) { activos[i].fin?.(); activos.splice(i, 1); } }
+    // la noche de los efectos entra y sale poco a poco
+    const quiero = activos.some((a) => a.noche) && !C.dentro() ? 1 : 0;
+    cielo.v += (quiero - cielo.v) * (1 - Math.exp(-1.6 * dt)); if (Math.abs(quiero - cielo.v) < .004) cielo.v = quiero;
+    sky.visible = cielo.v > .02 && !C.dentro(); sky.material.uniforms.uV.value = Math.min(1, cielo.v * 1.15); sky.material.uniforms.uT.value = t; sky.position.copy(C.camara.position);
     // poderes personales
     const ch = J.ch;
     alt += ((estado.vuelo ? 3.2 + Math.sin(t * 2.2) * .35 : 0) - alt) * (1 - Math.exp(-4 * dt));
@@ -260,5 +327,5 @@ export function iniciarPoderes(C) {
       lanzar(id, arg); if (TODOS[id].alterna) pintarPanel();
     });
   }
-  return { recibir, tick, tarde, montarPanel, lanzar, P, estado, activos };
+  return { cielo, recibir, tick, tarde, montarPanel, lanzar, P, estado, activos };
 }
