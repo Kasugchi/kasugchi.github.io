@@ -12,6 +12,7 @@ const FUERA = (C) => !C.dentro();
 // ---- Los poderes (id → qué hacen). todos: se envían a la sala; si no, solo los ves tú.
 export const LISTA = [
   { grupo: '📣 Para todos', items: [
+    { id: 'limpiar', ico: '🧹', t: 'Quitar todos los efectos', todos: 1 },
     { id: 'patos', ico: '🦆', t: 'Lluvia de patos', todos: 1 },
     { id: 'ranas', ico: '🐸', t: 'Lluvia de ranas', todos: 1 },
     { id: 'quesos', ico: '🧀', t: 'Lluvia de quesos', todos: 1 },
@@ -151,9 +152,20 @@ export function iniciarPoderes(C) {
     nota(900, .25, 'sine', .06, 200); C.aviso(texto);
   }
 
+  // Quita todo lo que esté en marcha. Los poderes personales (volar, tamaño…) solo se apagan en quien lo pulsa.
+  function limpiar(mio) {
+    for (const a of activos.splice(0)) { try { a.fin?.(); } catch { /* nada */ } }
+    escalaGlobal = 1; const cv = render.domElement; cv.style.filter = ''; cv.style.transform = ''; cv.style.transition = '';
+    const an = document.getElementById('pod-anuncio'); if (an) an.className = '';
+    if (mio) { for (const k of Object.keys(estado)) estado[k] = 0; P.vel = 1; pintarPanel(); }
+    [J.ch, ...PNJ.map((q) => q.ch), ...[...otros.values()].map((o) => o.ch)].forEach((ch) => { if (ch) ch.rotation.z = 0; });
+    nota(500, .2, 'sine', .05, 300); C.aviso('🧹 Todo vuelve a la normalidad');
+  }
+
   // ---------- ejecutar un poder (aquí, venga de quien venga) ----------
   function ejecutar(id, arg, deId) {
     switch (id) {
+      case 'limpiar': limpiar(deId === C.getR()?.yo.id || !C.getR()); break;
       case 'patos': lluvia('🦆', 40, 8, 1.2, cuac); break;
       case 'ranas': lluvia('🐸', 40, 8, 1.1, () => nota(180, .08, 'square', .04, 260)); break;
       case 'quesos': lluvia('🧀', 40, 8, 1.1, () => nota(880, .06, 'sine', .04)); break;
