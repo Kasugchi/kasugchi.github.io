@@ -28,3 +28,13 @@ h1,h2{font-family:Georgia,"Times New Roman",serif;margin:.2em 0}
 @keyframes cae{to{transform:translateY(110vh) rotate(540deg)}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media(max-width:480px){body{font-size:17px}}
+.juego-cab{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.mudo{font-size:22px;background:#fff;border:3px solid var(--tinta);border-radius:12px;min-width:48px;min-height:48px;cursor:pointer}
+.flota{position:absolute;font:700 26px "Comic Sans MS","Chalkboard SE",cursive;pointer-events:none;animation:sube 1.1s ease-out forwards;text-shadow:0 2px 0 #fff;z-index:5;transform:translateX(-50%)}
+@keyframes sube{to{transform:translate(-50%,-70px);opacity:0}}
+.escena{position:relative;border:4px solid var(--tinta);border-radius:20px;overflow:hidden;box-shadow:var(--sombra)}
+.salto{animation:salto .45s ease}
+@keyframes salto{40%{transform:translateY(-22px) scale(1.12)}}
+.tiembla{animation:sacude .3s}
+.medidor{height:14px;background:#0003;border:2px solid var(--tinta);border-radius:8px;overflow:hidden}
+.medidor>i{display:block;height:100%;background:linear-gradient(90deg,#e8590c,#f2c744,#4f9a52);transition:width .25s}

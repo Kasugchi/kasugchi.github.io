@@ -1,61 +1,92 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>El nuevo hogar de los ratones</title><link rel="stylesheet" href="estilo.css"></head>
+<title>Rescate en la casa grande</title><link rel="stylesheet" href="estilo.css">
+<style>
+#wrap{position:relative;max-width:380px;margin:0 auto}
+canvas{display:block;width:100%;height:auto;touch-action:none;background:#2a1f3d}
+#hud{position:absolute;left:0;right:0;top:0;padding:8px 10px;color:#fff;font-weight:700;display:flex;justify-content:space-between;pointer-events:none;text-shadow:0 2px 0 #000a}
+#q{position:absolute;left:8px;right:8px;top:36px;background:#fff;color:var(--tinta);border:4px solid var(--tinta);border-radius:14px;padding:6px 10px;text-align:center;font:700 22px "Comic Sans MS","Chalkboard SE",cursive;pointer-events:none;min-height:50px;display:flex;align-items:center;justify-content:center}
+#vel{position:absolute;inset:0;background:#000a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px}
+#vel[hidden]{display:none}
+.ctl{display:flex;gap:8px;margin-top:8px}.ctl .btn{flex:1;text-align:center;font-size:22px}
+</style></head>
 <body><main>
-<div class="cab"><a href="index.html">← Volver</a><span id="est" aria-live="polite"></span></div>
-<h1>🐭 El nuevo hogar de los ratones</h1>
-<p class="nota">Juego inspirado en <i>Una feliz catástrofe</i>, de Adela Turín. Una familia de ratones se queda sin casa y tiene que empezar de cero. ¡Ayuda con tus mates!</p>
-<div id="juego"></div>
+<div class="juego-cab"><a href="index.html">← Volver</a><button class="mudo" id="mu"></button></div>
+<h1>🐭 Rescate en la casa grande</h1>
+<p class="nota">Inspirado en <i>Una feliz catástrofe</i>. Florentina corre por la casa para salvar a sus ratoncitos. Cruza la <b>puerta con la respuesta correcta</b>. Toca la zona izquierda, centro o derecha, o usa ← →. ¡Y recoge quesitos!</p>
+<div class="escena" id="wrap"><canvas id="c" width="360" height="560" aria-label="Juego de carriles"></canvas>
+ <div id="hud"><span id="vi"></span><span id="sc"></span><span id="re"></span></div><div id="q"></div>
+ <div id="vel"></div></div>
+<div class="ctl"><button class="btn" id="bl" aria-label="Izquierda">⬅</button><button class="btn" id="bc" aria-label="Centro">⬆</button><button class="btn" id="br" aria-label="Derecha">➡</button></div>
 </main>
 <script src="comun.js"></script>
 <script>
-const J = document.getElementById('juego'); let fallos = 0, paso = 0; const TOTAL = 5;
-function cab() { document.getElementById('est').textContent = `Reto ${Math.min(paso + 1, TOTAL)} de ${TOTAL}`; return `<div class="pasos">${Array.from({ length: TOTAL }, (_, k) => `<span class="${k < paso ? 'si' : k === paso ? 'ya' : ''}"></span>`).join('')}</div>`; }
-function pregunta(emoji, texto, buena, ops, pista) {
-  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">${emoji}</div><p><b>${texto}</b></p>
-   <div class="opciones">${barajar([...new Set(ops.concat(buena).map(String))]).map((o) => `<button class="op">${esc(o)}</button>`).join('')}</div><p class="fb" role="status"></p></section>`;
-  J.querySelectorAll('.op').forEach((b) => b.onclick = () => {
-    const fb = J.querySelector('.fb');
-    if (b.textContent === String(buena)) { b.classList.add('bien'); J.querySelectorAll('.op').forEach((x) => x.disabled = true); fb.textContent = '✅ ¡Muy bien!'; setTimeout(() => { paso++; siguiente(); }, 1000); }
-    else { fallos++; b.classList.remove('mal'); void b.offsetWidth; b.classList.add('mal'); b.disabled = true; fb.textContent = '🤔 ' + pista; }
+botonSonido(document.getElementById('mu'));
+const cv = document.getElementById('c'), cx = cv.getContext('2d'), W = 360, H = 560, PY = 470, LX = [60, 180, 300], META = 8;
+const VEL = +new URLSearchParams(location.search).get('v') || 1;
+let vidas, salvados, pts, lane, px, fila, quesos, hist, off, corre, ult, shake, parts, q, t;
+const $ = (i) => document.getElementById(i);
+function unicos3(c, extra) { const s = new Set([c]); for (const e of extra) { if (e > 0 && e !== c) s.add(e); if (s.size === 3) break; } let d = 1; while (s.size < 3) { s.add(c + d * (s.size % 2 ? 1 : -1) * 2); d++; } return [...s].filter((x) => x > 0).slice(0, 3); }
+function gen(n) {
+  let a, b, c, tx; const m = azar;
+  if (n === 0) { a = m(24, 58); b = m(15, 39); c = a + b; tx = `${a} + ${b}`; }
+  else if (n === 1) { a = m(61, 99); b = m(18, 49); c = a - b; tx = `${a} − ${b}`; }
+  else if (n === 2 || n === 3) { a = m(3, 9); b = m(4, 9); c = a * b; tx = `${a} × ${b}`; }
+  else if (n === 4 || n === 5) { b = m(3, 9); c = m(4, 9); a = b * c; tx = `${a} ÷ ${b}`; }
+  else if (n === 6) { a = m(3, 6); b = m(4, 8); const x = m(2, 5); c = a * b + x; tx = `${a} bolsas de ${b} migas + ${x} sueltas`; }
+  else { b = m(3, 6); const e = m(4, 8); a = b * e; const x = m(2, 7); c = e + x; tx = `${a} migas entre ${b} ratones, y +${x} cada uno`; }
+  const ops = unicos3(c, [c + 1, c - 1, c + 10, c - 10, c + 2, a + b, a - b]);
+  const buena = barajar(ops); return { tx: tx + ' = ?', c, nums: buena, good: buena.indexOf(c) };
+}
+function nuevaFila() { q = gen(salvados); $('q').textContent = q.tx; fila = { y: -80, nums: q.nums, good: q.good, hecho: false }; }
+function empezar() { vidas = 3; salvados = 0; pts = 0; lane = 1; px = LX[1]; quesos = []; hist = []; off = 0; parts = []; shake = 0; corre = true; ult = performance.now(); t = 0; $('vel').hidden = true; nuevaFila(); hud(); requestAnimationFrame(bucle); }
+function hud() { $('vi').textContent = '❤'.repeat(vidas) + '🖤'.repeat(3 - vidas); $('sc').textContent = '🧀 ' + pts; $('re').textContent = `🐭 ${salvados}/${META}`; }
+function mover(l) { lane = Math.max(0, Math.min(2, l)); }
+function bucle(now) {
+  if (!corre) return; const dt = Math.min(.05, (now - ult) / 1000) * VEL; ult = now; t += dt;
+  const v = (95 + salvados * 9) * 1; off = (off + v * dt) % 40; px += (LX[lane] - px) * Math.min(1, dt * 14);
+  hist.unshift(px); hist.length = 120;
+  fila.y += v * dt;
+  if (!fila.hecho && fila.y >= PY - 10) {
+    fila.hecho = true;
+    if (lane === fila.good) { salvados++; sOk(); confetis(px, PY); if (salvados >= META) return fin(true); } else { vidas--; shake = .3; sMal(); if (vidas <= 0) return fin(false); }
+    hud();
+  }
+  if (fila.y > H + 40) nuevaFila();
+  if (!quesos.length && Math.random() < dt * .5 && fila.y > 60 && fila.y < 250) quesos.push({ x: LX[azar(0, 2)], y: -20 });
+  quesos.forEach((c) => { c.y += v * dt; if (!c.tomado && Math.abs(c.y - PY) < 30 && Math.abs(c.x - px) < 40) { c.tomado = true; pts += 10; sMoneda(); hud(); } });
+  quesos = quesos.filter((c) => c.y < H + 20 && !c.tomado);
+  parts.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.l -= dt; }); parts = parts.filter((p) => p.l > 0);
+  if (shake > 0) shake -= dt;
+  dibuja(); requestAnimationFrame(bucle);
+}
+function confetis(x, y) { for (let i = 0; i < 16; i++) parts.push({ x, y, vx: (Math.random() - .5) * 260, vy: -Math.random() * 220, l: .8, c: ['#f2c744', '#e8590c', '#4f9a52', '#fff'][i % 4] }); }
+function dibuja() {
+  cx.save(); if (shake > 0) cx.translate((Math.random() - .5) * 10, (Math.random() - .5) * 10);
+  const g = cx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#3b2a5c'); g.addColorStop(1, '#6b4a2f'); cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+  cx.fillStyle = '#0003'; for (let y = -40 + off; y < H; y += 40) cx.fillRect(0, y, W, 3);
+  cx.fillStyle = '#0004'; cx.fillRect(118, 0, 2, H); cx.fillRect(240, 0, 2, H);
+  quesos.forEach((c) => { cx.font = '32px serif'; cx.textAlign = 'center'; cx.fillText('🧀', c.x, c.y + 10); });
+  const y = fila.y; fila.nums.forEach((n, i) => {
+    cx.fillStyle = fila.hecho ? (i === fila.good ? '#4f9a52' : '#8b3a3a') : '#d4a43a'; cx.strokeStyle = '#2b1b0a'; cx.lineWidth = 5;
+    cx.beginPath(); cx.roundRect(LX[i] - 48, y - 34, 96, 68, 18); cx.fill(); cx.stroke();
+    cx.fillStyle = '#2b1b0a'; cx.font = 'bold 32px "Comic Sans MS", sans-serif'; cx.textAlign = 'center'; cx.fillText(n, LX[i], y + 12);
   });
+  cx.font = '28px serif'; cx.textAlign = 'center'; for (let k = Math.min(salvados, META) - 1; k >= 0; k--) cx.fillText('🐭', (hist[(k + 1) * 7] ?? px) + (k - (salvados - 1) / 2) * 16, PY + 44);
+  cx.font = '58px serif'; cx.textAlign = 'center'; cx.fillText('🐭', px, PY + 12);
+  cx.font = '24px serif'; cx.fillText('🧣', px + 20, PY - 18);
+  parts.forEach((p) => { cx.fillStyle = p.c; cx.fillRect(p.x, p.y, 6, 6); });
+  cx.restore();
 }
-const RETOS = [
-  () => { const b = azar(3, 6), m = azar(6, 12); pregunta('🌰', `Florentina encuentra ${b} bolsas con ${m} migas de pan cada una. ¿Cuántas migas tiene en total?`, b * m, [b * m + m, b * m - b, b + m, b * m + 2], `Multiplica: ${b} × ${m}. O suma ${m} ${b} veces.`); },
-  () => { const h = azar(4, 8), c = azar(3, 6); pregunta('🐭', `Hay ${h} ratoncitos y ${h * c} migas para repartir en partes iguales. ¿Cuántas migas toca a cada uno?`, c, [c + 1, c - 1, c + 2, h], `Reparte: ${h * c} ÷ ${h}. ¿Cuántas veces cabe ${h} en ${h * c}?`); },
-  () => { const t = azar(2, 4) * 5 + 5; pregunta('📏', `Florentina necesita una pared de ${t} cm. Tiene una tabla de ${t - 7} cm. ¿Cuántos centímetros más necesita?`, 7, [6, 8, 17, 5], `Resta: ${t} − ${t - 7}.`); },
-  () => construir(),
-  () => ordenar()
-];
-function construir() {
-  const M = [['🪵 Palito', 3], ['🧵 Hilo', 5], ['📦 Cartón', 8], ['🧱 Piedra', 10], ['🍂 Hojas', 2], ['🪨 Guijarro', 4]];
-  const meta = [13, 15, 17, 18, 20][azar(0, 4)]; let sel = new Set();
-  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">🏠</div><p><b>El techo necesita exactamente ${meta} puntos de resistencia.</b> Elige materiales para sumar justo ${meta}.</p>
-    <div id="mat">${M.map((m, k) => `<button class="chip" data-k="${k}" aria-pressed="false">${m[0]} (${m[1]})</button>`).join('')}</div>
-    <p>Suma: <b id="sum">0</b> / ${meta}</p><button class="btn" id="ok">Construir</button><p class="fb" role="status"></p></section>`;
-  const sumar = () => [...sel].reduce((a, k) => a + M[k][1], 0);
-  J.querySelectorAll('.chip').forEach((c) => c.onclick = () => { const k = +c.dataset.k; sel.has(k) ? sel.delete(k) : sel.add(k); c.classList.toggle('sel'); c.setAttribute('aria-pressed', sel.has(k)); document.getElementById('sum').textContent = sumar(); });
-  document.getElementById('ok').onclick = () => { const fb = J.querySelector('.fb'), s = sumar();
-    if (s === meta) { fb.textContent = '✅ ¡El techo aguanta!'; setTimeout(() => { paso++; siguiente(); }, 1000); }
-    else { fallos++; fb.textContent = s < meta ? `🤔 Faltan ${meta - s} puntos. Añade algo.` : `🤔 Te pasas por ${s - meta}. Quita algo.`; } };
-  if (!subsetOk(M.map((m) => m[1]), meta)) construir();
+function fin(gana) {
+  corre = false; dibuja(); const est = gana ? (vidas === 3 ? 3 : vidas === 2 ? 2 : 1) : 0; if (est) { ponSello('catastrofe', est); confeti(); sFanfarria(); }
+  const v = $('vel'); v.hidden = false;
+  v.innerHTML = gana ? `<div style="font-size:60px">🏡</div><h2 style="color:#fff">¡Hogar nuevo!</h2><p>Todos los ratoncitos están a salvo. ${estrellasTxt(est, 3)} · 🧀 ${pts}</p>` : `<div style="font-size:60px">🌊</div><h2 style="color:#fff">¡Casi!</h2><p>Has salvado ${salvados} de ${META}. Repasa la operación antes de elegir puerta.</p>`;
+  v.innerHTML += '<button class="btn" id="otra">Jugar otra vez</button>'; $('otra').onclick = empezar;
 }
-function subsetOk(a, t) { for (let m = 1; m < 1 << a.length; m++) { let s = 0; for (let k = 0; k < a.length; k++) if (m >> k & 1) s += a[k]; if (s === t) return true; } return false; }
-function ordenar() {
-  const P = ['Buscar un sitio seguro', 'Reunir materiales', 'Levantar paredes y techo', 'Cenar juntos en la casa nueva']; let n = 0;
-  J.innerHTML = cab() + `<section class="tarjeta"><div class="grande" aria-hidden="true">🔨</div><p><b>Toca los pasos en el orden correcto para construir el hogar.</b></p>
-    <div>${barajar(P).map((p) => `<button class="chip">${esc(p)}</button>`).join('')}</div><p class="fb" role="status"></p></section>`;
-  J.querySelectorAll('.chip').forEach((c) => c.onclick = () => { const fb = J.querySelector('.fb');
-    if (c.textContent === P[n]) { c.classList.add('hecho'); c.disabled = true; n++; fb.textContent = `✅ Paso ${n}`; if (n === P.length) setTimeout(() => { paso++; siguiente(); }, 900); }
-    else { fallos++; fb.textContent = '🤔 Ese paso va en otro momento. ¿Qué haría falta antes?'; } });
-}
-function siguiente() { if (paso >= TOTAL) return fin(); RETOS[paso](); }
-function fin() {
-  const est = fallos === 0 ? 3 : fallos <= 3 ? 2 : 1; ponSello('catastrofe', est); confeti();
-  document.getElementById('est').textContent = estrellasTxt(est, 3);
-  J.innerHTML = `<section class="tarjeta"><div class="grande">🏡</div><h2>¡Hogar nuevo!</h2><p>${estrellasTxt(est, 3)} · ${fallos} ${fallos === 1 ? 'tropiezo' : 'tropiezos'}. Los ratones ya tienen casa gracias a tu cabeza.</p>
-   <h3>Para pensar y comentar</h3><ul><li>Cuando algo sale mal, ¿quién aprende a hacer cosas nuevas?</li><li>¿Qué cosas sabes hacer que antes no sabías?</li><li>¿Por qué una «catástrofe» puede acabar siendo «feliz»?</li></ul>
-   <button class="btn" onclick="fallos=0;paso=0;siguiente()">Jugar otra vez</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
-}
-siguiente();
+function portada() { const v = $('vel'); v.hidden = false; v.innerHTML = '<div style="font-size:60px">🌧️🏚️🐭</div><h2 style="color:#fff">La casa se hunde…</h2><p>Elige la puerta con el resultado correcto. ¡Salva a los ratoncitos!</p><button class="btn" id="go">▶ ¡A correr!</button>'; $('go').onclick = empezar; }
+cv.addEventListener('pointerdown', (e) => { const r = cv.getBoundingClientRect(); mover(Math.floor((e.clientX - r.left) / r.width * 3)); });
+$('bl').onclick = () => mover(lane - 1); $('br').onclick = () => mover(lane + 1); $('bc').onclick = () => mover(1);
+addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') mover(lane - 1); if (e.key === 'ArrowRight') mover(lane + 1); });
+portada();
 </script></body></html>

@@ -1,40 +1,82 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>La casa de todos</title><link rel="stylesheet" href="estilo.css">
-<style>.pers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}.pers button{font:inherit;font-weight:700;background:#fff;border:3px solid var(--tinta);border-radius:12px;padding:8px;min-height:64px;cursor:pointer}.pers button:focus-visible{outline:4px solid var(--azul)}.pers .min{display:block;font-size:14px;font-weight:400}</style></head>
+<title>Un día en la casa de todos</title><link rel="stylesheet" href="estilo.css">
+<style>
+#esc{background:#fdf0d5;padding:10px}
+#hab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hab{position:relative;border:3px solid var(--tinta);border-radius:14px;min-height:112px;padding:6px;overflow:hidden}
+.hab h3{margin:0 0 4px;font-size:15px}
+.hab[data-h="cocina"]{background:#ffe0b2}.hab[data-h="jardin"]{background:#c8e6c9}.hab[data-h="bano"]{background:#bbdefb}.hab[data-h="salon"]{background:#e1bee7}
+.tk{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:4px 8px;margin:2px;cursor:pointer;font:inherit;font-weight:700;min-height:56px;min-width:70px;position:relative;animation:entra .3s}
+.tk.sel{outline:4px solid var(--azul);background:#fff3b0}
+.tk.ocupada{opacity:.5;cursor:default}
+.tk .e{font-size:30px;line-height:1}.tk small{font-size:11px}
+.tk .vida{position:absolute;left:4px;right:4px;bottom:2px;height:4px;background:#0002;border-radius:3px}.tk .vida i{display:block;height:100%;background:var(--rojo)}
+@keyframes entra{from{transform:scale(.3);opacity:0}}
+#gente{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.per{background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:6px;text-align:center;cursor:pointer;font:inherit;min-height:120px;position:relative}
+.per .cara{font-size:46px;line-height:1}.per .n{font-weight:700;font-size:14px}.per .est{font-size:12px;min-height:2.4em}
+.per.ocup{background:#e8f5e9}.per:focus-visible{outline:4px solid var(--azul)}
+.hablar{margin-top:4px;background:var(--oro);border:2px solid var(--tinta);border-radius:8px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;padding:4px}
+#top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;gap:6px;flex-wrap:wrap}
+</style></head>
 <body><main>
-<div class="cab"><a href="index.html">← Volver</a><span id="est"></span></div>
-<h1>🐢🐭 La casa de todos</h1>
-<p class="nota">Juego que une <i>Arturo y Clementina</i> y <i>Una feliz catástrofe</i>. En una casa viven tres personas. Reparte las 9 tareas de la semana para que nadie trabaje mucho más que los demás.</p>
-<section class="tarjeta"><p><b>1.</b> Toca una tarea. <b>2.</b> Toca a quién se la das. Cada tarea indica los minutos que lleva.</p>
-<div id="tareas"></div><div class="pers" id="pers"></div>
-<p>Diferencia entre quien más y quien menos tiene: <b id="dif">0</b> min</p>
-<div class="barra" aria-hidden="true"><i id="bar" style="width:0"></i></div>
-<button class="btn" id="ok" style="margin-top:12px">Comprobar el reparto</button><button class="btn" id="otra" style="margin-top:12px;background:#fff">Otra semana</button>
-<p class="fb" id="fb" role="status"></p></section></main>
+<div class="juego-cab"><a href="index.html">← Volver</a><button class="mudo" id="mu"></button></div>
+<h1>🐢🐭 Un día en la casa de todos</h1>
+<p class="nota">Une <i>Arturo y Clementina</i> y <i>Una feliz catástrofe</i>. Aguanta 90 segundos: <b>toca una tarea</b> y luego <b>a quien la hará</b>. Que no se acumule el desorden y que nadie haga mucho más que los demás. Si Arturo pone excusas, toca «¡Sí puedes!».</p>
+<div id="ini" class="tarjeta" style="text-align:center"><div class="grande">🏠</div><button class="btn" id="go" style="font-size:22px">▶ ¡Empieza el día!</button></div>
+<div class="escena" id="esc" hidden>
+ <div id="top"><span>⏱ <b id="rl">90</b> s</span><span>✅ <b id="ok">0</b></span><span>🌀 Desorden <b id="ds">0</b>/5</span></div>
+ <div id="hab"></div><div id="gente"></div><p id="msg" class="fb" role="status" style="text-align:center"></p>
+</div><div id="fin"></div>
+</main>
 <script src="comun.js"></script>
 <script>
-const NOM = ['🐢 Arturo', '🐢 Clementina', '🐭 Florentina'];
-const T = [['🍳 Cocinar', 45], ['🧹 Barrer', 20], ['🛒 Hacer la compra', 40], ['🧺 Poner la lavadora', 15], ['🍽️ Fregar los platos', 25], ['🌷 Regar el jardín', 15], ['📚 Leer cuento a los peques', 20], ['🔧 Arreglar lo que se rompe', 30], ['🗑️ Sacar la basura', 10]];
-let tareas, asig, sel;
-function nueva() { tareas = barajar(T).map(([n, m]) => [n, m + 5 * azar(-1, 1)]); asig = tareas.map(() => -1); sel = -1; dib(); document.getElementById('fb').textContent = ''; }
-const tot = () => NOM.map((_, p) => tareas.reduce((a, t, k) => a + (asig[k] === p ? t[1] : 0), 0));
-function dib() {
-  document.getElementById('tareas').innerHTML = tareas.map((t, k) => `<button class="chip${sel === k ? ' sel' : ''}${asig[k] >= 0 ? ' hecho' : ''}" data-k="${k}" aria-pressed="${sel === k}">${esc(t[0])} · ${t[1]} min${asig[k] >= 0 ? ' → ' + esc(NOM[asig[k]].slice(3)) : ''}</button>`).join('');
-  const s = tot();
-  document.getElementById('pers').innerHTML = NOM.map((n, p) => `<button data-p="${p}">${esc(n)}<span class="min">${s[p]} min</span></button>`).join('');
-  const d = Math.max(...s) - Math.min(...s); document.getElementById('dif').textContent = d;
-  document.getElementById('bar').style.width = Math.max(0, 100 - d * 1.5) + '%';
-  document.querySelectorAll('#tareas .chip').forEach((c) => c.onclick = () => { sel = +c.dataset.k; dib(); });
-  document.querySelectorAll('#pers button').forEach((b) => b.onclick = () => { if (sel < 0) { document.getElementById('fb').textContent = 'Primero toca una tarea.'; return; } asig[sel] = +b.dataset.p; sel = -1; dib(); });
+botonSonido(document.getElementById('mu'));
+const $ = (i) => document.getElementById(i), VEL = +new URLSearchParams(location.search).get('v') || 1;
+const HAB = { cocina: ['🍳 Cocina', [['🍳', 'Cocinar'], ['🍽️', 'Fregar'], ['🥕', 'Preparar la cena']]], jardin: ['🌷 Jardín', [['🌷', 'Regar'], ['🍂', 'Barrer hojas'], ['🔧', 'Arreglar la valla']]], bano: ['🛁 Baño', [['🧽', 'Limpiar'], ['🧺', 'Lavadora'], ['🚿', 'Bañar a los peques']]], salon: ['🧸 Salón', [['🧹', 'Barrer'], ['🧸', 'Ordenar juguetes'], ['📚', 'Leer un cuento']]] };
+const GENTE = [{ n: 'Arturo', c: '🐢', ex: 1 }, { n: 'Clementina', c: '🐢' }, { n: 'Florentina', c: '🐭' }];
+const EXC = ['¡Eso no es cosa mía!', 'Que lo haga otra…', '¡Yo no sé hacer eso!'];
+let T, P, sel, tiempo, hechas, desorden, vivo, sp, id;
+function empezar() { T = []; P = GENTE.map((g) => ({ ...g, en: 100, libre: 0, hechas: 0, tarea: null, excusa: 0 })); sel = null; tiempo = 90; hechas = 0; desorden = 0; vivo = true; sp = 1.5; id = 0; $('ini').hidden = true; $('esc').hidden = false; $('fin').innerHTML = ''; $('msg').textContent = ''; ultimo = performance.now(); requestAnimationFrame(bucle); }
+let ultimo = 0, lastP = 0;
+function nueva() { const hs = Object.keys(HAB), h = uno(hs), t = uno(HAB[h][1]); T.push({ id: id++, h, e: t[0], n: t[1], vida: 18, trab: false, dur: 3 + azar(0, 2) }); }
+const uno = (l) => l[Math.floor(Math.random() * l.length)];
+function bucle(now) {
+  if (!vivo) return; const dt = Math.min(.1, (now - ultimo) / 1000) * VEL; ultimo = now; tiempo -= dt; sp -= dt;
+  if (sp <= 0 && T.filter((x) => !x.trab).length < 6) { nueva(); sp = azar(25, 40) / 10; }
+  T.forEach((t) => { if (!t.trab) { t.vida -= dt; if (t.vida <= 0) { t.muerta = true; desorden++; sMal(); flota($('esc'), '🌀 +1', '#c62828', 50, 20); } } });
+  T = T.filter((t) => !t.muerta);
+  P.forEach((p) => {
+    if (p.excusa > 0) { p.excusa -= dt; if (p.excusa <= 0) { p.t.trab = false; p.t = null; p.tarea = null; desorden += 0; } return; }
+    if (p.tarea) { const rit = p.en < 25 ? .5 : 1; p.tarea.prog += dt * rit; if (p.tarea.prog >= p.tarea.dur) { T = T.filter((x) => x !== p.t); p.hechas++; hechas++; p.en = Math.max(0, p.en - 12); sOk(); flota($('esc'), '✅', '#2e7d32'); p.tarea = null; p.t = null; } }
+    else p.en = Math.min(100, p.en + 3 * dt);
+  });
+  if (tiempo <= 0 || desorden >= 5) return fin();
+  if (now - lastP > 200) { pinta(); lastP = now; } requestAnimationFrame(bucle);
 }
-document.getElementById('ok').onclick = () => {
-  const fb = document.getElementById('fb'); const s = tot();
-  if (asig.includes(-1)) { fb.textContent = '🤔 Quedan tareas sin repartir.'; return; }
-  const d = Math.max(...s) - Math.min(...s), tt = s.reduce((a, b) => a + b, 0);
-  if (d <= 10) { fb.textContent = `✅ ¡Reparto justo! Cada uno ronda ${Math.round(tt / 3)} minutos. Nadie hace de «la que lo hace todo».`; ponSello('juntos', d <= 5 ? 3 : 2); confeti(); }
-  else { const mas = NOM[s.indexOf(Math.max(...s))].slice(3); fb.textContent = `🤔 ${mas} tiene ${Math.max(...s) - Math.min(...s)} minutos más que quien menos. Pasa alguna tarea a otra persona. (Pista: el total es ${tt} min; entre 3 son ${Math.round(tt / 3)} min cada uno.)`; }
-};
-document.getElementById('otra').onclick = nueva;
-nueva();
+function pinta() {
+  $('rl').textContent = Math.max(0, Math.ceil(tiempo)); $('ok').textContent = hechas; $('ds').textContent = desorden;
+  $('hab').innerHTML = Object.entries(HAB).map(([k, [nom]]) => `<div class="hab" data-h="${k}"><h3>${nom}</h3>${T.filter((t) => t.h === k).map((t) => `<button class="tk${sel === t.id ? ' sel' : ''}${t.trab ? ' ocupada' : ''}" data-i="${t.id}"><span class="e">${t.e}</span><small>${t.n}</small><span class="vida"><i style="width:${t.trab ? 100 : t.vida / 18 * 100}%;${t.trab ? 'background:#4f9a52' : ''}"></i></span></button>`).join('')}</div>`).join('');
+  $('gente').innerHTML = P.map((p, i) => `<div class="per${p.tarea ? ' ocup' : ''}" role="button" tabindex="0" data-p="${i}"><div class="cara">${p.c}</div><div class="n">${p.n}</div><div class="medidor"><i style="width:${p.en}%"></i></div><div class="est">${p.excusa > 0 ? '🙄 «' + p.ex + '»' : p.tarea ? 'Hace: ' + p.t.e + ' ' + Math.round(p.tarea.prog / p.tarea.dur * 100) + '%' : p.en < 25 ? '😴 Cansad@' : 'Libre'}</div>${p.excusa > 0 ? `<button class="hablar" data-h="${i}">💬 ¡Sí puedes!</button>` : ''}<div class="nota">Hechas: ${p.hechas}</div></div>`).join('');
+}
+$('hab').addEventListener('pointerdown', (e) => { const b = e.target.closest('.tk'); if (!b || !vivo) return; const t = T.find((x) => x.id === +b.dataset.i); if (t && !t.trab) { sel = t.id; pinta(); } });
+function asignar(i) {
+  if (sel == null) { $('msg').textContent = 'Primero toca una tarea.'; return; } const p = P[i], t = T.find((x) => x.id === sel); if (!t || p.tarea || p.excusa > 0) { $('msg').textContent = p.tarea ? 'Ya está ocupad@.' : ''; return; }
+  t.trab = true; p.t = t; p.tarea = { prog: 0, dur: t.dur }; sel = null;
+  if (p.ex && Math.random() < .5) { p.ex = uno(EXC); p.excusa = 4; p.tarea = { prog: 0, dur: t.dur }; $('msg').textContent = '🙄 ¡Arturo pone excusas! Toca «¡Sí puedes!».'; sMal(); }
+  else { p.ex = p.ex ? p.ex : 0; $('msg').textContent = ''; beep(660, .08); }
+  pinta();
+}
+$('gente').addEventListener('pointerdown', (e) => { const h = e.target.closest('.hablar'); if (h) { const p = P[+h.dataset.h]; p.excusa = 0; sMoneda(); $('msg').textContent = `💪 ${p.n} se anima y se pone a ello.`; flota($('esc'), '💬', '#1565c0'); pinta(); return; } const c = e.target.closest('.per'); if (c) asignar(+c.dataset.p); });
+function fin() {
+  vivo = false; $('esc').hidden = true; const hs = P.map((p) => p.hechas), dif = Math.max(...hs) - Math.min(...hs), perdida = desorden >= 5;
+  const est = perdida ? 0 : (hechas >= 18 && dif <= 2) ? 3 : (hechas >= 12 && dif <= 4) ? 2 : 1; if (est) ponSello('juntos', est); if (est >= 2) { confeti(); sFanfarria(); } else sMal();
+  $('fin').innerHTML = `<section class="tarjeta" style="text-align:center"><div class="grande">${perdida ? '🌀' : '🏠'}</div><h2>${perdida ? '¡La casa es un caos!' : 'Fin del día'}</h2>
+  <p>${estrellasTxt(est, 3)} · Tareas hechas: <b>${hechas}</b></p>
+  ${P.map((p) => `<div style="text-align:left">${p.c} ${p.n}: ${p.hechas}<div class="medidor"><i style="width:${hechas ? p.hechas / hechas * 100 : 0}%"></i></div></div>`).join('')}
+  <p>${dif <= 2 ? 'Reparto muy equilibrado. 👏' : 'Alguien ha trabajado mucho más que otro. ¿Se puede repartir mejor?'}</p>
+  <button class="btn" onclick="empezar()">Otro día</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
+}
+$('go').onclick = empezar;
 </script></body></html>
