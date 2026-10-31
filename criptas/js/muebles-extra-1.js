@@ -156,8 +156,8 @@ export default function (H) {
     marBanderaPirata: { n: 'Bandera con mástil negro', e: '🏴‍☠️', w: 1, d: 1, de: 'tienda', precio: 190, f(g) {
       pz(g, cil(.2, .26, .1, MAD2, 8), 0, .05, 0);
       pz(g, cil(.035, .035, 1.9, MAD, 8), 0, 1.0, 0);
-      pz(g, caja(.02, .5, .55, '#1e1e1e'), .01, 1.55, .26);
-      pz(g, bola(.09, '#f8f9fa'), .02, 1.57, .26);
+      pz(g, caja(.02, .5, .45, "#1e1e1e"), .01, 1.55, .24);
+      pz(g, bola(.09, '#f8f9fa'), .02, 1.57, .24);
     } },
 
     marBarcoMaqueta: { n: 'Maqueta de fragata velera', e: '⛵', w: 1, d: 1, de: 'tienda', precio: 220, f(g) {

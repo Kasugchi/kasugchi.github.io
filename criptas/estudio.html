@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Criptas · Estudio</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "./js/acceso.js": "./js/acceso.js?v=20261031100238",
+    "./js/campanas.js": "./js/campanas.js?v=20261031100238",
+    "./js/datos.js": "./js/datos.js?v=20261031100238",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261031100238",
+    "./js/firebase.js": "./js/firebase.js?v=20261031100238",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261031100238",
+    "./js/ia.js": "./js/ia.js?v=20261031100238",
+    "./js/iconos.js": "./js/iconos.js?v=20261031100238",
+    "./js/insultos.js": "./js/insultos.js?v=20261031100238",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261031100238",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261031100238",
+    "./js/motor.js": "./js/motor.js?v=20261031100238",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261031100238",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261031100238",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261031100238",
+    "./js/nube.js": "./js/nube.js?v=20261031100238",
+    "./js/panel.js": "./js/panel.js?v=20261031100238",
+    "./js/planos.js": "./js/planos.js?v=20261031100238",
+    "./js/procedural.js": "./js/procedural.js?v=20261031100238",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261031100238",
+    "./js/red.js": "./js/red.js?v=20261031100238",
+    "./js/render.js": "./js/render.js?v=20261031100238",
+    "./js/render3d.js": "./js/render3d.js?v=20261031100238",
+    "./js/reunion.js": "./js/reunion.js?v=20261031100238",
+    "./js/sprites.js": "./js/sprites.js?v=20261031100238",
+    "./js/tablero.js": "./js/tablero.js?v=20261031100238",
+    "./js/ui.js": "./js/ui.js?v=20261031100238",
+    "./js/viajero.js": "./js/viajero.js?v=20261031100238"
+  }
+}
+</script>
+<style id="cerrojo">body{visibility:hidden}</style>
+<style>
+  * { box-sizing: border-box; }
+  :root { --crema: #fff8e6; --borde: #d9c49a; --tinta: #4a3626; --suave: #7a6248; --rojo: #c0503a; --verde: #4f9c3e; --ambar: #d89a3a; }
+  html, body { margin: 0; background: #a8dcf5; color: var(--tinta); font: 15px/1.4 'Nunito', system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 14px 50px; }
+  h1 { margin: 0; color: #fff; font-size: 28px; text-shadow: 0 2px 0 rgba(60,90,40,.45); }
+  .sub { margin: 0 0 12px; color: #fff; font-weight: 600; }
+  .barra { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 10px 0 14px; }
+  .barra .pestana, button, .enlace { font: inherit; font-weight: 800; border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; background: #f2e6c8; color: #5a4030; box-shadow: 0 2px 0 var(--borde); text-decoration: none; }
+  .barra .pestana.activa, button.rojo { background: var(--rojo); color: #fff; box-shadow: 0 2px 0 #8a3020; }
+  .barra .espacio { flex: 1; }
+  .panel { background: var(--crema); border-radius: 22px; padding: 14px 16px; box-shadow: 0 4px 0 var(--borde); margin-bottom: 14px; }
+  .panel h2 { margin: 0 0 8px; font-size: 18px; }
+  .nota { color: var(--suave); font-size: 13px; }
+  input[type=search], select { font: inherit; padding: 6px 12px; border-radius: 999px; border: 2px solid var(--borde); background: #fff; color: var(--tinta); }
+  .filtros { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; align-items: center; }
+  .cuadricula { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 10px; }
+  .tarj { background: #fff; border-radius: 16px; border: 2px solid transparent; padding: 6px; cursor: pointer; text-align: center; box-shadow: 0 2px 0 var(--borde); }
+  .tarj:hover, .tarj.sel { border-color: var(--rojo); }
+  .tarj img { width: 100%; aspect-ratio: 1; border-radius: 10px; display: block; background: #f3e6c4; }
+  .tarj b { display: block; font-size: 13px; margin-top: 4px; line-height: 1.15; }
+  .tarj small { color: var(--suave); font-size: 11px; }
+  .chip { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: rgba(80,50,20,.12); margin: 1px 2px; }
+  .chip.tienda { background: #cfe4c6; } .chip.botin { background: #f1e0b0; } .chip.jefe { background: #e3c0e8; } .chip.regalo { background: #f4c9d4; } .chip.campana { background: #c9dcf4; }
+  .chip.mal { background: #f3c9c0; color: #8a2a18; }
+  .visor { display: grid; grid-template-columns: minmax(260px, 420px) 1fr; gap: 14px; }
+  @media (max-width: 760px) { .visor { grid-template-columns: 1fr; } }
+  .lienzo { width: 100%; aspect-ratio: 1; border-radius: 16px; background: #f3e6c4; touch-action: none; display: block; cursor: grab; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  td, th { text-align: left; padding: 3px 8px; border-bottom: 1px solid #eadfc2; vertical-align: top; }
+  th { color: var(--suave); width: 1%; white-space: nowrap; }
+  .horas { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; margin: 4px 0; }
+  .horas i { height: 14px; border-radius: 3px; background: #e8dcc0; } .horas i.si { background: var(--verde); }
+  .horas-n { display: grid; grid-template-columns: repeat(24, 1fr); font-size: 9px; color: var(--suave); text-align: center; }
+  .revision { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .revision li { padding: 6px 10px; border-radius: 8px; font-size: 13px; }
+  .revision .error { background: #f3c9c0; } .revision .aviso { background: #f1e0b0; } .revision .ok { background: #cfe4c6; } .revision .idea { background: #d6e4f4; }
+  .resumen { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px; }
+  .resumen div { background: #fff; border-radius: 12px; padding: 6px 10px; } .resumen b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; } .resumen span { font-size: 12px; color: var(--suave); }
+  details { margin: 4px 0; } summary { cursor: pointer; font-weight: 800; }
+  details ul { margin: 4px 0 4px 18px; padding: 0; font-size: 13px; }
+  .texto-l { font-size: 13px; padding: 3px 0; border-bottom: 1px dotted #e3d6b4; } .texto-l small { color: var(--suave); }
+  .cargando { text-align: center; padding: 40px 10px; color: #fff; font-weight: 800; }
+  #cerrojo-admin { text-align: center; padding: 40px 16px; background: var(--crema); border-radius: 22px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Estudio</h1>
+  <p class="sub">El lado técnico de Criptas de Velmor: lo que hay, cómo se ve y si está todo en su sitio.</p>
+  <section id="cerrojo-admin"><p class="nota">Comprobando que eres el administrador…</p></section>
+
+  <div id="app" hidden>
+    <div class="barra" id="pestanas">
+      <button class="pestana activa" data-p="muebles">🪑 Muebles</button>
+      <button class="pestana" data-p="vecinos">🧑‍🤝‍🧑 Vecinos</button>
+      <button class="pestana" data-p="textos">💬 Textos</button>
+      <button class="pestana" data-p="salud">🩺 Salud</button>
+      <button class="pestana" data-p="atajos">🔗 Atajos</button>
+      <span class="espacio"></span>
+      <button id="recargar" title="Vuelve a leer los datos del pueblo (por si se han cargado campañas)">↻ Recargar datos</button>
+    </div>
+    <div id="cargando" class="cargando">Cargando los datos del pueblo…</div>
+    <section id="p-muebles" hidden></section>
+    <section id="p-vecinos" hidden></section>
+    <section id="p-textos" hidden></section>
+    <section id="p-salud" hidden></section>
+    <section id="p-atajos" hidden></section>
+  </div>
+  <iframe id="pueblo" style="display:none" title="pueblo"></iframe>
+</main>
+
+<script type="module">
+import './js/acceso.js';
+
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const FRANJAS = { manana: [6, 12], tarde: [12, 20], noche: [20, 24], madrugada: [0, 6] };
+const MAXLIN = 140;
+let pu = null, TH = null;              // window.pueblo del iframe y su three.js
+const visor = {};                      // visor 3D reutilizable
+
+// ---------------------------------------------------------------- acceso (solo administrador)
+import('./js/nube.js').then(async (m) => {
+  const u = await m.usuarioListo();
+  if (!u || !(await m.esAdmin())) { $('cerrojo-admin').innerHTML = '<h2>Solo para el administrador</h2><p class="nota">El estudio es la parte técnica del juego. Entra con la cuenta de administrador.</p><p><a href="index.html">Volver al juego</a></p>'; return; }
+  $('cerrojo-admin').hidden = true; $('app').hidden = false; arrancar();
+}).catch((e) => { $('cerrojo-admin').innerHTML = `<p class="nota">No se pudo conectar: ${esc(e.message)}</p>`; });
+
+// ---------------------------------------------------------------- datos: se leen del propio pueblo
+// El pueblo vive en pueblo.html (muebles, vecinos…). Lo cargamos en un marco oculto y leemos window.pueblo:
+// así el estudio nunca se desincroniza de lo que ve el jugador.
+function cargarPueblo() {
+  return new Promise((ok, mal) => {
+    const f = $('pueblo'); let t = 0;
+    f.onload = () => { const r = setInterval(() => { if (f.contentWindow?.pueblo?.H) { clearInterval(r); ok(f.contentWindow.pueblo); } else if (++t > 120) { clearInterval(r); mal(new Error('El pueblo no ha cargado (¿sesión caducada?)')); } }, 250); };
+    f.src = 'pueblo.html?hora=12&curva=0.0000001';
+  });
+}
+async function arrancar() {
+  try { pu = await cargarPueblo(); } catch (e) { $('cargando').innerHTML = esc(e.message); return; }
+  TH = pu.H.THREE; pu.CURVA.uCurva.value = 0;   // sin la curvatura del mundo, para ver los muebles rectos
+  $('cargando').hidden = true; construir(); abrir('muebles');
+  $('recargar').onclick = () => { construir(); abrir(actual); };
+}
+let actual = 'muebles';
+function abrir(p) {
+  actual = p;
+  for (const b of document.querySelectorAll('#pestanas .pestana')) b.classList.toggle('activa', b.dataset.p === p);
+  for (const s of ['muebles', 'vecinos', 'textos', 'salud', 'atajos']) $('p-' + s).hidden = s !== p;
+  if (p === 'salud') pintarSalud();
+}
+$('pestanas').addEventListener('click', (e) => { const b = e.target.closest('.pestana'); if (b) abrir(b.dataset.p); });
+
+// ---------------------------------------------------------------- visor 3D
+function crearEscena() {
+  const s = new TH.Scene(); s.background = new TH.Color('#f3e6c4');
+  s.add(new TH.HemisphereLight('#fff6e0', '#a89060', 1.25));
+  const d = new TH.DirectionalLight('#ffffff', 1.4); d.position.set(3, 6, 4); s.add(d);
+  return s;
+}
+function hueco(w, d) {
+  const g = new TH.Group();
+  const suelo = new TH.Mesh(new TH.PlaneGeometry(w, d).rotateX(-Math.PI / 2), new TH.MeshBasicMaterial({ color: '#e8b0a0', transparent: true, opacity: .45 }));
+  suelo.position.y = .002; g.add(suelo);
+  const l = new TH.LineSegments(new TH.EdgesGeometry(new TH.BoxGeometry(w, .001, d)), new TH.LineBasicMaterial({ color: '#d02a2a' }));
+  g.add(l); return g;
+}
+// Caja que envuelve solo lo sólido (los muñecos llevan sombra y brillos transparentes que inflarían la medida; el cristal de un mueble no cuenta para el encuadre)
+function cajaVisible(obj) {
+  obj.updateMatrixWorld(true); const c = new TH.Box3();
+  obj.traverseVisible((o) => { if (o.isMesh && o.geometry && !(o.material && o.material.transparent && !o.userData.cuerpo)) { if (!o.geometry.boundingBox) o.geometry.computeBoundingBox(); c.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } });
+  return c.isEmpty() ? new TH.Box3(new TH.Vector3(-.5, 0, -.5), new TH.Vector3(.5, 1, .5)) : c;
+}
+// Dibuja `obj` en una escena y devuelve las medidas. `w`,`d`: el hueco (si lo tiene).
+function montar(escena, obj, w, d, luz) {
+  while (escena.userData.cont?.children.length) escena.userData.cont.remove(escena.userData.cont.children[0]);
+  const cont = escena.userData.cont || (escena.userData.cont = new TH.Group()); if (!cont.parent) escena.add(cont);
+  if (w) cont.add(hueco(w, d)); cont.add(obj);
+  if (luz) { const pl = new TH.PointLight('#ffd890', 2, 7); pl.position.set(0, luz, 0); cont.add(pl); }
+  const caja = cajaVisible(obj), tam = caja.getSize(new TH.Vector3());
+  return { caja, tam, cy: (caja.min.y + caja.max.y) / 2, radio: Math.max(tam.x, tam.y, tam.z, w || 0, d || 0) };
+}
+function poner(cam, m, az, el, zoom = 1) {
+  const r = (m.radio * 1.7 + 1) * zoom, cy = m.cy;
+  cam.position.set(Math.sin(az) * Math.cos(el) * r, cy + Math.sin(el) * r, Math.cos(az) * Math.cos(el) * r);
+  cam.lookAt(0, cy, 0);
+}
+// Miniatura (una sola vez por mueble o vecino)
+let rMini = null; const minis = new Map();
+function miniatura(clave, hacer, w, d, luz) {
+  if (minis.has(clave)) return minis.get(clave);
+  if (!rMini) { rMini = new TH.WebGLRenderer({ canvas: document.createElement('canvas'), antialias: true, preserveDrawingBuffer: true }); rMini.setSize(160, 160, false); rMini.escena = crearEscena(); rMini.cam = new TH.PerspectiveCamera(35, 1, .1, 60); }
+  let url = '';
+  try { const o = hacer(), m = montar(rMini.escena, o, w, d, luz); poner(rMini.cam, m, .7, .5); rMini.render(rMini.escena, rMini.cam); url = rMini.domElement.toDataURL('image/png'); } catch (e) { url = ''; }
+  minis.set(clave, url); return url;
+}
+// Visor grande, con arrastrar para girar y rueda para acercar
+function visorGrande(canvas) {
+  const r = new TH.WebGLRenderer({ canvas, antialias: true }), escena = crearEscena(), cam = new TH.PerspectiveCamera(35, 1, .1, 60);
+  const est = canvas._est = { az: .7, el: .45, zoom: 1, m: null, auto: true };
+  const dib = () => { const w = canvas.clientWidth || 320; r.setSize(w, w, false); cam.aspect = 1; cam.updateProjectionMatrix(); if (est.m) { poner(cam, est.m, est.az, est.el, est.zoom); r.render(escena, cam); } };
+  canvas._r = r; canvas._cam = cam;
+  let arr = null;
+  canvas.onpointerdown = (e) => { arr = [e.clientX, e.clientY]; est.auto = false; canvas.setPointerCapture(e.pointerId); };
+  canvas.onpointermove = (e) => { if (!arr) return; est.az -= (e.clientX - arr[0]) * .012; est.el = Math.max(.05, Math.min(1.4, est.el + (e.clientY - arr[1]) * .01)); arr = [e.clientX, e.clientY]; dib(); };
+  canvas.onpointerup = () => { arr = null; };
+  canvas.onwheel = (e) => { e.preventDefault(); est.zoom = Math.max(.4, Math.min(2.5, est.zoom * (e.deltaY > 0 ? 1.1 : .9))); dib(); };
+  const giro = () => { if (!canvas.isConnected) return; if (est.auto) { est.az += .008; dib(); } requestAnimationFrame(giro); };
+  requestAnimationFrame(giro);
+  return { mostrar(o, w, d, luz) { est.m = montar(escena, o, w, d, luz); est.auto = true; dib(); return est.m; } };
+}
+
+// ---------------------------------------------------------------- MUEBLES
+function medir(k) {
+  const m = pu.MUEBLES[k], g = new TH.Group(); const av = [];
+  try { m.f(g); } catch (e) { return { g, av: [['error', 'El dibujo falla: ' + e.message]], piezas: 0, tam: null }; }
+  g.updateMatrixWorld(true);
+  let piezas = 0; g.traverse((o) => { if (o.isMesh) piezas++; });
+  const caja = new TH.Box3().setFromObject(g), tam = caja.getSize(new TH.Vector3()), eps = .03;
+  // Un pequeño pasarse (hasta 0,25) es un aviso; más que eso, un error
+  const pasa = (v, lim) => Math.max(0, Math.abs(v) - lim), nivel = (x) => (x > .25 ? 'error' : 'aviso');
+  const ox = Math.max(pasa(caja.min.x, m.w / 2), pasa(caja.max.x, m.w / 2)), oz = Math.max(pasa(caja.min.z, m.d / 2), pasa(caja.max.z, m.d / 2));
+  if (ox > eps) av.push([nivel(ox), `Sobresale del hueco en ancho (${caja.min.x.toFixed(2)} a ${caja.max.x.toFixed(2)}, hueco ±${m.w / 2})`]);
+  if (oz > eps) av.push([nivel(oz), `Sobresale del hueco en fondo (${caja.min.z.toFixed(2)} a ${caja.max.z.toFixed(2)}, hueco ±${m.d / 2})`]);
+  if (caja.max.y > 2.2 + eps) av.push([caja.max.y > 2.6 ? 'error' : 'aviso', `Pasa de 2,2 de alto (${caja.max.y.toFixed(2)})`]);
+  if (caja.min.y < -.05) av.push(['error', `Se hunde bajo el suelo (${caja.min.y.toFixed(2)})`]);
+  if (caja.min.y > .12 && m.capa !== 'suelo') av.push(['aviso', `Flota: la pieza más baja está a ${caja.min.y.toFixed(2)} del suelo`]);
+  if (!m.capa && piezas < 3) av.push(['aviso', `Pocas piezas (${piezas})`]);
+  if (piezas > 14) av.push(['aviso', `Muchas piezas (${piezas})`]);
+  if (m.de === 'tienda' && !(m.precio >= 60 && m.precio <= 700)) av.push(['aviso', 'Precio fuera de 60–700 (' + m.precio + ')']);
+  if ((m.de === 'botin' || m.de === 'jefe') && !m.art) av.push(['error', 'Falta la descripción «art»']);
+  if (m.luz != null && (m.luz < .3 || m.luz > 1.8)) av.push(['aviso', 'Altura de luz rara: ' + m.luz]);
+  if (m.uso && !['sentar', 'dormir', 'musica', 'trofeos', 'espejo'].includes(m.uso)) av.push(['error', 'Uso desconocido: ' + m.uso]);
+  return { g, av, piezas, tam, caja };
+}
+const cacheMed = new Map(); const medido = (k) => cacheMed.get(k) || (cacheMed.set(k, medir(k)), cacheMed.get(k));
+let selMueble = null;
+function pintarMuebles() {
+  const M = pu.MUEBLES, claves = Object.keys(M), orig = {};
+  for (const k of claves) orig[M[k].de] = (orig[M[k].de] || 0) + 1;
+  const fo = $('f-origen')?.value || '', fq = ($('f-q')?.value || '').toLowerCase(), ft = $('f-tam')?.value || '', fp = $('f-prob')?.checked;
+  const lista = claves.filter((k) => { const m = M[k]; if (fo && m.de !== fo) return false; if (ft && `${m.w}x${m.d}` !== ft) return false; if (fq && !(m.n + ' ' + k).toLowerCase().includes(fq)) return false; if (fp && !medido(k).av.length) return false; return true; });
+  const tams = [...new Set(claves.map((k) => `${M[k].w}x${M[k].d}`))].sort();
+  const raiz = $('p-muebles');
+  if (!raiz.dataset.hecho) {
+    raiz.dataset.hecho = 1;
+    raiz.innerHTML = `<div class="panel"><div class="resumen" id="m-res"></div><div class="filtros">
+      <select id="f-origen"><option value="">Todos los orígenes</option>${Object.keys(orig).map((o) => `<option>${o}</option>`).join('')}</select>
+      <select id="f-tam"><option value="">Todos los tamaños</option>${tams.map((t) => `<option>${t}</option>`).join('')}</select>
+      <input type="search" id="f-q" placeholder="Buscar por nombre o clave…">
+      <label class="nota"><input type="checkbox" id="f-prob"> solo con avisos</label></div>
+      <div id="m-visor" class="visor" hidden><div><canvas class="lienzo" id="m-canvas"></canvas><p class="nota">Arrastra para girar · rueda para acercar · rectángulo rojo = el hueco que ocupa</p></div><div id="m-info"></div></div></div>
+      <div class="panel"><div class="cuadricula" id="m-grid"></div></div>`;
+    for (const id of ['f-origen', 'f-tam', 'f-q', 'f-prob']) $(id).oninput = pintarMuebles;
+    $('m-grid').onclick = (e) => { const t = e.target.closest('.tarj'); if (t) detalleMueble(t.dataset.k); };
+  }
+  $('m-res').innerHTML = `<div><b>${claves.length}</b><span>muebles</span></div>` + Object.entries(orig).map(([o, n]) => `<div><b>${n}</b><span>${o}</span></div>`).join('');
+  $('m-grid').innerHTML = lista.map((k) => { const m = M[k], md = medido(k); return `<div class="tarj ${k === selMueble ? 'sel' : ''}" data-k="${k}"><img loading="lazy" alt="" src="${miniatura('m' + k, () => { const g = new TH.Group(); try { m.f(g); } catch (e) { } return g; }, m.w, m.d, m.luz)}"><b>${esc(m.e)} ${esc(m.n)}</b><small>${m.w}×${m.d}${m.precio ? ' · ' + m.precio + '🪙' : ''}</small>${md.av.some((a) => a[0] === 'error') ? '<div><span class="chip mal">⚠ revisar</span></div>' : ''}</div>`; }).join('') || '<p class="nota">Nada con esos filtros.</p>';
+}
+function detalleMueble(k) {
+  selMueble = k; const m = pu.MUEBLES[k], md = medido(k);
+  $('m-visor').hidden = false;
+  if (!visor.m) visor.m = visorGrande($('m-canvas'));
+  const g = new TH.Group(); try { m.f(g); } catch (e) { } visor.m.mostrar(g, m.w, m.d, m.luz);
+  const fila = (a, b) => `<tr><th>${a}</th><td>${b}</td></tr>`;
+  $('m-info').innerHTML = `<h2>${esc(m.e)} ${esc(m.n)}</h2><table>
+    ${fila('Clave', `<code>${esc(k)}</code>`)}${fila('Origen', `<span class="chip ${esc(m.de)}">${esc(m.de)}</span>`)}${fila('Hueco', `${m.w} × ${m.d} casillas`)}
+    ${md.tam ? fila('Medidas reales', `${md.tam.x.toFixed(2)} × ${md.tam.z.toFixed(2)} de planta · ${md.tam.y.toFixed(2)} de alto`) : ''}${fila('Piezas', md.piezas)}
+    ${m.precio ? fila('Precio', m.precio + ' 🪙') : ''}${m.art ? fila('Descripción', esc(m.art)) : ''}
+    ${m.uso ? fila('Uso', esc(m.uso)) : ''}${m.luz != null ? fila('Luz', `a ${m.luz} m de altura`) : ''}${m.capa ? fila('Capa', m.capa + ' (se pisa)') : ''}</table>
+    <ul class="revision" style="margin-top:8px">${md.av.length ? md.av.map(([t, x]) => `<li class="${t}">${esc(x)}</li>`).join('') : '<li class="ok">Sin avisos: cabe en su hueco y respeta las reglas.</li>'}</ul>`;
+  document.querySelectorAll('#m-grid .tarj').forEach((t) => t.classList.toggle('sel', t.dataset.k === k));
+  $('m-visor').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ---------------------------------------------------------------- VECINOS
+const lineas = (v) => (v == null ? [] : [].concat(v)).filter((x) => typeof x === 'string' && x);
+function franjasDe(def) {
+  const out = { presentes: [], horas: [], zonas: new Set() };
+  for (let h = 0; h < 24; h++) { let z = null; try { z = def.horario(h); } catch (e) { } out.horas.push(!!z); if (z) { out.zonas.add(z.txt || 'sin texto'); out.presentes.push(h); } }
+  out.franjas = Object.entries(FRANJAS).filter(([, [a, b]]) => out.presentes.some((h) => h >= a && h < b)).map(([k]) => k);
+  return out;
+}
+function pintarVecinos() {
+  const raiz = $('p-vecinos'), lista = pu.PNJ.map((p) => ({ p, d: p.def })).concat([{ p: pu.MARGA, d: pu.MARGA.def, marga: true }]);
+  raiz.innerHTML = `<div class="panel"><p class="nota">${lista.length} vecinos (los de siempre + los de campaña que haya cargado el pueblo). Pulsa uno para ver todo lo que dice.</p>
+    <div class="cuadricula" id="v-grid">${lista.map(({ p, d }) => `<div class="tarj" data-id="${esc(p.id)}"><img loading="lazy" alt="" src="${miniatura('v' + p.id, () => { const c = p.ch.clone(true); c.visible = true; c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); return c; })}"><b>${esc(d.nombre || p.nombre)}</b><small>${String(p.id).startsWith('cp_') ? 'de campaña' : p.id}</small></div>`).join('')}</div></div>
+    <div class="panel" id="v-det" hidden><div class="visor"><div><canvas class="lienzo" id="v-canvas"></canvas></div><div id="v-info"></div></div></div>`;
+  $('v-grid').onclick = (e) => { const t = e.target.closest('.tarj'); if (t) detalleVecino(lista.find((x) => String(x.p.id) === t.dataset.id)); };
+}
+function detalleVecino({ p, d, marga }) {
+  $('v-det').hidden = false;
+  if (!visor.v) visor.v = visorGrande($('v-canvas'));
+  const c = p.ch.clone(true); c.visible = true; c.position.set(0, 0, 0); c.rotation.set(0, 0, 0); visor.v.mostrar(c);
+  const hr = franjasDe(d), sal = d.saludo || {};
+  const bloque = (t, arr) => arr.length ? `<details><summary>${t} (${arr.length})</summary><ul>${arr.map((x) => `<li>${esc(x)}</li>`).join('')}</ul></details>` : '';
+  const fila = (a, b) => `<tr><th>${a}</th><td>${b}</td></tr>`;
+  const a = d.aspecto || {}, sw = (c) => c ? `<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${esc(c)};vertical-align:-1px"></span> ${esc(c)}` : '—';
+  $('v-info').innerHTML = `<h2>${esc(d.nombre || p.nombre)} <span class="nota">${esc(p.id)}</span></h2><table>
+    ${fila('Color / voz / velocidad', `${sw(d.color)} · voz ${d.voz ?? '—'} · vel ${d.vel ?? 1}`)}${fila('Ropa · pantalón · pelo', `${sw(a.ropa)} · ${sw(a.pantalon)} · ${sw(a.pelo)}`)}
+    ${a.extra ? fila('Rasgo especial', esc(a.extra) + (a.escala ? ' · escala ' + a.escala : '')) : ''}${fila('Casa', d.casa ? 'sí (puerta en ' + esc(d.casa.x?.toFixed?.(1)) + ', ' + esc(d.casa.z?.toFixed?.(1)) + ')' : 'no tiene')}
+    ${fila('Dónde está', [...hr.zonas].map(esc).join('<br>') || '—')}
+    ${d.encargo ? fila('Encargo', `${esc(d.encargo.cosa)} → para ${esc(d.encargo.para)}`) : ''}${d.fijo ? fila('Fijo', 'no rota nunca') : ''}</table>
+    <div class="horas">${hr.horas.map((x, i) => `<i class="${x ? 'si' : ''}" title="${i}:00"></i>`).join('')}</div><div class="horas-n">${[...Array(24).keys()].map((i) => `<span>${i % 3 ? '' : i}</span>`).join('')}</div>
+    ${bloque('Saludos', Object.entries(sal).flatMap(([k, v]) => lineas(v).map((x) => `[${k}] ${x}`)))}${bloque('Charla', lineas(d.charla))}${bloque('Cuando sois amigos', lineas(d.amigo))}${bloque('Regalos que da', lineas(d.regalos))}${bloque('Dormido', lineas(d.dormido))}`;
+  $('v-det').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+// ---------------------------------------------------------------- TEXTOS
+function todosLosTextos() {
+  const t = [];
+  for (const [id, d] of Object.entries(pu.VEC)) {
+    for (const [k, v] of Object.entries(d.saludo || {})) for (const x of lineas(v)) t.push({ quien: id, tipo: 'saludo ' + k, x });
+    for (const x of lineas(d.charla)) t.push({ quien: id, tipo: 'charla', x });
+    for (const x of lineas(d.amigo)) t.push({ quien: id, tipo: 'amigo', x });
+    for (const x of lineas(d.regalos)) t.push({ quien: id, tipo: 'regalo', x });
+    for (const x of lineas(d.dormido)) t.push({ quien: id, tipo: 'dormido', x });
+  }
+  for (const [a, b, ls] of pu.PARES) lineas(ls).forEach((x, i) => t.push({ quien: `${a} y ${b}`, tipo: 'conversación', x }));
+  for (const par of pu.GENERICAS) lineas(par).forEach((x) => t.push({ quien: 'cualquiera', tipo: 'genérica', x }));
+  return t;
+}
+function revisarTextos(t) {
+  const out = [], vistos = new Map();
+  for (const r of t) {
+    const n = r.x.toLowerCase().replace(/\s+/g, ' ').trim(), fuente = `${r.quien} · ${r.tipo}`;
+    if (r.tipo !== 'regalo' && r.tipo !== 'dormido' && r.x.length > MAXLIN) out.push(['aviso', `Pasa de ${MAXLIN} caracteres (${r.x.length}) — ${fuente}: «${r.x.slice(0, 60)}…»`]);
+    if (/\{\s*n\s*\}/i.test(r.x) && !r.x.includes('{N}')) out.push(['error', `Marcador de nombre mal escrito — ${fuente}: «${r.x.slice(0, 60)}»`]);
+    if (/\{[^N}]*\}/.test(r.x) && !/\{N\}/.test(r.x.replace(/\{[^N}]*\}/g, ''))) out.push(['aviso', `Llaves raras — ${fuente}: «${r.x.slice(0, 60)}»`]);
+    if (r.x.includes('"')) out.push(['aviso', `Comillas dobles (mejor « ») — ${fuente}: «${r.x.slice(0, 60)}»`]);
+    if (/  /.test(r.x) || r.x !== r.x.trim()) out.push(['aviso', `Espacios de más — ${fuente}: «${r.x.slice(0, 60)}»`]);
+    if (vistos.has(n)) out.push(['aviso', `Repetida: «${r.x.slice(0, 60)}» — ${fuente} y ${vistos.get(n)}`]); else vistos.set(n, fuente);
+  }
+  return out;
+}
+function pintarTextos() {
+  const t = todosLosTextos(), rev = revisarTextos(t), por = {};
+  for (const r of t) por[r.quien] = (por[r.quien] || 0) + 1;
+  $('p-textos').innerHTML = `<div class="panel"><div class="resumen"><div><b>${t.length}</b><span>frases en total</span></div><div><b>${pu.PARES.length}</b><span>conversaciones entre vecinos</span></div><div><b>${pu.GENERICAS.length}</b><span>genéricas</span></div><div><b>${rev.length}</b><span>avisos</span></div></div>
+    <ul class="revision">${rev.length ? rev.slice(0, 80).map(([k, x]) => `<li class="${k}">${esc(x)}</li>`).join('') + (rev.length > 80 ? `<li class="idea">…y ${rev.length - 80} más</li>` : '') : '<li class="ok">Todos los textos pasan la revisión.</li>'}</ul></div>
+    <div class="panel"><h2>Buscar en todo lo que dicen</h2><div class="filtros"><input type="search" id="t-q" placeholder="Una palabra o frase…" style="flex:1;min-width:200px"><span class="nota" id="t-n"></span></div><div id="t-res"></div>
+    <details><summary>Frases por vecino</summary><table>${Object.entries(por).sort((a, b) => b[1] - a[1]).map(([k, n]) => `<tr><th>${esc(k)}</th><td>${n}</td></tr>`).join('')}</table></details></div>`;
+  const buscar = () => { const q = $('t-q').value.toLowerCase().trim(); const r = q ? t.filter((x) => x.x.toLowerCase().includes(q)) : []; $('t-n').textContent = q ? `${r.length} resultados` : ''; $('t-res').innerHTML = r.slice(0, 120).map((x) => `<div class="texto-l">${esc(x.x)} <small>— ${esc(x.quien)} · ${esc(x.tipo)}</small></div>`).join(''); };
+  $('t-q').oninput = buscar;
+}
+
+// ---------------------------------------------------------------- SALUD
+async function pintarSalud() {
+  const raiz = $('p-salud'); raiz.innerHTML = '<div class="panel"><p class="nota">Comprobando…</p></div>';
+  const grupos = [];
+  const G = (titulo, items) => grupos.push([titulo, items]);
+  // 1. muebles
+  { const M = pu.MUEBLES, it = []; let mal = 0;
+    for (const k of Object.keys(M)) { for (const [t, x] of medido(k).av) { it.push([t, `${k}: ${x}`]); if (t === 'error') mal++; } }
+    const nombres = {}; for (const k of Object.keys(M)) (nombres[M[k].n] ||= []).push(k);
+    for (const [n, ks] of Object.entries(nombres)) if (ks.length > 1 && !ks.some((k) => k.startsWith('cp_'))) it.push(['aviso', `Nombre repetido «${n}»: ${ks.join(', ')}`]);
+    const orig = {}; for (const k of Object.keys(M)) orig[M[k].de] = (orig[M[k].de] || 0) + 1;
+    it.unshift(['idea', `${Object.keys(M).length} muebles → ${Object.entries(orig).map(([o, n]) => n + ' ' + o).join(', ')}`]);
+    if (!orig.botin || orig.botin < 3) it.push(['aviso', 'Casi no hay muebles de botín: el buzón repetirá mucho']);
+    if (!mal) it.push(['ok', 'Todos los muebles caben en su hueco y respetan las reglas']);
+    G('🪑 Muebles', it); }
+  // 2. vecinos
+  { const it = [];
+    for (const p of pu.PNJ) { const d = p.def, hr = franjasDe(d), id = p.id;
+      for (const f of hr.franjas) if (!lineas((d.saludo || {})[f]).length && !String(id).startsWith('cp_') && id !== 'gato') it.push(['aviso', `${id}: está despierto de ${f} pero no tiene saludo para esa franja`]);
+      const propio = String(id).startsWith('cp_') || id === 'gato' || d.especial;   // el gato no habla; Lumi y otros usan frases especiales
+      if (lineas(d.charla).length < 6 && !propio) it.push(['aviso', `${id}: solo ${lineas(d.charla).length} frases de charla`]);
+      if (!String(id).startsWith('cp_') && id !== 'gato' && lineas(d.amigo).length < 2) it.push(['aviso', `${id}: pocas frases de amigo (${lineas(d.amigo).length})`]);
+      if (!hr.presentes.length) it.push(['error', `${id}: no aparece a ninguna hora`]);
+    }
+    const camp = pu.CAMP.length, vis = pu.CAMP.filter((i) => pu.ASIGNA[i]).length;
+    it.unshift(['idea', `${pu.PNJ.length} vecinos en el pueblo (${camp} de campaña, ${vis} presentes hoy)`]);
+    if (it.length === 1) it.push(['ok', 'Todos los vecinos tienen saludos, charla y horario']);
+    G('🧑‍🤝‍🧑 Vecinos', it); }
+  // 3. textos
+  { const t = todosLosTextos(), rev = revisarTextos(t); G('💬 Textos', [['idea', `${t.length} frases revisadas`], ...(rev.length ? rev.slice(0, 15) : [['ok', 'Sin avisos en los textos']]), ...(rev.length > 15 ? [['idea', `…y ${rev.length - 15} más (pestaña Textos)`]] : [])]); }
+  // 4. versiones de caché entre páginas
+  { const pag = ['index', 'tortuga', 'cabana', 'reunion', 'planos', 'duelo', 'panel', 'pueblo', 'pruebas', 'taller', 'estudio'], vers = {}, it = [];
+    await Promise.all(pag.map(async (p) => { try { const r = await fetch(p + '.html', { cache: 'no-store' }); if (!r.ok) { it.push(['error', `${p}.html no responde (${r.status})`]); return; } const h = await r.text(); const v = [...h.matchAll(/\.js\?v=(\d+)/g)].map((m) => m[1]); vers[p] = [...new Set(v)]; } catch (e) { it.push(['error', `${p}.html: ${e.message}`]); } }));
+    const todas = new Set(Object.values(vers).flat());
+    for (const [p, v] of Object.entries(vers)) if (v.length > 1) it.push(['error', `${p}.html mezcla versiones (${v.join(', ')})`]); else if (!v.length && p !== 'estudio') it.push(['aviso', `${p}.html no tiene versión de caché`]);
+    if (todas.size > 1) it.push(['aviso', `Las páginas no comparten versión (${[...todas].join(', ')}): falta ejecutar version.py`]); else if (todas.size === 1) it.push(['ok', `Todas las páginas usan la versión ${[...todas][0]}`]);
+    G('📦 Caché y versiones', it); }
+  // 5. enlaces de la página de pruebas
+  { const it = [];
+    try { const h = await (await fetch('pruebas.html', { cache: 'no-store' })).text(), hrefs = [...new Set([...h.matchAll(/href="([^"#]+)"/g)].map((m) => m[1]).filter((x) => !/^https?:|^mailto:/.test(x)))], mal = [];
+      await Promise.all(hrefs.map(async (x) => { try { const r = await fetch(x.split('?')[0], { cache: 'no-store' }); if (!r.ok) mal.push(x); } catch (e) { mal.push(x); } }));
+      it.push(mal.length ? ['error', 'Enlaces rotos en pruebas.html: ' + mal.join(', ')] : ['ok', `${hrefs.length} enlaces de pruebas.html funcionan`]);
+      if (!h.includes('estudio.html')) it.push(['aviso', 'pruebas.html no enlaza al estudio']);
+    } catch (e) { it.push(['error', 'No se pudo leer pruebas.html: ' + e.message]); }
+    G('🔗 Enlaces', it); }
+  // 6. ficha y almacenamiento
+  { const it = [];
+    try { let bytes = 0; for (const k of Object.keys(localStorage)) bytes += (localStorage.getItem(k) || '').length; it.push([bytes > 3e6 ? 'aviso' : 'idea', `localStorage de este navegador: ${(bytes / 1024).toFixed(0)} KB`]); } catch (e) { }
+    try { const e = pu.EP; it.push(['idea', `Tu pueblo: día ${e.reloj.dia}, ${(e.conocidos || []).length} vecinos conocidos, ${Object.keys(e.tengo || {}).length} tipos de mueble, ${(e.buzon || []).length} cosas en el buzón`]); const kb = JSON.stringify(e).length / 1024; it.push([kb > 200 ? 'aviso' : 'idea', `Tamaño de tu ficha de pueblo: ${kb.toFixed(1)} KB (Firestore admite 1 MB por documento)`]); } catch (e) { }
+    G('💾 Datos de esta cuenta', it); }
+  const total = { error: 0, aviso: 0 }; for (const [, its] of grupos) for (const [t] of its) if (total[t] != null) total[t]++;
+  raiz.innerHTML = `<div class="panel"><div class="resumen"><div><b>${total.error}</b><span>errores</span></div><div><b>${total.aviso}</b><span>avisos</span></div></div><p class="nota">Se comprueba al abrir esta pestaña. Lo de «Caché y versiones» lee las páginas publicadas, así que un cambio recién subido puede tardar un minuto en verse.</p></div>`
+    + grupos.map(([t, its]) => `<div class="panel"><h2>${t}</h2><ul class="revision">${its.slice(0, 60).map(([k, x]) => `<li class="${k}">${esc(x)}</li>`).join('')}${its.length > 60 ? `<li class="idea">…y ${its.length - 60} más</li>` : ''}</ul></div>`).join('');
+}
+
+// ---------------------------------------------------------------- ATAJOS
+function pintarAtajos() {
+  const A = (t, h, x = '') => `<a class="enlace ${x}" href="${h}">${t}</a> `;
+  $('p-atajos').innerHTML = `<div class="panel"><h2>Herramientas</h2><p>${A('📚 Taller de campañas', 'taller.html')}${A('📊 Panel', 'panel.html')}${A('🗺 Editor de planos', 'planos.html')}${A('🧪 Pruebas', 'pruebas.html')}</p></div>
+    <div class="panel"><h2>El pueblo, a cualquier hora</h2><p>${A('Mañana', 'pueblo.html?hora=9')}${A('Tarde', 'pueblo.html?hora=16')}${A('Noche', 'pueblo.html?hora=22')}${A('Madrugada', 'pueblo.html?hora=2')}${A('Día rápido', 'pueblo.html?rapido=20')}</p>
+    <p class="nota">Consejo: en el pueblo, abre la consola y escribe <code>pueblo</code> para tener a mano los muebles, los vecinos y tu ficha.</p></div>
+    <div class="panel"><h2>El juego</h2><p>${A('Menú', 'index.html')}${A('Tortuga', 'tortuga.html?elegir')}${A('Cabaña', 'cabana.html')}${A('Sala ligera', 'reunion.html')}${A('Duelo de insultos', 'duelo.html')}</p></div>`;
+}
+
+function construir() {
+  cacheMed.clear(); minis.clear(); delete $('p-muebles').dataset.hecho; selMueble = null; visor.m = visor.v = null;
+  pintarMuebles(); pintarVecinos(); pintarTextos(); pintarAtajos();
+}
+</script>
+</body>
+</html>
