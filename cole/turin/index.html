@@ -8,6 +8,9 @@
 <h1>Cuentos de Adela Turín</h1>
 <p class="nota">Tres juegos para primaria (8 a 10 años) sobre igualdad, reparto y convivencia, inspirados en los libros de la colección «A favor de las niñas».</p>
 <div class="juegos" id="j"></div>
+<h2 style="color:var(--papel)">Versión aventura (en pruebas)</h2>
+<p class="nota">Misma idea, pero como viaje con mapa, paradas y pasaporte, igual que «La vuelta al mundo».</p>
+<div class="juegos" id="j2"></div>
 <section class="tarjeta"><h2>Guía para el profesorado</h2>
 <ul><li><b>Duración:</b> de 3 a 10 minutos por juego.</li><li><b>Valores:</b> corresponsabilidad, reconocer el trabajo de los demás, libertad de elección, resiliencia.</li><li><b>Matemáticas (Rescate):</b> sumar, restar, multiplicar y dividir con problemas sencillos, bajo presión de tiempo.</li><li><b>Observación (Un día en la casa de todos):</b> comparar cuántas tareas hace cada persona.</li><li><b>Idea de aula:</b> tras jugar, cada alumno anota qué tareas hace en casa y se comparan en grupo.</li></ul>
 <p class="nota">Son juegos originales inspirados en los libros; no reproducen su texto. Se recomienda leer los cuentos antes o después.</p></section>
@@ -16,4 +19,6 @@
 const L = [['arturo', PERSONAJES.arturo, 'La cinta de las tareas', 'Arturo y Clementina', 'Reparte las tareas contra reloj y no te creas las excusas de Arturo.', 3], ['catastrofe', PERSONAJES.florentina, 'Rescate en la casa grande', 'Una feliz catástrofe', 'Carrera de mates: elige la puerta correcta y salva a los ratoncitos.', 3], ['juntos', '<span class="dos">' + PERSONAJES.arturo + PERSONAJES.florentina + '</span>', 'Un día en la casa de todos', 'Los dos cuentos', '90 segundos para mantener la casa en orden entre los tres.', 3]];
 const S = sellos();
 document.getElementById('j').innerHTML = L.map((l) => `<a class="tarjeta j" href="${l[0]}.html">${l[1]}<div><h2>${esc(l[2])}</h2><p class="nota">${esc(l[3])}</p><p>${esc(l[4])}</p><p>${S[l[0]] ? estrellasTxt(S[l[0]], l[5]) : 'Aún sin jugar'}</p></div></a>`).join('');
+const V = [['arturo-aventura', 'arturo-av', PERSONAJES.clementina, 'El camino de Clementina', 'Arturo y Clementina: 6 paradas de mates, lengua y valores.'], ['catastrofe-aventura', 'catastrofe-av', PERSONAJES.florentina, 'La casa nueva de Florentina', 'Una feliz catástrofe: huye del agua y construye un hogar.'], ['juntos-aventura', 'juntos-av', PERSONAJES.arturo, 'La casa de todos', 'Los dos cuentos: compras, cuentos, mitos y cinta de tareas.']];
+document.getElementById('j2').innerHTML = V.map((l) => `<a class="tarjeta j" href="${l[0]}.html">${l[2]}<div><h2>${esc(l[3])}</h2><p>${esc(l[4])}</p><p>${S[l[1]] ? estrellasTxt(S[l[1]], 3) : 'Aún sin jugar'}</p></div></a>`).join('');
 </script></body></html>
