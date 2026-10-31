@@ -37,6 +37,8 @@ const leerS = (k) => { try { return sessionStorage.getItem(k); } catch { return 
 const guardarS = (k, v) => { try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch { /* nada */ } };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+// Los poderes de administrador viajan como una «frase» con este prefijo (js/poderes.js); no salen en el chat.
+const PREFIJO_PODER = '\u2063PODER|';
 export const FRASES = ['¡Vamos!', 'Un momento', 'Voy al baúl', '¡Listo!', 'Jajaja', '¡Mirad esto!', 'Ahora vuelvo', '¿Bajamos?'];
 export const GESTOS = [
   { id: 'saludo', icono: '👋', nombre: 'Saludar' },
@@ -182,7 +184,7 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
     for (const [id, g] of Object.entries(gente)) {
       const v = vistos[id] || (vistos[id] = { gesto: g.gesto?.n || 0, frase: g.frase?.n || 0 });
       if (g.gesto && g.gesto.n > v.gesto) { v.gesto = g.gesto.n; emitir('gesto', id, g.gesto.id, g); }
-      if (g.frase && g.frase.n > v.frase) { v.frase = g.frase.n; emitir('frase', id, g.frase.texto, g); }
+      if (g.frase && g.frase.n > v.frase) { v.frase = g.frase.n; if (String(g.frase.texto).startsWith(PREFIJO_PODER)) emitir('poder', id, g.frase.texto.slice(PREFIJO_PODER.length), g); else emitir('frase', id, g.frase.texto, g); }
     }
     emitir('gente', R.gente());
     comprobarVotos();
@@ -239,6 +241,7 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
     },
     cambiar(campos) { Object.assign(mio, campos); return update(nodo, campos).catch((e) => emitir('error', traducir(e))); },
     gesto(id) { return update(nodo, { gesto: { id, n: ahora() } }).catch(() => {}); },
+    poder(obj) { return update(nodo, { frase: { texto: (PREFIJO_PODER + JSON.stringify(obj)).slice(0, 140), n: ahora() } }).catch(() => {}); },
     frase(texto) { return update(nodo, { frase: { texto: String(texto).slice(0, 140), n: ahora() } }).catch(() => {}); },
     proponer(modo) {
       const n = ahora();
