@@ -1,40 +1,44 @@
-:root{--papel:#fff6e0;--tinta:#3a2a1c;--verde:#4f9a52;--rojo:#c8372d;--oro:#d4a43a;--azul:#2f6aa0;--sombra:0 4px 0 rgba(58,42,28,.25)}
-*{box-sizing:border-box}
-body{margin:0;background:#f3e3bd;color:var(--tinta);font:18px/1.45 "Trebuchet MS",Verdana,sans-serif}
-main{max-width:760px;margin:0 auto;padding:16px}
-h1,h2{font-family:Georgia,"Times New Roman",serif;margin:.2em 0}
-.cab{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
-.cab a{color:var(--tinta)}
-.tarjeta{background:var(--papel);border:3px solid var(--tinta);border-radius:16px;padding:16px;margin:12px 0;box-shadow:var(--sombra)}
-.btn,.op{font:inherit;font-weight:700;background:var(--oro);color:var(--tinta);border:3px solid var(--tinta);border-radius:12px;padding:12px 16px;min-height:48px;cursor:pointer;box-shadow:var(--sombra);text-align:left}
-.btn:active,.op:active{transform:translateY(2px)}
-.btn:focus-visible,.op:focus-visible,a:focus-visible{outline:4px solid var(--azul);outline-offset:2px}
-.opciones{display:grid;gap:10px;margin-top:12px}
-.op{background:#fff}
-.op.bien{background:#bfe6b8}.op.mal{background:#f5c0b9;animation:sacude .3s}
-.op:disabled{cursor:default}
-@keyframes sacude{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-.barra{height:20px;background:#e8d6aa;border:3px solid var(--tinta);border-radius:12px;overflow:hidden}
-.barra>i{display:block;height:100%;background:var(--verde);transition:width .4s}
-.pasos{display:flex;gap:6px;margin:8px 0}.pasos span{flex:1;height:10px;border-radius:6px;background:#e8d6aa;border:2px solid var(--tinta)}
-.pasos .si{background:var(--verde)}.pasos .ya{background:var(--oro)}
+/* Mismo look que «La vuelta al mundo»: mar, papel, latón y sellos. */
+:root{--mar:#1d4e5a;--mar2:#163f49;--papel:#f1dfb4;--tierra:#e2c486;--tinta:#3a2a1c;--ruta:#c8372d;--laton:#d4a43a;--crema:#fff6e0;--verde:#4f9a52;--suave:#8a6e4c;--azul:#2f6aa0;--oro:#d4a43a;--rojo:#c8372d;
+--display:'Alfa Slab One','Rockwell',Georgia,serif;--texto:'Baloo 2','Trebuchet MS',system-ui,sans-serif;--sombra:0 6px 0 rgba(0,0,0,.2)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:radial-gradient(ellipse at 50% 0%,var(--mar),var(--mar2) 75%) fixed;color:var(--crema);font:500 18px/1.35 var(--texto);padding:14px max(16px,env(safe-area-inset-left)) 28px}
+main{max-width:760px;margin:0 auto;display:grid;gap:14px}
+h1{margin:0;font:400 clamp(26px,5vw,40px)/1.05 var(--display);color:var(--papel);text-shadow:0 3px 0 rgba(0,0,0,.25);text-wrap:balance}
+h2{font:400 clamp(22px,4vw,30px)/1.1 var(--display);margin:.2em 0;color:var(--ruta)}
+h3{font:800 18px var(--texto);margin:.6em 0 .2em}
+.cab,.juego-cab{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.cab a,.juego-cab a,.nota a{color:var(--laton);font-weight:700}
+.nota{margin:0;font-size:15px;color:#bcd3cf;max-width:70ch}
+.tarjeta,.escena{background:var(--papel);color:var(--tinta);border-radius:28px;padding:18px;box-shadow:0 10px 0 rgba(0,0,0,.2),inset 0 0 0 3px #d8bf86;position:relative}
+.escena{overflow:hidden}
+.tarjeta .nota,.escena .nota{color:var(--suave)}
+.tarjeta{margin:0}
+.btn,.gran{font:800 20px/1.1 var(--texto);background:var(--ruta);color:#fff;border:0;border-radius:999px;padding:14px 24px;min-height:52px;cursor:pointer;box-shadow:0 6px 0 #8a2018;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn:active,.gran:active{transform:translateY(3px);box-shadow:0 2px 0 #8a2018}
+.btn.sec{background:var(--crema);color:var(--tinta);box-shadow:0 6px 0 #d4bd85}
+.btn:focus-visible,.op:focus-visible,a:focus-visible,.chip:focus-visible,.per:focus-visible{outline:4px solid var(--laton);outline-offset:3px}
+.mudo{width:54px;height:54px;border:0;border-radius:50%;background:var(--crema);font-size:26px;box-shadow:0 4px 0 rgba(0,0,0,.25);cursor:pointer}
+.habla{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center}
+.habla svg{width:84px;height:84px}
+.bocadillo{background:var(--crema);border-radius:22px;padding:12px 16px;font:700 clamp(17px,2.6vw,20px)/1.3 var(--texto);box-shadow:inset 0 0 0 3px #e6d29e}
+.bocadillo b{color:var(--ruta)}
+.chip{display:inline-block;background:var(--crema);border:0;border-radius:18px;padding:10px 14px;margin:4px;font:700 17px var(--texto);cursor:pointer;min-height:44px;box-shadow:0 4px 0 #d4bd85;color:var(--tinta)}
+.chip.sel{background:var(--laton);box-shadow:0 4px 0 #9a7420}.chip.hecho{opacity:.45}
+.medidor{height:14px;background:#0002;border-radius:8px;overflow:hidden;box-shadow:inset 0 0 0 2px rgba(58,42,28,.25)}
+.medidor>i{display:block;height:100%;background:linear-gradient(90deg,#c8372d,#d4a43a,#4f9a52);transition:width .25s}
+.pasos{display:flex;gap:6px}.pasos span{width:34px;height:8px;border-radius:4px;background:#e2cf9e}.pasos .si{background:var(--verde)}.pasos .ya{background:var(--laton)}
 .grande{font-size:64px;text-align:center;line-height:1.1}
-.nota{font-size:15px;opacity:.85}
-.fb{margin-top:10px;font-weight:700;min-height:1.4em}
-.rejilla{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
-.chip{display:inline-block;background:#fff;border:3px solid var(--tinta);border-radius:999px;padding:8px 14px;margin:4px;font:inherit;font-weight:700;cursor:pointer;min-height:44px}
-.chip.sel{background:var(--oro)}.chip.hecho{opacity:.45}
-.confeti{position:fixed;top:-20px;width:10px;height:14px;animation:cae 1.8s linear forwards;z-index:9}
-@keyframes cae{to{transform:translateY(110vh) rotate(540deg)}}
-@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-@media(max-width:480px){body{font-size:17px}}
-.juego-cab{display:flex;align-items:center;gap:8px;justify-content:space-between}
-.mudo{font-size:22px;background:#fff;border:3px solid var(--tinta);border-radius:12px;min-width:48px;min-height:48px;cursor:pointer}
-.flota{position:absolute;font:700 26px "Comic Sans MS","Chalkboard SE",cursive;pointer-events:none;animation:sube 1.1s ease-out forwards;text-shadow:0 2px 0 #fff;z-index:5;transform:translateX(-50%)}
+.fb{font-weight:700;min-height:1.4em}
+.sellos{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.sello{border-radius:50%;aspect-ratio:1;display:grid;place-items:center;text-align:center;font:400 13px/1.1 var(--display);padding:10px;border:3px dashed rgba(58,42,28,.3);color:rgba(58,42,28,.5);text-decoration:none;background:transparent}
+.sello.puesto{border:4px double var(--ruta);color:var(--ruta);background:var(--crema);transform:rotate(-6deg)}
+.sello span{display:block;font-size:30px;margin-bottom:2px}
+.flota{position:absolute;font:400 28px var(--display);pointer-events:none;animation:sube 1.1s ease-out forwards;text-shadow:0 2px 0 #fff;z-index:5;transform:translateX(-50%)}
 @keyframes sube{to{transform:translate(-50%,-70px);opacity:0}}
-.escena{position:relative;border:4px solid var(--tinta);border-radius:20px;overflow:hidden;box-shadow:var(--sombra)}
-.salto{animation:salto .45s ease}
-@keyframes salto{40%{transform:translateY(-22px) scale(1.12)}}
-.tiembla{animation:sacude .3s}
-.medidor{height:14px;background:#0003;border:2px solid var(--tinta);border-radius:8px;overflow:hidden}
-.medidor>i{display:block;height:100%;background:linear-gradient(90deg,#e8590c,#f2c744,#4f9a52);transition:width .25s}
+.salto{animation:salto .45s ease}@keyframes salto{40%{transform:translateY(-22px) scale(1.12)}}
+.confeti{position:fixed;top:-20px;width:12px;height:18px;z-index:30;animation:cae 2.8s linear forwards;pointer-events:none}
+@keyframes cae{to{transform:translateY(110vh) rotate(720deg)}}
+.sacude{animation:no .4s}@keyframes no{25%{transform:translateX(-8px) rotate(-4deg)}75%{transform:translateX(8px) rotate(4deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media(max-width:480px){body{font-size:17px}.habla svg{width:68px;height:68px}}

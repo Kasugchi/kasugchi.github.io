@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>La cinta de las tareas</title><link rel="stylesheet" href="estilo.css">
+<title>La cinta de las tareas</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Baloo+2:wght@500;700;800&display=swap"><link rel="stylesheet" href="estilo.css">
 <style>
-#esc{background:linear-gradient(#ffe9b5,#ffcf7a);padding:12px;min-height:520px}
+#esc{padding:14px;min-height:520px}
 .fila{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .tort{width:30%;text-align:center;position:relative}
-.tort .cara{font-size:64px;line-height:1}
+.tort .cara svg{width:92px;height:92px}
 .tort .nom{font-weight:700;font-size:15px}
 .bub{position:absolute;left:50%;top:-6px;transform:translate(-50%,-100%);background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:6px 8px;font-size:14px;font-weight:700;min-width:130px;max-width:180px;display:none;z-index:4}
 .bub.on{display:block;animation:salto .4s}
 .centro{flex:1;text-align:center}
 .cinta{height:26px;margin:10px 0;border:3px solid var(--tinta);border-radius:14px;background:repeating-linear-gradient(90deg,#555 0 22px,#777 22px 44px);background-size:44px 100%;animation:cinta 1s linear infinite}
 @keyframes cinta{to{background-position:44px 0}}
-.tarea{background:#fff;border:4px solid var(--tinta);border-radius:18px;padding:10px;animation:entra .4s ease-out;box-shadow:var(--sombra)}
+.tarea{background:var(--crema);border:4px solid var(--tinta);border-radius:18px;padding:10px;animation:entra .4s ease-out;box-shadow:var(--sombra)}
 .tarea.sueno{background:#fff3b0;border-color:#b8860b}
 @keyframes entra{from{transform:translateY(-60px) scale(.6);opacity:0}}
 .tarea .em{font-size:64px;line-height:1}
@@ -21,28 +21,30 @@
 .botones .btn{text-align:center;padding:12px 4px;font-size:16px}
 #msg{min-height:2.6em;font-weight:700;text-align:center;margin-top:8px}
 .just{margin-top:10px;font-weight:700}
-@media(max-width:480px){.tort .cara{font-size:46px}.bub{font-size:12px;min-width:100px}}
+@media(max-width:480px){.tort .cara svg{width:62px;height:62px}.bub{font-size:12px;min-width:100px}}
 </style></head>
 <body><main>
 <div class="juego-cab"><a href="index.html">← Volver</a><button class="mudo" id="mu"></button></div>
 <h1>🐢 La cinta de las tareas</h1>
 <p class="nota">Inspirado en <i>Arturo y Clementina</i>. Las tareas llegan por la cinta: ¡envíalas antes de que se acabe el tiempo! Cuida que nadie se agote y que el reparto sea <b>justo</b>. Teclas: ← Arturo · ↓ los dos · → Clementina.</p>
-<div id="ini" class="tarjeta" style="text-align:center"><div class="grande">🐢🐢</div><button class="btn" id="go" style="font-size:22px">▶ ¡Empezar!</button></div>
+<div id="ini" class="tarjeta"><div class="habla"><span id="sv"></span><div class="bocadillo" id="bi">¡Hola! Soy Clementina. Hoy hay <b>doce tareas</b> en casa y Arturo siempre tiene una excusa. Reparte con justicia: ¡que nadie se agote!</div></div><p style="text-align:center;margin:14px 0 0"><button class="btn" id="go">▶ ¡Empezar!</button></p></div>
 <div class="escena" id="esc" hidden>
  <div class="fila">
-  <div class="tort" id="ta"><div class="bub" id="bub"></div><div class="cara">🐢</div><div class="nom">Arturo</div><div class="medidor"><i id="ea"></i></div></div>
+  <div class="tort" id="ta"><div class="cara" id="ca"></div><div class="nom">Arturo</div><div class="medidor"><i id="ea"></i></div></div>
   <div class="centro"><div id="n" class="nota"></div><div class="cinta"></div><div class="tarea" id="tarea"></div><div class="tiempo"><i id="tm"></i></div></div>
-  <div class="tort" id="tc"><div class="cara">🐢</div><div class="nom">Clementina</div><div class="medidor"><i id="ec"></i></div></div>
+  <div class="tort" id="tc"><div class="cara" id="cc"></div><div class="nom">Clementina</div><div class="medidor"><i id="ec"></i></div></div>
  </div>
- <div class="botones"><button class="btn" id="bA">⬅ Arturo</button><button class="btn" id="bD" style="background:#9be39f">🤝 Los dos</button><button class="btn" id="bC">Clementina ➡</button></div>
+ <div class="bocadillo" id="bub" style="margin-top:10px;min-height:2.6em;visibility:hidden"></div>
+ <div class="botones"><button class="btn" id="bA">⬅ Arturo</button><button class="btn" id="bD" style="background:#9be39f;color:var(--tinta);box-shadow:0 6px 0 #6fb376">🤝 Los dos</button><button class="btn" id="bC">Clementina ➡</button></div>
  <div id="msg" role="status"></div>
  <div class="just">⚖️ Justicia: <span id="jt">50</span><div class="medidor"><i id="jb"></i></div></div>
 </div>
 <div id="fin"></div>
 </main>
-<script src="comun.js"></script>
+<script src="comun.js"></script><script src="personajes.js"></script>
 <script>
 botonSonido(document.getElementById('mu'));
+document.getElementById('sv').innerHTML = PERSONAJES.clementina; document.getElementById('ca').innerHTML = PERSONAJES.arturo; document.getElementById('cc').innerHTML = PERSONAJES.clementina;
 const $ = (i) => document.getElementById(i);
 const TRAB = [['🍳', 'Cocinar', 20], ['🧹', 'Barrer', 15], ['🛒', 'Cargar la compra', 40, 1], ['🧺', 'Tender la ropa', 15], ['🍽️', 'Fregar los platos', 20], ['🪟', 'Limpiar cristales', 25], ['👶', 'Cuidar a los peques', 30, 1], ['🗑️', 'Sacar la basura', 10], ['🛏️', 'Hacer las camas', 15], ['🧽', 'Limpiar el baño', 25], ['🔧', 'Montar la estantería', 35, 1], ['🪴', 'Regar las plantas', 10]];
 const SUE = [['🎨', 'Pintar un cuadro'], ['🎸', 'Tocar la guitarra'], ['📚', 'Leer un libro'], ['💃', 'Bailar']];
@@ -51,13 +53,13 @@ const EXC_S = ['¿Pintar tú? Eso no es para ti.', 'Déjate de tonterías, Cleme
 let cola, k, en, just, hecho, tmr, t0, dur, cur, vivo, bloq;
 const VEL = +new URLSearchParams(location.search).get('v') || 1;
 function nuevaCola() { const t = barajar(TRAB).slice(0, 9).map((x) => ({ e: x[0], n: x[1], c: x[2], g: x[3], excusa: Math.random() < .6 })); const s = barajar(SUE).slice(0, 3).map((x) => ({ e: x[0], n: x[1], sueno: 1, excusa: Math.random() < .8 })); const out = []; const a = barajar(t), b = s; for (let i = 0; i < 12; i++) out.push(i % 4 === 2 && b.length ? b.pop() : a.pop()); return out; }
-function empezar() { cola = nuevaCola(); k = 0; en = { a: 80, c: 80 }; just = 50; hecho = 0; vivo = true; $('ini').hidden = true; $('esc').hidden = false; $('fin').innerHTML = ''; pinta(); sig(); }
+function empezar() { decir('¡Vamos allá!'); cola = nuevaCola(); k = 0; en = { a: 80, c: 80 }; just = 50; hecho = 0; vivo = true; $('ini').hidden = true; $('esc').hidden = false; $('fin').innerHTML = ''; pinta(); sig(); }
 function pinta() { $('ea').style.width = Math.max(0, en.a) + '%'; $('ec').style.width = Math.max(0, en.c) + '%'; $('jt').textContent = Math.round(just); $('jb').style.width = just + '%'; }
 function sig() {
   if (k >= cola.length) return final();
   bloq = false; cur = cola[k]; $('n').textContent = `Tarea ${k + 1} de ${cola.length}`;
   $('tarea').className = 'tarea' + (cur.sueno ? ' sueno' : ''); $('tarea').innerHTML = `<div class="em">${cur.e}</div><b>${cur.sueno ? '✨ Tiempo para soñar: ' : ''}${cur.n}</b>${cur.c ? `<div class="nota">Cansa: ${cur.c}${cur.g ? ' (¡muy pesada!)' : ''}</div>` : '<div class="nota">Recarga energía</div>'}`;
-  const b = $('bub'); if (cur.excusa) { b.textContent = uno(cur.sueno ? EXC_S : EXC_T); b.classList.add('on'); } else b.classList.remove('on');
+  const b = $('bub'); if (cur.excusa) { b.innerHTML = '<b>Arturo:</b> «' + uno(cur.sueno ? EXC_S : EXC_T) + '»'; b.style.visibility = 'visible'; } else b.style.visibility = 'hidden';
   dur = Math.max(3500, 6500 - k * 250) / VEL; t0 = performance.now(); clearInterval(tmr);
   tmr = setInterval(() => { const f = (performance.now() - t0) / dur; $('tm').style.width = (100 - f * 100) + '%'; if (f >= 1) { clearInterval(tmr); juzga(null); } }, 40);
 }
@@ -68,7 +70,7 @@ function juzga(d) {
   else if (cur.sueno) {
     const dd = d === 'a' ? ['a'] : d === 'c' ? ['c'] : ['a', 'c']; dd.forEach((x) => en[x] = Math.min(100, en[x] + 25));
     if (d === 'd') { j = 12; m = '🎉 ¡Los dos disfrutan!'; } else if (d === 'c') { j = cur.excusa ? 16 : 10; m = '🎨 ¡Clementina hace lo que le gusta!'; } else { j = cur.excusa ? -10 : 3; m = '😕 Arturo se lo queda todo. Clementina también necesita sus sueños.'; ok = j > 0; }
-  } else if (d === 'd') { en.a -= cur.c / 2; en.c -= cur.c / 2; j = cur.g ? 12 : cur.excusa ? 6 : 3; m = cur.g ? '🤝 ¡Entre los dos, la pesada se aguanta mejor!' : '🙂 Vale, pero una tarea pequeña también puede hacerla una persona.'; }
+  } else if (d === 'd') { en.a -= cur.c / 2; en.c -= cur.c / 2; j = cur.g ? 12 : cur.excusa ? 0 : 2; m = cur.g ? '🤝 ¡Entre los dos, la pesada se aguanta mejor!' : '🙂 Vale, pero una tarea pequeña también puede hacerla una persona.'; }
   else {
     en[d] -= cur.c; const o = d === 'a' ? 'c' : 'a';
     if (cur.excusa) { if (d === 'c') { j = -15; m = '😠 Arturo se ha escaqueado. ¡No es justo!'; ok = false; } else { j = 14; m = '💪 ¡Arturo también sabe hacerlo!'; } }
@@ -89,8 +91,8 @@ function final(agotado) {
   $('fin').innerHTML = `<section class="tarjeta" style="text-align:center"><div class="grande">${agotado ? '😴' : '🏆'}</div><h2>${agotado ? '¡Alguien se ha agotado!' : 'Fin de la jornada'}</h2>
   <p>${agotado ? 'Cuando una sola persona carga con todo, acaba sin fuerzas. ¡Inténtalo repartiendo mejor!' : `Justicia: <b>${Math.round(just)}</b> · ${estrellasTxt(est, 3)}`}</p>
   <h3>Para pensar</h3><ul style="text-align:left"><li>¿Qué excusas ponía Arturo? ¿Eran razones de verdad?</li><li>¿Quién hace en tu casa cada una de estas tareas?</li></ul>
-  <button class="btn" onclick="empezar()">Jugar otra vez</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
+  <button class="btn" onclick="empezar()">Jugar otra vez</button> <a class="btn sec" href="index.html">Volver</a></section>`;
 }
-$('go').onclick = empezar; $('bA').onclick = () => juzga('a'); $('bD').onclick = () => juzga('d'); $('bC').onclick = () => juzga('c');
+$('go').addEventListener('click', empezar); $('bA').addEventListener('click', () => juzga('a')); $('bD').addEventListener('click', () => juzga('d')); $('bC').addEventListener('click', () => juzga('c'));
 addEventListener('keydown', (e) => { if ($('esc').hidden) return; if (e.key === 'ArrowLeft') juzga('a'); if (e.key === 'ArrowRight') juzga('c'); if (e.key === 'ArrowDown') juzga('d'); });
 </script></body></html>

@@ -1,17 +1,19 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Cuentos de Adela Turín</title><link rel="stylesheet" href="estilo.css"></head>
+<title>Cuentos de Adela Turín</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Baloo+2:wght@500;700;800&display=swap"><link rel="stylesheet" href="estilo.css">
+<style>.juegos{display:grid;gap:14px}.j{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:center;text-decoration:none;color:var(--tinta)}.j svg{width:84px;height:84px}.j h2{margin:0}.j p{margin:2px 0}.dos{display:flex}.dos svg{width:56px;height:56px;margin-right:-10px}</style></head>
 <body><main>
 <div class="cab"><a href="../index.html">← Cole</a></div>
-<h1>📖 Juegos de los cuentos de Adela Turín</h1>
-<p class="nota">Tres juegos para primaria (8 a 10 años) sobre igualdad, reparto y convivencia, inspirados en la colección «A favor de las niñas».</p>
-<div class="rejilla" id="j"></div>
+<h1>Cuentos de Adela Turín</h1>
+<p class="nota">Tres juegos para primaria (8 a 10 años) sobre igualdad, reparto y convivencia, inspirados en los libros de la colección «A favor de las niñas».</p>
+<div class="juegos" id="j"></div>
 <section class="tarjeta"><h2>Guía para el profesorado</h2>
-<ul><li><b>Duración:</b> unos 5 a 10 minutos por juego.</li><li><b>Valores:</b> corresponsabilidad, reconocimiento del trabajo, libertad de elección, resiliencia.</li><li><b>Matemáticas (Rescate):</b> sumar, restar, multiplicar y dividir con problemas sencillos, bajo presión de tiempo.</li><li><b>Observación (La casa de todos):</b> comparar cuántas tareas hace cada persona.</li><li><b>Idea de aula:</b> tras jugar, cada alumno anota qué tareas hace en casa y se comparan en grupo.</li></ul>
+<ul><li><b>Duración:</b> de 3 a 10 minutos por juego.</li><li><b>Valores:</b> corresponsabilidad, reconocer el trabajo de los demás, libertad de elección, resiliencia.</li><li><b>Matemáticas (Rescate):</b> sumar, restar, multiplicar y dividir con problemas sencillos, bajo presión de tiempo.</li><li><b>Observación (Un día en la casa de todos):</b> comparar cuántas tareas hace cada persona.</li><li><b>Idea de aula:</b> tras jugar, cada alumno anota qué tareas hace en casa y se comparan en grupo.</li></ul>
 <p class="nota">Son juegos originales inspirados en los libros; no reproducen su texto. Se recomienda leer los cuentos antes o después.</p></section>
-</main><script src="comun.js"></script>
+</main><script src="comun.js"></script><script src="personajes.js"></script>
 <script>
-const L = [['arturo.html', '🐢', 'La cinta de las tareas', 'Arturo y Clementina', 'Reparte las tareas contra reloj.', 3], ['catastrofe.html', '🐭', 'Rescate en la casa grande', 'Una feliz catástrofe', 'Carrera de mates para salvar a los ratoncitos.', 3], ['juntos.html', '🐢🐭', 'Un día en la casa de todos', 'Los dos cuentos', 'Mantén la casa en orden entre los tres.', 3]];
+const L = [['arturo', PERSONAJES.arturo, 'La cinta de las tareas', 'Arturo y Clementina', 'Reparte las tareas contra reloj y no te creas las excusas de Arturo.', 3], ['catastrofe', PERSONAJES.florentina, 'Rescate en la casa grande', 'Una feliz catástrofe', 'Carrera de mates: elige la puerta correcta y salva a los ratoncitos.', 3], ['juntos', '<span class="dos">' + PERSONAJES.arturo + PERSONAJES.florentina + '</span>', 'Un día en la casa de todos', 'Los dos cuentos', '90 segundos para mantener la casa en orden entre los tres.', 3]];
 const S = sellos();
-document.getElementById('j').innerHTML = L.map((l) => `<a class="tarjeta" style="text-decoration:none;color:inherit;display:block" href="${l[0]}"><div class="grande">${l[1]}</div><h2>${esc(l[2])}</h2><p class="nota">${esc(l[3])}</p><p>${esc(l[4])}</p><p>${S[l[0].split('.')[0]] ? estrellasTxt(S[l[0].split('.')[0]], l[5]) : 'Sin jugar'}</p></a>`).join('');
+document.getElementById('j').innerHTML = L.map((l) => `<a class="tarjeta j" href="${l[0]}.html">${l[1]}<div><h2>${esc(l[2])}</h2><p class="nota">${esc(l[3])}</p><p>${esc(l[4])}</p><p>${S[l[0]] ? estrellasTxt(S[l[0]], l[5]) : 'Aún sin jugar'}</p></div></a>`).join('');
 </script></body></html>

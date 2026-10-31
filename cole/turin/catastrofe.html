@@ -1,12 +1,12 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Rescate en la casa grande</title><link rel="stylesheet" href="estilo.css">
+<title>Rescate en la casa grande</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Baloo+2:wght@500;700;800&display=swap"><link rel="stylesheet" href="estilo.css">
 <style>
 #wrap{position:relative;max-width:380px;margin:0 auto}
 canvas{display:block;width:100%;height:auto;touch-action:none;background:#2a1f3d}
 #hud{position:absolute;left:0;right:0;top:0;padding:8px 10px;color:#fff;font-weight:700;display:flex;justify-content:space-between;pointer-events:none;text-shadow:0 2px 0 #000a}
-#q{position:absolute;left:8px;right:8px;top:36px;background:#fff;color:var(--tinta);border:4px solid var(--tinta);border-radius:14px;padding:6px 10px;text-align:center;font:700 22px "Comic Sans MS","Chalkboard SE",cursive;pointer-events:none;min-height:50px;display:flex;align-items:center;justify-content:center}
-#vel{position:absolute;inset:0;background:#000a;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px}
+#q{position:absolute;left:8px;right:8px;top:36px;background:var(--crema);color:var(--tinta);box-shadow:0 5px 0 rgba(0,0,0,.25),inset 0 0 0 3px #e6d29e;border-radius:18px;padding:6px 10px;text-align:center;font:400 22px var(--display);pointer-events:none;min-height:50px;display:flex;align-items:center;justify-content:center}
+#vel{position:absolute;inset:0;background:rgba(10,30,36,.78);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px;gap:10px}
 #vel[hidden]{display:none}
 .ctl{display:flex;gap:8px;margin-top:8px}.ctl .btn{flex:1;text-align:center;font-size:22px}
 </style></head>
@@ -17,12 +17,13 @@ canvas{display:block;width:100%;height:auto;touch-action:none;background:#2a1f3d
 <div class="escena" id="wrap"><canvas id="c" width="360" height="560" aria-label="Juego de carriles"></canvas>
  <div id="hud"><span id="vi"></span><span id="sc"></span><span id="re"></span></div><div id="q"></div>
  <div id="vel"></div></div>
-<div class="ctl"><button class="btn" id="bl" aria-label="Izquierda">⬅</button><button class="btn" id="bc" aria-label="Centro">⬆</button><button class="btn" id="br" aria-label="Derecha">➡</button></div>
+<div class="ctl"><button class="btn sec" id="bl" aria-label="Izquierda">⬅</button><button class="btn sec" id="bc" aria-label="Centro">⬆</button><button class="btn sec" id="br" aria-label="Derecha">➡</button></div>
 </main>
-<script src="comun.js"></script>
+<script src="comun.js"></script><script src="personajes.js"></script>
 <script>
 botonSonido(document.getElementById('mu'));
 const cv = document.getElementById('c'), cx = cv.getContext('2d'), W = 360, H = 560, PY = 470, LX = [60, 180, 300], META = 8;
+const IMG = {}; ['florentina', 'ratoncito'].forEach((k) => { const i = new Image(); i.src = svgUrl(k); IMG[k] = i; });
 const VEL = +new URLSearchParams(location.search).get('v') || 1;
 let vidas, salvados, pts, lane, px, fila, quesos, hist, off, corre, ult, shake, parts, q, t;
 const $ = (i) => document.getElementById(i);
@@ -72,19 +73,18 @@ function dibuja() {
     cx.beginPath(); cx.roundRect(LX[i] - 48, y - 34, 96, 68, 18); cx.fill(); cx.stroke();
     cx.fillStyle = '#2b1b0a'; cx.font = 'bold 32px "Comic Sans MS", sans-serif'; cx.textAlign = 'center'; cx.fillText(n, LX[i], y + 12);
   });
-  cx.font = '28px serif'; cx.textAlign = 'center'; for (let k = Math.min(salvados, META) - 1; k >= 0; k--) cx.fillText('🐭', (hist[(k + 1) * 7] ?? px) + (k - (salvados - 1) / 2) * 16, PY + 44);
-  cx.font = '58px serif'; cx.textAlign = 'center'; cx.fillText('🐭', px, PY + 12);
-  cx.font = '24px serif'; cx.fillText('🧣', px + 20, PY - 18);
+  for (let k = Math.min(salvados, META) - 1; k >= 0; k--) cx.drawImage(IMG.ratoncito, (hist[(k + 1) * 7] ?? px) + (k - (salvados - 1) / 2) * 16 - 15, PY + 26, 30, 30);
+  cx.drawImage(IMG.florentina, px - 34, PY - 40, 68, 68);
   parts.forEach((p) => { cx.fillStyle = p.c; cx.fillRect(p.x, p.y, 6, 6); });
   cx.restore();
 }
 function fin(gana) {
   corre = false; dibuja(); const est = gana ? (vidas === 3 ? 3 : vidas === 2 ? 2 : 1) : 0; if (est) { ponSello('catastrofe', est); confeti(); sFanfarria(); }
   const v = $('vel'); v.hidden = false;
-  v.innerHTML = gana ? `<div style="font-size:60px">🏡</div><h2 style="color:#fff">¡Hogar nuevo!</h2><p>Todos los ratoncitos están a salvo. ${estrellasTxt(est, 3)} · 🧀 ${pts}</p>` : `<div style="font-size:60px">🌊</div><h2 style="color:#fff">¡Casi!</h2><p>Has salvado ${salvados} de ${META}. Repasa la operación antes de elegir puerta.</p>`;
+  v.innerHTML = gana ? `<div style="font-size:60px">🏡</div><h2 style="color:var(--papel)">¡Hogar nuevo!</h2><p>Todos los ratoncitos están a salvo. ${estrellasTxt(est, 3)} · 🧀 ${pts}</p>` : `<div style="font-size:60px">🌊</div><h2 style="color:var(--papel)">¡Casi!</h2><p>Has salvado ${salvados} de ${META}. Repasa la operación antes de elegir puerta.</p>`;
   v.innerHTML += '<button class="btn" id="otra">Jugar otra vez</button>'; $('otra').onclick = empezar;
 }
-function portada() { const v = $('vel'); v.hidden = false; v.innerHTML = '<div style="font-size:60px">🌧️🏚️🐭</div><h2 style="color:#fff">La casa se hunde…</h2><p>Elige la puerta con el resultado correcto. ¡Salva a los ratoncitos!</p><button class="btn" id="go">▶ ¡A correr!</button>'; $('go').onclick = empezar; }
+function portada() { const v = $('vel'); v.hidden = false; v.innerHTML = '<div style="width:96px;margin:auto">' + PERSONAJES.florentina + '</div><h2 style="color:var(--papel)">¡La casa se hunde!</h2><p>Soy Florentina. Elige la puerta con el resultado correcto y salva a mis ratoncitos.</p><button class="btn" id="go">▶ ¡A correr!</button>'; $('go').onclick = empezar; decir('¡La casa se hunde! Elige la puerta correcta y salva a mis ratoncitos.'); }
 cv.addEventListener('pointerdown', (e) => { const r = cv.getBoundingClientRect(); mover(Math.floor((e.clientX - r.left) / r.width * 3)); });
 $('bl').onclick = () => mover(lane - 1); $('br').onclick = () => mover(lane + 1); $('bc').onclick = () => mover(1);
 addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft') mover(lane - 1); if (e.key === 'ArrowRight') mover(lane + 1); });

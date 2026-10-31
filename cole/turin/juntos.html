@@ -1,44 +1,45 @@
 <!doctype html>
 <html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Un día en la casa de todos</title><link rel="stylesheet" href="estilo.css">
+<title>Un día en la casa de todos</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Baloo+2:wght@500;700;800&display=swap"><link rel="stylesheet" href="estilo.css">
 <style>
-#esc{background:#fdf0d5;padding:10px}
+#esc{padding:12px}
 #hab{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.hab{position:relative;border:3px solid var(--tinta);border-radius:14px;min-height:112px;padding:6px;overflow:hidden}
+.hab{position:relative;border-radius:18px;box-shadow:inset 0 0 0 3px rgba(58,42,28,.25);min-height:112px;padding:6px;overflow:hidden}
 .hab h3{margin:0 0 4px;font-size:15px}
 .hab[data-h="cocina"]{background:#ffe0b2}.hab[data-h="jardin"]{background:#c8e6c9}.hab[data-h="bano"]{background:#bbdefb}.hab[data-h="salon"]{background:#e1bee7}
-.tk{display:inline-flex;flex-direction:column;align-items:center;background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:4px 8px;margin:2px;cursor:pointer;font:inherit;font-weight:700;min-height:56px;min-width:70px;position:relative;animation:entra .3s}
+.tk{display:inline-flex;flex-direction:column;align-items:center;background:var(--crema);color:var(--tinta);border:0;box-shadow:0 4px 0 #d4bd85;border-radius:16px;padding:4px 8px;margin:2px;cursor:pointer;font:inherit;font-weight:700;min-height:56px;min-width:70px;position:relative}
 .tk.sel{outline:4px solid var(--azul);background:#fff3b0}
 .tk.ocupada{opacity:.5;cursor:default}
 .tk .e{font-size:30px;line-height:1}.tk small{font-size:11px}
 .tk .vida{position:absolute;left:4px;right:4px;bottom:2px;height:4px;background:#0002;border-radius:3px}.tk .vida i{display:block;height:100%;background:var(--rojo)}
 @keyframes entra{from{transform:scale(.3);opacity:0}}
 #gente{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.per{background:#fff;border:3px solid var(--tinta);border-radius:14px;padding:6px;text-align:center;cursor:pointer;font:inherit;min-height:120px;position:relative}
-.per .cara{font-size:46px;line-height:1}.per .n{font-weight:700;font-size:14px}.per .est{font-size:12px;min-height:2.4em}
+.per{background:var(--crema);border:0;box-shadow:0 5px 0 #d4bd85;border-radius:18px;padding:6px;text-align:center;cursor:pointer;font:inherit;min-height:120px;position:relative}
+.per .cara svg{width:62px;height:62px}.per .n{font-weight:700;font-size:14px}.per .est{font-size:12px;min-height:2.4em}
 .per.ocup{background:#e8f5e9}.per:focus-visible{outline:4px solid var(--azul)}
-.hablar{margin-top:4px;background:var(--oro);border:2px solid var(--tinta);border-radius:8px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;padding:4px}
+.hablar{margin-top:4px;background:var(--laton);color:var(--tinta);border:0;border-radius:10px;font:inherit;font-weight:700;font-size:12px;cursor:pointer;padding:4px}
 #top{display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px;gap:6px;flex-wrap:wrap}
 </style></head>
 <body><main>
 <div class="juego-cab"><a href="index.html">← Volver</a><button class="mudo" id="mu"></button></div>
 <h1>🐢🐭 Un día en la casa de todos</h1>
 <p class="nota">Une <i>Arturo y Clementina</i> y <i>Una feliz catástrofe</i>. Aguanta 90 segundos: <b>toca una tarea</b> y luego <b>a quien la hará</b>. Que no se acumule el desorden y que nadie haga mucho más que los demás. Si Arturo pone excusas, toca «¡Sí puedes!».</p>
-<div id="ini" class="tarjeta" style="text-align:center"><div class="grande">🏠</div><button class="btn" id="go" style="font-size:22px">▶ ¡Empieza el día!</button></div>
+<div id="ini" class="tarjeta"><div class="habla"><span id="sv"></span><div class="bocadillo">Somos tres en casa y hay <b>mucho que hacer</b>. Reparte las tareas con cabeza: ¡y no te fíes de las excusas de Arturo!</div></div><p style="text-align:center;margin:14px 0 0"><button class="btn" id="go">▶ ¡Empieza el día!</button></p></div>
 <div class="escena" id="esc" hidden>
  <div id="top"><span>⏱ <b id="rl">90</b> s</span><span>✅ <b id="ok">0</b></span><span>🌀 Desorden <b id="ds">0</b>/5</span></div>
  <div id="hab"></div><div id="gente"></div><p id="msg" class="fb" role="status" style="text-align:center"></p>
 </div><div id="fin"></div>
 </main>
-<script src="comun.js"></script>
+<script src="comun.js"></script><script src="personajes.js"></script>
 <script>
 botonSonido(document.getElementById('mu'));
+document.getElementById('sv').innerHTML = PERSONAJES.florentina;
 const $ = (i) => document.getElementById(i), VEL = +new URLSearchParams(location.search).get('v') || 1;
 const HAB = { cocina: ['🍳 Cocina', [['🍳', 'Cocinar'], ['🍽️', 'Fregar'], ['🥕', 'Preparar la cena']]], jardin: ['🌷 Jardín', [['🌷', 'Regar'], ['🍂', 'Barrer hojas'], ['🔧', 'Arreglar la valla']]], bano: ['🛁 Baño', [['🧽', 'Limpiar'], ['🧺', 'Lavadora'], ['🚿', 'Bañar a los peques']]], salon: ['🧸 Salón', [['🧹', 'Barrer'], ['🧸', 'Ordenar juguetes'], ['📚', 'Leer un cuento']]] };
-const GENTE = [{ n: 'Arturo', c: '🐢', ex: 1 }, { n: 'Clementina', c: '🐢' }, { n: 'Florentina', c: '🐭' }];
+const GENTE = [{ n: 'Arturo', sv: PERSONAJES.arturo, ex: 1 }, { n: 'Clementina', sv: PERSONAJES.clementina }, { n: 'Florentina', sv: PERSONAJES.florentina }];
 const EXC = ['¡Eso no es cosa mía!', 'Que lo haga otra…', '¡Yo no sé hacer eso!'];
 let T, P, sel, tiempo, hechas, desorden, vivo, sp, id;
-function empezar() { T = []; P = GENTE.map((g) => ({ ...g, en: 100, libre: 0, hechas: 0, tarea: null, excusa: 0 })); sel = null; tiempo = 90; hechas = 0; desorden = 0; vivo = true; sp = 1.5; id = 0; $('ini').hidden = true; $('esc').hidden = false; $('fin').innerHTML = ''; $('msg').textContent = ''; ultimo = performance.now(); requestAnimationFrame(bucle); }
+function empezar() { decir('¡Empieza el día!'); T = []; P = GENTE.map((g) => ({ ...g, en: 100, libre: 0, hechas: 0, tarea: null, excusa: 0 })); sel = null; tiempo = 90; hechas = 0; desorden = 0; vivo = true; sp = 1.5; id = 0; $('ini').hidden = true; $('esc').hidden = false; $('fin').innerHTML = ''; $('msg').textContent = ''; ultimo = performance.now(); requestAnimationFrame(bucle); }
 let ultimo = 0, lastP = 0;
 function nueva() { const hs = Object.keys(HAB), h = uno(hs), t = uno(HAB[h][1]); T.push({ id: id++, h, e: t[0], n: t[1], vida: 18, trab: false, dur: 3 + azar(0, 2) }); }
 const uno = (l) => l[Math.floor(Math.random() * l.length)];
@@ -58,7 +59,7 @@ function bucle(now) {
 function pinta() {
   $('rl').textContent = Math.max(0, Math.ceil(tiempo)); $('ok').textContent = hechas; $('ds').textContent = desorden;
   $('hab').innerHTML = Object.entries(HAB).map(([k, [nom]]) => `<div class="hab" data-h="${k}"><h3>${nom}</h3>${T.filter((t) => t.h === k).map((t) => `<button class="tk${sel === t.id ? ' sel' : ''}${t.trab ? ' ocupada' : ''}" data-i="${t.id}"><span class="e">${t.e}</span><small>${t.n}</small><span class="vida"><i style="width:${t.trab ? 100 : t.vida / 18 * 100}%;${t.trab ? 'background:#4f9a52' : ''}"></i></span></button>`).join('')}</div>`).join('');
-  $('gente').innerHTML = P.map((p, i) => `<div class="per${p.tarea ? ' ocup' : ''}" role="button" tabindex="0" data-p="${i}"><div class="cara">${p.c}</div><div class="n">${p.n}</div><div class="medidor"><i style="width:${p.en}%"></i></div><div class="est">${p.excusa > 0 ? '🙄 «' + p.ex + '»' : p.tarea ? 'Hace: ' + p.t.e + ' ' + Math.round(p.tarea.prog / p.tarea.dur * 100) + '%' : p.en < 25 ? '😴 Cansad@' : 'Libre'}</div>${p.excusa > 0 ? `<button class="hablar" data-h="${i}">💬 ¡Sí puedes!</button>` : ''}<div class="nota">Hechas: ${p.hechas}</div></div>`).join('');
+  $('gente').innerHTML = P.map((p, i) => `<div class="per${p.tarea ? ' ocup' : ''}" role="button" tabindex="0" data-p="${i}"><div class="cara">${p.sv}</div><div class="n">${p.n}</div><div class="medidor"><i style="width:${p.en}%"></i></div><div class="est">${p.excusa > 0 ? '🙄 «' + p.ex + '»' : p.tarea ? 'Hace: ' + p.t.e + ' ' + Math.round(p.tarea.prog / p.tarea.dur * 100) + '%' : p.en < 25 ? '😴 Cansad@' : 'Libre'}</div>${p.excusa > 0 ? `<button class="hablar" data-h="${i}">💬 ¡Sí puedes!</button>` : ''}<div class="nota">Hechas: ${p.hechas}</div></div>`).join('');
 }
 $('hab').addEventListener('pointerdown', (e) => { const b = e.target.closest('.tk'); if (!b || !vivo) return; const t = T.find((x) => x.id === +b.dataset.i); if (t && !t.trab) { sel = t.id; pinta(); } });
 function asignar(i) {
@@ -74,9 +75,9 @@ function fin() {
   const est = perdida ? 0 : (hechas >= 18 && dif <= 2) ? 3 : (hechas >= 12 && dif <= 4) ? 2 : 1; if (est) ponSello('juntos', est); if (est >= 2) { confeti(); sFanfarria(); } else sMal();
   $('fin').innerHTML = `<section class="tarjeta" style="text-align:center"><div class="grande">${perdida ? '🌀' : '🏠'}</div><h2>${perdida ? '¡La casa es un caos!' : 'Fin del día'}</h2>
   <p>${estrellasTxt(est, 3)} · Tareas hechas: <b>${hechas}</b></p>
-  ${P.map((p) => `<div style="text-align:left">${p.c} ${p.n}: ${p.hechas}<div class="medidor"><i style="width:${hechas ? p.hechas / hechas * 100 : 0}%"></i></div></div>`).join('')}
+  ${P.map((p) => `<div style="text-align:left">${p.n}: ${p.hechas}<div class="medidor"><i style="width:${hechas ? p.hechas / hechas * 100 : 0}%"></i></div></div>`).join('')}
   <p>${dif <= 2 ? 'Reparto muy equilibrado. 👏' : 'Alguien ha trabajado mucho más que otro. ¿Se puede repartir mejor?'}</p>
-  <button class="btn" onclick="empezar()">Otro día</button> <a class="btn" style="text-decoration:none;display:inline-block" href="index.html">Volver</a></section>`;
+  <button class="btn" onclick="empezar()">Otro día</button> <a class="btn sec" href="index.html">Volver</a></section>`;
 }
-$('go').onclick = empezar;
+$('go').addEventListener('click', empezar);
 </script></body></html>
