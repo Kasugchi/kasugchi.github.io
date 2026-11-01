@@ -1,5 +1,7 @@
 import * as THREE from './vendor/three.module.min.js';
 const $=s=>document.querySelector(s), game=$('#game');
+// El rol va arriba: frame() lo lee desde el primer fotograma (antes estaba declarado al final y rompía el módulo).
+let selectedRole='alumno',currentRole=null;
 const STORAGE='villa-lectora-v2';let save;try{save=JSON.parse(localStorage.getItem(STORAGE))||{chapter:1,treasures:[],avatar:'Explorador'}}catch{save={chapter:1,treasures:[],avatar:'Explorador'}};
 save.stars ??= 0; save.unlocked ??= ['fogg']; save.completed ??= []; save.attempts ??= []; save.cosmetics ??= []; save.assist ??= false; save.alias ??= 'Explorador';
 const persist=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(save))}catch{} updateHud()};
@@ -89,7 +91,6 @@ const clock=new THREE.Clock(),v=new THREE.Vector3(),desired=new THREE.Vector3();
 // Acceso de DEMOSTRACIÓN, sin backend: estos códigos son visibles en el JS y NO autentican personas.
 // Nunca utilizar con datos reales de menores. Migrar a Firebase Auth + reglas de seguridad.
 const DEMO_CODES={alumno:'LECTOR-2026',profesor:'PROFE-2026',admin:'VILLA-ADMIN-2026'};
-let selectedRole='alumno',currentRole=null;
 const gate=$('#roleGate');
 function enterGate(){gate.hidden=false;close();currentRole=null;teacherButton.hidden=true;$('#admin').hidden=true;$('#roleCode').value='';$('#roleMessage').textContent='';}
 document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{selectedRole=b.dataset.role;document.querySelectorAll('[data-role]').forEach(x=>x.classList.toggle('active',x===b));$('#roleMessage').textContent='';});
