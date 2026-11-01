@@ -20,6 +20,7 @@ Todo es HTML + JavaScript **sin compilar** (sin npm, sin bundler). Lo que se sub
 | `index.html` | Portada con tarjetas de todas las apps (lista `APPS` al final del archivo). |
 | `criptas/` | **Criptas de Velmor**: el juego principal (ver abajo). |
 | `cole/` | Juegos educativos de colegio. `cole/index.html` es el índice. `cole/vuelta/`: La vuelta al mundo en 80 días (8 años en `index.html`, infantil en `infantil.html`). `cole/turin/`: tres juegos sobre cuentos de Adela Turín (`arturo`, `catastrofe`, `juntos`), con `estilo.css` y `comun.js` compartidos. `vuelta/` solo redirige a `cole/vuelta/`. |
+| `villa-lectora/` | **Villa Lectora**: proyecto escolar independiente (colegio 3D, biblioteca de cuentos, paneles de profe y admin de demo). No depende de Criptas; solo enlaza a `cole/turin/`. |
 | `rutas/`, `biblioteca/`, `estanteria/` | Otras apps independientes. No tocar salvo que se pida. |
 
 ## Criptas de Velmor (`criptas/`)
