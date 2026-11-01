@@ -45,3 +45,26 @@ La entrada separa tres interfaces. Alumno explora el mundo y juega; profesor adm
 Nuevas aventuras desbloqueables: Caperucita Roja, Los tres cerditos, Alicia en el país de las maravillas y La isla del tesoro. Cada una incluye actividades y una misión que requiere buscar, señalar o leer algo del libro físico. La confirmación de estas misiones es declarativa, no una comprobación automática. Las preguntas usan resúmenes originales breves; se debe revisar su correspondencia con la edición física utilizada.
 
 La V3 no modifica ninguna carpeta ajena a `villa-lectora/`.
+
+
+## Cambios V4
+- Todos los roles pueden recorrer el colegio; el panel docente y el de administración se pueden cerrar para explorar.
+- «Todavía no» en actividades con libro físico registra **pendiente**, no un error. El CSV lo distingue.
+- Arturo y Clementina enlaza a `../cole/turin/arturo-aventura.html`, ya existente en el repositorio. Ese enlace requiere que `cole/` siga en su ubicación habitual.
+- Más detalles de arquitectura y decoración 3D: tejas, molduras, farolas, flores, banderines y rocas.
+- Los códigos siguen siendo de DEMOSTRACIÓN, no autenticación segura.
+
+
+## V5 — pueblo y movimiento
+- Mantén pulsado el suelo (ratón o dedo) para caminar hacia el punto señalado. Arrastra sin soltar para cambiar el destino; suelta para detener la orden.
+- WASD sigue disponible en ordenador. Rueda del ratón controla el zoom. Botón de interacción cercano sigue disponible.
+- Jardines, árboles de copa compuesta, maceteros, luces festivas, esculturas de libros y huerto ampliado.
+- Conserva la separación de roles y las historias existentes. No hay sincronización entre dispositivos ni autenticación segura.
+
+
+## V6 — Paneles renovados
+- Profesor: cinco pestañas (Resumen, Biblioteca, Premios, Ayudas y Seguimiento), observaciones, mensaje al alumno, regalo/retirada de cosméticos, motivos para estrellas y exportación CSV.
+- Admin: cuatro pestañas (Centro, Configuración, Roles e Historial), configuración de meta de lectura, copia JSON y reinicio local con doble confirmación.
+- El historial de acciones y los ajustes se guardan en el mismo localStorage que el progreso.
+- **Advertencia:** los códigos son de DEMOSTRACIÓN, visibles en el JavaScript. No hay seguridad real, clases múltiples, cuentas verificadas ni sincronización móvil. No introducir datos de menores.
+- El profesor y el administrador pueden cerrar su panel y explorar el pueblo 3D.
