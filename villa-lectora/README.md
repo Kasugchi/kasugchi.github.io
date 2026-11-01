@@ -79,3 +79,17 @@ La V3 no modifica ninguna carpeta ajena a `villa-lectora/`.
 - **Móvil sin «pulsa E»**: al acercarte sale un botón grande para tocar; tocar un personaje o una puerta te lleva hasta él y lo abre.
 - Los edificios que tapan la cámara se ocultan.
 - Todo el ambiente vive en `js/vida.js`; `main.js` solo lo llama.
+
+
+## V9 — Modo clase y aventura de referencia
+Sigue el *Documento Base de Diseño* (seis decisiones cerradas).
+- **Un solo juego proyectado que dirige el profe.** Se entra como profesor/a (`PROFE-2026`) o administración (`VILLA-ADMIN-2026`). El alumnado no tiene cuenta.
+- **Aventura de referencia: «La vuelta al mundo en 80 días»** (dominio público), en 6 tramos. Se abren por **hitos de la historia** («ya han llegado a Suez»), no por número de capítulo, para que sirva con cualquier edición adaptada. Cada tramo declara qué necesita haberse leído y qué puede contar (sin destripes). El último exige terminar el libro.
+- **Sesión**: recuerdo → escena → retos → consecuencia → epílogo. Cuatro mandos siempre: pausar y debatir, pista, saltar y terminar (se retoma donde se dejó).
+- **Retos**: comprensión, con el libro abierto, mates del cuento, ordenar, votación (con empate y tercera vía), debate (sin respuesta correcta), convivencia (no se vota) y por turnos de mesa (sin nombres; reparte turnos con justicia).
+- **El pueblo crece leyendo**: cada tramo deja en el rincón de la clase lo que la clase vota; el libro terminado restaura la estación de los viajeros, deja el sombrero de Fogg en la vitrina, un hilo pendiente y una chistera al explorador de la clase. Repetir un tramo no duplica nada.
+- **Los vecinos recuerdan** lo leído y lo votado; el arco de Olivia avanza solo con hitos de lectura (texto provisional hasta la biblia narrativa).
+- **Panel docente**: Jugar (hasta dónde ha leído la clase, tramos), Adaptar (texto grande, contraste, voz, temporizadores, menos opciones), Progreso (informe, situación de aprendizaje, CSV, observaciones) y La clase (mesas, libros sin aventura, interludios para la estantería).
+- **Informe colectivo** con tres capas separadas (actividad, competencia trabajada, aprendizaje observado) y **ficha de situación de aprendizaje** imprimible. La competencia específica y el criterio están marcados como *pendiente de verificar* con la normativa andaluza.
+- **Datos**: solo de la clase, en este navegador (prototipo). Ningún dato de alumnos.
+- Código nuevo: `js/clase.js` (estado), `js/sesion.js` (la sesión), `js/panel.js`, `js/informe.js`, `js/aventuras/vuelta.js` (contenido). Las partes de la V6 pensadas para un alumno individual (estrellas, tienda, alias) quedan sin uso.

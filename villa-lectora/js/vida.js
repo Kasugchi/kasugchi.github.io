@@ -112,6 +112,7 @@ const NOMBRES_TESORO = (t) => String(t).replace(/^\S+\s/, '');
 export function iniciarVida(C) {
   const { scene, camera, player, npcs, save, persist, mat, sun, hemi, luces } = C;
   save.amistad ??= {}; save.vistoHoy ??= {}; save.rincon ??= [null, null, null, null, null, null];
+  const huecosRincon = () => (C.rincon ? C.rincon() : save.rincon);
   const hoy = new Date().toDateString();
 
   // ---------- cielo, estrellas, luna, halos ----------
@@ -176,11 +177,7 @@ export function iniciarVida(C) {
     const am = save.amistad[kind] || 0, cor = '♥'.repeat(Math.min(5, Math.ceil(am / 2))) + '♡'.repeat(5 - Math.min(5, Math.ceil(am / 2)));
     const lineas = [primera ? uno(V[franja(h)]) : uno(['¿Otra vez por aquí? ¡Qué alegría!', '¿Necesitas algo más?', 'Aquí sigo, ya ves.'])];
     // recuerdos: lo que llevas leído y lo que has ganado
-    if (kind === 'owl') {
-      if (save.chapter > 5) lineas.push('¡Terminaste «La vuelta al mundo»! Fogg estaría orgulloso. Bueno, él nunca sonríe, pero por dentro sí.');
-      else if (save.chapter > 1) lineas.push(`¿Qué tal va Fogg? Te has quedado en el capítulo ${save.chapter}. ¡No lo dejes a medias!`);
-      else lineas.push('¿Aún no has empezado una aventura? Entra en la biblioteca, que te espera Phileas Fogg.');
-    } else if (save.treasures.length && Math.random() < .6) lineas.push(`Me han dicho que tienes «${NOMBRES_TESORO(save.treasures.at(-1))}». ¡Qué envidia!`);
+    for (const x of (C.charlaExtra?.(kind) || [])) lineas.push(x);
     if (am >= 4) lineas.push(uno(V.amiga));
     const est = v?.plan?.estado ? `<p class="muted">Ahora está ${v.plan.estado}.</p>` : '';
     return `<h1>${V.nombre}</h1><p class="corazones" title="Amistad">${cor}</p>${lineas.map((l) => `<p class="dialogo">${l}</p>`).join('')}${est}${kind === 'owl' ? '<button class="action primary" id="goLibrary">📚 Ir a la biblioteca</button>' : ''}`;
@@ -204,7 +201,7 @@ export function iniciarVida(C) {
   function pintarRincon() {
     luces.rincon.length = 0;
     for (const c of [...rincon.children]) rincon.remove(c);
-    save.rincon.forEach((id, i) => { if (!id) return; const m = modelo(id); m.position.set(HUECOS[i][0], 0, HUECOS[i][1]); rincon.add(m); });
+    huecosRincon().slice(0, HUECOS.length).forEach((id, i) => { if (!id) return; const m = modelo(id); m.position.set(HUECOS[i][0], 0, HUECOS[i][1]); rincon.add(m); });
   }
   pintarRincon();
   function uiRincon() {
@@ -213,6 +210,30 @@ export function iniciarVida(C) {
     const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     el.innerHTML = opciones.length ? `<div class="huecos">${HUECOS.map((_, i) => `<label>Hueco ${i + 1}<select data-hueco="${i}"><option value="">— vacío —</option>${opciones.map(([v, t]) => `<option value="${esc(v)}" ${save.rincon[i] === v ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>`).join('')}</div><p class="muted">Sal y mira el jardín delante de «Mi rincón».</p>` : '<p class="muted">Cuando consigas tesoros o canjees algo en la tienda, podrás colocarlo aquí.</p>';
     el.querySelectorAll('[data-hueco]').forEach((s) => s.onchange = () => { save.rincon[+s.dataset.hueco] = s.value || null; persist(); pintarRincon(); });
+  }
+
+  // ---------- lugares restaurados por los libros ----------
+  const lugaresG = new THREE.Group(); scene.add(lugaresG);
+  function pintarLugares(lista = []) {
+    for (const c of [...lugaresG.children]) lugaresG.remove(c);
+    if (lista.includes('estacion')) {
+      const g = new THREE.Group(), p = (geo, c, x, y, z) => { const o = new THREE.Mesh(geo, mat(c)); o.position.set(x, y, z); o.castShadow = true; g.add(o); return o; };
+      p(new THREE.BoxGeometry(6, .3, 4.4, 3, 1, 2), '#d9c3a0', 0, .15, 0);
+      for (const [x, z] of [[-2.6, -1.8], [2.6, -1.8], [-2.6, 1.8], [2.6, 1.8]]) p(new THREE.CylinderGeometry(.13, .15, 3.2, 8), '#6b4a34', x, 1.75, z);
+      const techo = p(new THREE.ConeGeometry(4.4, 1.6, 4), '#2f6aa0', 0, 4.1, 0); techo.rotation.y = Math.PI / 4;
+      const globo = p(new THREE.SphereGeometry(1.1, 18, 14), '#3f8fd0', 0, 6.3, 0); const tierra = p(new THREE.SphereGeometry(1.12, 10, 8), '#5fb05a', 0, 6.3, 0); tierra.scale.set(1, .55, .7);
+      const anillo = new THREE.Mesh(new THREE.TorusGeometry(1.45, .06, 6, 30), mat('#d4a43a')); anillo.position.y = 6.3; anillo.rotation.x = Math.PI / 2.4; g.add(anillo);
+      p(new THREE.BoxGeometry(1.6, .9, .9), '#8a5a34', -1.2, .75, .6); p(new THREE.BoxGeometry(1.1, .7, .7), '#c8372d', .9, .65, .4);
+      const c = cartel('🎈'); c.position.set(0, 2.9, 2.3); g.add(c);
+      g.position.set(29, 0, -4); g.userData.globo = globo; lugaresG.add(g);
+    }
+  }
+  // ---------- el explorador de la clase lleva un recuerdo de cada libro ----------
+  const accesorios = new THREE.Group();
+  function vestir(lista = []) {
+    const cab = player.userData.chibi?.cabeza; if (!cab) return; cab.remove(accesorios); for (const c of [...accesorios.children]) accesorios.remove(c);
+    if (lista.includes('chistera')) { const ala = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, .05, 18), mat('#2b2b33')); ala.position.y = .5; const copa = new THREE.Mesh(new THREE.CylinderGeometry(.4, .42, .6, 18), mat('#2b2b33')); copa.position.y = .82; const cinta = new THREE.Mesh(new THREE.CylinderGeometry(.425, .435, .12, 18), mat('#c8372d')); cinta.position.y = .6; accesorios.add(ala, copa, cinta); }
+    cab.add(accesorios);
   }
 
   // ---------- sonido y celebraciones del profe ----------
@@ -308,5 +329,5 @@ export function iniciarVida(C) {
     // reloj del cole
     if ((reloj -= dt) <= 0) { reloj = 1; const el = document.querySelector('#reloj'); if (el) { const hh = Math.floor(h), mm = Math.floor((h - hh) * 60); el.textContent = `${n > .5 ? '🌙' : h < 8 || h > 18.5 ? '🌅' : '☀️'} ${hh}:${String(mm).padStart(2, '0')} · ${DIAS[dia]} · ${momentoEscolar(h, dia)}`; } }
   }
-  return { tick, charla, celebrar, uiRincon, pintarRincon, textoPrompt, tactil, esVecino: (k) => !!VECINOS[k] };
+  return { tick, charla, celebrar, uiRincon, pintarRincon, pintarLugares, vestir, textoPrompt, tactil, esVecino: (k) => !!VECINOS[k] };
 }
