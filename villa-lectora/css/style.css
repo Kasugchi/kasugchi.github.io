@@ -8,3 +8,12 @@
 
 /* V6: paneles adaptables y táctiles */
 .panel{width:min(880px,100%)}.dashboard-tabs{display:flex;gap:8px;overflow-x:auto;padding:8px 0 14px;scrollbar-width:thin}.dashboard-tabs button{flex:0 0 auto;border:2px solid #c5d7ce;background:#edf7f0;color:#234653;border-radius:13px;padding:12px 15px;font-weight:800;cursor:pointer}.dashboard-tabs button.active{background:#256c5b;color:white;border-color:#205749}.dashboard-section{padding:4px 0 12px}.dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.dashboard-grid .action{margin:0}.dashboard-label{display:block;margin:14px 0;font-weight:800}.dashboard-label input,.dashboard-label textarea,.dashboard-label select{display:block;width:100%;padding:12px;margin-top:7px;border:2px solid #b9c9c2;border-radius:12px;font:inherit;background:white;color:#243d43}.activity-list{max-height:290px;overflow:auto;border:1px solid #d8c9a7;border-radius:13px}.activity-list>div{padding:12px;border-bottom:1px solid #e5ddca;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between}.activity-list span,.activity-list small{color:#55726c}.action.danger{border-color:#c9695f;color:#a23e36}.progress-track{height:14px;background:#e3e7dc;border-radius:20px;overflow:hidden}.progress-track>div{height:100%;background:#4ca784;border-radius:20px}@media(max-width:540px){.dashboard-tabs button{padding:12px 11px;font-size:13px}.dashboard-grid{grid-template-columns:1fr 1fr}.dashboard-grid .action{font-size:13px;padding:11px}.panel{max-height:92vh}}
+
+/* Vida: globos de texto, charla, rincón y botón de acción táctil */
+.globo{position:fixed;z-index:3;transform:translate(-50%,-100%);background:#fffaf0;color:#2b3b40;border:2px solid #d9b777;border-radius:16px;padding:6px 12px;font-weight:800;font-size:14px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 0 #0002}
+.corazones{color:#e0607a;font-size:22px;letter-spacing:2px;margin:0 0 8px}
+.dialogo{background:#fff2d2;border-radius:16px;padding:12px 16px;font-size:1.08rem}
+.huecos{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}.huecos label{font-weight:800;font-size:13px}.huecos select{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:2px solid #c4a87d;font:inherit;background:#fff}
+#prompt{cursor:pointer;pointer-events:auto;user-select:none}
+#reloj{white-space:nowrap}
+@media(pointer:coarse){#touchAction{display:none}#prompt{bottom:40px;font-size:18px;padding:16px 26px;border-radius:20px}}

@@ -68,3 +68,14 @@ La V3 no modifica ninguna carpeta ajena a `villa-lectora/`.
 - El historial de acciones y los ajustes se guardan en el mismo localStorage que el progreso.
 - **Advertencia:** los códigos son de DEMOSTRACIÓN, visibles en el JavaScript. No hay seguridad real, clases múltiples, cuentas verificadas ni sincronización móvil. No introducir datos de menores.
 - El profesor y el administrador pueden cerrar su panel y explorar el pueblo 3D.
+
+
+## V7 — El colegio vivo (ambiente tipo Animal Crossing)
+- **Hora real**: el colegio sigue el reloj del dispositivo (amanecer, día, atardecer y noche). Las farolas, ventanas y guirnaldas se encienden al anochecer; hay estrellas, luna y luciérnagas. Para probar otra hora: `?hora=21`.
+- **Mundo curvo** hacia el horizonte y nubes que pasan; mariposas de día.
+- **Personajes chibi** (cabeza grande, andan balanceándose). Olivia, Tomás y Rosa tienen **horario** (biblioteca, ronda, huerto, comedor, banco…), dicen cosas en voz alta y su **charla se acuerda de ti**: amistad con corazones, lo que llevas leído y lo que has ganado.
+- **Mi rincón**: lo que ganas (tesoros y cosméticos) se **coloca de verdad** en el jardín de delante, en seis huecos.
+- **Celebraciones del profe** (panel docente → Resumen): fuegos artificiales, suelta de globos y fiesta en el patio. Terminar «La vuelta al mundo» suelta globos.
+- **Móvil sin «pulsa E»**: al acercarte sale un botón grande para tocar; tocar un personaje o una puerta te lleva hasta él y lo abre.
+- Los edificios que tapan la cámara se ocultan.
+- Todo el ambiente vive en `js/vida.js`; `main.js` solo lo llama.
