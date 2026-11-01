@@ -174,7 +174,7 @@ const clock=new THREE.Clock(),v=new THREE.Vector3(),desired=new THREE.Vector3();
 
 // Acceso de DEMOSTRACIÓN, sin backend: estos códigos son visibles en el JS y NO autentican personas.
 // Nunca utilizar con datos reales de menores. Migrar a Firebase Auth + reglas de seguridad.
-const DEMO_CODES={alumno:'LECTOR-2026',profesor:'PROFE-2026',admin:'VILLA-ADMIN-2026'};
+const DEMO_CODES={profesor:'2026',admin:'2026'};
 const gate=$('#roleGate');
 function enterGate(){gate.hidden=false;close();currentRole=null;teacherButton.hidden=true;$('#admin').hidden=true;$('#roleCode').value='';$('#roleMessage').textContent='';}
 document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{selectedRole=b.dataset.role;document.querySelectorAll('[data-role]').forEach(x=>x.classList.toggle('active',x===b));$('#roleMessage').textContent='';});

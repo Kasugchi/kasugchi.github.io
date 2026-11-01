@@ -93,3 +93,7 @@ Sigue el *Documento Base de Diseño* (seis decisiones cerradas).
 - **Informe colectivo** con tres capas separadas (actividad, competencia trabajada, aprendizaje observado) y **ficha de situación de aprendizaje** imprimible. La competencia específica y el criterio están marcados como *pendiente de verificar* con la normativa andaluza.
 - **Datos**: solo de la clase, en este navegador (prototipo). Ningún dato de alumnos.
 - Código nuevo: `js/clase.js` (estado), `js/sesion.js` (la sesión), `js/panel.js`, `js/informe.js`, `js/aventuras/vuelta.js` (contenido). Las partes de la V6 pensadas para un alumno individual (estrellas, tienda, alias) quedan sin uso.
+
+
+## Acceso de prueba (actual)
+Código `2026`, tanto para profesor/a como para administración. Es solo una demo: el código está en el JavaScript público y no protege nada.
