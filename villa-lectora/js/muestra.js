@@ -4,6 +4,7 @@
 //  Todo es ficticio y sin datos de alumnos, como en una clase de verdad.
 // =============================================================
 import VUELTA from './aventuras/vuelta.js';
+import ISLA from './aventuras/isla.js';
 
 const dias = ['2026-09-17', '2026-09-24', '2026-10-01', '2026-10-06', '2026-10-15', '2026-10-20', '2026-10-27', '2026-10-29'];
 const iso = (d, h = '10:15') => new Date(`${d}T${h}:00`).toISOString();
@@ -20,6 +21,7 @@ const COMO = {
 };
 const SESIONES = [['t1', 0, true], ['t2', 1, false], ['t2', 2, true], ['t3', 3, true], ['t4', 4, true], ['t5', 5, true], ['t6', 6, true]];
 
+export const VERSION_MUESTRA = 2;
 export function claseDeMuestra() {
   const DECIDE = { comprension: 'directa', libro: 'directa', mates: 'directa', ordenar: 'directa', votacion: 'votacion', debate: 'debate', convivencia: 'convivencia', turnos: 'turnos' };
   const registro = [], completados = {}, hitos = {}, sesiones = [];
@@ -33,6 +35,11 @@ export function claseDeMuestra() {
     hitos[`tramo:${VUELTA.id}:${t.id}`] = iso(dia, '10:30');
   });
   hitos['libro:' + VUELTA.id] = iso(dias[7]);
+  // segundo libro, a medias: «La isla del tesoro», primer tramo jugado y leído hasta el segundo hito
+  const t1 = ISLA.tramos[0], elIsla = '🗺️ Un mapa antiguo';
+  t1.retos.forEach((r, k) => registro.push({ fecha: iso('2026-10-30', `10:${String(10 + k * 6).padStart(2, '0')}`), aventura: ISLA.id, libro: ISLA.titulo, version: ISLA.version, tramo: t1.id, tramoTitulo: t1.titulo, tipo: r.tipo, decision: DECIDE[r.tipo], texto: r.texto, resultado: r.tipo === 'votacion' ? 'decidido' : 'resuelto', intentos: r.tipo === 'votacion' ? undefined : 1, eleccion: r.tipo === 'votacion' ? elIsla : undefined, area: r.cur.area, clave: r.cur.clave, que: r.cur.que, especifica: r.cur.especifica, criterio: r.cur.criterio, adaptaciones: ['voz'] }));
+  hitos[`tramo:${ISLA.id}:${t1.id}`] = iso('2026-10-30', '10:30');
+  sesiones.push({ inicio: iso('2026-10-30', '10:00'), fin: iso('2026-10-30', '10:27'), aventura: ISLA.id, tramo: t1.id, completa: true });
   SESIONES.forEach(([tramo, d, completa]) => sesiones.push({ inicio: iso(dias[d], '10:00'), fin: iso(dias[d], completa ? '10:28' : '10:14'), aventura: VUELTA.id, tramo, completa }));
   const librosLibres = [
     { titulo: 'El pequeño Nicolás', empezado: iso('2026-09-10'), terminado: iso('2026-09-30') },
@@ -41,13 +48,13 @@ export function claseDeMuestra() {
   ];
   for (const b of librosLibres) if (b.terminado) hitos['libre:' + b.titulo] = b.terminado;
   return {
-    v: 1, nombre: '4.º B · clase de muestra', creada: iso('2026-09-15'), muestra: true,
+    v: 1, vMuestra: VERSION_MUESTRA, nombre: '4.º B · clase de muestra', creada: iso('2026-09-15'), muestra: true,
     mesas: MESAS.map(([id, nombre, color, turnos]) => ({ id, nombre, color, turnos })),
     adaptar: { grande: false, contraste: false, voz: true, temporizadores: true, facil: false },
-    lecturas: { [VUELTA.id]: { version: VUELTA.version, hito: 'fin', completados, enCurso: null } },
-    actual: VUELTA.id, librosLibres, hitos,
+    lecturas: { [VUELTA.id]: { version: VUELTA.version, hito: 'fin', completados, enCurso: null }, [ISLA.id]: { version: ISLA.version, hito: 'h2', completados: { t1: { version: 1, fecha: iso('2026-10-30', '10:30') } }, enCurso: null } },
+    actual: ISLA.id, librosLibres, hitos,
     pueblo: {
-      jardin: VUELTA.tramos.filter((t) => ELIGE[t.id]).map((t) => ({ k: `${VUELTA.id}:${t.id}`, op: ELIGE[t.id], libro: VUELTA.titulo, tramo: t.titulo })),
+      jardin: [...VUELTA.tramos.filter((t) => ELIGE[t.id]).map((t) => ({ k: `${VUELTA.id}:${t.id}`, op: ELIGE[t.id], libro: VUELTA.titulo, tramo: t.titulo })), { k: `${ISLA.id}:t1`, op: '🗺️ Un mapa antiguo', libro: ISLA.titulo, tramo: ISLA.tramos[0].titulo }],
       lugares: ['estacion'], recuerdos: [{ libro: VUELTA.id, ...VUELTA.huellas.recuerdo }], hilos: [{ libro: VUELTA.id, ...VUELTA.huellas.hilo }], explorador: ['chistera']
     },
     estanteria: [

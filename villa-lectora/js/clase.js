@@ -4,9 +4,15 @@
 //  Prototipo: se guarda en este navegador (el ordenador de la clase).
 // =============================================================
 import VUELTA from './aventuras/vuelta.js';
-import { claseDeMuestra } from './muestra.js';
+import ISLA from './aventuras/isla.js';
+import ALICIA from './aventuras/alicia.js';
+import PINOCHO from './aventuras/pinocho.js';
+import OZ from './aventuras/oz.js';
+import PATITO from './aventuras/patito.js';
+import { claseDeMuestra, VERSION_MUESTRA } from './muestra.js';
 
-export const AVENTURAS = { [VUELTA.id]: VUELTA };
+export const AVENTURAS = Object.fromEntries([VUELTA, ISLA, ALICIA, PINOCHO, OZ, PATITO].map((a) => [a.id, a]));
+export function cambiarLectura(id) { if (AVENTURAS[id]) { C.actual = id; guardar(); } }
 // ?muestra abre una clase ficticia con meses de uso, guardada aparte: nunca toca la clase real.
 export const MUESTRA = new URLSearchParams(location.search).has('muestra');
 const CLAVE = MUESTRA ? 'villa-lectora-muestra-v1' : 'villa-lectora-clase-v1';
@@ -28,7 +34,7 @@ const nueva = () => ({
 });
 
 export let C = cargar();
-function cargar() { try { const c = JSON.parse(localStorage.getItem(CLAVE)); if (c && c.v === 1) return { ...nueva(), ...c }; } catch { /* nada */ } return MUESTRA ? claseDeMuestra() : nueva(); }
+function cargar() { try { const c = JSON.parse(localStorage.getItem(CLAVE)); if (c && c.v === 1 && (!MUESTRA || c.vMuestra === VERSION_MUESTRA)) return { ...nueva(), ...c }; } catch { /* nada */ } return MUESTRA ? claseDeMuestra() : nueva(); }
 export function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(C)); } catch { /* sin almacenamiento */ } document.dispatchEvent(new Event('clase-cambia')); }
 export function reiniciar() { C = MUESTRA ? claseDeMuestra() : nueva(); guardar(); }
 export const exportarJSON = () => JSON.stringify({ app: 'villa-lectora', exportado: new Date().toISOString(), clase: C }, null, 2);

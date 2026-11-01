@@ -93,7 +93,15 @@ Sigue el *Documento Base de Diseño* (seis decisiones cerradas).
 - **Informe colectivo** con tres capas separadas (actividad, competencia trabajada, aprendizaje observado) y **ficha de situación de aprendizaje** imprimible. La competencia específica y el criterio están marcados como *pendiente de verificar* con la normativa andaluza.
 - **Datos**: solo de la clase, en este navegador (prototipo). Ningún dato de alumnos.
 - Código nuevo: `js/clase.js` (estado), `js/sesion.js` (la sesión), `js/panel.js`, `js/informe.js`, `js/aventuras/vuelta.js` (contenido). Las partes de la V6 pensadas para un alumno individual (estrellas, tienda, alias) quedan sin uso.
+## Más libros
+Además de «La vuelta al mundo», hay cinco aventuras más (todas de dominio público, con escenas y resúmenes propios):
+- **La isla del tesoro** (Stevenson) · 5 tramos → restaura el muelle, deja un mapa en la vitrina y un pañuelo pirata al explorador.
+- **Alicia en el País de las Maravillas** (Carroll) · 5 tramos → el jardín de las rosas, el reloj del Conejo y unas orejas de conejo.
+- **Las aventuras de Pinocho** (Collodi) · 5 tramos → el taller del carpintero, un trocito del tronco que hablaba y un gorrito.
+- **El maravilloso mago de Oz** (Baum) · 5 tramos → el camino de baldosas amarillas, las gafas verdes y unas gafas.
+- **El patito feo** (Andersen) · Infantil, un solo tramo (álbum de una sesión) → el estanque de los cisnes y una pluma.
 
+Se cambia en **Panel docente → Jugar → Lectura actual**. Cada libro guarda su propio progreso; cambiar de lectura no borra nada. La clase de muestra tiene ya «La vuelta al mundo» terminada y «La isla del tesoro» a medias.
 
 ## Acceso de prueba (actual)
 Código `2026`, tanto para profesor/a como para administración. Es solo una demo: el código está en el JavaScript público y no protege nada.

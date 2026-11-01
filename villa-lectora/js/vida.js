@@ -185,7 +185,7 @@ export function iniciarVida(C) {
 
   // ---------- Mi rincón: el jardín donde colocas lo que ganas ----------
   const rincon = new THREE.Group(); scene.add(rincon);
-  const HUECOS = [[-4, 35.6], [0, 35.6], [4, 35.6], [-4, 38.6], [0, 38.6], [4, 38.6]];
+  const HUECOS = [35.2, 37.2, 39.2].flatMap((z) => [-4.2, -1.4, 1.4, 4.2].map((x) => [x, z]));   // 12 huecos: se ven los 12 más recientes
   { const valla = mat('#f1e6cf'); for (const [x, z, w, d] of [[0, 34, 11.5, .15], [0, 40.2, 11.5, .15], [-5.75, 37.1, .15, 6.2], [5.75, 37.1, .15, 6.2]]) { const b = new THREE.Mesh(new THREE.BoxGeometry(w, .5, d, Math.ceil(w), 1, Math.ceil(d)), valla); b.position.set(x, .25, z); scene.add(b); } const cesped = new THREE.Mesh(new THREE.BoxGeometry(11.4, .06, 6.1, 10, 1, 6), mat('#8fcf7a')); cesped.position.set(0, .05, 37.1); scene.add(cesped); }
   const texEmoji = new Map();
   const cartel = (e) => { let t = texEmoji.get(e); if (!t) { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.font = '96px serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(e, 64, 70); t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; texEmoji.set(e, t); } const m = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), curvar(new THREE.MeshBasicMaterial({ map: t, transparent: true, side: THREE.DoubleSide }))); return m; };
@@ -201,7 +201,7 @@ export function iniciarVida(C) {
   function pintarRincon() {
     luces.rincon.length = 0;
     for (const c of [...rincon.children]) rincon.remove(c);
-    huecosRincon().slice(0, HUECOS.length).forEach((id, i) => { if (!id) return; const m = modelo(id); m.position.set(HUECOS[i][0], 0, HUECOS[i][1]); rincon.add(m); });
+    huecosRincon().slice(-HUECOS.length).forEach((id, i) => { if (!id) return; const m = modelo(id); m.position.set(HUECOS[i][0], 0, HUECOS[i][1]); rincon.add(m); });
   }
   pintarRincon();
   function uiRincon() {
@@ -227,12 +227,48 @@ export function iniciarVida(C) {
       const c = cartel('🎈'); c.position.set(0, 2.9, 2.3); g.add(c);
       g.position.set(29, 0, -4); g.userData.globo = globo; lugaresG.add(g);
     }
+    const sitio = (x, z, hacer) => { const g = new THREE.Group(), p = (geo, c, px, py, pz) => { const o = new THREE.Mesh(geo, mat(c)); o.position.set(px, py, pz); o.castShadow = true; g.add(o); return o; }; hacer(p, g); g.position.set(x, 0, z); lugaresG.add(g); };
+    if (lista.includes('muelle')) sitio(-29, -4, (p, g) => {   // el viejo muelle: tablones, postes, una barca y un cofre
+      p(new THREE.BoxGeometry(7, .25, 3, 4, 1, 2), '#9a7350', 0, .45, 0);
+      for (const x of [-3, -1, 1, 3]) for (const z of [-1.3, 1.3]) p(new THREE.CylinderGeometry(.14, .16, 1.1, 8), '#6b4a34', x, .3, z);
+      const barca = p(new THREE.CylinderGeometry(.9, .5, .6, 10, 1, false, 0, Math.PI), '#c8372d', 0, .75, 2.3); barca.rotation.set(0, 0, Math.PI / 2); barca.scale.set(1, 2.4, 1);
+      p(new THREE.BoxGeometry(1, .6, .7), '#7a4a24', -2, .9, -.3); p(new THREE.BoxGeometry(1.04, .12, .74), '#d4a43a', -2, 1.15, -.3);
+      p(new THREE.CylinderGeometry(.3, .3, .8, 10), '#8a6a44', 2.2, .95, -.5); const c = cartel('⚓'); c.position.set(0, 2.2, 0); g.add(c);
+    });
+    if (lista.includes('rosas')) sitio(-31, 21, (p, g) => {   // el jardín de las rosas: setos y rosas rojas y blancas
+      for (const [x, z, w, d] of [[0, -2.2, 6, .7], [0, 2.2, 6, .7], [-3, 0, .7, 5.1], [3, 0, .7, 5.1]]) p(new THREE.BoxGeometry(w, 1, d, Math.ceil(w), 1, Math.ceil(d)), '#3f8a4a', x, .5, z);
+      for (let i = 0; i < 14; i++) p(new THREE.SphereGeometry(.22, 8, 6), i % 3 ? '#d23a4a' : '#fff4f4', -2.4 + (i % 7) * .8, 1.1, i < 7 ? -2.2 : 2.2);
+      const c = cartel('🌹'); c.position.set(0, 1.6, 0); g.add(c);
+    });
+    if (lista.includes('taller')) sitio(31, 22, (p, g) => {   // el taller del carpintero: banco, troncos y un muñeco
+      p(new THREE.BoxGeometry(3, .2, 1.2), '#b07a44', 0, 1, 0); for (const x of [-1.3, 1.3]) p(new THREE.BoxGeometry(.2, 1, 1), '#7a5030', x, .5, 0);
+      for (let i = 0; i < 3; i++) { const t = p(new THREE.CylinderGeometry(.3, .3, 1.4, 10), '#9a6a40', -2.6, .3 + i * .55, (i - 1) * .5); t.rotation.x = Math.PI / 2; }
+      p(new THREE.SphereGeometry(.22, 10, 8), '#e2b07a', .6, 1.55, 0); p(new THREE.CylinderGeometry(.12, .16, .5, 8), '#c8372d', .6, 1.2, 0); const n = p(new THREE.ConeGeometry(.05, .35, 6), '#e2b07a', .6, 1.55, .3); n.rotation.x = Math.PI / 2;
+      const c = cartel('🪚'); c.position.set(0, 2.4, 0); g.add(c);
+    });
+    if (lista.includes('camino')) sitio(16, 34, (p, g) => {   // un trocito del camino de baldosas amarillas y un arco verde
+      for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) p(new THREE.BoxGeometry(.9, .1, .9), (i + j) % 2 ? '#f2c744' : '#e8b830', -2.5 + i, .06, -.5 + j);
+      for (const x of [-1.6, 1.6]) p(new THREE.CylinderGeometry(.2, .2, 2.4, 10), '#3fae6a', x, 1.2, -1.4);
+      const arco = new THREE.Mesh(new THREE.TorusGeometry(1.6, .2, 8, 20, Math.PI), mat('#3fae6a')); arco.position.set(0, 2.4, -1.4); g.add(arco);
+      const c = cartel('💚'); c.position.set(0, 3.2, -1.4); g.add(c);
+    });
+    if (lista.includes('estanque')) sitio(-17, 34, (p, g) => {   // el estanque de los cisnes
+      const agua = p(new THREE.CylinderGeometry(2.4, 2.4, .12, 24), '#6dbcd1', 0, .08, 0); agua.material.emissive = new THREE.Color('#1d4e5a'); agua.material.emissiveIntensity = .15;
+      p(new THREE.TorusGeometry(2.45, .18, 8, 28), '#c9b9a0', 0, .12, 0).rotation.x = Math.PI / 2;
+      for (const [x, z] of [[-.8, .3], [.9, -.6]]) { p(new THREE.SphereGeometry(.32, 10, 8), '#ffffff', x, .35, z).scale.set(1, .7, 1.4); p(new THREE.SphereGeometry(.13, 8, 6), '#ffffff', x, .82, z + .35); p(new THREE.CylinderGeometry(.05, .06, .45, 6), '#ffffff', x, .6, z + .3); }
+      const c = cartel('🦢'); c.position.set(0, 1.7, -1.6); g.add(c);
+    });
   }
   // ---------- el explorador de la clase lleva un recuerdo de cada libro ----------
   const accesorios = new THREE.Group();
   function vestir(lista = []) {
     const cab = player.userData.chibi?.cabeza; if (!cab) return; cab.remove(accesorios); for (const c of [...accesorios.children]) accesorios.remove(c);
     if (lista.includes('chistera')) { const ala = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, .05, 18), mat('#2b2b33')); ala.position.y = .5; const copa = new THREE.Mesh(new THREE.CylinderGeometry(.4, .42, .6, 18), mat('#2b2b33')); copa.position.y = .82; const cinta = new THREE.Mesh(new THREE.CylinderGeometry(.425, .435, .12, 18), mat('#c8372d')); cinta.position.y = .6; accesorios.add(ala, copa, cinta); }
+    if (lista.includes('panuelo')) { const p = new THREE.Mesh(new THREE.SphereGeometry(.66, 16, 10, 0, Math.PI * 2, 0, Math.PI * .42), mat('#c8372d')); p.position.y = .08; accesorios.add(p); const n = new THREE.Mesh(new THREE.ConeGeometry(.14, .4, 6), mat('#c8372d')); n.position.set(0, .1, -.62); n.rotation.x = -2.2; accesorios.add(n); }
+    if (lista.includes('orejas')) for (const sx of [-1, 1]) { const o = new THREE.Mesh(new THREE.CapsuleGeometry(.1, .55, 4, 8), mat('#ffffff')); o.position.set(sx * .24, .9, -.05); o.rotation.z = -sx * .18; accesorios.add(o); }
+    if (lista.includes('gorro')) { const g = new THREE.Mesh(new THREE.ConeGeometry(.42, .7, 12), mat('#e8d6b0')); g.position.set(.08, .82, 0); g.rotation.z = -.2; accesorios.add(g); }
+    if (lista.includes('gafas')) for (const sx of [-1, 1]) { const a = new THREE.Mesh(new THREE.TorusGeometry(.13, .03, 6, 16), mat('#2f8f4f')); a.position.set(sx * .22, -.05, .62); accesorios.add(a); }
+    if (lista.includes('pluma')) { const pl = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), mat('#ffffff')); pl.scale.set(.6, 2.6, .4); pl.position.set(-.3, .75, -.1); pl.rotation.z = .5; accesorios.add(pl); }
     cab.add(accesorios);
   }
 

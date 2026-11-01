@@ -3,7 +3,7 @@
 //  Jugar (lo habitual) · Adaptar (cuando hace falta) · Progreso e informes ·
 //  La clase (mesas, libros sin aventura, interludios) · Datos (solo admin).
 // =============================================================
-import { C, guardar, reiniciar, exportarJSON, AVENTURAS, aventuraActual, lectura, marcarLeido, estadoTramos, siguienteTramo, libroLibre, interludio, observar, hitosLectura } from './clase.js';
+import { C, guardar, reiniciar, exportarJSON, AVENTURAS, cambiarLectura, aventuraActual, lectura, marcarLeido, estadoTramos, siguienteTramo, libroLibre, interludio, observar, hitosLectura } from './clase.js';
 import { informeHTML, fichaSA, abrirDocumento, descargarCSV } from './informe.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -16,6 +16,7 @@ export function abrirPanel(X, tab = 'jugar') {
   if (tab === 'jugar') {
     const icono = (e) => e.hecho ? '✅' : e.abierto ? '🔓' : '🔒';
     body = `<div class="pd-libro"><span class="pd-emoji">${av.emoji}</span><div><small>LECTURA ACTUAL</small><h2>${esc(av.titulo)}</h2><p class="muted">${esc(av.autor)} · ${esc(av.curso)}</p></div></div>
+      <label class="dashboard-label">Lectura actual<select id="pd-libro">${['Primaria', 'Infantil'].map((et) => `<optgroup label="${et}">${Object.values(AVENTURAS).filter((a) => a.etapa === et).map((a) => { const e = estadoTramos(a), h = e.filter((x) => x.hecho).length; return `<option value="${a.id}" ${a.id === av.id ? 'selected' : ''}>${a.emoji} ${esc(a.titulo)} · ${esc(a.curso)}${C.hitos['libro:' + a.id] ? ' · ✅ terminado' : h ? ` · ${h}/${e.length}` : ''}</option>`; }).join('')}</optgroup>`).join('')}</select></label>
       <label class="dashboard-label">¿Hasta dónde ha leído la clase?<select id="pd-hito"><option value="">Todavía no hemos empezado</option>${av.hitos.map((h) => `<option value="${h.id}" ${l.hito === h.id ? 'selected' : ''}>${esc(h.texto)}</option>`).join('')}</select></label>
       <button class="action primary pd-grande" id="pd-continuar" ${sig ? '' : 'disabled'}>${sig ? `▶ ${l.enCurso?.tramo === sig.id ? 'Seguir' : 'Empezar'} el tramo «${esc(sig.titulo)}»` : (est.every((e) => e.hecho) ? '🏆 Aventura completada' : '📖 Marca hasta dónde habéis leído para abrir tramos')}</button>
       <div class="pd-tramos">${est.map((e, i) => `<div class="pd-tramo ${e.hecho ? 'hecho' : e.abierto ? 'abierto' : ''}"><span>${icono(e)} ${i + 1}. ${esc(e.t.titulo)}</span><small>${esc(av.hitos.find((h) => h.id === e.t.requiere).texto)}</small>${e.abierto ? `<button class="action" data-repetir="${e.t.id}">${e.hecho ? 'Repetir' : 'Jugar'}</button>` : ''}</div>`).join('')}</div>
@@ -47,6 +48,7 @@ export function abrirPanel(X, tab = 'jugar') {
   X.open(`<span class="tag">👩‍🏫 PANEL DOCENTE · ${esc(C.nombre)}</span><h1>Buenos días</h1><div class="dashboard-tabs">${tabs.map(([id, t]) => `<button class="${tab === id ? 'active' : ''}" data-ptab="${id}">${t}</button>`).join('')}</div><section class="dashboard-section">${body}</section>`);
   document.querySelectorAll('[data-ptab]').forEach((b) => b.onclick = () => abrirPanel(X, b.dataset.ptab));
   const re = () => { X.alCambiar?.(); abrirPanel(X, tab); };
+  $('#pd-libro')?.addEventListener('change', (e) => { cambiarLectura(e.target.value); re(); });
   $('#pd-hito')?.addEventListener('change', (e) => { marcarLeido(e.target.value || null); re(); });
   $('#pd-continuar')?.addEventListener('click', () => { X.close(); X.jugar(siguienteTramo(av)); });
   document.querySelectorAll('[data-repetir]').forEach((b) => b.onclick = () => { X.close(); X.jugar(av.tramos.find((t) => t.id === b.dataset.repetir)); });
