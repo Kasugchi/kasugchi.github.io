@@ -242,6 +242,13 @@ export function iniciarVida(C) {
     }
   }
 
+  // ---------- botón para esconder los botones de arriba (y ver el colegio limpio) ----------
+  { const b = document.createElement('button'); b.id = 'verLimpio'; document.body.appendChild(b);
+    let limpio = false; try { limpio = localStorage.getItem('villa-lectora-limpio') === '1'; } catch { /* nada */ }
+    const pon = () => { document.body.classList.toggle('limpio', limpio); b.textContent = limpio ? '☰' : '✕'; b.title = b.ariaLabel = limpio ? 'Mostrar los botones' : 'Esconder los botones'; };
+    b.onclick = (e) => { e.stopPropagation(); limpio = !limpio; try { localStorage.setItem('villa-lectora-limpio', limpio ? '1' : '0'); } catch { /* nada */ } pon(); };
+    pon(); }
+
   // ---------- en el móvil: un botón que se toca, no «pulsa E» ----------
   const tactil = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
   const textoPrompt = (label) => tactil ? `👆 ${label}` : `${label} · Pulsa <b>E</b> o haz clic`;

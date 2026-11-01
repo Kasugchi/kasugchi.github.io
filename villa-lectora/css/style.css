@@ -17,3 +17,8 @@
 #prompt{cursor:pointer;pointer-events:auto;user-select:none}
 #reloj{white-space:nowrap}
 @media(pointer:coarse){#touchAction{display:none}#prompt{bottom:40px;font-size:18px;padding:16px 26px;border-radius:20px}}
+
+/* Botón para esconder la interfaz de arriba */
+#verLimpio{position:fixed;z-index:20;top:calc(14px + env(safe-area-inset-top,0px));right:14px;width:46px;height:46px;border-radius:50%;border:2px solid #f2dbad;background:#123b46eb;color:#fff;font-size:20px;font-weight:900;cursor:pointer;box-shadow:0 4px 0 #0003}
+header{padding-right:74px}
+body.limpio header,body.limpio #hint,body.limpio footer{display:none}
