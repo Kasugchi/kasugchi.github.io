@@ -178,7 +178,7 @@ const DEMO_CODES={alumno:'LECTOR-2026',profesor:'PROFE-2026',admin:'VILLA-ADMIN-
 const gate=$('#roleGate');
 function enterGate(){gate.hidden=false;close();currentRole=null;teacherButton.hidden=true;$('#admin').hidden=true;$('#roleCode').value='';$('#roleMessage').textContent='';}
 document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{selectedRole=b.dataset.role;document.querySelectorAll('[data-role]').forEach(x=>x.classList.toggle('active',x===b));$('#roleMessage').textContent='';});
-document.querySelector('[data-role="profesor"]').classList.add('active');
+document.querySelector('[data-role="profesor"]')?.classList.add('active');
 $('#roleEnter').onclick=()=>{if($('#roleCode').value.trim()!==DEMO_CODES[selectedRole]){$('#roleMessage').textContent='Código incorrecto. Consulta los códigos de prueba en README.md.';return}currentRole=selectedRole;gate.hidden=true;teacherButton.hidden=currentRole==='alumno';$('#admin').hidden=currentRole!=='admin';if(currentRole==='profesor')panelDocente();if(currentRole==='admin')panelDocente('datos');};
 $('#roleCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#roleEnter').click()});
 $('#switchRole').onclick=enterGate;
