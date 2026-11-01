@@ -4,9 +4,12 @@
 //  Prototipo: se guarda en este navegador (el ordenador de la clase).
 // =============================================================
 import VUELTA from './aventuras/vuelta.js';
+import { claseDeMuestra } from './muestra.js';
 
 export const AVENTURAS = { [VUELTA.id]: VUELTA };
-const CLAVE = 'villa-lectora-clase-v1';
+// ?muestra abre una clase ficticia con meses de uso, guardada aparte: nunca toca la clase real.
+export const MUESTRA = new URLSearchParams(location.search).has('muestra');
+const CLAVE = MUESTRA ? 'villa-lectora-muestra-v1' : 'villa-lectora-clase-v1';
 const MESAS = [['roja', 'Mesa roja', '#e0604f'], ['azul', 'Mesa azul', '#4a7fd0'], ['verde', 'Mesa verde', '#4fa35a'], ['amarilla', 'Mesa amarilla', '#e0b23a'], ['morada', 'Mesa morada', '#8d62c6'], ['naranja', 'Mesa naranja', '#e58a3a']];
 
 const nueva = () => ({
@@ -25,9 +28,9 @@ const nueva = () => ({
 });
 
 export let C = cargar();
-function cargar() { try { const c = JSON.parse(localStorage.getItem(CLAVE)); if (c && c.v === 1) return { ...nueva(), ...c }; } catch { /* nada */ } return nueva(); }
+function cargar() { try { const c = JSON.parse(localStorage.getItem(CLAVE)); if (c && c.v === 1) return { ...nueva(), ...c }; } catch { /* nada */ } return MUESTRA ? claseDeMuestra() : nueva(); }
 export function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(C)); } catch { /* sin almacenamiento */ } document.dispatchEvent(new Event('clase-cambia')); }
-export function reiniciar() { C = nueva(); guardar(); }
+export function reiniciar() { C = MUESTRA ? claseDeMuestra() : nueva(); guardar(); }
 export const exportarJSON = () => JSON.stringify({ app: 'villa-lectora', exportado: new Date().toISOString(), clase: C }, null, 2);
 
 // ---------- lecturas y tramos ----------
@@ -42,7 +45,7 @@ export function siguienteTramo(av = aventuraActual()) { return estadoTramos(av).
 
 // ---------- hitos únicos y recompensas idempotentes ----------
 function hito(clave) { if (C.hitos[clave]) return false; C.hitos[clave] = new Date().toISOString(); return true; }
-export const hitosLectura = () => Object.keys(C.hitos).length;
+export const hitosLectura = () => Object.keys(C.hitos).filter((k) => /^(tramo|libro|libre):/.test(k)).length;
 // la eleción de la clase (votación) para la mejora de un tramo; se recuerda aunque se repita
 export function elegirMejora(av, t, opcion) { const k = `${av.id}:${t.id}`; const j = C.pueblo.jardin.find((x) => x.k === k); if (j) j.op = opcion; else C.pueblo.jardin.push({ k, op: opcion, libro: av.titulo, tramo: t.titulo }); guardar(); }
 export function completarTramo(av, t) {

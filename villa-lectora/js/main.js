@@ -2,12 +2,14 @@ import * as THREE from './vendor/three.module.min.js';
 import { curvar, chibi, iniciarVida } from './vida.js';
 import { C as CLASE, aventuraActual, lectura, estadoTramos, siguienteTramo, arcoOlivia, hitosLectura } from './clase.js';
 import { jugar } from './sesion.js';
+import { amistadMuestra } from './muestra.js';
 import { abrirPanel } from './panel.js';
 const $=s=>document.querySelector(s), game=$('#game');
 // El rol va arriba: frame() lo lee desde el primer fotograma (declarado al final rompía el módulo y no se podía entrar).
 let selectedRole='profesor',currentRole=null;
-const STORAGE='villa-lectora-v2';let save;try{save=JSON.parse(localStorage.getItem(STORAGE))||{chapter:1,treasures:[],avatar:'Explorador'}}catch{save={chapter:1,treasures:[],avatar:'Explorador'}};
-save.stars ??= 0; save.unlocked ??= ['fogg']; save.completed ??= []; save.attempts ??= []; save.cosmetics ??= []; save.assist ??= false; save.alias ??= 'Explorador';
+const MUESTRA=new URLSearchParams(location.search).has('muestra');
+const STORAGE=MUESTRA?'villa-lectora-v2-muestra':'villa-lectora-v2';let save;try{save=JSON.parse(localStorage.getItem(STORAGE))||{chapter:1,treasures:[],avatar:'Explorador'}}catch{save={chapter:1,treasures:[],avatar:'Explorador'}};
+if(MUESTRA&&!save.amistad)save.amistad={...amistadMuestra};save.stars ??= 0; save.unlocked ??= ['fogg']; save.completed ??= []; save.attempts ??= []; save.cosmetics ??= []; save.assist ??= false; save.alias ??= 'Explorador';
 const persist=()=>{try{localStorage.setItem(STORAGE,JSON.stringify(save))}catch{} updateHud()};
 const chapters=[
 {title:'Una apuesta extraordinaria',intro:'Phileas Fogg asegura que puede dar la vuelta al mundo en ochenta días. Su viaje comienza en Londres.',q:'¿Qué desafío acepta Phileas Fogg?',options:['Cruzar el océano en globo','Dar la vuelta al mundo en 80 días','Encontrar una isla secreta'],correct:1,reward:'🎩 Sombrero de Fogg'},
@@ -182,6 +184,8 @@ document.querySelector('[data-role="profesor"]')?.classList.add('active');
 $('#roleEnter').onclick=()=>{if($('#roleCode').value.trim()!==DEMO_CODES[selectedRole]){$('#roleMessage').textContent='Código incorrecto. Consulta los códigos de prueba en README.md.';return}currentRole=selectedRole;gate.hidden=true;teacherButton.hidden=currentRole==='alumno';$('#admin').hidden=currentRole!=='admin';if(currentRole==='profesor')panelDocente();if(currentRole==='admin')panelDocente('datos');};
 $('#roleCode').addEventListener('keydown',e=>{if(e.key==='Enter')$('#roleEnter').click()});
 $('#switchRole').onclick=enterGate;
+{const g=$('#gateMuestra');if(g)g.innerHTML=MUESTRA?'👀 Estás viendo la <b>clase de muestra</b> (código 2026). <a href="./">Volver a mi clase</a>':'<a href="./?muestra">👀 Ver una clase de muestra con dos meses de uso</a>';
+ if(MUESTRA){const b=document.createElement('div');b.id='bandaMuestra';b.innerHTML='👀 Clase de muestra: datos ficticios con dos meses de uso · <a href="./">Ir a mi clase</a>';document.body.appendChild(b)}}
 $('#admin').onclick=()=>{if(currentRole==='admin')panelDocente('datos')};
 function adminPanel(tab='resumen'){
  if(currentRole!=='admin')return;

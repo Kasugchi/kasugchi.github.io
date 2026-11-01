@@ -75,3 +75,9 @@ body.limpio header,body.limpio #hint,body.limpio footer{display:none}
 .dashboard-label{display:block;font-weight:800;margin:12px 0}.dashboard-label select,.dashboard-label input,.dashboard-label textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:10px;border:2px solid #a7bcb5;font:inherit}
 .dashboard-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}.dashboard-grid .action{margin:0}
 .action.danger{border-color:#c0574a;color:#9a3a2e}
+
+/* Clase de muestra */
+.gate-muestra{background:#eef6f3;border-radius:12px;padding:10px 14px;font-weight:700}.gate-muestra a{color:#276c5c}
+#bandaMuestra{position:fixed;z-index:6;left:50%;bottom:62px;transform:translateX(-50%);background:#f2c744;color:#3a2a1c;font-weight:800;font-size:13px;border-radius:999px;padding:6px 14px;box-shadow:0 3px 0 #0002;white-space:nowrap}#bandaMuestra a{color:#3a2a1c}
+body.limpio #bandaMuestra{display:none}
+@media(pointer:coarse){#bandaMuestra{bottom:110px;font-size:12px}}
