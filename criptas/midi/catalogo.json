@@ -1,6 +1,58 @@
 {
   "discos": [
-    { "id": "himno", "nombre": "Himno del grog (a banda)", "autor": "Beethoven · arreglo de Rufo", "archivo": "himno-del-grog.json" },
-    { "id": "cancan", "nombre": "Cancán del grog (a banda)", "autor": "Offenbach · arreglo de Rufo", "archivo": "cancan-del-grog.json" }
+    {
+      "id": "himno",
+      "nombre": "Himno del grog (a banda)",
+      "autor": "Original: Himno de la alegría · arreglo de Rufo",
+      "archivo": "himno-del-grog.json"
+    },
+    {
+      "id": "cancan",
+      "nombre": "Cancán del grog (a banda)",
+      "autor": "Original: Galop infernal · arreglo de Rufo",
+      "archivo": "cancan-del-grog.json"
+    },
+    {
+      "id": "marinero",
+      "nombre": "Marinero borracho (a banda)",
+      "autor": "Original: Drunken Sailor · arreglo de Rufo",
+      "archivo": "marinero.json"
+    },
+    {
+      "id": "habanera",
+      "nombre": "Habanera del muelle (a banda)",
+      "autor": "Original: Habanera de «Carmen» · arreglo de Rufo",
+      "archivo": "habanera.json"
+    },
+    {
+      "id": "cucaracha",
+      "nombre": "La cucaracha pirata (a banda)",
+      "autor": "Original: La cucaracha · arreglo de Rufo",
+      "archivo": "cucaracha.json"
+    },
+    {
+      "id": "gaviota",
+      "nombre": "La gaviota es voluble (a banda)",
+      "autor": "Original: La donna è mobile · arreglo de Rufo",
+      "archivo": "gaviota.json"
+    },
+    {
+      "id": "susana",
+      "nombre": "¡Oh, Susana (no llores, que vuelvo)! (a banda)",
+      "autor": "Original: Oh! Susanna · arreglo de Rufo",
+      "archivo": "susana.json"
+    },
+    {
+      "id": "clementina",
+      "nombre": "Clementina, la del faro (a banda)",
+      "autor": "Original: Oh My Darling, Clementine · arreglo de Rufo",
+      "archivo": "clementina.json"
+    },
+    {
+      "id": "mangas",
+      "nombre": "Mangas verdes (a banda)",
+      "autor": "Original: Greensleeves · arreglo de Rufo",
+      "archivo": "mangas.json"
+    }
   ]
 }
