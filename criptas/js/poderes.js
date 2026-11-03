@@ -40,7 +40,8 @@ export const LISTA = [
     { id: 'turbo', ico: '⚡', t: 'Súper velocidad', local: 1, alterna: 1 },
     { id: 'coloso', ico: '👑', t: 'Hacerme enorme', local: 1, alterna: 1 },
     { id: 'minimo', ico: '🔬', t: 'Hacerme diminuto', local: 1, alterna: 1 },
-    { id: 'saltarin', ico: '🦘', t: 'Modo saltarín', local: 1, alterna: 1 }
+    { id: 'saltarin', ico: '🦘', t: 'Modo saltarín', local: 1, alterna: 1 },
+    { id: 'oro', ico: '💰', t: '+5.000 🪙 al fondo común (para probar)', local: 1 }
   ] }
 ];
 const TODOS = Object.fromEntries(LISTA.flatMap((g) => g.items).map((i) => [i.id, i]));
@@ -249,6 +250,7 @@ export function iniciarPoderes(C) {
       case 'plaza': if (deId !== C.getR()?.yo.id || !C.getR()) teleportar(C.PLAZA.x, C.PLAZA.z, '⛲ ¡A la plaza!'); break;
       case 'playa': teleportar(0, 19, '🏖️ ¡A la playa!'); break;
       case 'anuncio': anuncio(arg); break;
+      case 'oro': C.darOro?.(5000); nota(900, .2, 'triangle', .07, 1400); break;
       case 'vuelo': case 'turbo': case 'coloso': case 'minimo': case 'saltarin': alternar(id); break;
     }
   }
