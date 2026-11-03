@@ -12,37 +12,37 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261103164152",
-    "./js/campanas.js": "./js/campanas.js?v=20261103164152",
-    "./js/cocina.js": "./js/cocina.js?v=20261103164152",
-    "./js/datos.js": "./js/datos.js?v=20261103164152",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261103164152",
-    "./js/firebase.js": "./js/firebase.js?v=20261103164152",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103164152",
-    "./js/herramientas.js": "./js/herramientas.js?v=20261103164152",
-    "./js/ia.js": "./js/ia.js?v=20261103164152",
-    "./js/iconos.js": "./js/iconos.js?v=20261103164152",
-    "./js/insultos.js": "./js/insultos.js?v=20261103164152",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261103164152",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103164152",
-    "./js/motor.js": "./js/motor.js?v=20261103164152",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103164152",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103164152",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103164152",
-    "./js/nube.js": "./js/nube.js?v=20261103164152",
-    "./js/panel.js": "./js/panel.js?v=20261103164152",
-    "./js/planos.js": "./js/planos.js?v=20261103164152",
-    "./js/poderes.js": "./js/poderes.js?v=20261103164152",
-    "./js/procedural.js": "./js/procedural.js?v=20261103164152",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261103164152",
-    "./js/red.js": "./js/red.js?v=20261103164152",
-    "./js/render.js": "./js/render.js?v=20261103164152",
-    "./js/render3d.js": "./js/render3d.js?v=20261103164152",
-    "./js/reunion.js": "./js/reunion.js?v=20261103164152",
-    "./js/sprites.js": "./js/sprites.js?v=20261103164152",
-    "./js/tablero.js": "./js/tablero.js?v=20261103164152",
-    "./js/ui.js": "./js/ui.js?v=20261103164152",
-    "./js/viajero.js": "./js/viajero.js?v=20261103164152"
+    "./js/acceso.js": "./js/acceso.js?v=20261103165923",
+    "./js/campanas.js": "./js/campanas.js?v=20261103165923",
+    "./js/cocina.js": "./js/cocina.js?v=20261103165923",
+    "./js/datos.js": "./js/datos.js?v=20261103165923",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261103165923",
+    "./js/firebase.js": "./js/firebase.js?v=20261103165923",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103165923",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261103165923",
+    "./js/ia.js": "./js/ia.js?v=20261103165923",
+    "./js/iconos.js": "./js/iconos.js?v=20261103165923",
+    "./js/insultos.js": "./js/insultos.js?v=20261103165923",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261103165923",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103165923",
+    "./js/motor.js": "./js/motor.js?v=20261103165923",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103165923",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103165923",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103165923",
+    "./js/nube.js": "./js/nube.js?v=20261103165923",
+    "./js/panel.js": "./js/panel.js?v=20261103165923",
+    "./js/planos.js": "./js/planos.js?v=20261103165923",
+    "./js/poderes.js": "./js/poderes.js?v=20261103165923",
+    "./js/procedural.js": "./js/procedural.js?v=20261103165923",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261103165923",
+    "./js/red.js": "./js/red.js?v=20261103165923",
+    "./js/render.js": "./js/render.js?v=20261103165923",
+    "./js/render3d.js": "./js/render3d.js?v=20261103165923",
+    "./js/reunion.js": "./js/reunion.js?v=20261103165923",
+    "./js/sprites.js": "./js/sprites.js?v=20261103165923",
+    "./js/tablero.js": "./js/tablero.js?v=20261103165923",
+    "./js/ui.js": "./js/ui.js?v=20261103165923",
+    "./js/viajero.js": "./js/viajero.js?v=20261103165923"
   }
 }
 </script>
@@ -58,6 +58,23 @@
   #creador, #deco { left: 50%; bottom: 0; transform: translateX(-50%); width: min(560px, 100vw); max-height: 52vh; overflow: auto; background: #fff8e6; border-radius: 28px 28px 0 0; padding: 16px 18px max(16px, env(safe-area-inset-bottom)); box-shadow: 0 -6px 30px rgba(0,0,0,.2); display: none; }
   #deco { max-height: 40vh; }
   body.decorando .ayuda, body.decorando #accion { display: none !important; }
+  #deco { width: min(760px, 100vw); max-height: 48vh; }
+  @media (min-width: 900px) { #deco { left: auto; right: 12px; top: calc(max(10px, env(safe-area-inset-top)) + 56px); bottom: 12px; transform: none; width: 390px; max-height: none; border-radius: 28px; } }
+  @media (max-width: 899px) { #deco .barra-deco .ops2 { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; } #deco .barra-deco .chip { flex: none; } #deco .nota { font-size: 12px; } }
+  #deco .barra-deco { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; }
+  #deco .chip { padding: 6px 11px; }
+  #deco .sel-deco { background: #f6ecd2; border-radius: 18px; padding: 8px 10px; margin-bottom: 4px; }
+  #deco .sel-deco h2 { font-size: 17px; }
+  #deco .ajustes { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; font-size: 13px; font-weight: 700; color: #5a4030; }
+  #deco .ajustes span { margin-left: 6px; }
+  #deco .busca-deco { width: 100%; box-sizing: border-box; font: 700 14px 'Nunito', sans-serif; border: 2px solid #e2d2aa; border-radius: 999px; padding: 7px 14px; background: #fff; color: #4a3626; margin-bottom: 6px; }
+  #deco .cats-deco { margin-bottom: 8px; }
+  #deco .alm-deco { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 6px; }
+  #deco .alm-p { position: relative; border: 0; background: #f6ecd2; border-radius: 16px; padding: 5px 3px 6px; cursor: pointer; font-family: 'Nunito', sans-serif; color: #5a4030; box-shadow: 0 3px 0 #e2d2aa; display: flex; flex-direction: column; align-items: center; gap: 1px; }
+  #deco .alm-p img, #deco .alm-p .emo { width: 62px; height: 62px; border-radius: 10px; }
+  #deco .alm-p .emo { display: grid; place-items: center; font-size: 28px; }
+  #deco .alm-p b { font-size: 11px; line-height: 1.15; text-align: center; }
+  #deco .alm-p small { position: absolute; top: 4px; right: 6px; font-weight: 800; font-size: 12px; background: #3f72b8; color: #fff; border-radius: 999px; padding: 0 6px; }
   #deco h2 { margin: 0 0 6px; font-size: 19px; color: #3f72b8; }
   #deco .nota { margin: 2px 0 8px; font-size: 13px; color: #8a6a4a; font-weight: 600; }
   #deco .pest { display: flex; gap: 6px; margin-bottom: 8px; }
@@ -1445,18 +1462,59 @@ const capaDe = (k) => MUEBLES[k]?.capa || 'mueble';
 const centroDe = (k, cx, cz, r) => { const [w, d] = huella(k, r); return { x: celX(cx) + (w - 1) / 2, z: celZ(cz) + (d - 1) / 2 }; };
 const puestos = (k) => EP.casa.muebles.filter((m) => m.k === k).length;
 const libres = (k) => (EP.tengo[k] || 0) - puestos(k);
-function cabe(k, cx, cz, r, ignorar = -1) {
-  const [w, d] = huella(k, r), capa = capaDe(k);
-  if (cx < 0 || cz < 0 || cx + w > CW || cz + d > CD) return false;
-  if (capa !== 'suelo' && PUERTA_CASA[0] >= cx && PUERTA_CASA[0] < cx + w && PUERTA_CASA[1] >= cz && PUERTA_CASA[1] < cz + d) return false;
-  return EP.casa.muebles.every((m, i) => {
-    if (i === ignorar || !MUEBLES[m.k] || capaDe(m.k) !== capa) return true;
-    const [w2, d2] = huella(m.k, m.r);
-    return cx + w <= m.x || m.x + w2 <= cx || cz + d <= m.z || m.z + d2 <= cz;
-  });
-}
 function construir(k) { const g = new THREE.Group(); MUEBLES[k].f(g); return g; }
-function soltar(g) { g.traverse((o) => { if (o.isMesh) o.geometry.dispose(); }); }
+function soltar(g) { g.traverse((o) => { if (o.isMesh) { o.geometry.dispose(); if (o.material?.userData?.tinte) o.material.dispose(); } }); }
+
+// =============================================================
+//  COLOCACIÓN LIBRE (a lo editor de casas de un MMO)
+//  Cada mueble guarda px/pz (metros desde el centro del cuarto), ry (giro), y (altura: encima de
+//  otro mueble), s (tamaño) y tinte. x/z/r (la casilla) se siguen guardando para versiones viejas.
+// =============================================================
+function normal(m) {
+  if (m.px == null) { const c = centroDe(m.k, m.x, m.z, m.r || 0); m.px = c.x - X1; m.pz = c.z; m.ry = (m.r || 0) * Math.PI / 2; }
+  m.y ??= 0; m.s ??= 1; return m;
+}
+function aCasilla(m) {
+  const r = ((Math.round(m.ry / (Math.PI / 2)) % 4) + 4) % 4, [w, d] = huella(m.k, r);
+  m.r = r; m.x = Math.max(0, Math.min(CW - w, Math.round(m.px + CW / 2 - w / 2))); m.z = Math.max(0, Math.min(CD - d, Math.round(m.pz + CD / 2 - d / 2)));
+}
+const TAM = new Map();   // caja de cada mueble sin girar ni mover
+function tamDe(k) {
+  if (!TAM.has(k)) { const g = construir(k), b = new THREE.Box3().setFromObject(g); soltar(g); TAM.set(k, b.isEmpty() ? new THREE.Box3(new THREE.Vector3(-.4, 0, -.4), new THREE.Vector3(.4, 1, .4)) : b); }
+  return TAM.get(k);
+}
+// La planta del mueble: un rectángulo girado (centro, medio ancho, medio fondo, giro)
+function rect(m, enc = .06) {
+  const b = tamDe(m.k), s = m.s, c = Math.cos(m.ry), sn = Math.sin(m.ry), ox = (b.max.x + b.min.x) / 2 * s, oz = (b.max.z + b.min.z) / 2 * s;
+  const hx = Math.max(.05, (b.max.x - b.min.x) * s / 2 - enc), hz = Math.max(.05, (b.max.z - b.min.z) * s / 2 - enc);
+  return { cx: m.px + ox * c + oz * sn, cz: m.pz - ox * sn + oz * c, hx, hz, c, sn, ax: hx * Math.abs(c) + hz * Math.abs(sn), az: hx * Math.abs(sn) + hz * Math.abs(c) };
+}
+function chocan(a, b) {   // separación de ejes entre dos rectángulos girados
+  const dx = b.cx - a.cx, dz = b.cz - a.cz;
+  for (const [ex, ez] of [[a.c, -a.sn], [a.sn, a.c], [b.c, -b.sn], [b.sn, b.c]]) {
+    const pa = a.hx * Math.abs(a.c * ex - a.sn * ez) + a.hz * Math.abs(a.sn * ex + a.c * ez), pb = b.hx * Math.abs(b.c * ex - b.sn * ez) + b.hz * Math.abs(b.sn * ex + b.c * ez);
+    if (Math.abs(dx * ex + dz * ez) > pa + pb) return false;
+  }
+  return true;
+}
+const PUERTA_R = { cx: celX(PUERTA_CASA[0]) - X1, cz: celZ(PUERTA_CASA[1]), hx: .45, hz: .45, c: 1, sn: 0 };
+// Dentro del cuarto, siempre (también en modo experto)
+function encerrar(m) {
+  const r = rect(m, 0);
+  m.px += Math.max(0, -CW / 2 - (r.cx - r.ax)) - Math.max(0, r.cx + r.ax - CW / 2);
+  m.pz += Math.max(0, -CD / 2 - (r.cz - r.az)) - Math.max(0, r.cz + r.az - (CD / 2 - .05));
+}
+function tinte(g, color) {   // el color que más se ve del mueble pasa a ser el tinte
+  const peso = new Map();
+  g.traverse((o) => { if (!o.isMesh || !o.material?.color || o.material.transparent) return; if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); const h = o.material.color.getHexString(); peso.set(h, (peso.get(h) || 0) + o.geometry.boundingSphere.radius ** 2); });
+  const top = [...peso].sort((a, b) => b[1] - a[1])[0]?.[0]; if (!top) return;
+  const nuevos = new Map();
+  g.traverse((o) => { if (o.isMesh && !o.material.transparent && o.material.color?.getHexString() === top) { if (!nuevos.has(o.material)) { const n = o.material.clone(); n.color.set(color); n.userData.tinte = true; nuevos.set(o.material, n); } o.material = nuevos.get(o.material); } });
+}
+function grupoDe(m, i) {
+  const g = construir(m.k); if (m.tinte) tinte(g, m.tinte);
+  g.position.set(X1 + m.px, m.y, m.pz); g.rotation.y = m.ry; g.scale.setScalar(m.s); g.userData.i = i; return g;
+}
 function pintarCasa() {
   const c = casaVista(), ajena = !!casaAjena;
   texSuelos[c.suelo] ||= texCasa(c.suelo); matSueloCasa.map = texSuelos[c.suelo]; matSueloCasa.needsUpdate = true;
@@ -1465,14 +1523,15 @@ function pintarCasa() {
   CHOQUES_CASA.length = 0;
   for (let i = INTERACCION.length - 1; i >= 0; i--) if (INTERACCION[i].deCasa) INTERACCION.splice(i, 1);
   let luces = 0; lucesMueble.forEach((l) => { l.intensity = 0; });
-  for (const m of c.muebles) {
-    const M = MUEBLES[m.k]; if (!M) continue;
-    const g = construir(m.k), { x, z } = centroDe(m.k, m.x, m.z, m.r), [w, d] = huella(m.k, m.r), ry = m.r * Math.PI / 2;
-    g.position.set(x, 0, z); g.rotation.y = ry; casaMuebles.add(g);
-    if (capaDe(m.k) !== 'suelo') CHOQUES_CASA.push({ x, z, w: w - .14, d: d - .14 });
-    if (M.luz && luces < 3) { const l = lucesMueble[luces++]; l.position.set(x, M.luz, z); l.userData.on = true; }
-    const t = (accion, hacer) => toque(M.n, x, z, Math.max(w, d) * .5 + .9, accion, hacer, { dentro: 'casa', deCasa: true });
-    if (M.uso === 'sentar') t('Sentarse', () => sentarse(x, z, ry));
+  c.muebles.forEach((m, i) => {
+    const M = MUEBLES[m.k]; if (!M) return;
+    normal(m); casaMuebles.add(grupoDe(m, i));
+    const x = X1 + m.px, z = m.pz, ry = m.ry, r = rect(m, .07);
+    if (capaDe(m.k) !== 'suelo' && m.y < .05) CHOQUES_CASA.push({ x: X1 + r.cx, z: r.cz, w: r.ax * 2, d: r.az * 2 });
+    if (M.luz && luces < 3) { const l = lucesMueble[luces++]; l.position.set(x, m.y + M.luz * m.s, z); l.userData.on = true; }
+    if (decorando) return;   // decorando no se usa nada
+    const t = (accion, hacer) => toque(M.n, x, z, Math.max(r.ax, r.az) + .9, accion, hacer, { dentro: 'casa', deCasa: true });
+    if (M.uso === 'sentar' && m.y < .05) t('Sentarse', () => sentarse(x, z, ry));
     else if (ajena && M.uso === 'dormir') t('Mirar la cama', () => hablar(M.n, [`Es la cama de ${casaAjena.nombre}. ${uno(['Está sin hacer.', 'Huele a su champú.', 'Debajo hay un calcetín desparejado.'])}`], null, '#3f72b8'));
     else if (ajena && M.uso === 'trofeos') t('Mirar la vitrina', () => hablar(M.n, [`Los trofeos de ${casaAjena.nombre} brillan detrás del cristal. Alguien les ha quitado el polvo hace poco.`], null, '#a07010'));
     else if (ajena && M.uso === 'espejo') t('Mirarte al espejo', () => hablar(M.n, ['Te miras en el espejo de otra casa. Te ves… de visita.'], null, '#3f72b8'));
@@ -1480,7 +1539,7 @@ function pintarCasa() {
     else if (M.uso === 'musica') t('Poner música', () => { musicaCasa = !musicaCasa; mezclar(); aviso(musicaCasa ? '♪ ' + DISCOS[disco].nombre : 'Silencio'); });
     else if (M.uso === 'trofeos') t('Ver tus trofeos', () => abrirLibreta('trofeos'));
     else if (M.uso === 'espejo') t('Mirarte al espejo', () => abrirCreador());
-  }
+  });
   encenderCasa();
 }
 function encenderCasa() {
@@ -1500,108 +1559,252 @@ function entrarCasa() {
   });
 }
 
-// ---------- Decorar: elegir, colocar, girar, mover y guardar ----------
-let decorando = false, colocando = null, elegido = -1, pestana = 'muebles', fantasma = null;
+// =============================================================
+//  EL EDITOR DE TU CASA
+//  Cuatro modos: Decorar (con choques, se apoya encima y se pega a la pared), Experto (sin choques:
+//  altura, giro fino y tamaño), Tintes y Recoger. Almacén con categorías, buscador y miniaturas 3D.
+//  Deshacer/rehacer, duplicar y cámara que gira alrededor del cuarto.
+// =============================================================
+let decorando = false;
+const ED = { modo: 'decorar', rejilla: true, sel: -1, arr: null, pila: [], rehacer: [], vista: 'almacen', cat: 'todo', busca: '', az: 0, zoom: 1 };
+const MODOS = [['decorar', '🪑 Decorar'], ['experto', '🎯 Experto'], ['tintes', '🎨 Tintes'], ['recoger', '📦 Recoger']];
+const NOTAS = {
+  decorar: 'Arrastra cualquier mueble. Se apoya encima de mesas y estantes y se pega de espaldas a la pared. Rueda del ratón o Q/E para girar.',
+  experto: 'Sin choques: atraviesa lo que quieras. Ajusta la altura, el giro fino y el tamaño del mueble elegido.',
+  tintes: 'Toca un mueble y elige su color.',
+  recoger: 'Toca un mueble para devolverlo al baúl.'
+};
+const TINTES = [['#c0503a', 'Rojo'], ['#e08a3a', 'Naranja'], ['#d8b040', 'Mostaza'], ['#5a9a4a', 'Verde'], ['#8ad0b0', 'Menta'], ['#3f72b8', 'Azul'], ['#8ac8e8', 'Celeste'], ['#9a7ac8', 'Lila'], ['#e8a0b8', 'Rosa'], ['#f4f0e6', 'Blanco'], ['#3a3a44', 'Negro'], ['#d8b07a', 'Madera clara'], ['#6a4428', 'Nogal']];
+const CATS = [['todo', 'Todo'], ['asientos', '🪑 Asientos'], ['mesas', '🍽 Mesas'], ['camas', '🛏 Camas'], ['luz', '💡 Luz'], ['guardar', '🧳 Almacenaje'], ['suelo', '🟥 Alfombras'], ['deco', '🖼 Decoración'], ['botin', '💀 Botín'], ['regalos', '🎁 Regalos']];
+function catsDe(k) {
+  const M = MUEBLES[k], c = new Set(), n = M.n.toLowerCase();
+  if (M.uso === 'sentar' && !/hamaca/.test(n)) c.add('asientos');
+  if (M.uso === 'dormir' || /hamaca|cama/.test(n)) c.add('camas');
+  if (/mesa/.test(n)) c.add('mesas');
+  if (M.luz) c.add('luz');
+  if (M.capa === 'suelo') c.add('suelo');
+  if (/estanter|baúl|alacena|armario|estante|cofre|arcón|cajón|caja|barril|cesta/.test(n)) c.add('guardar');
+  if (M.de === 'botin' || M.de === 'jefe') c.add('botin');
+  if (M.de === 'regalo' || M.de === 'campana') c.add('regalos');
+  if (!['asientos', 'camas', 'mesas', 'suelo', 'guardar'].some((x) => c.has(x))) c.add('deco');
+  return c;
+}
+const lista = () => EP.casa.muebles;
+const paso = () => ({ m: JSON.stringify(EP.casa.muebles), s: EP.casa.suelo, p: EP.casa.pared });
+function apuntar(f = paso()) { ED.pila.push(f); if (ED.pila.length > 40) ED.pila.shift(); ED.rehacer = []; }
+function volver(de, a) { const f = de.pop(); if (!f) return aviso('Nada que deshacer'); a.push(paso()); EP.casa.muebles = JSON.parse(f.m); EP.casa.suelo = f.s; EP.casa.pared = f.p; ED.sel = -1; hecho(); }
+function hecho() { for (const m of lista()) { normal(m); aCasilla(m); } EP.casa.t = Date.now(); guardarPueblo(); pintarCasa(); marcar(); pintarDeco(); }
+
 function empezarDeco() {
   if (sala !== 'casa' || decorando) return;
-  cerrarDialogo(); levantar(false); J.ir = null; decorando = true; rejilla.visible = true; elegido = -1; colocando = null;
+  cerrarDialogo(); levantar(false); J.ir = null; decorando = true; ED.sel = -1; ED.arr = null; ED.az = 0; ED.zoom = 1;
+  lista().forEach(normal); rejilla.visible = ED.rejilla; pintarCasa();
   $('deco').style.display = 'block'; document.body.classList.add('decorando'); pintarDeco();
 }
 function terminarDeco() {
-  if (colocando) cancelarColocar();
-  decorando = false; rejilla.visible = false; huellaMesh.visible = false; elegido = -1;
-  $('deco').style.display = 'none'; document.body.classList.remove('decorando'); salirDeObstaculo(); subirMiCasa();
+  decorando = false; ED.sel = -1; ED.arr = null; rejilla.visible = false; huellaMesh.visible = false;
+  $('deco').style.display = 'none'; document.body.classList.remove('decorando'); pintarCasa(); salirDeObstaculo(); subirMiCasa();
 }
-function quitarFantasma() { if (fantasma) { soltar(fantasma); casaDentro.remove(fantasma); fantasma = null; } }
-function moverFantasma() {
-  const c = colocando; if (!c) return;
-  if (!fantasma || fantasma.userData.k !== c.k) { quitarFantasma(); fantasma = construir(c.k); fantasma.userData.k = c.k; casaDentro.add(fantasma); }
-  const { x, z } = centroDe(c.k, c.cx, c.cz, c.r), [w, d] = huella(c.k, c.r);
-  fantasma.position.set(x, .05, z); fantasma.rotation.y = c.r * Math.PI / 2;
-  huellaMesh.visible = true; huellaMesh.position.set(x, .04, z); huellaMesh.scale.set(w, 1, d);
-  huellaMat.color.set(cabe(c.k, c.cx, c.cz, c.r) ? '#5ad05a' : '#e05a4a');
+// ¿Se puede quedar ahí? En experto, siempre
+function valido(m, i) {
+  if (ED.modo === 'experto') return true;
+  const a = rect(m), suelo = capaDe(m.k) === 'suelo';
+  if (!suelo && m.y < .05 && chocan(a, PUERTA_R)) return false;
+  return lista().every((o, j) => j === i || !MUEBLES[o.k] || (capaDe(o.k) === 'suelo') !== suelo || Math.abs((o.y || 0) - m.y) > .1 || !chocan(a, rect(normal(o))));
 }
-function marcarElegido() {
-  if (elegido < 0 || colocando) { if (!colocando) huellaMesh.visible = false; return; }
-  const m = EP.casa.muebles[elegido], { x, z } = centroDe(m.k, m.x, m.z, m.r), [w, d] = huella(m.k, m.r);
-  huellaMesh.visible = true; huellaMesh.position.set(x, .04, z); huellaMesh.scale.set(w, 1, d); huellaMat.color.set('#f0c040');
+// Lo que hay debajo: si el centro cae encima de otro mueble, se apoya en él
+const rayoD = new THREE.Raycaster(), abajo = new THREE.Vector3(0, -1, 0), ptrD = new THREE.Vector2();
+function apoyo(m, fuera) {
+  if (capaDe(m.k) === 'suelo' || ED.modo === 'experto') return ED.modo === 'experto' ? m.y : 0;
+  rayoD.set(new THREE.Vector3(X1 + m.px, 5, m.pz), abajo);
+  const gs = casaMuebles.children.filter((g) => !fuera.includes(g) && capaDe(lista()[g.userData.i]?.k) !== 'suelo');
+  const h = rayoD.intersectObjects(gs, true).find((x) => !x.object.material?.transparent);
+  if (!h || h.point.y > 2.4) return 0;
+  // Solo se apoya en algo más grande que él (una tetera en la mesa sí; la mesa en una silla, no)
+  let o = h.object; while (o && o.userData.i == null) o = o.parent;
+  const a = rect(m, 0), b = o && rect(lista()[o.userData.i], 0);
+  return b && b.hx * b.hz >= a.hx * a.hz * .9 ? h.point.y : 0;
 }
-function empezarColocar(k, desde = null) {
-  const r = desde ? desde.r : 0; let sitio = desde ? { cx: desde.x, cz: desde.z } : null;
-  if (!sitio) { const [w, d] = huella(k, r); sitio = { cx: Math.floor((CW - w) / 2), cz: Math.max(0, Math.floor((CD - d) / 2) - 1) }; for (let z = 0; z < CD && !cabe(k, sitio.cx, sitio.cz, r); z++) for (let x = 0; x < CW; x++) if (cabe(k, x, z, r)) { sitio = { cx: x, cz: z }; break; } }
-  colocando = { k, r, ...sitio, desde }; elegido = -1; moverFantasma(); pintarDeco();
+// Pegado a la pared más cercana, de espaldas a ella (solo al arrastrar con la rejilla puesta)
+function iman(m) {
+  if (!ED.rejilla || ED.modo !== 'decorar' || capaDe(m.k) === 'suelo' || m.y > .05) return;
+  const r = rect(m, 0), atras = (r.cz - r.az) + CD / 2, izq = (r.cx - r.ax) + CW / 2, der = CW / 2 - (r.cx + r.ax), min = Math.min(atras, izq, der);
+  if (min > .35) return;
+  const fondo = -tamDe(m.k).min.z * m.s;
+  if (min === atras) { m.ry = 0; m.pz = -CD / 2 + fondo + .02; }
+  else if (min === izq) { m.ry = Math.PI / 2; m.px = -CW / 2 + fondo + .02; }
+  else { m.ry = -Math.PI / 2; m.px = CW / 2 - fondo - .02; }
 }
-function ponerAqui() {
-  const c = colocando; if (!c) return;
-  if (!cabe(c.k, c.cx, c.cz, c.r)) { aviso('Ahí no cabe'); return; }
-  EP.casa.muebles.push({ k: c.k, x: c.cx, z: c.cz, r: c.r }); EP.casa.t = Date.now(); guardarPueblo();
-  colocando = null; quitarFantasma(); huellaMesh.visible = false; pintarCasa(); pintarDeco(); pasito();
+const ajustar = (v, p) => (ED.rejilla && ED.modo !== 'experto' ? Math.round(v / p) * p : v);
+function marcar(ok = true) {
+  const m = lista()[ED.sel];
+  if (!decorando || !m) { huellaMesh.visible = false; return; }
+  const r = rect(m, 0);
+  huellaMesh.visible = true; huellaMesh.position.set(X1 + r.cx, m.y + .03, r.cz); huellaMesh.rotation.y = m.ry; huellaMesh.scale.set(r.hx * 2 + .12, 1, r.hz * 2 + .12);
+  huellaMat.color.set(!ok ? '#e05a4a' : ED.arr?.movido ? '#5ad05a' : '#f0c040');
 }
-function cancelarColocar() {
-  const c = colocando; if (!c) return;
-  if (c.desde) { EP.casa.muebles.push(c.desde); pintarCasa(); }
-  colocando = null; quitarFantasma(); huellaMesh.visible = false; pintarDeco();
+function elegirEn(e) {
+  ptrD.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); rayoD.setFromCamera(ptrD, camara);
+  let suelo = -1;
+  for (const h of rayoD.intersectObjects(casaMuebles.children, true)) {
+    let o = h.object; while (o && o.userData.i == null) o = o.parent;
+    if (!o) continue; if (capaDe(lista()[o.userData.i].k) !== 'suelo') return o.userData.i; if (suelo < 0) suelo = o.userData.i;
+  }
+  return suelo;
 }
-function celdaDe(e, w = 1, d = 1) {
-  const p = aSuelo(e.clientX, e.clientY); if (!p) return null;
-  return { cx: Math.max(0, Math.min(CW - w, Math.round(p.x - (X1 - CW / 2) - w / 2))), cz: Math.max(0, Math.min(CD - d, Math.round(p.z + CD / 2 - d / 2))), fx: Math.floor(p.x - (X1 - CW / 2)), fz: Math.floor(p.z + CD / 2) };
-}
-// Ratón: el mueble sigue al puntero y un clic lo pone. Móvil: un toque lo lleva ahí y otro lo pone.
-function decoMover(e) {
-  if (!colocando || (e.pointerType === 'touch' && !e.buttons)) return;
-  const [w, d] = huella(colocando.k, colocando.r), c = celdaDe(e, w, d); if (!c) return;
-  if (c.cx !== colocando.cx || c.cz !== colocando.cz) { colocando.cx = c.cx; colocando.cz = c.cz; colocando.movido = true; moverFantasma(); }
+// Lo que lleva encima (se mueve con él)
+function cargaDe(i) {
+  const m = lista()[i]; if (capaDe(m.k) === 'suelo') return [];
+  const r = rect(m, 0), top = m.y + tamDe(m.k).max.y * m.s;
+  return lista().map((o, j) => j).filter((j) => { const o = lista()[j]; return j !== i && o.y > m.y + .05 && o.y <= top + .05 && Math.abs(o.px - r.cx) <= r.ax && Math.abs(o.pz - r.cz) <= r.az; });
 }
 function decoTocar(e) {
-  if (colocando) {
-    const [w, d] = huella(colocando.k, colocando.r), c = celdaDe(e, w, d); if (!c) return;
-    if (e.pointerType !== 'touch' || (c.cx === colocando.cx && c.cz === colocando.cz)) { colocando.cx = c.cx; colocando.cz = c.cz; ponerAqui(); }
-    else { colocando.cx = c.cx; colocando.cz = c.cz; moverFantasma(); }
-    return;
-  }
-  const c = celdaDe(e); if (!c) return;
-  const toca = (m) => { const [w, d] = huella(m.k, m.r); return c.fx >= m.x && c.fx < m.x + w && c.fz >= m.z && c.fz < m.z + d; };
-  const L = EP.casa.muebles; let i = L.findIndex((m) => MUEBLES[m.k] && capaDe(m.k) !== 'suelo' && toca(m));
-  if (i < 0) i = L.findIndex((m) => MUEBLES[m.k] && toca(m));
-  elegido = i; marcarElegido(); pintarDeco();
+  const i = elegirEn(e);
+  if (ED.modo === 'recoger') { if (i >= 0) alBaul(i); return; }
+  ED.sel = i;
+  if (i < 0 || ED.modo === 'tintes') { marcar(); pintarDeco(); return; }
+  const p = aSuelo(e.clientX, e.clientY), m = lista()[i]; if (!p) return;
+  const carga = cargaDe(i);
+  ED.arr = { foto: paso(), ox: m.px - (p.x - X1), oz: m.pz - p.z, x0: e.clientX, y0: e.clientY, antes: { ...m }, movido: false, carga: carga.map((j) => ({ j, dx: lista()[j].px - m.px, dz: lista()[j].pz - m.pz, dy: lista()[j].y - m.y })) };
+  marcar(); pintarDeco();
+}
+function decoMover(e) {
+  const a = ED.arr; if (!a) return;
+  if (!a.movido && Math.hypot(e.clientX - a.x0, e.clientY - a.y0) < 6) return;
+  const p = aSuelo(e.clientX, e.clientY); if (!p) return;
+  a.movido = true;
+  const m = lista()[ED.sel], gs = casaMuebles.children;
+  m.px = ajustar(p.x - X1 + a.ox, .25); m.pz = ajustar(p.z + a.oz, .25);
+  iman(m); encerrar(m);
+  const fuera = [gs.find((g) => g.userData.i === ED.sel), ...a.carga.map((c) => gs.find((g) => g.userData.i === c.j))];
+  m.y = apoyo(m, fuera);
+  const ok = valido(m, ED.sel);
+  const g = fuera[0]; g.position.set(X1 + m.px, m.y, m.pz); g.rotation.y = m.ry;
+  a.carga.forEach((c, n) => { const o = lista()[c.j]; o.px = m.px + c.dx; o.pz = m.pz + c.dz; o.y = m.y + c.dy; fuera[n + 1]?.position.set(X1 + o.px, o.y, o.pz); });
+  a.ok = ok; marcar(ok);
+}
+function decoSoltar() {
+  const a = ED.arr; if (!a) return; ED.arr = null;
+  if (!a.movido) return marcar();
+  if (!a.ok) { ED.pila.push(a.foto); volver(ED.pila, []); aviso('Ahí no cabe'); ED.sel = lista().findIndex((o) => o.px === a.antes.px && o.pz === a.antes.pz && o.k === a.antes.k); marcar(); pintarDeco(); return; }
+  apuntar(a.foto); hecho(); pasito();
+}
+addEventListener('pointerup', decoSoltar); addEventListener('pointercancel', decoSoltar);
+// Un mueble nuevo del baúl: al primer hueco libre, cerca del centro
+function sacar(k, base = null) {
+  const f = paso(), m = normal({ k, px: 0, pz: 0, ry: base?.ry || 0, y: 0, s: base?.s || 1, ...(base?.tinte ? { tinte: base.tinte } : {}) });
+  const i = lista().length; lista().push(m);
+  const prueba = [];
+  for (let r = 0; r < 9; r += .5) for (let a = 0; a < 16; a++) prueba.push([(base ? base.px : 0) + Math.cos(a / 16 * 6.283) * r, (base ? base.pz : -.5) + Math.sin(a / 16 * 6.283) * r]);
+  let ok = false;
+  for (const [x, z] of prueba) { m.px = ajustar(x, .5); m.pz = ajustar(z, .5); encerrar(m); if (valido(m, i)) { ok = true; break; } if (!base) { m.ry = Math.PI / 2; encerrar(m); if (valido(m, i)) { ok = true; break; } m.ry = 0; } }
+  if (!ok) { lista().pop(); return aviso('No queda hueco libre: recoge algo o usa el modo experto'); }
+  apuntar(f); ED.sel = i; hecho(); pasito(); aviso('Arrástralo a su sitio');
+}
+function alBaul(i) { const f = paso(), m = lista().splice(i, 1)[0]; apuntar(f); ED.sel = -1; hecho(); aviso('📦 ' + MUEBLES[m.k].n + ' al baúl'); }
+function girarSel(d) {
+  const m = lista()[ED.sel]; if (!m) return;
+  const f = paso(), antes = { ...m };
+  m.ry = Math.atan2(Math.sin(m.ry + d), Math.cos(m.ry + d)); encerrar(m);
+  if (!valido(m, ED.sel)) { Object.assign(m, antes); return aviso('Girado no cabe ahí'); }
+  apuntar(f); hecho();
+}
+function retocar(campo, d) {
+  const m = lista()[ED.sel]; if (!m) return;
+  const f = paso();
+  if (campo === 'y') m.y = Math.max(0, Math.min(2.6, +(m.y + d).toFixed(2)));
+  if (campo === 's') m.s = Math.max(.5, Math.min(1.6, +(m.s + d).toFixed(2)));
+  if (campo === 'x') m.px += d; if (campo === 'z') m.pz += d;
+  encerrar(m); apuntar(f); hecho();
 }
 function accionDeco(a, v) {
-  const L = EP.casa.muebles;
-  if (a === 'pest') { pestana = v; }
-  else if (a === 'coger') { empezarColocar(v); return; }
-  else if (a === 'poner') { ponerAqui(); return; }
-  else if (a === 'girar' && colocando) { colocando.r = (colocando.r + 1) % 4; const [w, d] = huella(colocando.k, colocando.r); colocando.cx = Math.min(colocando.cx, CW - w); colocando.cz = Math.min(colocando.cz, CD - d); moverFantasma(); }
-  else if (a === 'cancelar') { cancelarColocar(); return; }
-  else if (a === 'girar' && elegido >= 0) { const m = L[elegido], r = (m.r + 1) % 4; if (cabe(m.k, m.x, m.z, r, elegido)) { m.r = r; EP.casa.t = Date.now(); guardarPueblo(); pintarCasa(); } else aviso('Girado no cabe ahí'); }
-  else if (a === 'mover' && elegido >= 0) { const m = L.splice(elegido, 1)[0]; pintarCasa(); empezarColocar(m.k, m); return; }
-  else if (a === 'guardar' && elegido >= 0) { const m = L.splice(elegido, 1)[0]; EP.casa.t = Date.now(); guardarPueblo(); pintarCasa(); aviso('📦 ' + MUEBLES[m.k].n + ' al baúl'); elegido = -1; }
-  else if (a === 'soltar') { elegido = -1; }
-  else if (a === 'suelo') { EP.casa.suelo = v; EP.casa.t = Date.now(); guardarPueblo(); pintarCasa(); }
-  else if (a === 'pared') { EP.casa.pared = v; EP.casa.t = Date.now(); guardarPueblo(); pintarCasa(); }
+  const L = lista(), m = L[ED.sel];
+  if (a === 'modo') { ED.modo = v; if (v === 'recoger') ED.sel = -1; }
+  else if (a === 'rejilla') { ED.rejilla = !ED.rejilla; rejilla.visible = ED.rejilla; }
+  else if (a === 'deshacer') return volver(ED.pila, ED.rehacer);
+  else if (a === 'rehacer') return volver(ED.rehacer, ED.pila);
+  else if (a === 'cam') { ED.az = Math.max(-1.05, Math.min(1.05, ED.az + +v)); return; }
+  else if (a === 'zoom') { ED.zoom = Math.max(.6, Math.min(1.4, ED.zoom + +v)); return; }
+  else if (a === 'vista') ED.vista = v;
+  else if (a === 'cat') { ED.cat = v; return pintarAlmacen(); }
+  else if (a === 'coger') return sacar(v);
+  else if (a === 'girar' && m) return girarSel(+v * Math.PI / 180);
+  else if (a === 'retocar' && m) { const [c, d] = v.split(':'); return retocar(c, +d); }
+  else if (a === 'duplicar' && m) { if (libres(m.k) < 1) return aviso('No te quedan más en el baúl'); return sacar(m.k, m); }
+  else if (a === 'baul' && m) return alBaul(ED.sel);
+  else if (a === 'tinte' && m) { const f = paso(); if (v) m.tinte = v; else delete m.tinte; apuntar(f); return hecho(); }
+  else if (a === 'soltar') ED.sel = -1;
+  else if (a === 'suelo') { apuntar(); EP.casa.suelo = v; return hecho(); }
+  else if (a === 'pared') { apuntar(); EP.casa.pared = v; return hecho(); }
   else if (a === 'listo') { terminarDeco(); aviso('¡Qué casa más bonita!'); return; }
-  marcarElegido(); pintarDeco();
+  marcar(); pintarDeco();
 }
+// Teclado al decorar (devuelve true si se ha usado la tecla)
+function teclaDeco(e) {
+  const k = e.key.toLowerCase(), ctrl = e.ctrlKey || e.metaKey, paso15 = ED.rejilla && ED.modo !== 'experto' ? 45 : 15, mov = ED.rejilla ? .25 : .05;
+  if (ctrl && k === 'z') accionDeco(e.shiftKey ? 'rehacer' : 'deshacer');
+  else if (ctrl && k === 'y') accionDeco('rehacer');
+  else if (ctrl && k === 'd') accionDeco('duplicar');
+  else if (k === 'q') accionDeco('girar', -paso15);
+  else if (k === 'e') accionDeco('girar', paso15);
+  else if (k === 'r') accionDeco('girar', 90);
+  else if (k === 'g') accionDeco('rejilla');
+  else if (k === 'delete' || k === 'backspace') accionDeco('baul');
+  else if (k === 'arrowleft' || k === 'a') accionDeco('retocar', 'x:' + -mov);
+  else if (k === 'arrowright' || k === 'd') accionDeco('retocar', 'x:' + mov);
+  else if (k === 'arrowup' || k === 'w') accionDeco('retocar', 'z:' + -mov);
+  else if (k === 'arrowdown' || k === 's') accionDeco('retocar', 'z:' + mov);
+  else if (k === 'pageup' && ED.modo === 'experto') accionDeco('retocar', 'y:.05');
+  else if (k === 'pagedown' && ED.modo === 'experto') accionDeco('retocar', 'y:-.05');
+  else if (k === 'escape') { if (ED.sel >= 0) accionDeco('soltar'); else accionDeco('listo'); }
+  else return /^(enter| )$/.test(k);
+  e.preventDefault(); return true;
+}
+render.domElement.addEventListener('wheel', (e) => {
+  if (!decorando) return; e.preventDefault();
+  if (ED.sel >= 0) { const s = ED.rejilla && ED.modo !== 'experto' ? 15 : 5; girarSel((e.deltaY > 0 ? s : -s) * Math.PI / 180); }
+  else ED.zoom = Math.max(.6, Math.min(1.4, ED.zoom * (e.deltaY > 0 ? 1.06 : .94)));
+}, { passive: false });
 function pintarDeco() {
-  const caja_ = $('deco'), b = (a, t, v = '', cls = '') => `<button class="chip ${cls}" data-a="${a}" data-v="${v}">${t}</button>`;
-  let h;
-  if (colocando) {
-    const M = MUEBLES[colocando.k];
-    h = `<h2>${M.e} ${M.n}</h2><p class="nota">${matchMedia('(pointer: coarse)').matches ? 'Toca el suelo para llevarlo ahí y vuelve a tocar (o «Poner aquí») para dejarlo.' : 'Muévelo con el ratón y haz clic para dejarlo.'}</p><div class="ops2">${b('poner', '✓ Poner aquí', '', 'azul')}${b('girar', '↻ Girar')}${b('cancelar', '✕ Cancelar')}</div>`;
-  } else if (elegido >= 0) {
-    const M = MUEBLES[EP.casa.muebles[elegido].k];
-    h = `<h2>${M.e} ${M.n}</h2><div class="ops2">${b('mover', '✥ Mover', '', 'azul')}${b('girar', '↻ Girar')}${b('guardar', '📦 Al baúl')}${b('soltar', '✕')}</div>`;
-  } else {
-    const pest = `<div class="pest">${[['muebles', '🪑 Muebles'], ['suelo', '🟫 Suelo'], ['pared', '🎨 Paredes']].map(([k, t]) => b('pest', t, k, pestana === k ? 'si' : '')).join('')}</div>`;
-    let cuerpo;
-    if (pestana === 'muebles') {
-      const ks = Object.keys(MUEBLES).filter((k) => libres(k) > 0);
-      cuerpo = `<p class="nota">${ks.length ? 'En el baúl tienes esto. Toca uno para colocarlo, o toca un mueble de la casa para moverlo.' : 'El baúl está vacío. Toca un mueble de la casa para moverlo. Rufo vende muebles, los vecinos regalan y el libro deja botín en tu buzón.'}</p><div class="ops2">${ks.map((k) => b('coger', `${MUEBLES[k].e} ${MUEBLES[k].n}${libres(k) > 1 ? ` <small>×${libres(k)}</small>` : ''}`, k)).join('')}</div>`;
-    } else if (pestana === 'suelo') cuerpo = `<div class="ops2">${Object.entries(SUELOS).map(([k, t]) => b('suelo', t, k, EP.casa.suelo === k ? 'si' : '')).join('')}</div>`;
-    else cuerpo = `<div class="ops2">${PAREDES.map((c) => `<button class="muestra${EP.casa.pared === c ? ' si' : ''}" data-a="pared" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
-    h = `<h2>Decorar tu casa</h2>${pest}${cuerpo}<button class="listo" data-a="listo">¡Listo!</button>`;
+  const caja_ = $('deco'), b = (a, t, v = '', cls = '', tit = '') => `<button class="chip ${cls}" data-a="${a}" data-v="${v}"${tit ? ` title="${tit}"` : ''}>${t}</button>`;
+  const m = lista()[ED.sel], M = m && MUEBLES[m.k];
+  let h = `<div class="barra-deco"><div class="ops2">${MODOS.map(([k, t]) => b('modo', t, k, ED.modo === k ? 'si' : '')).join('')}</div>
+    <div class="ops2">${b('rejilla', ED.rejilla ? '▦ Rejilla' : '▢ Libre', '', ED.rejilla ? 'si' : '', 'Rejilla (G)')}${b('deshacer', '↶', '', '', 'Deshacer (Ctrl+Z)')}${b('rehacer', '↷', '', '', 'Rehacer (Ctrl+Y)')}${b('cam', '⟲', '-.35', '', 'Girar la cámara')}${b('cam', '⟳', '.35', '', 'Girar la cámara')}${b('zoom', '－', '.15')}${b('zoom', '＋', '-.15')}</div></div>
+    <p class="nota">${NOTAS[ED.modo]}</p>`;
+  if (m && M && ED.modo !== 'recoger') {
+    const g = ED.rejilla && ED.modo !== 'experto' ? 45 : 15;
+    h += `<div class="sel-deco"><h2>${M.e} ${escH(M.n)}</h2>`;
+    if (ED.modo === 'tintes') h += `<div class="ops2">${b('tinte', 'Original', '', m.tinte ? '' : 'si')}${TINTES.map(([c, n]) => `<button class="muestra${m.tinte === c ? ' si' : ''}" data-a="tinte" data-v="${c}" style="background:${c}" title="${n}" aria-label="${n}"></button>`).join('')}</div>`;
+    else {
+      h += `<div class="ops2">${b('girar', '↺ ' + g + '°', -g)}${b('girar', '↻ ' + g + '°', g)}${b('girar', '⤾ 90°', 90)}${b('duplicar', '⧉ Duplicar' + (libres(m.k) > 0 ? ` <small>×${libres(m.k)}</small>` : ''))}${b('baul', '📦 Al baúl')}${b('soltar', '✕')}</div>`;
+      if (ED.modo === 'experto') h += `<div class="ajustes">
+        <span>Altura <b>${m.y.toFixed(2)}</b></span>${b('retocar', '▼', 'y:-.05')}${b('retocar', '▲', 'y:.05')}
+        <span>Giro <b>${Math.round(((m.ry * 180 / Math.PI) % 360 + 360) % 360)}°</b></span>${b('girar', '−1°', -1)}${b('girar', '+1°', 1)}
+        <span>Tamaño <b>${Math.round(m.s * 100)} %</b></span>${b('retocar', '－', 's:-.1')}${b('retocar', '＋', 's:.1')}${b('retocar', 'Al suelo', 'y:-9')}</div>`;
+    }
+    h += '</div>';
+  } else if (ED.modo !== 'recoger' && ED.modo !== 'tintes') {
+    h += `<div class="pest">${b('vista', '📦 Almacén', 'almacen', ED.vista === 'almacen' ? 'si' : '')}${b('vista', '🏠 Suelo y paredes', 'casa', ED.vista === 'casa' ? 'si' : '')}</div>`;
+    if (ED.vista === 'casa') h += `<p class="nota">Suelo</p><div class="ops2">${Object.entries(SUELOS).map(([k, t]) => b('suelo', t, k, EP.casa.suelo === k ? 'si' : '')).join('')}</div><p class="nota">Paredes</p><div class="ops2">${PAREDES.map((c) => `<button class="muestra${EP.casa.pared === c ? ' si' : ''}" data-a="pared" data-v="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</div>`;
+    else h += `<input class="busca-deco" placeholder="Buscar en el baúl…" value="${escH(ED.busca)}"><div class="ops2 cats-deco"></div><div class="alm-deco"></div>`;
   }
+  h += '<button class="listo" data-a="listo">¡Listo!</button>';
   caja_.innerHTML = h;
   caja_.querySelectorAll('[data-a]').forEach((el) => el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); accionDeco(el.dataset.a, el.dataset.v); }));
+  const bus = caja_.querySelector('.busca-deco'); if (bus) { bus.addEventListener('input', () => { ED.busca = bus.value; pintarAlmacen(); }); pintarAlmacen(); }
+}
+function pintarAlmacen() {
+  const caja_ = $('deco'), cats = caja_.querySelector('.cats-deco'), alm = caja_.querySelector('.alm-deco'); if (!alm) return;
+  const todos = Object.keys(MUEBLES).filter((k) => libres(k) > 0), q = ED.busca.trim().toLowerCase();
+  const usadas = CATS.filter(([c]) => c === 'todo' || todos.some((k) => catsDe(k).has(c)));
+  if (!usadas.some(([c]) => c === ED.cat)) ED.cat = 'todo';
+  cats.innerHTML = usadas.map(([c, t]) => `<button class="chip${ED.cat === c ? ' si' : ''}" data-cat="${c}">${t}</button>`).join('');
+  const ks = todos.filter((k) => (ED.cat === 'todo' || catsDe(k).has(ED.cat)) && (!q || MUEBLES[k].n.toLowerCase().includes(q)));
+  alm.innerHTML = ks.length ? ks.map((k) => { const M = MUEBLES[k], mini = MINIS.get(k); return `<button class="alm-p" data-k="${k}">${mini ? `<img src="${mini}" alt="">` : `<span class="emo" data-mini="${k}">${M.e}</span>`}<b>${escH(M.n)}</b>${libres(k) > 1 ? `<small>×${libres(k)}</small>` : ''}</button>`; }).join('')
+    : `<p class="nota">${todos.length ? 'Nada con ese nombre.' : 'El baúl está vacío. Mordo vende muebles, los vecinos regalan y el libro deja botín en tu buzón.'}</p>`;
+  cats.querySelectorAll('[data-cat]').forEach((el) => el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); accionDeco('cat', el.dataset.cat); }));
+  alm.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('click', (e) => { e.stopPropagation(); accionDeco('coger', el.dataset.k); }));
+  pedirMinis(ks);
 }
 
 // ---------- El buzón: paquetes del libro (botín) y cartas ----------
@@ -1711,20 +1914,22 @@ function stockHoy() {
 }
 const USOS = { dormir: 'Se puede dormir en ella', sentar: 'Te puedes sentar', musica: 'Pone música en casa', trofeos: 'Enseña los trofeos de la cabaña', espejo: 'Para cambiarte de aspecto' };
 const DICE_MORDO = ['Mira, mira. Tocar es gratis. Romper, no.', 'Todo de primera mano. De la mano de otro, pero primera.', 'Si te gusta, es tuyo. Si no te gusta, también: no admito devoluciones.', 'Género nuevo cada mañana. No preguntes de dónde.', 'Gíralo, gíralo. Por detrás está igual de bien. Casi.'];
-const CAT = { abierto: false, pestana: 'hoy', sel: null, minis: new Map(), cola: [], visor: null };
+const CAT = { abierto: false, pestana: 'hoy', sel: null, minis: new Map(), visor: null };
+const MINIS = CAT.minis, COLA_MINI = [];   // miniaturas 3D (catálogo y almacén de casa)
+function pedirMinis(ks) { for (const k of ks) if (!MINIS.has(k) && !COLA_MINI.includes(k)) COLA_MINI.push(k); if (!COLA_MINI.trabajando) hacerMinis(); }
 function tienda() { cerrarDialogo(); abrirCatalogo(); }
 function abrirCatalogo() {
   CAT.abierto = true; CAT.pestana = 'hoy'; CAT.sel = null; CAT.dice = uno(DICE_MORDO);
   $('catalogo').classList.add('ver'); pintarCatalogo();
 }
-function cerrarCatalogo() { CAT.abierto = false; CAT.cola = []; $('catalogo').classList.remove('ver'); }
+function cerrarCatalogo() { CAT.abierto = false; $('catalogo').classList.remove('ver'); }
 function pintarCatalogo() {
   const hoy = diaHoy(), ya = EP.compras?.dia === hoy ? EP.compras.k : [], stock = stockHoy();
   const todos = Object.keys(MUEBLES).filter((k) => MUEBLES[k].de === 'tienda').sort((a, b) => MUEBLES[a].precio - MUEBLES[b].precio);
   const lista = CAT.pestana === 'hoy' ? stock : todos;
   if (!CAT.sel || !lista.includes(CAT.sel)) CAT.sel = lista.find((k) => !ya.includes(k)) || lista[0];
   const pieza = (k) => { const M = MUEBLES[k], mini = CAT.minis.get(k), otro = !stock.includes(k);
-    return `<button class="pieza${k === CAT.sel ? ' sel' : ''}${otro ? ' otro' : ''}" data-k="${k}">${ya.includes(k) ? '<span class="vendido">Vendido</span>' : ''}${mini ? `<img src="${mini}" alt="">` : `<span class="emo">${M.e}</span>`}<b>${escH(M.n)}</b><small>${M.precio} 🪙</small></button>`; };
+    return `<button class="pieza${k === CAT.sel ? ' sel' : ''}${otro ? ' otro' : ''}" data-k="${k}">${ya.includes(k) ? '<span class="vendido">Vendido</span>' : ''}${mini ? `<img src="${mini}" alt="">` : `<span class="emo" data-mini="${k}">${M.e}</span>`}<b>${escH(M.n)}</b><small>${M.precio} 🪙</small></button>`; };
   $('catalogo').innerHTML = `<div class="tarjeta"><div class="cab"><h2>🛒 El Rastro de Mordo</h2><span class="oro">${fichaP ? (fichaP.banco || 0) + ' 🪙' : 'Sin partida'}</span><button class="cerrar" data-c="cerrar" aria-label="Cerrar">✕</button></div>
     <p class="dice">Mordo: «${escH(CAT.dice)}»</p>
     <div class="cuerpo"><div class="visor"><canvas id="cat-visor"></canvas><div class="ficha" id="cat-ficha"></div></div>
@@ -1737,7 +1942,7 @@ function pintarCatalogo() {
   C.querySelectorAll('.pieza').forEach((b) => b.onclick = () => { CAT.sel = b.dataset.k; C.querySelectorAll('.pieza').forEach((x) => x.classList.toggle('sel', x === b)); fichaCatalogo(); });
   CAT.visor = visorMueble($('cat-visor'));
   fichaCatalogo();
-  CAT.cola = lista.filter((k) => !CAT.minis.has(k)); hacerMinis();
+  pedirMinis(lista);
 }
 function fichaCatalogo() {
   const k = CAT.sel, M = MUEBLES[k]; if (!M) return;
@@ -1793,11 +1998,12 @@ function visorMueble(canvas) {
 // Miniaturas: una por mueble, de una en una para no congelar el pueblo
 let rMini = null;
 function hacerMinis() {
-  if (!CAT.abierto || !CAT.cola.length) return;
+  if (!COLA_MINI.length) { COLA_MINI.trabajando = false; return; }
+  COLA_MINI.trabajando = true;
   if (!rMini) { rMini = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); rMini.setSize(148, 148, false); rMini.escena = escenaExpo(); rMini.cam = new THREE.PerspectiveCamera(35, 1, .05, 60); }
-  const k = CAT.cola.shift(), M = MUEBLES[k];
-  try { const g = new THREE.Group(); M.f(g); const m = montarExpo(rMini.escena, g, M.w, M.d, M.luz); camExpo(rMini.cam, m, .7, .5); sinCurva(() => rMini.render(rMini.escena, rMini.cam)); CAT.minis.set(k, rMini.domElement.toDataURL('image/png')); } catch (e) { CAT.minis.set(k, ''); }
-  const b = document.querySelector(`#catalogo .pieza[data-k="${k}"] .emo`); if (b && CAT.minis.get(k)) b.outerHTML = `<img src="${CAT.minis.get(k)}" alt="">`;
+  const k = COLA_MINI.shift(), M = MUEBLES[k];
+  try { const g = new THREE.Group(); M.f(g); const m = montarExpo(rMini.escena, g, M.w, M.d, M.luz); camExpo(rMini.cam, m, .7, .5); sinCurva(() => rMini.render(rMini.escena, rMini.cam)); MINIS.set(k, rMini.domElement.toDataURL('image/png')); } catch (e) { MINIS.set(k, ''); }
+  if (MINIS.get(k)) document.querySelectorAll(`[data-mini="${k}"]`).forEach((el) => { el.outerHTML = `<img src="${MINIS.get(k)}" alt="">`; });
   requestAnimationFrame(hacerMinis);
 }
 
@@ -2385,6 +2591,7 @@ const teclas = new Set();
 addEventListener('keydown', (e) => {
   if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
   if (CAT.abierto) { if (e.key === 'Escape') cerrarCatalogo(); return; }
+  if (decorando && teclaDeco(e)) return;
   arrancarAudio();
   if (e.key === 'e' || e.key === 'E' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (enDialogo) avanzarDialogo(); else if (cercano) usar(cercano); return; }
   if (e.key === 'Escape') { if (libretaPagina) cerrarLibreta(); else if (enDialogo && !opsDialogo) cerrarDialogo(); return; }
@@ -2858,7 +3065,7 @@ function pintarLibreta() {
       <p class="nota">Se guarda en este dispositivo.</p>`;
   } else if (pg === 'ayuda') {
     h = tit('Cómo se juega') + `<ul class="lista"><li><span>Andar</span><small>toca o mantén el dedo · WASD o flechas</small></li><li><span>Correr</span><small>toca lejos · Mayús</small></li><li><span>Hablar, entrar, usar</span><small>botón de abajo · E</small></li>
-      <li><span>Tu casa</span><small>dentro, «Decorar» en la libreta</small></li><li><span>Muebles</span><small>el catálogo de Mordo, regalos de vecinos y el buzón</small></li><li><span>Dormir</span><small>en tu cama, hasta las 7:00</small></li></ul>`;
+      <li><span>Tu casa</span><small>dentro, «Decorar» en la libreta</small></li><li><span>Al decorar</span><small>arrastra · Q/E o rueda gira · R 90° · G rejilla · Supr al baúl · Ctrl+Z deshace · Ctrl+D duplica</small></li><li><span>Muebles</span><small>el catálogo de Mordo, regalos de vecinos y el buzón</small></li><li><span>Dormir</span><small>en tu cama, hasta las 7:00</small></li></ul>`;
   }
   L.innerHTML = h;
   L.scrollTop = 0;
@@ -3097,7 +3304,8 @@ let miradaM = 0, parpadeoM = 4;
 camara.position.set(J.x, 10.8, J.z + 10.6); mirar.set(J.x, .7, J.z - 1.6);
 function camaraSigue(dt) {
   if (modoCam === 'espejo' && dentro) { posObj.set(J.x, 1.7, J.z + 4.2); mirarObj.set(J.x, .7, J.z); }
-  else if (decorando) { const vert = innerWidth < innerHeight; posObj.set(X1, vert ? 17 : 11.5, vert ? 9.5 : 6.2); mirarObj.set(X1, 0, vert ? 1.2 : -.1); }
+  else if (decorando) { const vert = innerWidth < innerHeight, ancho = innerWidth >= 900, h = (vert ? 17 : ancho ? 14 : 11.5) * ED.zoom, d = (vert ? 9.5 : ancho ? 7.6 : 6.2) * ED.zoom, lado = ancho ? 2.9 : 0;   // con el panel a la derecha, el cuarto se corre a la izquierda
+    posObj.set(X1 + Math.sin(ED.az) * d + Math.cos(ED.az) * lado, h, Math.cos(ED.az) * d - Math.sin(ED.az) * lado); mirarObj.set(X1 + Math.cos(ED.az) * lado, 0, (vert ? 1.2 : -.1) - Math.sin(ED.az) * lado); }
   else if (sala === 'casa') { posObj.set(Math.min(X1 + 1.4, Math.max(X1 - 1.4, J.x * .4 + X1 * .6)), 7.4, 9.6); mirarObj.set(posObj.x, .5, -.5); }
   else if (dentro) { posObj.set(Math.min(X0 + 2.5, Math.max(X0 - 2.5, J.x * .4 + X0 * .6)), 8.4, 12.6); mirarObj.set(posObj.x, .6, -.4); }
   else if (modoCam === 'espejo') { const lejos = innerWidth > innerHeight ? 5.6 : 4.2; posObj.set(J.x, J.ch.position.y + 1.7, J.z + lejos); mirarObj.set(J.x, J.ch.position.y + (innerWidth > innerHeight ? -.1 : .1), J.z); }
@@ -3142,7 +3350,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
+window.pueblo = { casaMuebles, ED, PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
 </script>
 </body>
 </html>
