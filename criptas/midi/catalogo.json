@@ -1,0 +1,6 @@
+{
+  "discos": [
+    { "id": "himno", "nombre": "Himno del grog (a banda)", "autor": "Beethoven · arreglo de Rufo", "archivo": "himno-del-grog.json" },
+    { "id": "cancan", "nombre": "Cancán del grog (a banda)", "autor": "Offenbach · arreglo de Rufo", "archivo": "cancan-del-grog.json" }
+  ]
+}

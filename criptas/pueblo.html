@@ -12,38 +12,39 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261103185206",
-    "./js/campanas.js": "./js/campanas.js?v=20261103185206",
-    "./js/cancionero.js": "./js/cancionero.js?v=20261103185206",
-    "./js/cocina.js": "./js/cocina.js?v=20261103185206",
-    "./js/datos.js": "./js/datos.js?v=20261103185206",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261103185206",
-    "./js/firebase.js": "./js/firebase.js?v=20261103185206",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103185206",
-    "./js/herramientas.js": "./js/herramientas.js?v=20261103185206",
-    "./js/ia.js": "./js/ia.js?v=20261103185206",
-    "./js/iconos.js": "./js/iconos.js?v=20261103185206",
-    "./js/insultos.js": "./js/insultos.js?v=20261103185206",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261103185206",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103185206",
-    "./js/motor.js": "./js/motor.js?v=20261103185206",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103185206",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103185206",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103185206",
-    "./js/nube.js": "./js/nube.js?v=20261103185206",
-    "./js/panel.js": "./js/panel.js?v=20261103185206",
-    "./js/planos.js": "./js/planos.js?v=20261103185206",
-    "./js/poderes.js": "./js/poderes.js?v=20261103185206",
-    "./js/procedural.js": "./js/procedural.js?v=20261103185206",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261103185206",
-    "./js/red.js": "./js/red.js?v=20261103185206",
-    "./js/render.js": "./js/render.js?v=20261103185206",
-    "./js/render3d.js": "./js/render3d.js?v=20261103185206",
-    "./js/reunion.js": "./js/reunion.js?v=20261103185206",
-    "./js/sprites.js": "./js/sprites.js?v=20261103185206",
-    "./js/tablero.js": "./js/tablero.js?v=20261103185206",
-    "./js/ui.js": "./js/ui.js?v=20261103185206",
-    "./js/viajero.js": "./js/viajero.js?v=20261103185206"
+    "./js/acceso.js": "./js/acceso.js?v=20261103211543",
+    "./js/campanas.js": "./js/campanas.js?v=20261103211543",
+    "./js/cancionero.js": "./js/cancionero.js?v=20261103211543",
+    "./js/cocina.js": "./js/cocina.js?v=20261103211543",
+    "./js/datos.js": "./js/datos.js?v=20261103211543",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261103211543",
+    "./js/firebase.js": "./js/firebase.js?v=20261103211543",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103211543",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261103211543",
+    "./js/ia.js": "./js/ia.js?v=20261103211543",
+    "./js/iconos.js": "./js/iconos.js?v=20261103211543",
+    "./js/insultos.js": "./js/insultos.js?v=20261103211543",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261103211543",
+    "./js/midi.js": "./js/midi.js?v=20261103211543",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103211543",
+    "./js/motor.js": "./js/motor.js?v=20261103211543",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103211543",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103211543",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103211543",
+    "./js/nube.js": "./js/nube.js?v=20261103211543",
+    "./js/panel.js": "./js/panel.js?v=20261103211543",
+    "./js/planos.js": "./js/planos.js?v=20261103211543",
+    "./js/poderes.js": "./js/poderes.js?v=20261103211543",
+    "./js/procedural.js": "./js/procedural.js?v=20261103211543",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261103211543",
+    "./js/red.js": "./js/red.js?v=20261103211543",
+    "./js/render.js": "./js/render.js?v=20261103211543",
+    "./js/render3d.js": "./js/render3d.js?v=20261103211543",
+    "./js/reunion.js": "./js/reunion.js?v=20261103211543",
+    "./js/sprites.js": "./js/sprites.js?v=20261103211543",
+    "./js/tablero.js": "./js/tablero.js?v=20261103211543",
+    "./js/ui.js": "./js/ui.js?v=20261103211543",
+    "./js/viajero.js": "./js/viajero.js?v=20261103211543"
   }
 }
 </script>
@@ -242,6 +243,7 @@ import { mueblesExtra } from './js/muebles-extra.js';
 import { RECETAS, EFECTOS, menuHoy } from './js/cocina.js';
 import { iniciarPoderes } from './js/poderes.js';
 import { CANCIONES, partitura } from './js/cancionero.js';
+import { cargarCatalogo, cargarDisco, crearGramola } from './js/midi.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -1205,7 +1207,7 @@ const VEC = {
     regalos: ['su receta secreta de guiso (le falta un ingrediente a propósito)', 'una taza con tu nombre', 'una llave de la cantina. «Por si algún día llegas tarde»'],
     gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? ¡Esto va directo a la olla!`,
     ops: () => [['🍲 Ver el menú de hoy', () => menuMarga()], ['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, '#e8584a', 480)],
-      ['¿Qué suena?', () => hablar('Marga', [A.rufoOn && A.rufo ? `Rufo, con «${CANCIONES[A.rufo.i].t}». La original es ${CANCIONES[A.rufo.i].o}. Él dice que la suya es mejor.` : DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
+      ['¿Qué suena?', () => hablar('Marga', [gramolaSuena() ? `La gramola de Rufo: «${A.gramola.disco.nombre}». Él jura que la canta, pero hasta donde yo sé es un disco.` : A.rufoOn && A.rufo ? `Rufo, con «${CANCIONES[A.rufo.i].t}». La original es ${CANCIONES[A.rufo.i].o}. Él dice que la suya es mejor.` : DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
       ['Nada, gracias', cerrarDialogo]]
   }
 };
@@ -1272,6 +1274,7 @@ function actualizarHorarios(inicio = false) {
 // =============================================================
 const X0 = 300;
 const RUFO_CANTINA = { x: X0 - 1.8, z: 1.9, y: .42, mira: .55 };   // su taburete, mirando a la sala
+const GR = { catalogo: null, error: false, i: -1, luz: null };   // la gramola de Rufo: lista de discos MIDI y cuál suena
 const RUFO_EN_CANTINA = () => PNJ.find((p) => p.id === 'rufo')?.zona?.sala === 'cantina';
 const cantinaDentro = new THREE.Group(); escena.add(cantinaDentro);
 const CHOQUES_DENTRO = [];
@@ -1315,6 +1318,14 @@ const lamparas = [];
   // gramófono
   const gram = new THREE.Group(); const m = caja(.6, .3, .6, '#6a3a2a'); m.position.y = 1.36; gram.add(m); const bocina = new THREE.Mesh(new THREE.ConeGeometry(.35, .6, 12, 1, true), lam('#d8a840', { side: THREE.DoubleSide })); bocina.position.set(.1, 1.85, -.1); bocina.rotation.z = -.9; gram.add(bocina);
   en(gram, 3, -2.9);
+  // La gramola de Rufo: una máquina de discos arrimada a la pared de la derecha, con el panel encendido
+  { const g = new THREE.Group(); const cuerpo = caja(.95, 1.1, .6, '#7a3a2a'); cuerpo.position.y = .55; g.add(cuerpo);
+    const arco = new THREE.Mesh(new THREE.CylinderGeometry(.475, .475, .6, 18, 1, false, Math.PI / 2, Math.PI), lam('#8a4a30', { side: THREE.DoubleSide })); arco.rotation.x = Math.PI / 2; arco.position.y = 1.1; g.add(arco);
+    const panel = caja(.7, .6, .04, '#ffd890', { emissive: '#ffb860', emissiveIntensity: .35 }); panel.position.set(0, .72, .31); g.add(panel); GR.luz = panel;
+    const zocalo = caja(1, .12, .66, '#4a2a20'); zocalo.position.y = .06; g.add(zocalo);
+    for (const [x, c] of [[-.22, '#d8503a'], [0, '#e8c040'], [.22, '#4ab07a']]) { const b = bola(.05, c, { emissive: c, emissiveIntensity: .7 }, 8); b.position.set(x, 1.3, .3); g.add(b); }
+    g.rotation.y = -Math.PI / 2; en(g, 5.2, -1.0); }
+  CHOQUES_DENTRO.push({ x: X0 + 5.2, z: -1.0, w: .8, d: 1.1 });
   // alfombra
   en(new THREE.Mesh(new THREE.CircleGeometry(1.6, 24).rotateX(-Math.PI / 2), lam('#b84a3a')), 0, 1.8, .01);
   // El rincón de Rufo: tarima, taburete, guitarra y su jarra de «grog» (zarzaparrilla, que Marga no cede)
@@ -1339,6 +1350,7 @@ const lamparas = [];
   toque('Marga', X0, -2, 1.6, 'Hablar con Marga', () => conversar(MARGA), { dentro: true });
   MESAS.forEach(([x, z], i) => toque('Mesa', X0 + x, z + .9, 1.3, 'Sentarse', () => sentarse(X0 + x + (x < 0 ? 1.1 : -1.1), z, x < 0 ? -Math.PI / 2 : Math.PI / 2), { dentro: true }));
   toque('El gramófono', X0 + 3, -1.9, 1.3, 'Cambiar el disco', () => { if (rufoToca()) return aviso('🎸 Rufo está tocando: el gramófono descansa'); cambiarDisco(); aviso('♪ ' + DISCOS[disco].nombre); }, { dentro: true });
+  toque('La gramola de Rufo', X0 + 4.3, -1.0, 1.1, 'Elegir un disco', () => gramolaMenu(), { dentro: true });
   toque('La chimenea', X0 - 4.4, -1.2, 1.4, 'Calentarse', () => hablar('La chimenea', ['El fuego chisporrotea. Fuera huele a mar; aquí, a café y a leña.'], null, '#c86a2a'), { dentro: true });
   toque('La puerta', X0, 4.6, 1.4, 'Salir al pueblo', () => salirCantina(), { dentro: true });
 }
@@ -2233,7 +2245,7 @@ function cancionRufo() {
     [...ids.map((i) => ['🎵 ' + CANCIONES[i].t, () => tocarRufo(i)]), ['✍️ Una tuya, Rufo', cancionPropia], ['Luego', cerrarDialogo]], d.color, d.voz);
 }
 function tocarRufo(i) {
-  const d = VEC.rufo, C = CANCIONES[i]; arrancarAudio(); empezarCancion(i);
+  const d = VEC.rufo, C = CANCIONES[i]; arrancarAudio(); pararGramola(); A.rufoDescansa = 0; A.rufoSet = 0; empezarCancion(i);
   aviso('🎸 ' + C.t);
   hablar(nombreCon(PNJ.find((p) => p.id === 'rufo')), [`🎸 «${C.t}». Original: ${C.o}.`, C.dice], [['👏 ¡Bravo!', () => { sumarAmistad('rufo', 1); guardarPueblo(); hablar('Rufo Brea', ['¡Gracias, gracias! Firmo autógrafos en servilletas.'], null, d.color, d.voz); }], ['Otra', cancionRufo], ['Ya vale, Rufo', cerrarDialogo]], d.color, d.voz);
 }
@@ -2372,6 +2384,7 @@ function arrancarAudio() {
   A.fuera.gain.value = (jazz() ? 0 : sala ? .3 : 1) * MZ.musica; A.dentro.gain.value = (jazz() ? 1 : 0) * MZ.musica;
   for (const g of [A.fuera, A.dentro, A.voz]) { g.connect(A.master); g.connect(A.rev); }
   const n = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate); const nd = n.getChannelData(0); for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1; A.ruido = n;
+  A.gramola = crearGramola({ ctx, destino: A.dentro, ruidoBuf: n, alFin: gramolaFin });
   // Olas: ruido filtrado que respira despacio
   const olas = ctx.createBufferSource(); olas.buffer = n; olas.loop = true;
   const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 520;
@@ -2422,6 +2435,7 @@ function programar() {
   const toca = rufoToca();
   if (toca !== !!A.rufoOn) { A.rufoOn = toca; ponerCancion(); if (toca && !A.rufo) empezarCancion(); if (!toca) A.rufo = null; }
   if (toca && A.rufo) programarRufo(hasta);
+  A.gramola?.programar(hasta);
   // Dentro: jazz de cafetería con swing
   const D_ = DISCOS[disco], spb = 60 / D_.bpm, grabada = !!D_.archivo;
   if (A.tD == null) A.tD = c.currentTime + .1;
@@ -2429,7 +2443,7 @@ function programar() {
   while (tiempoPaso(A.pasoD) < hasta) {
     const k = A.pasoD, t = tiempoPaso(k), beat = Math.floor(k / 2) % 4, sub = k % 2, bar = Math.floor(k / 8);
     const ac = D_.acordes || [[53, 'M7']], [raiz, tipo] = ac[bar % ac.length], [raizSig] = ac[(bar + 1) % ac.length], iv = TIPOS[tipo];
-    if (A.dentro.gain.value > .01 && !grabada && !A.rufoOn) {
+    if (A.dentro.gain.value > .01 && !grabada && !A.rufoOn && !gramolaSuena()) {
       if (sub === 0) {
         const b = beat === 0 ? raiz - 12 : beat === 1 ? raiz - 12 + iv[1] - (Math.random() < .5 ? 0 : 3) : beat === 2 ? raiz - 12 + (Math.random() < .5 ? 12 : 7) : raizSig - 12 + (Math.random() < .5 ? 1 : -1);
         nota(A.dentro, mf(b), t, spb * .9, .13, 'triangle', .01);
@@ -2450,7 +2464,10 @@ function programar() {
   }
 }
 // ---------- La guitarra de Rufo: punteo, rasgueo y la melodía cantada en bips ----------
-const rufoToca = () => sala === 'cantina' && RUFO_EN_CANTINA();
+// Rufo es el cantante, pero secundario: toca dos canciones y descansa un rato con su grog; y calla si suena la gramola
+const rufoDescansa = () => !!A.ctx && A.ctx.currentTime < (A.rufoDescansa || 0);
+const gramolaSuena = () => !!A.gramola?.suena;
+const rufoToca = () => sala === 'cantina' && RUFO_EN_CANTINA() && !gramolaSuena() && !rufoDescansa();
 function guitarra(d, m, t, v, dur = 1.3) {
   const c = A.ctx, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), fr = mf(m);
   o.type = 'sawtooth'; o.frequency.value = fr; f.type = 'lowpass'; f.Q.value = 1.2;
@@ -2489,14 +2506,44 @@ function programarRufo(hasta) {
   }
   if (r.k >= ev.length) {
     const fin = r.t0 + r.p.fin * spb;
-    if (fin < hasta) { if (++r.vuelta < (C.vueltas || 1)) { r.t0 = fin; r.k = 0; } else { empezarCancion(); A.rufo.t0 = fin + 3; } }
+    if (fin < hasta) { if (++r.vuelta < (C.vueltas || 1)) { r.t0 = fin; r.k = 0; } else if ((A.rufoSet = (A.rufoSet | 0) + 1) >= 2) { A.rufoSet = 0; A.rufo = null; A.rufoDescansa = A.ctx.currentTime + 150 + Math.random() * 120; } else { empezarCancion(); A.rufo.t0 = fin + 3; } }
   }
+}
+// ---------- La gramola de Rufo: discos MIDI (js/midi.js) y su menú ----------
+const pintarGramola = () => { if (GR.luz) GR.luz.material = lam('#ffd890', { emissive: '#ffb860', emissiveIntensity: gramolaSuena() ? 1.3 : .35 }); };
+function pararGramola() { A.gramola?.parar(); GR.i = -1; if (A.ctx) ponerCancion(); pintarGramola(); }
+async function ponerDisco(i, seguido) {
+  const d = GR.catalogo?.[i]; if (!d || !A.gramola) return;
+  if (!seguido) aviso('💿 Rufo busca el disco…');
+  try {
+    const disco = await cargarDisco(d);
+    if (sala !== 'cantina') return;                     // te fuiste mientras cargaba
+    GR.i = i; A.gramola.poner(disco); ponerCancion(); pintarGramola(); aviso('♪ ' + d.nombre);
+  } catch (e) { console.warn('gramola:', e); aviso('💿 El disco está rayado'); pararGramola(); }
+}
+function gramolaFin() {   // terminó un disco: pasa al siguiente de la lista
+  const n = GR.catalogo?.length || 0;
+  if (!n || sala !== 'cantina') return pararGramola();
+  ponerDisco((GR.i + 1) % n, true);
+}
+async function gramolaMenu(pag = 0) {
+  arrancarAudio();
+  const d = VEC.rufo, QUIEN = 'La gramola de Rufo';
+  if (!GR.catalogo) { try { GR.catalogo = await cargarCatalogo(); GR.error = false; } catch (e) { GR.catalogo = null; GR.error = true; } }
+  if (!GR.catalogo?.length) return hablar(QUIEN, [GR.error ? 'Se le ha caído la aguja y no encuentra la lista de discos. Prueba otra vez en un rato.' : 'Está vacía. Rufo dice que el próximo disco corre de su cuenta. Lleva diciéndolo desde el martes.'], [['Vale', cerrarDialogo]], d.color, d.voz);
+  const L = GR.catalogo, POR = 3, pags = Math.ceil(L.length / POR); pag = ((pag % pags) + pags) % pags;
+  const ops = L.slice(pag * POR, pag * POR + POR).map((x, k) => ['💿 ' + x.nombre + (pag * POR + k === GR.i ? ' ♪' : ''), () => { cerrarDialogo(); ponerDisco(pag * POR + k); }]);
+  if (pags > 1) ops.push([`Más discos ➜ (${pag + 1}/${pags})`, () => gramolaMenu(pag + 1)]);
+  if (gramolaSuena()) ops.push(['⏹ Apagarla', () => { pararGramola(); cerrarDialogo(); aviso('Silencio'); }]);
+  ops.push(['Nada', cerrarDialogo]);
+  const dice = gramolaSuena() ? `Suena «${A.gramola.disco.nombre}». Rufo asegura que la canta él. Los bips, desde luego, son suyos.` : uno(['La gramola de Rufo: la montó con piezas de un barco, un reloj y un primo. Canta lo que le pongas. A su manera.', 'Elige disco. Cuidado: Rufo se sabe la letra de todos. Aunque no tengan letra.']);
+  hablar(QUIEN, [dice], ops, d.color, d.voz);
 }
 function cambiarDisco() { disco = (disco + 1) % DISCOS.length; if (A.ctx) { A.tD = A.ctx.currentTime + .2; A.pasoD = 0; ponerCancion(); } }
 // La canción grabada suena solo dentro de la cantina y solo con su disco puesto.
 function ponerCancion() {
   if (!A.cancion) return;
-  const d = DISCOS[disco], t = A.ctx.currentTime, suena = jazz() && !!d.archivo && !rufoToca();
+  const d = DISCOS[disco], t = A.ctx.currentTime, suena = jazz() && !!d.archivo && !rufoToca() && !gramolaSuena();
   if (d.archivo && !A.cancion.src.endsWith(d.archivo)) { A.cancion.src = d.archivo; A.cancion.currentTime = 0; }
   A.cancionVol.gain.setTargetAtTime(suena ? .55 * MZ.musica : 0, t, .5);
   clearTimeout(ponerCancion.t);
@@ -2506,6 +2553,7 @@ function ponerCancion() {
 function jazz() { return sala === 'cantina' || (sala === 'casa' && musicaCasa); }
 function mezclar() {
   if (!A.ctx) return; const t = A.ctx.currentTime;
+  if (sala !== 'cantina' && gramolaSuena()) pararGramola();   // la gramola solo suena para quien está en la cantina
   A.fuera.gain.setTargetAtTime((jazz() ? 0 : sala ? .3 : 1) * MZ.musica, t, .5); A.dentro.gain.setTargetAtTime((jazz() ? 1 : 0) * MZ.musica, t, .5);
   ponerCancion();
 }
@@ -3534,7 +3582,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { tocarRufo, casaMuebles, ED, PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
+window.pueblo = { tocarRufo, gramolaMenu, ponerDisco, pararGramola, GR, casaMuebles, ED, PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
 </script>
 </body>
 </html>

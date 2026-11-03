@@ -42,6 +42,10 @@ Juego de mazmorras por turnos estilo juego de mesa, multijugador con código de 
 - `viajero.js`: la ficha del jugador por mundo (héroes, banco, cabaña, diario, `ficha.pueblo`).
 - `vendor/`: three.js r160 vendorizado. **No actualizar.**
 
+### La gramola de Rufo (`js/midi.js` y `midi/`)
+
+Máquina de discos de la cantina que toca MIDIs sintetizados con WebAudio. Un disco es un JSON (`midi/*.json`) listado en `midi/catalogo.json`; los que son solo de Carlos van en `midi/local-*.json` + `midi/catalogo-local.json` (en `.gitignore`: **el repo y la web son públicos, no subas música con derechos**). Para convertir un `.mid`: `python3 criptas/midi/convertir.py cancion.mid` (añade `--publico` solo si es libre de derechos).
+
 ### Datos del pueblo
 
 El estado del pueblo vive en `ficha.pueblo` (variable `EP` en `pueblo.html`) y se guarda con `guardarPueblo()`. Al añadir campos nuevos: inicialízalos en la creación de `EP` y, si importan entre dispositivos, júntalos en `juntarPueblo()`.
