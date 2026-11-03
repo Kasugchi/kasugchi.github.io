@@ -12,37 +12,38 @@
 {
   "imports": {
     "three": "./js/vendor/three.module.min.js",
-    "./js/acceso.js": "./js/acceso.js?v=20261103173354",
-    "./js/campanas.js": "./js/campanas.js?v=20261103173354",
-    "./js/cocina.js": "./js/cocina.js?v=20261103173354",
-    "./js/datos.js": "./js/datos.js?v=20261103173354",
-    "./js/dialogos.js": "./js/dialogos.js?v=20261103173354",
-    "./js/firebase.js": "./js/firebase.js?v=20261103173354",
-    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103173354",
-    "./js/herramientas.js": "./js/herramientas.js?v=20261103173354",
-    "./js/ia.js": "./js/ia.js?v=20261103173354",
-    "./js/iconos.js": "./js/iconos.js?v=20261103173354",
-    "./js/insultos.js": "./js/insultos.js?v=20261103173354",
-    "./js/mezclador.js": "./js/mezclador.js?v=20261103173354",
-    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103173354",
-    "./js/motor.js": "./js/motor.js?v=20261103173354",
-    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103173354",
-    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103173354",
-    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103173354",
-    "./js/nube.js": "./js/nube.js?v=20261103173354",
-    "./js/panel.js": "./js/panel.js?v=20261103173354",
-    "./js/planos.js": "./js/planos.js?v=20261103173354",
-    "./js/poderes.js": "./js/poderes.js?v=20261103173354",
-    "./js/procedural.js": "./js/procedural.js?v=20261103173354",
-    "./js/pueblo.js": "./js/pueblo.js?v=20261103173354",
-    "./js/red.js": "./js/red.js?v=20261103173354",
-    "./js/render.js": "./js/render.js?v=20261103173354",
-    "./js/render3d.js": "./js/render3d.js?v=20261103173354",
-    "./js/reunion.js": "./js/reunion.js?v=20261103173354",
-    "./js/sprites.js": "./js/sprites.js?v=20261103173354",
-    "./js/tablero.js": "./js/tablero.js?v=20261103173354",
-    "./js/ui.js": "./js/ui.js?v=20261103173354",
-    "./js/viajero.js": "./js/viajero.js?v=20261103173354"
+    "./js/acceso.js": "./js/acceso.js?v=20261103185206",
+    "./js/campanas.js": "./js/campanas.js?v=20261103185206",
+    "./js/cancionero.js": "./js/cancionero.js?v=20261103185206",
+    "./js/cocina.js": "./js/cocina.js?v=20261103185206",
+    "./js/datos.js": "./js/datos.js?v=20261103185206",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261103185206",
+    "./js/firebase.js": "./js/firebase.js?v=20261103185206",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261103185206",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261103185206",
+    "./js/ia.js": "./js/ia.js?v=20261103185206",
+    "./js/iconos.js": "./js/iconos.js?v=20261103185206",
+    "./js/insultos.js": "./js/insultos.js?v=20261103185206",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261103185206",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261103185206",
+    "./js/motor.js": "./js/motor.js?v=20261103185206",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261103185206",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261103185206",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261103185206",
+    "./js/nube.js": "./js/nube.js?v=20261103185206",
+    "./js/panel.js": "./js/panel.js?v=20261103185206",
+    "./js/planos.js": "./js/planos.js?v=20261103185206",
+    "./js/poderes.js": "./js/poderes.js?v=20261103185206",
+    "./js/procedural.js": "./js/procedural.js?v=20261103185206",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261103185206",
+    "./js/red.js": "./js/red.js?v=20261103185206",
+    "./js/render.js": "./js/render.js?v=20261103185206",
+    "./js/render3d.js": "./js/render3d.js?v=20261103185206",
+    "./js/reunion.js": "./js/reunion.js?v=20261103185206",
+    "./js/sprites.js": "./js/sprites.js?v=20261103185206",
+    "./js/tablero.js": "./js/tablero.js?v=20261103185206",
+    "./js/ui.js": "./js/ui.js?v=20261103185206",
+    "./js/viajero.js": "./js/viajero.js?v=20261103185206"
   }
 }
 </script>
@@ -240,6 +241,7 @@ import { NUEVOS as DIA } from './js/dialogos.js';
 import { mueblesExtra } from './js/muebles-extra.js';
 import { RECETAS, EFECTOS, menuHoy } from './js/cocina.js';
 import { iniciarPoderes } from './js/poderes.js';
+import { CANCIONES, partitura } from './js/cancionero.js';
 
 // =============================================================
 //  EL PUEBLO DE MORRANDAR (prueba): un pueblo a pie de calle,
@@ -1203,7 +1205,7 @@ const VEC = {
     regalos: ['su receta secreta de guiso (le falta un ingrediente a propósito)', 'una taza con tu nombre', 'una llave de la cantina. «Por si algún día llegas tarde»'],
     gracias: (cosa, de) => `¿${cosa}? ¿De ${de}? ¡Esto va directo a la olla!`,
     ops: () => [['🍲 Ver el menú de hoy', () => menuMarga()], ['Un café de la casa', () => hablar('Marga', ['Aquí tienes. Despacito, que quema.', 'Siéntate en cualquier mesa y escucha el gramófono. Nadie te va a meter prisa.'], null, '#e8584a', 480)],
-      ['¿Qué suena?', () => hablar('Marga', [DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
+      ['¿Qué suena?', () => hablar('Marga', [A.rufoOn && A.rufo ? `Rufo, con «${CANCIONES[A.rufo.i].t}». La original es ${CANCIONES[A.rufo.i].o}. Él dice que la suya es mejor.` : DISCOS[disco].archivo ? `«${DISCOS[disco].nombre}». Me la trajo un viajero. Dice que la hizo él.` : `«${DISCOS[disco].nombre}». Si te cansa, cambia el disco del gramófono.`], null, '#e8584a', 480)],
       ['Nada, gracias', cerrarDialogo]]
   }
 };
@@ -1336,7 +1338,7 @@ const lamparas = [];
   C.visible = false;
   toque('Marga', X0, -2, 1.6, 'Hablar con Marga', () => conversar(MARGA), { dentro: true });
   MESAS.forEach(([x, z], i) => toque('Mesa', X0 + x, z + .9, 1.3, 'Sentarse', () => sentarse(X0 + x + (x < 0 ? 1.1 : -1.1), z, x < 0 ? -Math.PI / 2 : Math.PI / 2), { dentro: true }));
-  toque('El gramófono', X0 + 3, -1.9, 1.3, 'Cambiar el disco', () => { cambiarDisco(); aviso('♪ ' + DISCOS[disco].nombre); }, { dentro: true });
+  toque('El gramófono', X0 + 3, -1.9, 1.3, 'Cambiar el disco', () => { if (rufoToca()) return aviso('🎸 Rufo está tocando: el gramófono descansa'); cambiarDisco(); aviso('♪ ' + DISCOS[disco].nombre); }, { dentro: true });
   toque('La chimenea', X0 - 4.4, -1.2, 1.4, 'Calentarse', () => hablar('La chimenea', ['El fuego chisporrotea. Fuera huele a mar; aquí, a café y a leña.'], null, '#c86a2a'), { dentro: true });
   toque('La puerta', X0, 4.6, 1.4, 'Salir al pueblo', () => salirCantina(), { dentro: true });
 }
@@ -2215,7 +2217,7 @@ const BATALLAS = [
   ['Una sirena me cantó para hundir mi barco.', 'Yo le canté más fuerte y desafinando. Se tapó los oídos y se fue.', 'Desde entonces me llaman «el Sirena-Repelente». Me lo llamo yo, pero cuenta.'],
   ['Me comió una ballena, ¿sabes? Por dentro tenía muebles.', 'Me quedé a vivir una semana. Un poco húmedo, pero céntrico.', 'Marga (desde la barra): «Eso lo ha leído en un libro.» Rufo: «¡Y qué! ¡Yo salgo de uno!»']
 ];
-const CANCIONES = [
+const PROPIAS = [
   ['♪ Con un barco de papel y un sombrero muy grande…', '♪ … salí a buscar un tesoro que no se encuentra con mapa…', '♪ ¡Ay, Morrandar, tortuga, llévame a la mar salada! ♪', '(La cantina entera aplaude. Tintero también, a su manera: bostezando.)'],
   ['♪ Yo-jo-jo y una de zarzaparrilla…', '♪ … que el grog no me lo ponen, que dicen que corroe la vajilla…', '♪ ¡Yo-jo-jo, Marga, ten piedad de este pirata sin barquilla! ♪', 'Marga (secando un vaso): «Bonita canción. Sigue sin haber grog.»'],
   ['♪ Tres insultos tengo en la manga, tres en el sombrero…', '♪ … y uno que guardo debajo de la almohada, que es el primero…', '♪ ¡En guardia, rufianes, que llega el pirata Rufo Brea! ♪', '(Se le cae la guitarra en el último acorde. Lo hace a propósito. Dice.)']
@@ -2224,9 +2226,20 @@ function batallaRufo() {
   const d = VEC.rufo, b = uno(BATALLAS).map((t) => t.replace('{N}', NOMBRE));
   hablar(nombreCon(PNJ.find((p) => p.id === 'rufo')), b, [['¡Otra, otra!', batallaRufo], ['🎸 Mejor cántate algo', cancionRufo], ['Qué historia…', cerrarDialogo]], d.color, d.voz);
 }
+// Le pides canción como al músico de los sábados: elige entre tres de su cancionero (o una suya)
 function cancionRufo() {
+  const d = VEC.rufo, R = PNJ.find((p) => p.id === 'rufo'), ids = CANCIONES.map((_, i) => i).sort(() => Math.random() - .5).slice(0, 3);
+  hablar(nombreCon(R), [uno(['¿Qué te apetece? Me las sé todas. Bueno, estas.', '¡Pide, pide! Hoy tengo la guitarra afinada. Casi.', 'Elige una. Si no te gusta, la toco más fuerte.'])],
+    [...ids.map((i) => ['🎵 ' + CANCIONES[i].t, () => tocarRufo(i)]), ['✍️ Una tuya, Rufo', cancionPropia], ['Luego', cerrarDialogo]], d.color, d.voz);
+}
+function tocarRufo(i) {
+  const d = VEC.rufo, C = CANCIONES[i]; arrancarAudio(); empezarCancion(i);
+  aviso('🎸 ' + C.t);
+  hablar(nombreCon(PNJ.find((p) => p.id === 'rufo')), [`🎸 «${C.t}». Original: ${C.o}.`, C.dice], [['👏 ¡Bravo!', () => { sumarAmistad('rufo', 1); guardarPueblo(); hablar('Rufo Brea', ['¡Gracias, gracias! Firmo autógrafos en servilletas.'], null, d.color, d.voz); }], ['Otra', cancionRufo], ['Ya vale, Rufo', cerrarDialogo]], d.color, d.voz);
+}
+function cancionPropia() {
   const d = VEC.rufo; aviso('🎸 Rufo afina la guitarra…');
-  hablar(nombreCon(PNJ.find((p) => p.id === 'rufo')), uno(CANCIONES), [['👏 ¡Bravo!', () => { sumarAmistad('rufo', 1); guardarPueblo(); hablar('Rufo Brea', ['¡Gracias, gracias! Firmo autógrafos en servilletas.'], null, d.color, d.voz); }], ['Otra', cancionRufo], ['Ya vale, Rufo', cerrarDialogo]], d.color, d.voz);
+  hablar(nombreCon(PNJ.find((p) => p.id === 'rufo')), uno(PROPIAS), [['👏 ¡Bravo!', () => { sumarAmistad('rufo', 1); guardarPueblo(); hablar('Rufo Brea', ['¡Gracias, gracias! Firmo autógrafos en servilletas.'], null, d.color, d.voz); }], ['Otra', cancionRufo], ['Ya vale, Rufo', cerrarDialogo]], d.color, d.voz);
 }
 function grogRufo() {
   const d = VEC.rufo, hoy = diaHoy(), R = PNJ.find((p) => p.id === 'rufo');
@@ -2405,6 +2418,10 @@ function programar() {
     }
     A.pasoF++;
   }
+  // Rufo, si está en la cantina, toca su guitarra y el gramófono calla
+  const toca = rufoToca();
+  if (toca !== !!A.rufoOn) { A.rufoOn = toca; ponerCancion(); if (toca && !A.rufo) empezarCancion(); if (!toca) A.rufo = null; }
+  if (toca && A.rufo) programarRufo(hasta);
   // Dentro: jazz de cafetería con swing
   const D_ = DISCOS[disco], spb = 60 / D_.bpm, grabada = !!D_.archivo;
   if (A.tD == null) A.tD = c.currentTime + .1;
@@ -2412,7 +2429,7 @@ function programar() {
   while (tiempoPaso(A.pasoD) < hasta) {
     const k = A.pasoD, t = tiempoPaso(k), beat = Math.floor(k / 2) % 4, sub = k % 2, bar = Math.floor(k / 8);
     const ac = D_.acordes || [[53, 'M7']], [raiz, tipo] = ac[bar % ac.length], [raizSig] = ac[(bar + 1) % ac.length], iv = TIPOS[tipo];
-    if (A.dentro.gain.value > .01 && !grabada) {
+    if (A.dentro.gain.value > .01 && !grabada && !A.rufoOn) {
       if (sub === 0) {
         const b = beat === 0 ? raiz - 12 : beat === 1 ? raiz - 12 + iv[1] - (Math.random() < .5 ? 0 : 3) : beat === 2 ? raiz - 12 + (Math.random() < .5 ? 12 : 7) : raizSig - 12 + (Math.random() < .5 ? 1 : -1);
         nota(A.dentro, mf(b), t, spb * .9, .13, 'triangle', .01);
@@ -2432,11 +2449,54 @@ function programar() {
     A.pasoD++;
   }
 }
+// ---------- La guitarra de Rufo: punteo, rasgueo y la melodía cantada en bips ----------
+const rufoToca = () => sala === 'cantina' && RUFO_EN_CANTINA();
+function guitarra(d, m, t, v, dur = 1.3) {
+  const c = A.ctx, o = c.createOscillator(), f = c.createBiquadFilter(), g = c.createGain(), fr = mf(m);
+  o.type = 'sawtooth'; o.frequency.value = fr; f.type = 'lowpass'; f.Q.value = 1.2;
+  f.frequency.setValueAtTime(Math.min(7000, fr * 9), t); f.frequency.exponentialRampToValueAtTime(Math.max(180, fr * 1.4), t + .3);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t + .004); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(f); f.connect(g); g.connect(d); o.start(t); o.stop(t + dur + .05);
+}
+function rasgueo(d, ac, t, v, arriba = false) {
+  const n = [ac.raiz + 7, ac.raiz + 12, ac.raiz + 12 + ac.iv[1], ac.raiz + 19, ...(ac.iv[3] ? [ac.raiz + 22] : [])];
+  (arriba ? n.slice().reverse() : n).forEach((m, k) => guitarra(d, m, t + k * .014, v * (arriba ? .6 : 1), .9));
+  ruido(d, t, .05, v * .5, 3200, 'bandpass', .8);   // el roce de las cuerdas
+}
+function empezarCancion(i) {
+  if (!A.ctx) return;
+  if (i == null) { do i = Math.floor(Math.random() * CANCIONES.length); while (CANCIONES.length > 1 && i === A.rufoUltima); }
+  A.rufoUltima = i; A.rufo = { i, p: partitura(CANCIONES[i]), t0: A.ctx.currentTime + .25, k: 0, vuelta: 0 };
+}
+function programarRufo(hasta) {
+  const r = A.rufo, C = CANCIONES[r.i], spb = 60 / C.bpm, d = A.dentro, ev = r.p.ev;
+  const pick = ev.find((e) => e.ac)?.dur < C.comp ? ev.find((e) => e.ac).dur : 0;   // compás de entrada
+  while (r.k < ev.length && r.t0 + ev[r.k].b * spb < hasta) {
+    const e = ev[r.k++], t = r.t0 + e.b * spb;
+    if (d.gain.value < .01) continue;
+    if (e.mel != null) {
+      const largo = e.dur * spb, m = e.mel < 62 ? e.mel + 12 : e.mel;
+      nota(d, mf(m), t, largo * .95, .045, 'triangle', .02);                        // la línea de la melodía
+      for (let s = 0; s < Math.max(1, Math.round(e.dur)); s++) nota(d, mf(m + 12) * (1 + (Math.random() - .5) * .02), t + s * spb, Math.min(.13, largo * .7), .022, 'square', .003);   // los bips de Rufo
+    } else {
+      for (let j = 0; j < e.dur; j++) {
+        const tt = t + j * spb, pos = ((Math.round(e.b + j - pick) % C.comp) + C.comp) % C.comp;
+        if (C.habanera) { guitarra(d, e.ac.raiz - 12 + (pos % 2 ? 7 : 0), tt, .09, .5); if (pos % 2 === 0) guitarra(d, e.ac.raiz - 12 + 7, tt + spb * .75, .07, .4); else rasgueo(d, e.ac, tt + spb * .5, .035, true); continue; }
+        if (pos === 0 || (C.comp === 4 && pos === 2)) guitarra(d, e.ac.raiz - 12 + (pos === 2 ? 7 : 0), tt, .1, .7);
+        else { rasgueo(d, e.ac, tt, .04); if (C.comp === 4) rasgueo(d, e.ac, tt + spb * .5, .03, true); }
+      }
+    }
+  }
+  if (r.k >= ev.length) {
+    const fin = r.t0 + r.p.fin * spb;
+    if (fin < hasta) { if (++r.vuelta < (C.vueltas || 1)) { r.t0 = fin; r.k = 0; } else { empezarCancion(); A.rufo.t0 = fin + 3; } }
+  }
+}
 function cambiarDisco() { disco = (disco + 1) % DISCOS.length; if (A.ctx) { A.tD = A.ctx.currentTime + .2; A.pasoD = 0; ponerCancion(); } }
 // La canción grabada suena solo dentro de la cantina y solo con su disco puesto.
 function ponerCancion() {
   if (!A.cancion) return;
-  const d = DISCOS[disco], t = A.ctx.currentTime, suena = jazz() && !!d.archivo;
+  const d = DISCOS[disco], t = A.ctx.currentTime, suena = jazz() && !!d.archivo && !rufoToca();
   if (d.archivo && !A.cancion.src.endsWith(d.archivo)) { A.cancion.src = d.archivo; A.cancion.currentTime = 0; }
   A.cancionVol.gain.setTargetAtTime(suena ? .55 * MZ.musica : 0, t, .5);
   clearTimeout(ponerCancion.t);
@@ -3474,7 +3534,7 @@ render.setAnimationLoop((ahora) => {
   render.render(escena, camara); pintarEtiquetas();
 });
 setTimeout(() => { $('fundido').style.opacity = 0; if (!EP.aspecto) abrirCreador(); else aviso(horasFuera ? `Has vuelto del libro: son las ${horaTexto()}` : `Bienvenido a casa, ${NOMBRE}`); }, 250);
-window.pueblo = { casaMuebles, ED, PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
+window.pueblo = { tocarRufo, casaMuebles, ED, PO, CLIMA, ambiente, CHOQUES, alto, distRio, PARCELAS, ponerCasasVecinos, G, otros, conectarSala, abrirLibreta, cargarGremio, get R() { return R; }, entrarCasa, empezarDeco, MUEBLES, tienda, abrirBuzon, J, PNJ, escena, camara, entrarCantina, salirCantina, sentarseMirador, CURVA, A, arrancarAudio, EP, actualizarHorarios, conversar, MARGA, libreFuera, get ficha() { return fichaP; }, cocina: { menuMarga, bancoHiel, pedirPlato, servirPlato, regalarPlato, darPlato, efecto }, ponerVecinoCampana, CAMP, ASIGNA, VEC, PARES, GENERICAS, H: { THREE, caja, cil, bola, lam, pz, brilla, MAD, MAD2, ORO } };
 </script>
 </body>
 </html>
