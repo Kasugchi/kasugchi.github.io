@@ -18,5 +18,8 @@ async function comprobar() {
   catch { return leer('criptas_acceso') === u.email; }
 }
 
-if (!(await comprobar())) await fuera();
+// TEMPORAL (solo en esta rama; quitar antes de pasar a main): las vistas previas de Cloudflare (*.pages.dev)
+// no están en los dominios autorizados de Firebase y el login con Google falla, así que ahí no se cierra.
+// lab.crove.cc y kasugchi.github.io siguen con el cerrojo de siempre.
+if (!location.hostname.endsWith('.pages.dev') && !(await comprobar())) await fuera();
 document.getElementById('cerrojo')?.remove();
