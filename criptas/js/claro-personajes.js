@@ -401,6 +401,62 @@ export function crearHeroe({ raza = 'humano', clase = 'mago', colores = {} } = {
   return o;
 }
 
+// ---------- Vecino del pueblo: el mismo dibujo que los héroes, pero sin armas ni oficio ----------
+// Devuelve, además, «enganches» con la forma de los muñecos antiguos del pueblo (cabeza, cuerpo, brazos, ojos),
+// para que sus sombreros, barbas y delantales de siempre se puedan colgar encima.
+export function crearVecino({ ropa = '#3a8ab0', pantalon = '#3a4a7a', piel = P.piel, pelo = '#5a3a22', zapatos = '#4a2e1e', larga = false } = {}) {
+  const { mats, mat, malla } = kit();
+  const raiz = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(cuerpo);
+  const oscuro = new THREE.Color(ropa).multiplyScalar(.78).getStyle();
+  const falda = larga ? 0 : .36;
+  const perfil = (larga ? [[.56, 0], [.58, .06], [.5, .3], [.42, .62], [.33, .9], [.25, 1.08], [.12, 1.16], [0, 1.17]] : [[.48, falda], [.48, falda + .06], [.44, .62], [.39, .9], [.29, 1.08], [.13, 1.16], [0, 1.17]]).map(([r, y]) => new THREE.Vector2(r, y));
+  cuerpo.add(malla(new THREE.LatheGeometry(perfil, 18), ropa));
+  let piernas = [];
+  if (!larga) piernas = [-1, 1].map((s) => {
+    const g = new THREE.Group(); g.position.set(s * .17, falda + .05, 0); cuerpo.add(g);
+    g.add(malla(new THREE.CapsuleGeometry(.1, Math.max(.05, falda - .2), 3, 8).translate(0, -(falda - .05) / 2, 0), pantalon, { borde: .02 }));
+    const bota = malla(new THREE.BoxGeometry(.2, .16, .3), zapatos, { borde: .02 }); bota.position.set(0, -falda + .09, .05); g.add(bota);
+    return g;
+  });
+  const cabeza = new THREE.Group(); cabeza.position.y = 1.47; cuerpo.add(cabeza);
+  cabeza.add(malla(new THREE.SphereGeometry(.42, 22, 16), piel));
+  const ojos = [];
+  for (const s of [-1, 1]) {
+    const ojo = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 10), mat('#1d1424')); ojo.scale.set(.07, .1, .04); ojo.position.set(s * .15, .05, .38); cabeza.add(ojo); ojos.push(ojo);
+    const br = new THREE.Mesh(new THREE.SphereGeometry(.024, 6, 6), new THREE.MeshBasicMaterial({ color: '#ffffff' })); br.position.set(.3, .4, .5); ojo.add(br);   // el brillo va dentro del ojo (si el ojo se tapa, se tapa con él)
+    const mej = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), mat('#ff9aa8', { transparent: true, opacity: .55 })); mej.scale.set(.07, .04, .02); mej.position.set(s * .25, -.08, .34); cabeza.add(mej);
+  }
+  const boca = new THREE.Mesh(new THREE.TorusGeometry(.06, .014, 4, 10, Math.PI), mat('#5a2a2a')); boca.position.set(0, -.12, .4); boca.rotation.z = Math.PI; cabeza.add(boca);
+  const nariz = malla(new THREE.SphereGeometry(.05, 8, 6), new THREE.Color(piel).multiplyScalar(.9).getStyle(), { borde: 0 }); nariz.position.set(0, -.03, .42); cabeza.add(nariz);
+  if (pelo) cabeza.add(malla(new THREE.SphereGeometry(.445, 20, 12, Math.PI / 2 + .95, Math.PI * 2 - 1.9, 0, Math.PI * .66), pelo, { borde: .02, side: THREE.DoubleSide }));
+  // manos flotantes, colgadas de un «brazo» invisible (para enganchar cañas, varitas…)
+  const brazos = [-1, 1].map((s) => { const b = new THREE.Group(); b.position.set(s * .6, 1.18, .1); cuerpo.add(b); const m = malla(new THREE.SphereGeometry(.13, 12, 10), piel, { borde: .025 }); m.position.y = -.4; b.add(m); return b; });
+  // enganches con la medida de los muñecos de antes
+  const cabezaX = new THREE.Group(); cabezaX.scale.setScalar(1.1); cabeza.add(cabezaX);
+  const cuerpoX = new THREE.Group(); cuerpoX.scale.set(1.5, 1.15, 1.5); cuerpo.add(cuerpoX);
+  raiz.traverse((x) => { if (x.isMesh && !x.userData.esContorno) x.castShadow = true; });
+  const o = baseAnimada(raiz, cuerpo, mats);
+  Object.assign(o, { cabeza, cabezaX, cuerpoX, brazos, piernas, ojos, mat, malla, altura: 2.2 });
+  o.animar = (dt, t) => {
+    const p = o._comun(dt), v = o.vel;
+    o.fase += dt * (5 + v * 6);
+    const bote = Math.abs(Math.sin(o.fase)) * .08 * v, resp = Math.sin(t * 2.2 + o.fase * .1) * .018 * (1 - v);
+    cuerpo.position.set(0, bote, 0); cuerpo.scale.set(1 - resp * .5, 1 + resp - bote * .3, 1 - resp * .5);
+    cuerpo.rotation.x = suaveA(cuerpo.rotation.x, v * .1, dt * 6); cuerpo.rotation.z = Math.sin(o.fase) * .05 * v;
+    cabeza.rotation.z = Math.sin(t * 1.1) * .04 * (1 - v);
+    brazos[0].position.set(-.6, 1.18 + Math.sin(t * 2.2) * .03, .1 + Math.sin(o.fase) * .22 * v);
+    brazos[1].position.set(.6, 1.18 + Math.cos(t * 2.2) * .03, .1 - Math.sin(o.fase) * .22 * v);
+    if (piernas.length) { piernas[0].rotation.x = Math.sin(o.fase) * .7 * v; piernas[1].rotation.x = -Math.sin(o.fase) * .7 * v; }
+    if (o.accion) {
+      const a = o.accion.tipo, s = Math.sin(p * Math.PI);
+      if (a === 'saludar') brazos[0].position.set(-.6, 1.9 + Math.sin(p * 18) * .1, .2);
+      else if (a === 'celebrar') { cuerpo.position.y += Math.abs(Math.sin(p * Math.PI * 3)) * .4; brazos[0].position.y += .6 * s; brazos[1].position.y += .6 * s; }
+    }
+    o.parpadeo = (o.parpadeo ?? 2) - dt; const cerrado = o.parpadeo < .12; for (const e of ojos) e.scale.y = cerrado ? .015 : .1; if (o.parpadeo < 0) o.parpadeo = 2 + Math.random() * 3.5;
+  };
+  return o;
+}
+
 // ---------- La torreta del ingeniero: trípode, caja con remaches y cañón que gira ----------
 export function crearTorreta() {
   const { mats, mat, malla } = kit();
