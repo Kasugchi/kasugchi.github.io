@@ -6,7 +6,7 @@
 // =============================================================
 const mf = (n) => 440 * 2 ** ((n - 69) / 12);
 
-export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque (pájaros, grillos) o cripta (gotas, eco y música en menor)
+export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque (pájaros, grillos), pantano (ranas, zumbidos y música turbia) o cripta (gotas, eco y música en menor)
   let ctx = null, maestro, musica, ambiente, efectos, ruidoBuf, fuegoG, siguiente = 0, paso = 0, modo = 'paseo', modoVol = { paseo: null, combate: null };
   const S = {};
 
@@ -44,11 +44,14 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   };
 
   // Música: paseo (Fa mayor, arpegios de cuento) y combate (Re menor, con tambor)
-  const PASEO = entorno === 'cripta' ? [[50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [45, [61, 64, 69, 73]], [50, [62, 65, 69, 74]]] : [[53, [65, 69, 72, 77]], [50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [48, [64, 67, 72, 76]]];
-  const MELO = entorno === 'cripta' ? [74, -1, -1, 73, 74, -1, 77, -1, 76, -1, -1, 74, 73, -1, -1, -1, 70, -1, 69, -1, 70, -1, 73, -1, 74, -1, -1, -1, -1, -1, -1, -1] : [77, -1, 76, 74, 72, -1, 74, -1, 69, -1, 70, 72, 74, -1, -1, -1, 76, -1, 77, 79, 77, -1, 74, -1, 72, -1, 70, 69, 72, -1, -1, -1];
+  // el pantano: Mi menor con séptimas y un acorde que se tuerce (como el agua quieta que esconde algo)
+  const PANTANO = [[52, [64, 67, 71, 74]], [48, [64, 67, 71, 76]], [50, [62, 66, 69, 74]], [47, [63, 66, 71, 75]]];
+  const MELO_P = [71, -1, -1, 69, 67, -1, 66, -1, 64, -1, -1, -1, 67, -1, 69, -1, 71, -1, 74, -1, 72, -1, 71, 69, 66, -1, -1, -1, -1, -1, -1, -1];
+  const PASEO = entorno === 'pantano' ? PANTANO : entorno === 'cripta' ? [[50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [45, [61, 64, 69, 73]], [50, [62, 65, 69, 74]]] : [[53, [65, 69, 72, 77]], [50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [48, [64, 67, 72, 76]]];
+  const MELO = entorno === 'pantano' ? MELO_P : entorno === 'cripta' ? [74, -1, -1, 73, 74, -1, 77, -1, 76, -1, -1, 74, 73, -1, -1, -1, 70, -1, 69, -1, 70, -1, 73, -1, 74, -1, -1, -1, -1, -1, -1, -1] : [77, -1, 76, 74, 72, -1, 74, -1, 69, -1, 70, 72, 74, -1, -1, -1, 76, -1, 77, 79, 77, -1, 74, -1, 72, -1, 70, 69, 72, -1, -1, -1];
   const COMBATE = [[50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]], [45, [61, 64, 69]]];
   function programarMusica() {
-    const bpm = modo === 'combate' ? 132 : 84, c = 60 / bpm / 2;   // corcheas
+    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
     while (siguiente < ctx.currentTime + .4) {
       const t = siguiente, compas = Math.floor(paso / 8) % 4, k = paso % 8;
       // paseo
@@ -75,6 +78,11 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
     programarMusica();
     if (entorno === 'cripta') {
       if (t > proxPajaro) { proxPajaro = t + .8 + Math.random() * 2.5; const f = 1800 + Math.random() * 1400, o = nota(f, t, .12, { tipo: 'sine', vol: .03, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * .55, t + .1); }   // gotas
+    } else if (entorno === 'pantano') {
+      // ranas: un «croac» grave (dos golpes de cuerda con el tono que baja), a veces contestado por otra
+      if (t > proxPajaro) { proxPajaro = t + 1.2 + Math.random() * 3; const veces = 1 + (Math.random() < .5 ? 1 : 0), f = 90 + Math.random() * 60; for (let v = 0; v < veces; v++) for (let i = 0; i < 2; i++) { const t0 = t + v * .7 + i * .12, o = nota(f * (v ? 1.3 : 1), t0, .1, { hz: true, tipo: 'sawtooth', vol: .05, destino: ambiente, filtro: 700 }); o.frequency.exponentialRampToValueAtTime(f * .7, t0 + .09); } }
+      // insectos que zumban y burbujas del barro
+      if (t > proxGrillo) { proxGrillo = t + 1.5 + Math.random() * 3; if (Math.random() < .5) { const o = nota(520 + Math.random() * 80, t, 1.4, { hz: true, tipo: 'sawtooth', vol: .006, destino: ambiente, ataque: .4, filtro: 1400 }); o.frequency.linearRampToValueAtTime(560 + Math.random() * 80, t + 1.3); } else for (let i = 0; i < 3; i++) { const o = nota(300 + Math.random() * 200, t + i * .13, .08, { hz: true, tipo: 'sine', vol: .03, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(700, t + i * .13 + .07); } }
     } else {
     if (t > proxPajaro) { proxPajaro = t + 2 + Math.random() * 5; const f = 2400 + Math.random() * 1600, n = 2 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) { const o = nota(f, t + i * .11, .09, { tipo: 'sine', vol: .018, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * (1.3 + Math.random() * .4), t + i * .11 + .07); } }
     if (t > proxGrillo) { proxGrillo = t + .9 + Math.random() * 1.4; for (let i = 0; i < 3; i++) nota(4400 + Math.random() * 300, t + i * .05, .03, { tipo: 'square', vol: .006, destino: ambiente }); }

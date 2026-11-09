@@ -224,7 +224,8 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
   }
   {
     const hay = [];
-    const sitio = (x, z) => distCamino(x, z) > 4 && !enAgua(x, z, 2.4) && Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) > 11
+    const frente = SITIOS.cripta.clone().add(new THREE.Vector3(Math.sin(SITIOS.criptaGiro), 0, Math.cos(SITIOS.criptaGiro)).multiplyScalar(8));   // delante de la cripta, despejado (ahí sales al volver)
+    const sitio = (x, z) => distCamino(x, z) > 4 && !enAgua(x, z, 2.4) && Math.hypot(x - frente.x, z - frente.z) > 9 && Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) > 11
       && Math.hypot(x - SITIOS.hoguera.x, z - SITIOS.hoguera.z) > 7 && !(Math.abs(x + 6) < 7 && z < -28) && !hay.some(([a, b]) => Math.hypot(a - x, b - z) < 5);
     let n = 0;
     for (let i = 0; i < 500 && n < (movil ? 40 : 60); i++) {

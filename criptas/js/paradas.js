@@ -37,7 +37,7 @@ export const PARADAS = {
     requiere: 'claro',                          // se abre al vencer la cripta del claro
     tema: {
       colores: { cieloAlto: '#1f2a3a', cieloMedio: '#5a6a5a', horizonte: '#b8c08a', niebla: '#8a9a78', hierba: '#5a7a3a', hierbaOscura: '#3a5a2a', hierbaClara: '#8a9a4a', camino: '#7a6a4a', tierra: '#4a3a2a', tronco: '#4a3a2e', copa: '#4a6a3a', copa2: '#5a7a42', copa3: '#3a5232', agua: '#5a8a5a', aguaHonda: '#2a4a32', roca: '#6a7a6a', roca2: '#5a6a5a' },
-      niebla: [20, 120], neblinaBaja: '#d8e8c8', flores: ['#c8e05a', '#e8e0a0', '#9ad0a0'], hojas: ['#7a8a4a', '#5a6a3a', '#a8a050', '#6a5a3a'], luzSol: '#d8e0b0', cielo: '#a8b8a0'
+      niebla: [20, 120], neblinaBaja: '#d8e8c8', sonido: 'pantano', flores: ['#c8e05a', '#e8e0a0', '#9ad0a0'], hojas: ['#7a8a4a', '#5a6a3a', '#a8a050', '#6a5a3a'], luzSol: '#d8e0b0', cielo: '#a8b8a0'
     },
     // Su propio mapa: la cripta al oeste, el fuego al este y el suelo lleno de charcas
     mapa: {

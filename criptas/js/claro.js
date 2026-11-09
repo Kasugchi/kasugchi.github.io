@@ -14,8 +14,8 @@ import { OutputPass } from './vendor/addons/postprocessing/OutputPass.js';
 import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS, usarMapa } from './claro-mundo.js';
-import { crearMago, crearEsqueleto, crearHeroe } from './claro-personajes.js';
-import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { crearMago, crearEsqueleto, crearHeroe, crearZombi, crearMomia } from './claro-personajes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
@@ -52,7 +52,7 @@ usarMapa(PAR.mapa);   // cada parada, su sitio para cada cosa
 const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
 const ui = crearUI3D(escena, camara);
-const sonido = crearSonido();
+const sonido = crearSonido({ entorno: PAR.tema?.sonido || 'bosque' });
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
 
 // ---------- estado del héroe ----------
@@ -96,7 +96,8 @@ const GRUPOS = [
 for (const g of GRUPOS) {
   g.vivo = true;
   g.miembros.forEach((m, k) => {
-    m.pj = crearEsqueleto({ escala: m.jefe ? 1.22 : 1, ojo: m.jefe ? '#c06aff' : (PAR.enemigo.ojo || '#ff5a2a'), color: PAR.enemigo.color });
+    const ojo = m.jefe ? '#c06aff' : (PAR.enemigo.ojo || '#ff5a2a'), esc = m.jefe ? 1.22 : 1;
+    m.pj = PAR.enemigo.tipo === 'zombi' ? crearZombi({ escala: esc, ojo }) : PAR.enemigo.tipo === 'momia' ? crearMomia({ escala: esc, ojo }) : crearEsqueleto({ escala: esc, ojo, color: PAR.enemigo.color });
     const a = k / g.miembros.length * Math.PI * 2, x = g.ancla.x + Math.cos(a) * 1.6, z = g.ancla.z + Math.sin(a) * 1.6;
     m.pj.grupo.position.set(x, mundo.alturaEn(x, z), z); escena.add(m.pj.grupo);
     m.rotulo = ui.rotulo(m.pj.grupo, m.n, { tipo: 'enemigo', altura: m.jefe ? 2.85 : 2.4 });
@@ -345,11 +346,12 @@ async function ganarExperiencia(xp) {
   DEF.xp = (DEF.xp || 0) + xp; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.6, 0)), `+${xp} exp`, '#b9a2ff');
   const n = nivelDe(DEF.xp);
   if (n > (DEF.nivel || 1)) {
-    DEF.oro = estado.oro; DEF.pociones = estado.pociones; DEF.nivel = n; aplicarHeroe(DEF); hud.actualizar();   // lo ganado en el combate no se pierde al recalcular
+    const antes = DEF.nivel || 1; DEF.oro = estado.oro; DEF.pociones = estado.pociones; prepararSubida(DEF); DEF.nivel = n; aplicarHeroe(DEF); hud.actualizar();   // lo ganado en el combate no se pierde al recalcular
     await new Promise((r) => setTimeout(r, 900));
     hud.banner(`¡Nivel ${n}!`, 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.4); camara_luz();
     ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 60, 5);
-    await hablar('¡Subes de nivel!', [`${DEF.nombre} llega a nivel ${n}: ${mejoraDeNivel(n)}. Y te recuperas del todo.`]);
+    for (let k = antes + 1; k <= n; k++) await hablar('¡Subes de nivel!', [`${DEF.nombre} llega a nivel ${k}: +1 de cuerpo y te recuperas del todo. ¿Qué más quieres mejorar?`], mejorasDisponibles(DEF).map((o) => [o.texto, () => elegirMejora(DEF, o.id)]));
+    DEF.oro = estado.oro; DEF.pociones = estado.pociones; aplicarHeroe(DEF); hud.actualizar();
   }
   guardarAhora(); hud.actualizar();
 }

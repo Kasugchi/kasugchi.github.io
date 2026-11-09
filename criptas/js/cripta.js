@@ -17,13 +17,13 @@ import { generarMision } from './procedural.js';
 import { EFECTOS_CRIPTA } from './cocina.js';
 import { paradaDe } from './paradas.js';
 import { crearCripta, aSolas, C } from './claro-cripta.js';
-import { crearHeroe, crearEsqueleto, crearMago } from './claro-personajes.js';
+import { crearHeroe, crearEsqueleto, crearMago, crearZombi, crearMomia } from './claro-personajes.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
-import { CLASES, estadisticas, nivelDe, mejoraDeNivel, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -96,8 +96,8 @@ function guardarAhora() { DEF.oro = estado.oro; DEF.pociones = estado.pociones; 
 const XP_TIPO = { esqueleto: 10, zombi: 12, momia: 20, sacerdotisa: 18, bruja: 18, guerrero: 20, gargola: 30, hechicero: 30, trasgo: 8, orco: 12 };
 function modelo(tipo, jefe) {
   let pj;
-  if (tipo === 'zombi') pj = crearEsqueleto({ color: '#9ab07a', ojo: '#d8ff5a' });
-  else if (tipo === 'momia') pj = crearEsqueleto({ color: '#e0d2a8', ojo: '#5ad8ff', escala: 1.12 });
+  if (tipo === 'zombi') pj = crearZombi();
+  else if (tipo === 'momia') pj = crearMomia({ escala: 1.08 });
   else if (tipo === 'sacerdotisa') pj = crearMago({ tunica: '#e8e2cc', sombrero: 'capucha', colorSombrero: '#c8c0a8', piel: '#e8e4d8', pelo: '#d8d0c0', cristal: '#c9f0ff' });
   else if (tipo === 'bruja') pj = crearMago({ tunica: '#4a6a2a', piel: '#a8c890', pelo: '#2b1d16', cristal: '#9aff5a' });
   else if (tipo === 'hechicero') pj = crearMago({ tunica: '#3a2050', piel: '#c8c0d0', pelo: '#1a1020', cristal: '#c06aff' });
@@ -154,9 +154,10 @@ async function ganarExperiencia(xp) {
   DEF.xp = (DEF.xp || 0) + xp; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.6, 0)), `+${xp} exp`, '#b9a2ff');
   const n = nivelDe(DEF.xp);
   if (n > (DEF.nivel || 1)) {
-    DEF.oro = estado.oro; DEF.pociones = estado.pociones; DEF.nivel = n; aplicarHeroe(DEF); hud.actualizar();
+    const antes = DEF.nivel || 1; DEF.oro = estado.oro; DEF.pociones = estado.pociones; prepararSubida(DEF); DEF.nivel = n; aplicarHeroe(DEF); hud.actualizar();
     await espera(900); hud.banner(`¡Nivel ${n}!`, 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.4); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 60, 5);
-    await hablar('¡Subes de nivel!', [`${DEF.nombre} llega a nivel ${n}: ${mejoraDeNivel(n)}. Y te recuperas del todo.`]);
+    for (let k = antes + 1; k <= n; k++) await hablar('¡Subes de nivel!', [`${DEF.nombre} llega a nivel ${k}: +1 de cuerpo y te recuperas del todo. ¿Qué más quieres mejorar?`], mejorasDisponibles(DEF).map((o) => [o.texto, () => elegirMejora(DEF, o.id)]));
+    DEF.oro = estado.oro; DEF.pociones = estado.pociones; aplicarHeroe(DEF); hud.actualizar();
   }
   guardarAhora(); hud.actualizar();
 }

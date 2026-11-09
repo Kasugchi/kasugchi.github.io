@@ -52,20 +52,36 @@ export const FORJA = {
 // Lo que el héroe tiene ahora mismo, según raza, clase, nivel y lo que le ha forjado Brasa
 // enCripta: la comida de Marga solo cuenta dentro de la cripta (y se gasta en ella)
 export function estadisticas(h, enCripta = false) {
-  const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null;
+  const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null, mj = mejorasDe(h);
   return {
-    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0) + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
-    defensa: c.defensa + (n >= 5 ? 1 : 0) + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
-    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + (co === 'cuerpo' ? 2 : 0),
-    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
+    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + mj.ataque + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
+    defensa: c.defensa + mj.defensa + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
+    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
+    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     escamas: h.raza === 'escamado'
   };
 }
-// Qué se gana en cada nivel (para contarlo al subir)
-export function mejoraDeNivel(n) {
-  return ['', '', '+1 cuerpo y un uso más de tu habilidad', '+1 cuerpo y un dado más de ataque', '+1 cuerpo y otro uso de habilidad', '+1 cuerpo y un dado más de defensa', '+1 cuerpo', '+1 cuerpo', '+1 cuerpo'][n] || '+1 cuerpo';
+// Lo que elegiste al subir de nivel. Los héroes de antes (sin elección) tienen las mejoras fijas de siempre.
+function mejorasDe(h) {
+  if (h.mejoras) return { ataque: 0, defensa: 0, cuerpo: 0, usos: 0, ...h.mejoras };
+  const n = h.nivel || 1;
+  return { ataque: n >= 3 ? 1 : 0, defensa: n >= 5 ? 1 : 0, cuerpo: 0, usos: (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) };
 }
+// Al subir de nivel: siempre +1 de cuerpo, y además eliges una de estas
+export const OPCIONES_MEJORA = [
+  { id: 'ataque', texto: '⚔️ Un dado más de ataque', max: 3 },
+  { id: 'defensa', texto: '🛡️ Un dado más de defensa', max: 3 },
+  { id: 'cuerpo', texto: '❤️ Dos de cuerpo más (en vez de uno)', valor: 1 },
+  { id: 'usos', texto: '✨ Un uso más de tu habilidad', max: 4 }
+];
+// Las que todavía se pueden coger (ataque y defensa tienen tope, para que nadie sea invencible)
+export function mejorasDisponibles(h) { const mj = mejorasDe(h); return OPCIONES_MEJORA.filter((o) => !o.max || mj[o.id] < o.max); }
+// Apunta la elección (y convierte a los héroes antiguos al sistema nuevo sin que pierdan nada)
+export function prepararSubida(h) { if (!h.mejoras) h.mejoras = mejorasDe(h); }   // llamar ANTES de subirle el nivel
+export function elegirMejora(h, id) { prepararSubida(h); h.mejoras[id] = (h.mejoras[id] || 0) + 1; }
+// Qué se gana en cada nivel (para contarlo al subir)
+export function mejoraDeNivel() { return '+1 de cuerpo y una mejora a tu elección'; }
 
 const nombres = { humano: ['Aldo', 'Nerea', 'Bruno', 'Lucía', 'Tomás', 'Irene'], enano: ['Gruñón Barbarroja', 'Brunilda', 'Thorvo', 'Grisa Martillo', 'Dorm', 'Bolva'], elfo: ['Lirael', 'Eldrin', 'Sylva', 'Thalion', 'Aelis', 'Fëanra'], escamado: ['Zarkh', 'Sssandra', 'Kraz', 'Ithra', 'Vorn', 'Sali'] };
 const al = (l) => l[Math.floor(Math.random() * l.length)];

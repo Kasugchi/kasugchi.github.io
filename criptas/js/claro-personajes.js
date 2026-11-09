@@ -208,6 +208,113 @@ export function crearEsqueleto({ escala = 1, ojo = '#ff5a2a', color } = {}) {
   return o;
 }
 
+// Al morir, el monstruo se deshace: cada pieza sale volando y queda en el suelo (lo comparten zombis y momias)
+function hacerDesmontable(o, raiz, cuerpo, piezas) {
+  let restos = null;
+  o.restosAnimar = (dt) => {
+    if (!restos) return false;
+    for (const r of restos) { if (r.quieto) continue; r.v.y -= 14 * dt; r.m.position.addScaledVector(r.v, dt); r.m.rotation.x += r.w.x * dt; r.m.rotation.z += r.w.z * dt; if (r.m.position.y < r.suelo) { r.m.position.y = r.suelo; r.v.multiplyScalar(.3); r.v.y = Math.abs(r.v.y) * .3; if (r.v.length() < .3) r.quieto = true; } }
+    return true;
+  };
+  o.desmontar = (sueloY = 0) => {
+    restos = []; const escena = raiz.parent; if (!escena) return;
+    raiz.updateMatrixWorld(true);
+    for (const m of piezas) {
+      const wp = m.getWorldPosition(new THREE.Vector3()), wq = m.getWorldQuaternion(new THREE.Quaternion());
+      escena.attach(m); m.position.copy(wp); m.quaternion.copy(wq);
+      restos.push({ m, v: new THREE.Vector3((Math.random() - .5) * 3, 1.5 + Math.random() * 3, (Math.random() - .5) * 3), w: new THREE.Vector3((Math.random() - .5) * 8, 0, (Math.random() - .5) * 8), suelo: sueloY + .08 });
+    }
+    cuerpo.visible = false; o.restos = restos;
+  };
+}
+
+// ---------- El zombi: encorvado, brazos por delante, camisa rota y andar arrastrado ----------
+export function crearZombi({ escala = 1, ojo = '#d8ff5a', piel = '#8aa86a', ropa = '#5a5a7a', pantalon = '#4a4038' } = {}) {
+  const { mats, mat, malla } = kit();
+  const raiz = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(cuerpo); cuerpo.scale.setScalar(escala);
+  const piezas = [], pon = (m, padre, x, y, z) => { m.position.set(x, y, z); padre.add(m); piezas.push(m); return m; };
+  const caderas = new THREE.Group(); caderas.position.y = .74; cuerpo.add(caderas);
+  const piernas = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(s * .13, 0, 0); caderas.add(g); pon(malla(new THREE.CapsuleGeometry(.075, .5, 3, 7), pantalon, { borde: .02 }), g, 0, -.34, 0); pon(malla(new THREE.BoxGeometry(.14, .08, .24), '#3a3028', { borde: .015 }), g, 0, -.7, .05); return g; });
+  const torso = new THREE.Group(); torso.position.y = .78; torso.rotation.x = .35; cuerpo.add(torso);   // encorvado
+  pon(malla(new THREE.CapsuleGeometry(.22, .38, 4, 10), ropa, { borde: .025 }), torso, 0, .3, 0);
+  const jirones = pon(malla(new THREE.ConeGeometry(.3, .25, 7, 1, true), ropa, { borde: .015, side: THREE.DoubleSide }), torso, 0, .02, 0); jirones.rotation.x = Math.PI;
+  for (const [x, y, z] of [[.12, .35, .2], [-.1, .2, .21]]) pon(malla(new THREE.SphereGeometry(.06, 6, 5), piel, { borde: 0 }), torso, x, y, z);   // rotos de la camisa
+  const brazos = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(s * .27, .55, 0); torso.add(g); pon(malla(new THREE.CapsuleGeometry(.06, .45, 3, 7), piel, { borde: .02 }), g, 0, -.25, 0); pon(malla(new THREE.SphereGeometry(.09, 8, 6), piel, { borde: .02 }), g, 0, -.52, 0); g.rotation.x = -1.35; return g; });
+  const cabeza = new THREE.Group(); cabeza.position.set(0, .82, .08); torso.add(cabeza);
+  const craneo = pon(malla(new THREE.SphereGeometry(.25, 14, 10), piel, { borde: .025 }), cabeza, 0, 0, 0); craneo.scale.set(1, 1.05, 1);
+  for (const s of [-1, 1]) {
+    const cuenca = new THREE.Mesh(new THREE.SphereGeometry(.06, 8, 6), mat('#2a2a1a')); cuenca.position.set(s * .09, .04, .2); cabeza.add(cuenca);
+    const brasa = new THREE.Mesh(new THREE.SphereGeometry(.028, 6, 6), mat(ojo, { emissive: ojo, emissiveIntensity: 2.2 })); brasa.position.set(s * .09, .04, .245); cabeza.add(brasa);
+  }
+  const boca = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 6), mat('#2a1a1a')); boca.scale.set(1.2, .7, .5); boca.position.set(.02, -.11, .21); cabeza.add(boca);
+  for (let i = 0; i < 4; i++) pon(malla(new THREE.ConeGeometry(.04, .14, 4), '#3a3a2a', { borde: 0 }), cabeza, (i - 1.5) * .09, .24, -.04 * i).rotation.z = (i - 1.5) * .3;   // pelos sueltos
+  raiz.traverse((x) => { if (x.isMesh && !x.userData.esContorno) x.castShadow = true; });
+  const o = baseAnimada(raiz, cuerpo, mats);
+  Object.assign(o, { cabeza, altura: 1.95 * escala, piezas });
+  hacerDesmontable(o, raiz, cuerpo, piezas);
+  o.animar = (dt, t) => {
+    const p = o._comun(dt), v = o.vel;
+    if (o.restosAnimar(dt)) return;
+    o.fase += dt * (2.5 + v * 4);   // arrastra los pies
+    cuerpo.position.y = Math.abs(Math.sin(o.fase)) * .04 * v;
+    cuerpo.rotation.z = Math.sin(o.fase) * .1 * (v + .3);
+    piernas[0].rotation.x = Math.sin(o.fase) * .45 * v; piernas[1].rotation.x = -Math.sin(o.fase) * .45 * v;
+    brazos[0].rotation.x = -1.35 + Math.sin(t * 1.3 + o.fase) * .12; brazos[1].rotation.x = -1.35 + Math.cos(t * 1.1 + o.fase) * .12;
+    cabeza.rotation.z = Math.sin(t * .8 + o.fase) * .25; cabeza.rotation.x = Math.sin(t * .6) * .1;
+    if (o.accion) {
+      const a = o.accion.tipo, s = Math.sin(p * Math.PI);
+      if (a === 'golpe') { brazos[0].rotation.x = -1.35 - 1.2 * s + (p > .5 ? 1.8 * s : 0); brazos[1].rotation.x = brazos[0].rotation.x; torso.rotation.x = .35 + .3 * s; }
+      else if (a === 'herido') { cuerpo.position.x = Math.sin(p * 40) * .07 * (1 - p); cabeza.rotation.z = Math.sin(p * 25) * .5 * (1 - p); }
+      else if (a === 'rugir') { cabeza.rotation.x = -.6 * s; boca.scale.y = .7 + s; brazos[0].rotation.x = -2 * s; brazos[1].rotation.x = -2 * s; }
+    } else boca.scale.y = .7 + Math.max(0, Math.sin(t * 2 + o.fase)) * .3;
+  };
+  return o;
+}
+
+// ---------- La momia: vendas por todas partes, un solo ojo que brilla y una tira suelta que se mece ----------
+export function crearMomia({ escala = 1, ojo = '#5ad8ff', venda = '#e0d2a8' } = {}) {
+  const { mats, mat, malla } = kit();
+  const raiz = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(cuerpo); cuerpo.scale.setScalar(escala);
+  const piezas = [], pon = (m, padre, x, y, z) => { m.position.set(x, y, z); padre.add(m); piezas.push(m); return m; };
+  const oscuro = new THREE.Color(venda).multiplyScalar(.78).getStyle();
+  const vendas = (padre, r, y0, n, paso, inclina = .25) => { for (let i = 0; i < n; i++) { const b = pon(malla(new THREE.TorusGeometry(r, .022, 4, 14), i % 2 ? oscuro : venda, { borde: 0 }), padre, 0, y0 + i * paso, 0); b.rotation.set(Math.PI / 2 + (i % 2 ? inclina : -inclina), 0, 0); } };
+  const caderas = new THREE.Group(); caderas.position.y = .76; cuerpo.add(caderas);
+  const piernas = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(s * .13, 0, 0); caderas.add(g); pon(malla(new THREE.CapsuleGeometry(.085, .52, 3, 8), venda, { borde: .02 }), g, 0, -.36, 0); vendas(g, .09, -.62, 5, .11, .3); return g; });
+  const torso = new THREE.Group(); torso.position.y = .8; torso.rotation.x = .12; cuerpo.add(torso);
+  pon(malla(new THREE.CapsuleGeometry(.23, .42, 4, 10), venda, { borde: .025 }), torso, 0, .3, 0);
+  vendas(torso, .24, .05, 6, .1);
+  const brazos = [-1, 1].map((s) => { const g = new THREE.Group(); g.position.set(s * .29, .56, 0); torso.add(g); pon(malla(new THREE.CapsuleGeometry(.065, .46, 3, 7), venda, { borde: .02 }), g, 0, -.26, 0); vendas(g, .07, -.45, 4, .1, .35); g.rotation.x = -1.1; return g; });
+  const tira = new THREE.Group(); tira.position.set(.18, .1, .2); torso.add(tira);
+  pon(malla(new THREE.BoxGeometry(.06, .45, .01).translate(0, -.22, 0), oscuro, { borde: 0 }), tira, 0, 0, 0);
+  const cabeza = new THREE.Group(); cabeza.position.set(0, .84, .03); torso.add(cabeza);
+  pon(malla(new THREE.SphereGeometry(.25, 14, 10), venda, { borde: .025 }), cabeza, 0, 0, 0);
+  vendas(cabeza, .25, -.12, 4, .08, .4);
+  const brasa = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 6), mat(ojo, { emissive: ojo, emissiveIntensity: 2.4 })); brasa.position.set(-.09, .03, .235); cabeza.add(brasa);
+  const hueco = new THREE.Mesh(new THREE.BoxGeometry(.2, .05, .02), mat('#2a2018')); hueco.position.set(0, .03, .225); cabeza.add(hueco);
+  raiz.traverse((x) => { if (x.isMesh && !x.userData.esContorno) x.castShadow = true; });
+  const o = baseAnimada(raiz, cuerpo, mats);
+  Object.assign(o, { cabeza, altura: 2.05 * escala, piezas });
+  hacerDesmontable(o, raiz, cuerpo, piezas);
+  o.animar = (dt, t) => {
+    const p = o._comun(dt), v = o.vel;
+    if (o.restosAnimar(dt)) return;
+    o.fase += dt * (3 + v * 5);
+    cuerpo.position.y = Math.abs(Math.sin(o.fase)) * .05 * v;
+    piernas[0].rotation.x = Math.sin(o.fase) * .5 * v; piernas[1].rotation.x = -Math.sin(o.fase) * .5 * v;   // andar rígido
+    brazos[0].rotation.x = -1.1 + Math.sin(t * .9 + o.fase) * .08; brazos[1].rotation.x = -1.1 + Math.cos(t * .8 + o.fase) * .08;
+    tira.rotation.x = Math.sin(t * 2.3 + o.fase) * .4; tira.rotation.z = Math.sin(t * 1.7) * .2;
+    cabeza.rotation.y = Math.sin(t * .5 + o.fase) * .25 * (1 - v);
+    brasa.scale.setScalar(1 + Math.sin(t * 4) * .15);
+    if (o.accion) {
+      const a = o.accion.tipo, s = Math.sin(p * Math.PI);
+      if (a === 'golpe') { brazos[1].rotation.x = -1.1 - 1.3 * s + (p > .5 ? 1.9 * s : 0); torso.rotation.y = -.4 * s; }
+      else if (a === 'herido') { cuerpo.position.x = Math.sin(p * 40) * .06 * (1 - p); }
+      else if (a === 'rugir') { cabeza.rotation.x = -.5 * s; brazos[0].rotation.x = -2.2 * s; brazos[1].rotation.x = -2.2 * s; }
+    }
+  };
+  return o;
+}
+
 // =============================================================
 //  HÉROE DEL MODO AVENTURA: raza (aspecto) × clase (ropa, arma y gestos).
 //  raza: humano | enano | elfo | escamado · clase: barbaro | mago | ingeniero | explorador
