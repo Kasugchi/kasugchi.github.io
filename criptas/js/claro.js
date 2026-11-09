@@ -13,7 +13,7 @@ import { UnrealBloomPass } from './vendor/addons/postprocessing/UnrealBloomPass.
 import { OutputPass } from './vendor/addons/postprocessing/OutputPass.js';
 import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
-import { crearMundo, SITIOS } from './claro-mundo.js';
+import { crearMundo, SITIOS, usarMapa } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe } from './claro-personajes.js';
 import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
@@ -48,6 +48,8 @@ if (!MOVIL && !params.has('sinbrillo')) {
 }
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight); });
 
+usarMapa(PAR.mapa);   // cada parada, su sitio para cada cosa
+const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido();
@@ -88,8 +90,8 @@ mundo.obstaculos.push({ x: SITIOS.guarda.x, z: SITIOS.guarda.z, r: .6 });
 
 // ---------- los esqueletos, en dos grupos ----------
 const GRUPOS = [
-  { nombre: PAR.enemigo.grupos[0], ancla: new THREE.Vector3(12, 0, -6), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.nombre }] },
-  { nombre: PAR.enemigo.grupos[1], ancla: new THREE.Vector3(18.5, 0, 12.5), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.jefe, jefe: true }, { n: PAR.enemigo.nombre }] }
+  { nombre: PAR.enemigo.grupos[0], ancla: new THREE.Vector3(...(MAPA.grupos ? [MAPA.grupos[0][0], 0, MAPA.grupos[0][1]] : [12, 0, -6])), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.nombre }] },
+  { nombre: PAR.enemigo.grupos[1], ancla: new THREE.Vector3(...(MAPA.grupos ? [MAPA.grupos[1][0], 0, MAPA.grupos[1][1]] : [18.5, 0, 12.5])), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.jefe, jefe: true }, { n: PAR.enemigo.nombre }] }
 ];
 for (const g of GRUPOS) {
   g.vivo = true;
@@ -105,7 +107,7 @@ for (const g of GRUPOS) {
 // ---------- setas de luz, cofre, cartel en venta ----------
 const interactivos = [];
 function interactivo(def) { def.anillo = ui.anillo(def.color || '#ffe08a', def.r || 1.1); interactivos.push(def); return def; }
-const SETAS = [[-12, -2], [-22, 9], [6, -14], [9, 9], [-8, 14], [2, 5]];
+const SETAS = MAPA.objetos || [[-12, -2], [-22, 9], [6, -14], [9, 9], [-8, 14], [2, 5]];
 SETAS.forEach(([x, z], idx) => {
   const g = new THREE.Group(), y = mundo.alturaEn(x, z); g.position.set(x, y, z); escena.add(g);
   g.add(pieza(new THREE.CylinderGeometry(.09, .13, .55, 8).translate(0, .27, 0), '#f3ecd9', { borde: .02 }));
@@ -117,7 +119,7 @@ SETAS.forEach(([x, z], idx) => {
 // Cofre junto a la colina de la cripta
 const cofre = new THREE.Group();
 {
-  const x = 22, z = -1.5; cofre.position.set(x, mundo.alturaEn(x, z), z); cofre.rotation.y = -1.2; escena.add(cofre);
+  const [x, z] = MAPA.cofre || [22, -1.5]; cofre.position.set(x, mundo.alturaEn(x, z), z); cofre.rotation.y = -1.2; escena.add(cofre);
   cofre.add(pieza(new THREE.BoxGeometry(1.1, .6, .7).translate(0, .3, 0), '#9a5a34', { borde: .03 }));
   const tapa = new THREE.Group(); tapa.position.set(0, .6, -.35); cofre.add(tapa);
   tapa.add(pieza(new THREE.CylinderGeometry(.35, .35, 1.1, 12, 1, false, 0, Math.PI).rotateZ(Math.PI / 2).translate(0, 0, .35), '#a8643a', { borde: .03 }));
@@ -128,7 +130,7 @@ const cofre = new THREE.Group();
 }
 // Parcela en venta (el «algún día tendrás tu casa aquí»)
 {
-  const x = -24, z = 18, g = new THREE.Group(); g.position.set(x, mundo.alturaEn(x, z), z); escena.add(g);
+  const [x, z] = MAPA.parcela || [-24, 18], g = new THREE.Group(); g.position.set(x, mundo.alturaEn(x, z), z); escena.add(g);
   for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, p = pieza(new THREE.BoxGeometry(.12, .8, .12).translate(0, .4, 0), '#c9a06a', { borde: .02 }); p.position.set(Math.cos(a) * 4, mundo.alturaEn(x + Math.cos(a) * 4, z + Math.sin(a) * 4) - g.position.y, Math.sin(a) * 4); g.add(p); }
   const cartel = pieza(new THREE.BoxGeometry(1.4, .8, .08), '#f3e2c4', { borde: .03 }); cartel.position.set(0, 1.5, 0); g.add(cartel);
   g.add(pieza(new THREE.CylinderGeometry(.06, .06, 1.4, 5).translate(0, .7, 0), '#6e4a36'));
@@ -141,7 +143,8 @@ interactivo({ tipo: 'brezo', nombre: GUIA, verbo: 'Hablar', obj: brezo.grupo, po
 interactivo({ tipo: 'cartel', nombre: 'Cartel', verbo: 'Leer', obj: null, pos: SITIOS.cartel.clone().setY(mundo.alturaEn(SITIOS.cartel.x, SITIOS.cartel.z)), r: 1.7 });
 interactivo({ tipo: 'hoguera', nombre: 'Hoguera', verbo: 'Descansar', obj: null, pos: SITIOS.hoguera.clone().setY(mundo.alturaEn(SITIOS.hoguera.x, SITIOS.hoguera.z)), r: 2.4, color: '#ffb36a' });
 interactivo({ tipo: 'estanque', nombre: 'Estanque', verbo: 'Mirar', obj: null, pos: new THREE.Vector3(SITIOS.estanque.x + 6.4, 0, SITIOS.estanque.z).setY(mundo.alturaEn(SITIOS.estanque.x + 6.4, SITIOS.estanque.z)), r: 1.6, color: '#7fe0ff' });
-interactivo({ tipo: 'cripta', nombre: PAR.cripta.nombre, corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: SITIOS.cripta.clone().add(new THREE.Vector3(-1.8, 0, 0)).setY(mundo.alturaEn(SITIOS.cripta.x - 1.8, SITIOS.cripta.z)), r: 2.2, color: '#c9a2ff' });
+const FRENTE = new THREE.Vector3(Math.sin(SITIOS.criptaGiro), 0, Math.cos(SITIOS.criptaGiro));   // hacia donde mira la puerta de la cripta
+{ const p = SITIOS.cripta.clone().addScaledVector(FRENTE, 1.8); interactivo({ tipo: 'cripta', nombre: PAR.cripta.nombre, corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: p.setY(mundo.alturaEn(p.x, p.z)), r: 2.2, color: '#c9a2ff' }); }
 interactivo({ tipo: 'pasarela', nombre: 'Pasarela de Morrandar', corto: 'Morrandar', verbo: 'Subir', obj: null, pos: SITIOS.llegada.clone().add(new THREE.Vector3(0, 0, -1.5)), r: 1.8 });
 const rotCripta = ui.rotulo(mundo.cripta, PAR.cripta.nombre, { tipo: 'cosa', altura: 5.6 });
 
@@ -513,7 +516,7 @@ cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) &
 if (params.has('rapido')) { $('#portada').remove(); CAM.introT = 99; CAM.introEmpezada = true; }
 if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin portada ni bajada
   $('#portada').remove(); CAM.modo = 'paseo'; H.bloqueadoFin = true; H.bloqueado = false; $('#hud').classList.add('ver');
-  H.pos.set(SITIOS.cripta.x - 4, 0, SITIOS.cripta.z + .5); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); heroe.mirarA(-Math.PI / 2); CAM.yaw = -1.25; CAM.objetivo.copy(H.pos);   // la cámara, al oeste: te ve salir con la cripta detrás
+  H.pos.copy(SITIOS.cripta).addScaledVector(FRENTE, 4); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); heroe.mirarA(SITIOS.criptaGiro); CAM.yaw = SITIOS.criptaGiro + .32; CAM.objetivo.copy(H.pos);   // la cámara, delante de la puerta: te ve salir con la cripta detrás
   const caido = params.has('caido');
   history.replaceState(null, '', PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}`);
   if (caido) setTimeout(() => hablar(GUIA, TX.rescateCripta), 900);

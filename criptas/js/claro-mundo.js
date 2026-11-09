@@ -17,8 +17,28 @@ export const SITIOS = {
   cartel: new THREE.Vector3(1.8, 0, -24),
   estanque: new THREE.Vector3(-17, 0, 6),
   cripta: new THREE.Vector3(27, 0, 7),          // la puerta (mirando al oeste)
-  colina: new THREE.Vector3(33, 0, 7)
+  colina: new THREE.Vector3(33, 0, 7),
+  criptaGiro: -Math.PI / 2                      // hacia dónde mira la puerta (aquí, al oeste)
 };
+// Charcas extra (el pantano tiene muchas): [x, z, radio]
+let CHARCAS = [];
+let ARBOLES = [[-11, -6, 1.15, 77], [9, -17, 1, 31], [-21, -15, 1.3, 91]];
+let ROCAS = [[-9, -27, 1.2], [6, -28, .8], [12, -9, .7], [-20, 0, 1.4], [-13, 12, .9], [4, 14, 1.1], [20, -14, 1.6], [-27, -6, .9], [15, 18, .7], [-2, 22, 1.3], [24, -4, .6]];
+// Cada parada de Morrandar puede traer su propio mapa: dónde está cada cosa, el camino, charcas, árboles y rocas
+export function usarMapa(m) {
+  if (!m) return;
+  for (const [k, v] of Object.entries(m.sitios || {})) SITIOS[k] = new THREE.Vector3(v[0], 0, v[1]);
+  if (m.criptaGiro != null) SITIOS.criptaGiro = m.criptaGiro;
+  if (m.camino) { CAMINO.length = 0; CAMINO.push(...m.camino); }
+  if (m.charcas) CHARCAS = m.charcas;
+  if (m.arboles) ARBOLES = m.arboles;
+  if (m.rocas) ROCAS = m.rocas;
+}
+// ¿Cae en el agua (estanque o charca), con un margen?
+export function enAgua(x, z, margen = 0) {
+  if (Math.hypot(x - SITIOS.estanque.x, z - SITIOS.estanque.z) < 6.6 + margen) return true;
+  return CHARCAS.some(([cx, cz, r]) => Math.hypot(x - cx, z - cz) < r + margen);
+}
 // El camino de tierra, como una línea de puntos
 const CAMINO = [[-6, -31], [-4, -24], [-1, -19], [1, -12], [3, -6], [8, -1], [14, 3], [20, 6], [25, 7]];
 
@@ -39,6 +59,7 @@ export function alturaEn(x, z) {
   h += suave(36, 75, d) * (fbm(x * .03, z * .03) * 22 + 2);             // colinas del borde
   const de = Math.hypot(x - SITIOS.estanque.x, z - SITIOS.estanque.z);
   h -= (1 - suave(3, 7.5, de)) * 1.6;                                   // el estanque
+  for (const [cx, cz, r] of CHARCAS) h -= (1 - suave(r * .45, r * 1.15, Math.hypot(x - cx, z - cz))) * 1.4;   // y las charcas
   h *= 1 - (1 - suave(1.2, 4, distCamino(x, z))) * .6;                  // el camino, más llano
   const dm = Math.hypot(x - SITIOS.morrandar.x, (z - SITIOS.morrandar.z) * .9);
   h *= suave(36, 60, dm);                                               // Morrandar pisa llano
@@ -142,7 +163,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
     let k = 0;
     for (let i = 0; k < N && i < N * 4; i++) {
       const x = (rnd() - .5) * 110, z = (rnd() - .5) * 100;
-      if (distCamino(x, z) < 1.7 || Math.hypot(x - SITIOS.estanque.x, z - SITIOS.estanque.z) < 6.8) continue;
+      if (distCamino(x, z) < 1.7 || enAgua(x, z, .2)) continue;
       if (Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) < 9 || Math.hypot(x, z) > 58) continue;
       if (fbm(x * .15 + 9, z * .15) < .36) continue;                          // calvas: la hierba va en matas
       p.set(x, alturaEn(x, z) - .02, z); e.set((rnd() - .5) * .3, rnd() * Math.PI, (rnd() - .5) * .3); q.setFromEuler(e);
@@ -163,7 +184,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
     for (let i = 0; i < N; i++) {
       const g = Math.floor(rnd() * 40), cx = ruido(g * 3.1, 1) * 90 - 45, cz = ruido(1, g * 2.7) * 80 - 40;
       const x = cx + (rnd() - .5) * 4, z = cz + (rnd() - .5) * 4;
-      if (distCamino(x, z) < 1.8 || Math.hypot(x - SITIOS.estanque.x, z - SITIOS.estanque.z) < 7) { m.makeScale(0, 0, 0); flores.setMatrixAt(i, m); continue; }
+      if (distCamino(x, z) < 1.8 || enAgua(x, z, .4)) { m.makeScale(0, 0, 0); flores.setMatrixAt(i, m); continue; }
       m.makeRotationY(rnd() * 6); m.setPosition(x, alturaEn(x, z), z); const e = .8 + rnd() * .7; m.scale(new THREE.Vector3(e, e, e));
       flores.setMatrixAt(i, m); flores.setColorAt(i, new THREE.Color(colores[g % colores.length]));
     }
@@ -203,7 +224,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
   }
   {
     const hay = [];
-    const sitio = (x, z) => distCamino(x, z) > 4 && Math.hypot(x - SITIOS.estanque.x, z - SITIOS.estanque.z) > 9 && Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) > 11
+    const sitio = (x, z) => distCamino(x, z) > 4 && !enAgua(x, z, 2.4) && Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) > 11
       && Math.hypot(x - SITIOS.hoguera.x, z - SITIOS.hoguera.z) > 7 && !(Math.abs(x + 6) < 7 && z < -28) && !hay.some(([a, b]) => Math.hypot(a - x, b - z) < 5);
     let n = 0;
     for (let i = 0; i < 500 && n < (movil ? 40 : 60); i++) {
@@ -211,7 +232,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
       if (!sitio(x, z)) continue;
       arbol(x, z, .85 + rnd() * .6, i * 13 + 5); hay.push([x, z]); n++;
     }
-    arbol(-11, -6, 1.15, 77); arbol(9, -17, 1, 31); arbol(-21, -15, 1.3, 91);   // unos pocos dentro del claro, para dar sombra
+    for (const [x, z, e, sem] of ARBOLES) arbol(x, z, e, sem);   // unos pocos dentro del claro, para dar sombra
     // el vaivén de las copas: lo calcula la gráfica según la altura y la posición de cada vértice
     const mecer = (m) => { m.onBeforeCompile = (s) => { s.uniforms.viento = viento; s.vertexShader = 'uniform float viento;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n float alto = max(0., position.y - 3.);\n transformed.x += sin(viento * .9 + position.x * .15 + position.z * .1) * .035 * alto;\n transformed.z += cos(viento * .7 + position.z * .15) * .025 * alto;'); }; return m; };
     const troncos = new THREE.Mesh(mergeGeometries(geoTroncos), toon(P.tronco)); troncos.castShadow = true;
@@ -230,7 +251,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
     if (e > .5) obstaculos.push({ x, z, r: e * .9 });
     return m;
   }
-  [[-9, -27, 1.2], [6, -28, .8], [12, -9, .7], [-20, 0, 1.4], [-13, 12, .9], [4, 14, 1.1], [20, -14, 1.6], [-27, -6, .9], [15, 18, .7], [-2, 22, 1.3], [24, -4, .6]].forEach(([x, z, e], i) => roca(x, z, e, i + 3));
+  ROCAS.forEach(([x, z, e], i) => roca(x, z, e, i + 3));
   {
     const g = new THREE.DodecahedronGeometry(1, 0), p = g.attributes.position;
     for (let i = 0; i < p.count; i++) { const k = 1 + (ruido(p.getX(i) * 2, p.getZ(i) * 2) - .5) * .4; p.setXYZ(i, p.getX(i) * k, p.getY(i) * k * .6, p.getZ(i) * k); }
@@ -265,6 +286,13 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
   agua.position.set(SITIOS.estanque.x, -.62, SITIOS.estanque.z); escena.add(agua);
   animables.push((t) => { agua.material.uniforms.t.value = t; });
   obstaculos.push({ x: SITIOS.estanque.x, z: SITIOS.estanque.z, r: 5.9 });
+  for (const [cx, cz, r] of CHARCAS) {   // las charcas: la misma agua, más pequeña, con sus juncos
+    const ch = new THREE.Mesh(agua.geometry, agua.material); ch.scale.set(r / 6.6, 1, r / 6.6); ch.position.set(cx, -.55, cz); escena.add(ch);
+    obstaculos.push({ x: cx, z: cz, r: r * .85 });
+    const tallos = [];
+    for (let i = 0; i < 8; i++) { const a = rnd() * 6.28, d = r + rnd() * .6, x = cx + Math.cos(a) * d, z = cz + Math.sin(a) * d, al = 1 + rnd() * .8; tallos.push(new THREE.CylinderGeometry(.03, .05, al, 4).translate(0, al / 2, 0).applyMatrix4(new THREE.Matrix4().makeRotationZ((rnd() - .5) * .3).setPosition(x, alturaEn(x, z) - .1, z))); }
+    escena.add(new THREE.Mesh(mergeGeometries(tallos), toon('#4f7a3a')));
+  }
   for (let i = 0; i < 6; i++) {
     const a = rnd() * 6.28, d = 1.5 + rnd() * 3.8, n = pieza(new THREE.CircleGeometry(.45 + rnd() * .25, 12, .4, 5.6).rotateX(-Math.PI / 2), '#58b05a', { sombra: false, side: THREE.DoubleSide });
     n.position.set(SITIOS.estanque.x + Math.cos(a) * d, -.58, SITIOS.estanque.z + Math.sin(a) * d); n.rotation.y = rnd() * 6; escena.add(n);
@@ -355,7 +383,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
     colina.scale.set(1, .62, 1.05); colina.position.set(cc.x, alturaEn(cc.x, cc.z) - .4, cc.z); escena.add(colina);
     for (let i = 0; i < 14; i++) { const a = rnd() * 6.28, d = 3 + rnd() * 6; roca(cc.x + Math.cos(a) * d, cc.z + Math.sin(a) * d, .3 + rnd() * .5, 300 + i).position.y += 2 + (1 - d / 10) * 3.5; }
     obstaculos.push({ x: cc.x, z: cc.z, r: 9.4 });
-    cripta.position.set(cp.x, alturaEn(cp.x, cp.z), cp.z); cripta.rotation.y = -Math.PI / 2; escena.add(cripta);
+    cripta.position.set(cp.x, alturaEn(cp.x, cp.z), cp.z); cripta.rotation.y = SITIOS.criptaGiro; escena.add(cripta);
     const piedra = '#8a8198', piedra2 = '#6f6680';
     for (const lado of [-1, 1]) {
       const pil = pieza(new THREE.BoxGeometry(.9, 4.2, .9), piedra, { borde: .04, flatShading: true }); pil.position.set(lado * 1.7, 2.1, 0); pil.rotation.z = lado * .04; cripta.add(pil);

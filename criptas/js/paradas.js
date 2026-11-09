@@ -39,6 +39,18 @@ export const PARADAS = {
       colores: { cieloAlto: '#1f2a3a', cieloMedio: '#5a6a5a', horizonte: '#b8c08a', niebla: '#8a9a78', hierba: '#5a7a3a', hierbaOscura: '#3a5a2a', hierbaClara: '#8a9a4a', camino: '#7a6a4a', tierra: '#4a3a2a', tronco: '#4a3a2e', copa: '#4a6a3a', copa2: '#5a7a42', copa3: '#3a5232', agua: '#5a8a5a', aguaHonda: '#2a4a32', roca: '#6a7a6a', roca2: '#5a6a5a' },
       niebla: [20, 120], neblinaBaja: '#d8e8c8', flores: ['#c8e05a', '#e8e0a0', '#9ad0a0'], hojas: ['#7a8a4a', '#5a6a3a', '#a8a050', '#6a5a3a'], luzSol: '#d8e0b0', cielo: '#a8b8a0'
     },
+    // Su propio mapa: la cripta al oeste, el fuego al este y el suelo lleno de charcas
+    mapa: {
+      sitios: { hoguera: [8, -16], guarda: [10.5, -17.6], cartel: [-10, -21], estanque: [9, 5], cripta: [-26, 5], colina: [-32, 5] },
+      criptaGiro: Math.PI / 2,
+      camino: [[-6, -31], [-8, -24], [-11, -18], [-15, -12], [-18, -6], [-20, -1], [-22, 3], [-24, 5], [-25, 5]],
+      charcas: [[19, -4, 3.4], [-1, 13, 3.8], [21, 15, 3], [-12, 17, 3.2], [2, -7, 2.4], [-30, -16, 2.8], [30, 4, 2.6]],
+      arboles: [[3, -24, 1.1, 41], [15, -11, 1.1, 53], [-4, -2, 1.25, 67], [-20, 18, 1.2, 83]],
+      rocas: [[-13, -27, 1.1], [11, -27, .8], [-7, 3, .7], [25, -12, 1.4], [-28, -8, 1], [11, 20, .9], [2, 24, 1.2], [27, 10, .7], [-17, 9, .8]],
+      grupos: [[-13, -7], [-18, 13]],
+      objetos: [[14, -1], [-6, 9], [17, 10], [-8, 21], [6, -11], [-24, -12]],
+      cofre: [-31, -6], parcela: [22, -21]
+    },
     guia: { nombre: 'Abuela Cieno', sub: 'Curandera del pantano', modelo: { tunica: '#5a4a6a', adorno: '#a8c870', sombrero: 'pico', colorSombrero: '#3a2a4a', pelo: '#d8d8d0', piel: '#c8d0a8', baston: 'cristal', cristal: '#9aff5a' } },
     objeto: { nombre: 'Flor de ciénaga', plural: 'flores de ciénaga', corto: 'Flores de ciénaga', sombrero: '#e8a0ff', brillo: '#c060ff', chispas: '#e8c0ff' },
     enemigo: { tipo: 'zombi', nombre: 'Zombi', plural: 'zombis', grupos: ['Zombis del barro', 'Guardia de la ciénaga'], jefe: 'Sargento Fangoso', color: '#9ab07a', ojo: '#d8ff5a' },
