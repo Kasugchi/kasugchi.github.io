@@ -52,7 +52,7 @@ const SEMILLA = params.get('semilla') || PAR.cripta.semilla;
 const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || PAR.cripta.nivel));
 const AL_SITIO = PAR.corto.replace(/^El /, 'al ').replace(/^La /, 'a la ');
 const ESCENARIO = PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}&`;
-const VOLVER = DEL_PUEBLO ? 'pueblo.html' : (PID === 'claro' ? 'claro.html?desde=cripta' : `${ESCENARIO}desde=cripta`);
+const VOLVER = DEL_PUEBLO ? 'pueblo.html?desde=escala' : (PID === 'claro' ? 'claro.html?desde=cripta' : `${ESCENARIO}desde=cripta`);
 const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'));
 if (!DEL_PUEBLO) mision.titulo = PAR.cripta.titulo;   // la de cada parada tiene nombre propio; las de los encargos, el suyo
 // Los monstruos de la zona: en el pantano, zombis y brujas (el jefe conserva su nombre y su fuerza)
@@ -248,7 +248,7 @@ async function ganar() {
 }
 async function expulsado() {
   H.bloqueado = true; $('#fundido').classList.add('ver'); await espera(900); delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true);
-  location.href = DEL_PUEBLO ? 'pueblo.html?caido=1' : (PID === 'claro' ? 'claro.html?desde=cripta&caido=1' : `${ESCENARIO}desde=cripta&caido=1`);
+  location.href = DEL_PUEBLO ? 'pueblo.html?desde=escala&caido=1' : (PID === 'claro' ? 'claro.html?desde=cripta&caido=1' : `${ESCENARIO}desde=cripta&caido=1`);
 }
 function salir() { delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = VOLVER; }, 800); }
 

@@ -244,7 +244,7 @@ async function interactuarYa(it) {
     if (estado.mision !== 'hecha') await hablar(PAR.cripta.nombre, [TX.cerrada]);
     else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['Bajar a la cripta', () => { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`; }, 700); }], ['Ahora no', null]]);
   } else if (t === 'pasarela') {
-    await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html'; }], ['Quedarme', null]]);
+    await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html?desde=escala'; }], ['Quedarme', null]]);
   }
 }
 
