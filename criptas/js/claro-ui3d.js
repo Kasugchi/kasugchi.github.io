@@ -50,7 +50,7 @@ export function crearUI3D(escena, camara) {
     quitar(f) { if (!f) return; escena.remove(f.s); const i = fijos.indexOf(f); if (i >= 0) fijos.splice(i, 1); },
     // Anillo luminoso en el suelo: «esto se puede tocar»
     anillo(color = '#ffe08a', r = 1) {
-      const m = new THREE.Mesh(new THREE.RingGeometry(r * .82, r, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
+      const m = new THREE.Mesh(new THREE.RingGeometry(r * .9, r, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
       m.renderOrder = 2; escena.add(m); m.visible = false; return m;
     },
     // Número que sube y se desvanece (daño, curación, oro)

@@ -119,12 +119,12 @@ interactivo({ tipo: 'brezo', nombre: 'Brezo', verbo: 'Hablar', obj: brezo.grupo,
 interactivo({ tipo: 'cartel', nombre: 'Cartel', verbo: 'Leer', obj: null, pos: SITIOS.cartel.clone().setY(mundo.alturaEn(SITIOS.cartel.x, SITIOS.cartel.z)), r: 1.7 });
 interactivo({ tipo: 'hoguera', nombre: 'Hoguera', verbo: 'Descansar', obj: null, pos: SITIOS.hoguera.clone().setY(mundo.alturaEn(SITIOS.hoguera.x, SITIOS.hoguera.z)), r: 2.4, color: '#ffb36a' });
 interactivo({ tipo: 'estanque', nombre: 'Estanque', verbo: 'Mirar', obj: null, pos: new THREE.Vector3(SITIOS.estanque.x + 6.4, 0, SITIOS.estanque.z).setY(mundo.alturaEn(SITIOS.estanque.x + 6.4, SITIOS.estanque.z)), r: 1.6, color: '#7fe0ff' });
-interactivo({ tipo: 'cripta', nombre: 'Cripta de los Huesos', verbo: 'Entrar', obj: mundo.cripta, pos: SITIOS.cripta.clone().add(new THREE.Vector3(-1.8, 0, 0)).setY(mundo.alturaEn(SITIOS.cripta.x - 1.8, SITIOS.cripta.z)), r: 2.2, color: '#c9a2ff' });
-interactivo({ tipo: 'pasarela', nombre: 'Pasarela de Morrandar', verbo: 'Subir', obj: null, pos: SITIOS.llegada.clone().add(new THREE.Vector3(0, 0, -1.5)), r: 1.8 });
+interactivo({ tipo: 'cripta', nombre: 'Cripta de los Huesos', corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: SITIOS.cripta.clone().add(new THREE.Vector3(-1.8, 0, 0)).setY(mundo.alturaEn(SITIOS.cripta.x - 1.8, SITIOS.cripta.z)), r: 2.2, color: '#c9a2ff' });
+interactivo({ tipo: 'pasarela', nombre: 'Pasarela de Morrandar', corto: 'Morrandar', verbo: 'Subir', obj: null, pos: SITIOS.llegada.clone().add(new THREE.Vector3(0, 0, -1.5)), r: 1.8 });
 const rotCripta = ui.rotulo(mundo.cripta, 'Cripta de los Huesos', { tipo: 'cosa', altura: 5.6 });
 
 // ---------- cámara en tercera persona ----------
-const CAM = { yaw: Math.PI * .92, pitch: .38, dist: 9, objetivo: new THREE.Vector3(), temblor: 0, modo: 'intro', foco: null, mirar: null, introT: 0 };
+const CAM = { yaw: 3.93, pitch: .38, dist: 9, objetivo: new THREE.Vector3(), temblor: 0, modo: 'intro', foco: null, mirar: null, introT: 0 };
 const cam = {
   get position() { return camara.position; },
   temblar(s) { CAM.temblor = Math.max(CAM.temblor, s); },
@@ -137,7 +137,7 @@ function actualizarCamara(dt) {
     // Bajada por la pasarela: la cámara acompaña de lado con Morrandar detrás
     if (CAM.introEmpezada) CAM.introT += dt; const p = Math.min(1, CAM.introT / 7);
     obj = heroe.grupo.position.clone().add(new THREE.Vector3(0, 1.4, 0));
-    const e = p * p * (3 - 2 * p), yaw = THREE.MathUtils.lerp(.8, Math.PI * .92, e), dist = THREE.MathUtils.lerp(38, 9, e), pitch = THREE.MathUtils.lerp(.05, .38, e);
+    const e = p * p * (3 - 2 * p), yaw = THREE.MathUtils.lerp(.8, 3.93, e), dist = THREE.MathUtils.lerp(38, 9, e), pitch = THREE.MathUtils.lerp(.05, .38, e);
     CAM.yaw = yaw; CAM.dist = dist; CAM.pitch = pitch;
   } else if (CAM.modo === 'combate') {
     obj = CAM.foco.clone().add(new THREE.Vector3(0, .6, 0)); if (CAM.mirar) obj.lerp(CAM.mirar, .35);
@@ -159,11 +159,11 @@ const hud = {
     for (let i = 0; i < estado.max; i++) { const s = document.createElement('i'); s.className = i < estado.cuerpo ? 'lleno' : ''; c.appendChild(s); }
     $('#oro').textContent = estado.oro; $('#pociones').textContent = estado.pociones; $('#bolas').textContent = estado.bolas;
     const m = $('#mision');
-    if (estado.mision === 'nueva') m.innerHTML = '<b>El claro</b><span>Habla con la guardabosques junto a la hoguera</span>';
+    if (estado.mision === 'nueva') m.innerHTML = '<b>El claro</b><span>Habla con Brezo, junto a la hoguera</span>';
     else if (estado.mision === 'activa') {
       const g = GRUPOS.filter((x) => !x.vivo).length;
-      m.innerHTML = `<b>El claro de los huesos</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">Setas de luz: ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">Grupos de esqueletos: ${g}/2</span>${estado.setas >= 3 && g >= 2 ? '<span class="volver">¡Vuelve con Brezo!</span>' : ''}`;
-    } else if (estado.mision === 'hecha') m.innerHTML = '<b>La cripta está abierta</b><span>Entra cuando quieras… si te atreves</span>';
+      m.innerHTML = `<b>El claro de los huesos</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">Setas de luz ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">Esqueletos ${g}/2</span>${estado.setas >= 3 && g >= 2 ? '<span class="volver">¡Vuelve con Brezo!</span>' : ''}`;
+    } else if (estado.mision === 'hecha') m.innerHTML = '<b>La cripta está abierta</b><span>Entra… si te atreves</span>';
   },
   acciones(lista, alElegir) {
     const b = $('#acciones'); b.innerHTML = ''; b.hidden = !lista.length;
@@ -383,7 +383,7 @@ function cercanos() {
   const b = $('#accion');
   if (H.cerca && !dialogo) {
     const it = H.cerca; it.anillo.visible = true; it.anillo.position.set(it.pos.x, mundo.alturaEn(it.pos.x, it.pos.z) + .06, it.pos.z); it.anillo.scale.setScalar(1 + Math.sin(t * 4) * .06);
-    b.hidden = false; b.innerHTML = `<kbd>${MOVIL ? '👆' : 'E'}</kbd>${it.verbo} · ${it.nombre}`;
+    b.hidden = false; b.innerHTML = `<kbd>${MOVIL ? '👆' : 'E'}</kbd><span>${it.verbo} · ${MOVIL ? (it.corto || it.nombre) : it.nombre}</span>`;
   } else b.hidden = true;
 }
 function animarCosas(dt) {
@@ -394,7 +394,8 @@ function bucle() {
   if (CAM.modo === 'intro' && !H.bloqueadoFin) {
     const p = Math.min(1, CAM.introT / 6.5);
     const desde = new THREE.Vector3(-6, 22.5, -66), hasta = SITIOS.llegada.clone().setY(.15);
-    H.pos.lerpVectors(desde, hasta, p); H.pos.y += Math.sin(p * Math.PI) * -1.2 + .2; heroe.vel = .75; heroe.mirarA(Math.atan2(hasta.x - desde.x, hasta.z - desde.z));
+    if (p < .88) { H.pos.lerpVectors(desde, hasta, p / .88); H.pos.y += Math.sin(p / .88 * Math.PI) * -1.2 + .2; }
+    else { const q = (p - .88) / .12; H.pos.set(hasta.x + 1.2 * q, 0, hasta.z + 4.5 * q); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); }   // unos pasos ya en la hierba heroe.vel = .75; heroe.mirarA(Math.atan2(hasta.x - desde.x, hasta.z - desde.z));
     if (p >= 1) { H.bloqueadoFin = true; CAM.modo = 'paseo'; H.bloqueado = false; heroe.vel = 0; $('#hud').classList.add('ver'); brezo.hacer('saludar', 1.2); hud.banner('El claro de los huesos', 'heroe'); }
   }
   moverHeroe(dt); rondaEsqueletos(dt); cercanos(); animarCosas(dt);
