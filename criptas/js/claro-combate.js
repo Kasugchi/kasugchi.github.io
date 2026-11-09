@@ -21,10 +21,21 @@ const una = (l) => l[Math.floor(Math.random() * l.length)];
 export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, heroe, estado }) {
   const C = { activo: false };
   let tablero = null, unidades = [], casillas = [], resolver = null, modoEleccion = null, alcanzables = new Map(), anillo = null, tiempo = 0;
+  let G = null;   // la rejilla del combate: { celda(i, j), pasa(a, b) } (el círculo del claro o la propia mazmorra)
   const tweens = [];
 
   // ---------- el tablero ----------
   function montar(centro) {
+    if (mundo.tableroCombate) {   // en la mazmorra el suelo ya es el tablero: solo hace falta poder iluminar casillas
+      G = mundo.tableroCombate(); casillas = G.casillas;
+      const libres = casillas.filter((c) => !c.tapada);
+      const brillo = new THREE.InstancedMesh(new THREE.PlaneGeometry(G.T * .86, G.T * .86).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .55, depthWrite: false }), libres.length);
+      brillo.renderOrder = 3; libres.forEach((c, k) => { c.k = k; });
+      const g = new THREE.Group(); g.add(brillo); escena.add(g);
+      tablero = { g, brillo, libres, externo: true, cx: centro.x, cz: centro.z, y0: 0, nacer: 9 };
+      pintar(); return;
+    }
+    G = { celda: (i, j) => (i >= 0 && j >= 0 && i < N && j < N ? casillas[i * N + j] : null), pasa: () => true };
     const cx = Math.round(centro.x / T) * T, cz = Math.round(centro.z / T) * T, y0 = mundo.alturaEn(cx, cz);
     casillas = [];
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
@@ -56,6 +67,10 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   function pintar() {
     if (!tablero) return;
     const { losas, marco, brillo, libres, nacer } = tablero;
+    if (tablero.externo) {
+      for (const c of libres) { const a = alcanzables.get(c), sel = modoEleccion && a; esc.setScalar(sel ? 1 : .0001); brillo.setMatrixAt(c.k, m4.compose(v3.set(c.x, c.y + .07, c.z), q0, esc)); if (sel) brillo.setColorAt(c.k, new THREE.Color(a === 'objetivo' ? '#ff6a5a' : a === 'hechizo' ? '#ffa24a' : '#7fe0ff')); }
+      brillo.instanceMatrix.needsUpdate = true; if (brillo.instanceColor) brillo.instanceColor.needsUpdate = true; return;
+    }
     for (const c of libres) {
       const d = Math.hypot(c.i - MEDIO, c.j - MEDIO), k = Math.max(0, Math.min(1, nacer * 2.2 - d * .28)), s = k < 1 ? 1 - Math.pow(1 - k, 3) * 1 + Math.sin(k * Math.PI) * .15 : 1;
       esc.set(s, s, s);
@@ -69,16 +84,15 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     losas.instanceMatrix.needsUpdate = marco.instanceMatrix.needsUpdate = brillo.instanceMatrix.needsUpdate = true;
     if (brillo.instanceColor) brillo.instanceColor.needsUpdate = true;
   }
-  const casilla = (i, j) => casillas[i * N + j];
   const libre = (c, ignorar) => c && !c.tapada && !unidades.some((u) => u.vivo && u !== ignorar && u.c === c);
-  const vecinos = (c) => [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => casilla(c.i + a, c.j + b)).filter((x) => x && x.i >= 0 && x.i < N && x.j >= 0 && x.j < N && Math.abs(x.i - c.i) + Math.abs(x.j - c.j) === 1);
+  const vecinos = (c) => [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([a, b]) => G.celda(c.i + a, c.j + b)).filter((x) => x && G.pasa(c, x));   // sin atravesar paredes
   // Camino más corto (anchura) desde c hasta lo que cumpla «meta», sin atravesar a nadie
   function caminos(origen, max, quien) {
     const dist = new Map([[origen, 0]]), prev = new Map(), cola = [origen];
     while (cola.length) { const c = cola.shift(), d = dist.get(c); if (d >= max) continue; for (const v of vecinos(c)) if (!dist.has(v) && libre(v, quien)) { dist.set(v, d + 1); prev.set(v, c); cola.push(v); } }
     return { dist, prev, ruta: (dest) => { const r = []; let c = dest; while (c && c !== origen) { r.unshift(c); c = prev.get(c); } return r; } };
   }
-  const pegados = (a, b) => Math.abs(a.c.i - b.c.i) + Math.abs(a.c.j - b.c.j) === 1;
+  const pegados = (a, b) => vecinos(a.c).includes(b.c);
   function masCercana(x, z, quien) { let mejor = null, d = 1e9; for (const c of casillas) if (libre(c, quien)) { const e = Math.hypot(c.x - x, c.z - z); if (e < d) { d = e; mejor = c; } } return mejor; }
 
   // ---------- movimiento animado ----------
@@ -135,7 +149,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     u.vivo = false;
     if (u.heroe) { u.pj.caido = true; hud.narrar('Caes al suelo… La guardabosques tendrá que venir a por ti.'); sonido.derrota(); await espera(1400); return; }
     if (u.bando === 'aliado') { sonido.explosion(); ui.chispas(sobre(u, .8), '#ffb36a', 30, 4); escena.remove(u.pj.grupo); hud.narrar('¡La torreta salta en pedazos! Tendrás que montar otra.'); await espera(700); return; }
-    sonido.huesos(); u.pj.desmontar(u.c.y); ui.chispas(sobre(u, .8), '#e7dcff', 16, 3); hud.narrar(una(FRASES.muereEsq)); u.rotulo && ui.quitar(u.rotulo); await espera(800);
+    sonido.huesos(); if (u.pj.desmontar) u.pj.desmontar(u.c.y); else { u.pj.caido = true; setTimeout(() => escena.remove(u.pj.grupo), 1600); } ui.chispas(sobre(u, .8), '#e7dcff', 16, 3); hud.narrar(una(FRASES.muereEsq)); u.rotulo && ui.quitar(u.rotulo); await espera(800);
   }
 
   // ---------- turnos ----------
@@ -280,7 +294,8 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     const fin = resolver; resolver = null;
     tablero.cerrar = 0; sonido.musica('paseo');
     for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
-    setTimeout(() => fin?.({ resultado: res, caidos: unidades.filter((u) => u.bando === 'enemigo' && !u.vivo).map((u) => u.nombre) }), 600);
+    const muertos = unidades.filter((u) => u.bando === 'enemigo' && !u.vivo);
+    setTimeout(() => fin?.({ resultado: res, caidos: muertos.map((u) => u.nombre), caidosIds: muertos.map((u) => u.id) }), 600);
   }
 
   // ---------- empezar ----------
@@ -305,11 +320,17 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
 
   // Para las pruebas: qué casillas están iluminadas y dónde está cada uno
   C.depurar = () => ({ casillas: [...alcanzables.keys()].map((c) => ({ x: c.x, z: c.z, tipo: alcanzables.get(c) })), unidades: unidades.map((u) => ({ n: u.nombre, vivo: u.vivo, x: u.c?.x, z: u.c?.z, cuerpo: u.cuerpo })) });
+  C.forzarVictoria = () => { for (const u of unidades) if (u.bando === 'enemigo') u.vivo = false; terminar('victoria'); };
   C.actualizar = (dt, t) => {
     tiempo = t;
     for (const u of unidades) if (u.bando === 'aliado' && u.vivo) u.pj.animar(dt, t);   // las torretas (el resto se anima fuera)
     for (let i = tweens.length - 1; i >= 0; i--) { const w = tweens[i]; w.t += dt; const p = Math.min(1, w.t / w.dur); w.f(p * p * (3 - 2 * p)); if (p >= 1) { tweens.splice(i, 1); w.fin(); } }
     if (!tablero) return;
+    if (tablero.externo) {
+      if (tablero.cerrar != null) { escena.remove(tablero.g); tablero = null; return; }
+      if (modoEleccion) tablero.brillo.material.opacity = .4 + Math.sin(t * 6) * .2;
+      return;
+    }
     if (tablero.cerrar != null) {
       tablero.cerrar += dt; mundo.aplastarHierba(tablero.cx, tablero.cz, MEDIO * T + 1.2, Math.max(0, 1 - tablero.cerrar * 1.5)); tablero.nacer = Math.max(0, 1.6 - tablero.cerrar * 1.6); pintar(); anillo.scale.setScalar(Math.max(.01, 1 - tablero.cerrar)); anillo.material.opacity = Math.max(0, 1 - tablero.cerrar);
       if (tablero.cerrar > 1.1) { escena.remove(tablero.g, anillo); tablero = null; anillo = null; }

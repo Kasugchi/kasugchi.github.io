@@ -16,6 +16,7 @@ import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe } from './claro-personajes.js';
 import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
+import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
@@ -57,7 +58,11 @@ function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def);
   Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
-function guardarAhora() { DEF.oro = estado.oro; DEF.pociones = estado.pociones; guardarHeroe(DEF); }
+function guardarAhora() {
+  DEF.oro = estado.oro; DEF.pociones = estado.pociones;
+  if (typeof GRUPOS !== 'undefined') DEF.claro = { mision: estado.mision, setas: estado.setas, setasCogidas: estado.setasCogidas || [], cofre: estado.cofre, grupos: GRUPOS.map((g) => g.vivo) };   // el claro queda como lo dejas
+  guardarHeroe(DEF);
+}
 aplicarHeroe(DEF);
 
 // ---------- el héroe ----------
@@ -94,14 +99,14 @@ for (const g of GRUPOS) {
 const interactivos = [];
 function interactivo(def) { def.anillo = ui.anillo(def.color || '#ffe08a', def.r || 1.1); interactivos.push(def); return def; }
 const SETAS = [[-12, -2], [-22, 9], [6, -14], [9, 9], [-8, 14], [2, 5]];
-for (const [x, z] of SETAS) {
+SETAS.forEach(([x, z], idx) => {
   const g = new THREE.Group(), y = mundo.alturaEn(x, z); g.position.set(x, y, z); escena.add(g);
   g.add(pieza(new THREE.CylinderGeometry(.09, .13, .55, 8).translate(0, .27, 0), '#f3ecd9', { borde: .02 }));
   const som = pieza(new THREE.SphereGeometry(.34, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), '#5ad1ff', { borde: .025, emissive: '#3ab8ff', emissiveIntensity: .9 }); som.position.y = .5; som.scale.y = .8; g.add(som);
   g.add(new THREE.Mesh(mergeGeometries([0, 1, 2, 3, 4].map((k) => new THREE.SphereGeometry(.05, 6, 5).translate(Math.cos(k * 1.3) * .22, .58 + (k % 2) * .06, Math.sin(k * 1.3) * .22))), toon('#e8fbff', { emissive: '#ffffff', emissiveIntensity: .8 })));
   const peq = g.clone(); peq.scale.setScalar(.55); peq.position.set(x + .5, y, z + .3); escena.add(peq);
-  interactivo({ tipo: 'seta', nombre: 'Seta de luz', verbo: 'Recoger', obj: g, extra: peq, pos: g.position, r: 1.1, color: '#7fe0ff', fase: Math.random() * 6 });
-}
+  interactivo({ tipo: 'seta', idx, nombre: 'Seta de luz', verbo: 'Recoger', obj: g, extra: peq, pos: g.position, r: 1.1, color: '#7fe0ff', fase: Math.random() * 6 });
+});
 // Cofre junto a la colina de la cripta
 const cofre = new THREE.Group();
 {
@@ -168,52 +173,16 @@ function actualizarCamara(dt) {
   camara.lookAt(CAM.objetivo);
 }
 
-// ---------- HUD (lo poco que va pegado a la pantalla) ----------
-const hud = {
-  actualizar() {
-    const c = $('#corazones'); c.innerHTML = '';
-    for (let i = 0; i < estado.max; i++) { const s = document.createElement('i'); s.className = i < estado.cuerpo ? 'lleno' : ''; c.appendChild(s); }
-    $('#oro').textContent = estado.oro; $('#pociones').textContent = estado.pociones; $('#bolas').textContent = estado.usos; $('#habIcono').textContent = estado.habilidad.icono;
-    const C0 = CLASES[DEF.clase], R0 = RAZAS[DEF.raza], n = DEF.nivel || 1, base = NIVELES[n - 1] || 0, sig = NIVELES[n];
-    $('#nombreH').textContent = DEF.nombre; $('#nivelH').textContent = `Nv ${n}`; $('#retrato').textContent = C0.icono; $('#retrato').style.background = `radial-gradient(circle at 40% 35%, #ffffff55, ${DEF.colores.ropa})`;
-    $('#xp i').style.width = sig ? Math.min(100, (DEF.xp - base) / (sig - base) * 100) + '%' : '100%'; $('#ficha').title = `${R0.nombre} ${C0.nombre.toLowerCase()} · ${DEF.xp} de experiencia`;
-    const m = $('#mision');
-    if (estado.mision === 'nueva') m.innerHTML = '<b>El claro</b><span>Habla con Brezo, junto a la hoguera</span>';
-    else if (estado.mision === 'activa') {
-      const g = GRUPOS.filter((x) => !x.vivo).length;
-      m.innerHTML = `<b>El claro de los huesos</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">Setas de luz ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">Esqueletos ${g}/2</span>${estado.setas >= 3 && g >= 2 ? '<span class="volver">¡Vuelve con Brezo!</span>' : ''}`;
-    } else if (estado.mision === 'hecha') m.innerHTML = '<b>La cripta está abierta</b><span>Entra… si te atreves</span>';
-  },
-  acciones(lista, alElegir) {
-    const b = $('#acciones'); b.innerHTML = ''; b.hidden = !lista.length;
-    for (const a of lista) { const x = document.createElement('button'); x.disabled = !a.activo; x.innerHTML = `<span>${a.icono}</span>${MOVIL && a.corto ? a.corto : a.texto}`; x.onclick = () => { sonido.dado(.3); alElegir(a.id); }; b.appendChild(x); }
-  },
-  banner(texto, tipo) { const b = $('#banner'); b.textContent = texto; b.className = 'ver ' + tipo; clearTimeout(b._t); b._t = setTimeout(() => b.className = tipo, 1500); },
-  narrar(texto) { const n = $('#narrar'); n.textContent = texto; n.hidden = !texto; }
-};
-
-// ---------- diálogos con voz en bips ----------
-let dialogo = null;
-function hablar(quien, lineas, opciones = [], { grave = .4 } = {}) {
-  return new Promise((fin) => {
-    const caja = $('#dialogo'); caja.hidden = false; $('#quien').textContent = quien; document.body.classList.add('hablando');
-    let i = 0, escribiendo = null;
-    const mostrar = () => {
-      const txt = lineas[i], el = $('#texto'); el.textContent = ''; $('#opciones').innerHTML = ''; let k = 0;
-      sonido.voz(txt, grave); clearInterval(escribiendo);
-      escribiendo = setInterval(() => { k += 2; el.textContent = txt.slice(0, k); if (k >= txt.length) { clearInterval(escribiendo); escribiendo = null; fin2(); } }, 22);
-      const fin2 = () => {
-        const op = $('#opciones'); op.innerHTML = '';
-        const ult = i === lineas.length - 1, lista = ult && opciones.length ? opciones : [[ult ? 'Vale' : 'Siguiente ▸', null]];
-        for (const [t, f] of lista) { const b = document.createElement('button'); b.textContent = t; b.onclick = (e) => { e.stopPropagation(); if (!ult) { i++; mostrar(); } else { cerrar(); f?.(); fin(t); } }; op.appendChild(b); }
-      };
-      dialogo = { saltar: () => { if (escribiendo) { clearInterval(escribiendo); escribiendo = null; el.textContent = txt; fin2(); } } };
-    };
-    const cerrar = () => { caja.hidden = true; dialogo = null; document.body.classList.remove('hablando'); };
-    mostrar();
-  });
+// ---------- HUD y diálogos (compartidos con la cripta) ----------
+function textoMision() {
+  if (estado.mision === 'nueva') return '<b>El claro</b><span>Habla con Brezo, junto a la hoguera</span>';
+  if (estado.mision === 'activa') {
+    const g = GRUPOS.filter((x) => !x.vivo).length;
+    return `<b>El claro de los huesos</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">Setas de luz ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">Esqueletos ${g}/2</span>${estado.setas >= 3 && g >= 2 ? '<span class="volver">¡Vuelve con Brezo!</span>' : ''}`;
+  }
+  return DEF.criptaHecha ? '<b>La cripta, vencida</b><span>Puedes volver a bajar cuando quieras</span>' : '<b>La cripta está abierta</b><span>Entra… si te atreves</span>';
 }
-$('#dialogo').addEventListener('pointerdown', () => dialogo?.saltar());
+const { hud, hablar, dlg } = crearHud({ estado, def: () => DEF, sonido, movil: MOVIL, mision: textoMision });
 
 // ---------- lo que pasa al interactuar ----------
 // Una interacción cada vez (aunque se pulse E muchas veces seguidas)
@@ -237,11 +206,14 @@ async function interactuarYa(it) {
         estado.mision = 'hecha'; estado.oro += 25; guardarAhora(); ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 10); sonido.victoria(); mundo.abrirCripta(); sonido.abrir();
         ui.chispas(mundo.cripta.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.5, 0)), '#c9a2ff', 60, 5); hud.actualizar();
       } else await hablar('Brezo', [`Llevas ${Math.min(3, estado.setas)} de 3 setas y has espantado a ${g} de 2 grupos. ¡Ánimo!`, estado.cuerpo < estado.max ? 'Si te han zurrado, siéntate junto a la hoguera: el fuego cura más que cualquier poción.' : 'Las setas suelen esconderse cerca del agua y entre las rocas.']);
-    } else await hablar('Brezo', ['La cripta ya está abierta. Dicen que dentro hay un nigromante que colecciona calaveras. Tú no le des la tuya.']);
+    } else if (DEF.criptaHecha && !DEF.brezoContado) {
+      await hablar('Brezo', ['¡Has vuelto entero! Bueno, casi entero. Cuéntamelo todo… No, espera, ya me lo cuentan tus botas: barro de cripta y polvo de hueso.', 'Toma, una poción de las buenas. Y que sepas que el bosque respira más tranquilo esta noche.'], [['¡Gracias, Brezo!', null]]);
+      DEF.brezoContado = true; estado.pociones++; sonido.recoger(); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#8affb0', 24, 3); guardarAhora(); hud.actualizar();
+    } else await hablar('Brezo', [DEF.criptaHecha ? 'Abajo los huesos se vuelven a montar solos, así que si te aburres, ya sabes dónde hay pelea.' : 'La cripta ya está abierta. Dicen que dentro hay un nigromante que colecciona calaveras. Tú no le des la tuya.']);
   } else if (t === 'seta') {
     await heroe.hacer('recoger', .6);
     sonido.recoger(); ui.chispas(it.pos.clone().add(new THREE.Vector3(0, .6, 0)), '#9fe8ff', 30, 3); escena.remove(it.obj, it.extra); it.anillo.visible = false;
-    interactivos.splice(interactivos.indexOf(it), 1); estado.setas++; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `Seta ${estado.setas}`, '#9fe8ff'); hud.actualizar();
+    interactivos.splice(interactivos.indexOf(it), 1); estado.setas++; (estado.setasCogidas ||= []).push(it.idx); guardarAhora(); ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `Seta ${estado.setas}`, '#9fe8ff'); hud.actualizar();
   } else if (t === 'cofre') {
     if (estado.cofre) return hablar('Cofre viejo', ['Vacío. Solo queda olor a madera húmeda y una araña indignada.']);
     estado.cofre = true; sonido.abrir(); const tapa = cofre.userData.tapa; let a = 0; const abrir = setInterval(() => { a += .08; tapa.rotation.x = -Math.min(1.9, a); if (a > 1.9) clearInterval(abrir); }, 16);
@@ -256,7 +228,7 @@ async function interactuarYa(it) {
   else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: Brezo.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
   else if (t === 'cripta') {
     if (estado.mision !== 'hecha') await hablar('Cripta de los Huesos', ['La puerta está sellada con runas que zumban. Hace falta una llave… Seguro que la guardabosques sabe algo.']);
-    else await hablar('Cripta de los Huesos', ['Las runas se apartan y una escalera baja a la oscuridad. Huele a tiempo y a huesos viejos.', 'Aquí empezaría la mazmorra de verdad, por turnos y sala a sala. Continuará…']);
+    else await hablar('Cripta de los Huesos', [DEF.criptaHecha ? 'La escalera sigue ahí, oscura como siempre. Abajo, los huesos ya se han vuelto a montar.' : 'Las runas se apartan y una escalera baja a la oscuridad. Huele a tiempo y a huesos viejos.'], [['Bajar a la cripta', () => { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = 'cripta.html'; }, 700); }], ['Ahora no', null]]);
   } else if (t === 'pasarela') {
     await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html'; }], ['Quedarme', null]]);
   }
@@ -266,8 +238,8 @@ async function interactuarYa(it) {
 const teclas = new Set();
 addEventListener('keydown', (e) => {
   if (e.repeat) return; teclas.add(e.key.toLowerCase());
-  if (e.key.toLowerCase() === 'e' && !dialogo && H.cerca && !combate.activo && !H.bloqueado) interactuar(H.cerca);
-  if ((e.key === ' ' || e.key === 'Enter') && dialogo) { dialogo.saltar(); }
+  if (e.key.toLowerCase() === 'e' && !dlg.actual && H.cerca && !combate.activo && !H.bloqueado) interactuar(H.cerca);
+  if ((e.key === ' ' || e.key === 'Enter') && dlg.actual) { dlg.actual.saltar(); }
 });
 addEventListener('keyup', (e) => teclas.delete(e.key.toLowerCase()));
 const ray = new THREE.Raycaster(), pt = new THREE.Vector2();
@@ -276,7 +248,7 @@ function lanzar(x, y) { pt.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 
 function tocarEn(x, y) {
   lanzar(x, y);
   if (combate.activo) { const s = ray.intersectObject(suelo)[0]; return combate.tocar(s?.point); }
-  if (H.bloqueado || dialogo) return;
+  if (H.bloqueado || dlg.actual) return;
   // ¿Has tocado algo con lo que se puede interactuar?
   let mejor = null, md = 1e9;
   for (const it of interactivos) {
@@ -314,7 +286,7 @@ pad.addEventListener('pointerdown', (e) => { sonido.arrancar(); const r = pad.ge
 pad.addEventListener('pointermove', (e) => { if (!joy || e.pointerId !== joy.id) return; let x = (e.clientX - joy.cx) / 45, y = (e.clientY - joy.cy) / 45; const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } joy.x = x; joy.y = y; bola.style.transform = `translate(${x * 34}px, ${y * 34}px)`; });
 const soltarJoy = () => { joy = null; bola.style.transform = ''; };
 pad.addEventListener('pointerup', soltarJoy); pad.addEventListener('pointercancel', soltarJoy);
-$('#accion').addEventListener('click', () => { if (H.cerca && !dialogo && !combate.activo) interactuar(H.cerca); });
+$('#accion').addEventListener('click', () => { if (H.cerca && !dlg.actual && !combate.activo) interactuar(H.cerca); });
 $('#sonido').addEventListener('click', () => { const b = $('#sonido'); b.classList.toggle('mudo'); sonido.silenciar(b.classList.contains('mudo')); });
 
 // ---------- el combate ----------
@@ -418,7 +390,7 @@ const reloj = new THREE.Clock();
 let t = 0;
 const adelante = new THREE.Vector3(), derecha = new THREE.Vector3(), mov = new THREE.Vector3();
 function moverHeroe(dt) {
-  if (H.bloqueado || dialogo || combate.activo) { heroe.vel += (0 - heroe.vel) * Math.min(1, dt * 10); return; }
+  if (H.bloqueado || dlg.actual || combate.activo) { heroe.vel += (0 - heroe.vel) * Math.min(1, dt * 10); return; }
   adelante.set(-Math.sin(CAM.yaw), 0, -Math.cos(CAM.yaw)); derecha.set(-adelante.z, 0, adelante.x);
   mov.set(0, 0, 0);
   if (teclas.has('w') || teclas.has('arrowup')) mov.add(adelante);
@@ -467,7 +439,7 @@ function cercanos() {
   for (const it of interactivos) { const d = Math.hypot(it.pos.x - H.pos.x, it.pos.z - H.pos.z); it.anillo.visible = false; if (d < it.r + .6 && d < md) { md = d; mejor = it; } }
   H.cerca = (!combate.activo && !H.bloqueado) ? mejor : null;
   const b = $('#accion');
-  if (H.cerca && !dialogo) {
+  if (H.cerca && !dlg.actual) {
     const it = H.cerca; it.anillo.visible = true; it.anillo.position.set(it.pos.x, mundo.alturaEn(it.pos.x, it.pos.z) + .06, it.pos.z); it.anillo.scale.setScalar(1 + Math.sin(t * 4) * .06);
     b.hidden = false; b.innerHTML = `<kbd>${MOVIL ? '👆' : 'E'}</kbd><span>${it.verbo} · ${MOVIL ? (it.corto || it.nombre) : it.nombre}</span>`;
   } else b.hidden = true;
@@ -489,7 +461,7 @@ function bucle() {
   if (CAM.modo === 'creador') heroe.mirarA(Math.PI + (CAM.giro || 0) + Math.sin(t * .6) * .3);   // en el creador, de cara; arrastrando lo giras
   mundo.actualizar(t, dt);
   heroe.animar(dt, t); brezo.animar(dt, t);
-  if (!H.bloqueado && !dialogo && !combate.activo && H.pos.distanceTo(brezo.grupo.position) < 6) brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z));
+  if (!H.bloqueado && !dlg.actual && !combate.activo && H.pos.distanceTo(brezo.grupo.position) < 6) brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z));
   for (const g of GRUPOS) for (const m of g.miembros) m.pj.animar(dt, t);
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt);
@@ -497,6 +469,20 @@ function bucle() {
   if (composer) composer.render(); else render.render(escena, camara);
   requestAnimationFrame(bucle);
 }
+
+// ---------- el claro como lo dejaste (misión, setas, cofre, esqueletos) ----------
+function restaurarClaro() {
+  const c = DEF.claro; if (!c) return;
+  Object.assign(estado, { mision: c.mision || 'nueva', setas: c.setas || 0, setasCogidas: c.setasCogidas || [], cofre: !!c.cofre });
+  for (const it of interactivos.filter((x) => x.tipo === 'seta' && estado.setasCogidas.includes(x.idx))) { escena.remove(it.obj, it.extra); it.anillo.visible = false; interactivos.splice(interactivos.indexOf(it), 1); }
+  if (estado.cofre) cofre.userData.tapa.rotation.x = -1.9;
+  GRUPOS.forEach((g, i) => { if (c.grupos?.[i] === false && g.vivo) { g.vivo = false; for (const m of g.miembros) { escena.remove(m.pj.grupo); ui.quitar(m.rotulo); } } });
+  if (estado.mision !== 'nueva' && marcaBrezo) { ui.quitar(marcaBrezo); marcaBrezo = null; }
+  if (estado.mision === 'activa' && estado.setas >= 3 && GRUPOS.every((x) => !x.vivo)) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
+  if (estado.mision === 'hecha') mundo.abrirCripta();
+  hud.actualizar();
+}
+restaurarClaro();
 
 // ---------- inicio ----------
 H.pos.set(-6, 22.5, -66);
@@ -512,7 +498,14 @@ $('#empezar').addEventListener('click', () => { sonido.arrancar(); if (nuevo) ab
 $('#cambiar').addEventListener('click', () => { sonido.arrancar(); abrirCreador(); });
 pintarPortada();
 // Si hay sesión, el héroe de la nube manda (puede venir de otro dispositivo)
-cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) && !$('#creador').classList.contains('abierto')) { nuevo = false; aplicarHeroe(h); ponerHeroe(h); hud.actualizar(); pintarPortada(); } });
+cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) && !$('#creador').classList.contains('abierto')) { nuevo = false; aplicarHeroe(h); ponerHeroe(h); restaurarClaro(); hud.actualizar(); pintarPortada(); } });
 if (params.has('rapido')) { $('#portada').remove(); CAM.introT = 99; CAM.introEmpezada = true; }
+if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin portada ni bajada
+  $('#portada').remove(); CAM.modo = 'paseo'; H.bloqueadoFin = true; H.bloqueado = false; $('#hud').classList.add('ver');
+  H.pos.set(SITIOS.cripta.x - 4, 0, SITIOS.cripta.z + .5); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); heroe.mirarA(-Math.PI / 2); CAM.yaw = -1.25; CAM.objetivo.copy(H.pos);   // la cámara, al oeste: te ve salir con la cripta detrás
+  const caido = params.has('caido');
+  history.replaceState(null, '', 'claro.html');
+  if (caido) setTimeout(() => hablar('Brezo', ['¡Te he sacado a rastras de esa cripta! Estabas más tieso que los esqueletos.', 'Descansa junto al fuego y vuelve a bajar cuando quieras. Lo que ganaste, ganado está.']), 900);
+}
 if (params.has('crear')) { $('#portada').classList.add('fuera'); abrirCreador(); }
 window.claro = { escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };

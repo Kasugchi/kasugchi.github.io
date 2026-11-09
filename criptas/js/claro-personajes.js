@@ -138,10 +138,10 @@ export function crearMago({ tunica = '#3d5bd9', adorno = P.oro, sombrero = 'pico
 }
 
 // ---------- Esqueleto con espada oxidada y escudo de tablas ----------
-export function crearEsqueleto({ escala = 1, ojo = '#ff5a2a' } = {}) {
+export function crearEsqueleto({ escala = 1, ojo = '#ff5a2a', color } = {}) {
   const { mats, mat, malla } = kit();
   const raiz = new THREE.Group(), cuerpo = new THREE.Group(); raiz.add(cuerpo); cuerpo.scale.setScalar(escala);
-  const H = P.hueso, piezas = [];
+  const H = color || P.hueso, piezas = [];   // color: zombis verdosos, momias de venda…
   const hueso = (geo, x, y, z, padre = cuerpo, borde = .02) => { const m = malla(geo, H, { borde }); m.position.set(x, y, z); padre.add(m); piezas.push(m); return m; };
   // piernas y pelvis
   const caderas = new THREE.Group(); caderas.position.y = .78; cuerpo.add(caderas);

@@ -5,6 +5,7 @@
 //  y una habilidad pensada para ir solo, sin tres compañeros al lado.
 // =============================================================
 import { usuarioListo, leerAventuraNube, subirAventura } from './nube.js';
+import { ARMAS } from './datos.js';
 
 export const RAZAS = {
   humano: { nombre: 'Humano', icono: '🧑', rasgo: 'Versátil', texto: 'Un uso más de su habilidad en cada combate.', pieles: ['#f4c7a1', '#e0a77e', '#b97a52', '#7a4a2e'], pelos: ['#6b3a2a', '#2b1d16', '#d9a441', '#b8462a', '#e8e0d0'] },
@@ -29,7 +30,7 @@ export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 export function estadisticas(h) {
   const c = CLASES[h.clase], n = h.nivel || 1;
   return {
-    ataque: c.ataque + (n >= 3 ? 1 : 0),
+    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
     defensa: c.defensa + (n >= 5 ? 1 : 0),
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0),

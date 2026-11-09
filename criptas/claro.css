@@ -1,0 +1,126 @@
+/* El claro y la cripta (modo aventura): interfaz compartida */
+  :root { --crema: #fff8e6; --tinta: #4a3626; --borde: #e3c99a; --oro: #ffcd4a; --sombra: 0 6px 0 rgba(74,54,38,.18), 0 10px 24px rgba(40,20,40,.25); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2b2450; font: 16px/1.35 'Nunito', system-ui, sans-serif; color: var(--tinta); user-select: none; -webkit-user-select: none; touch-action: none; }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .caja { background: var(--crema); border: 3px solid var(--borde); border-radius: 22px; box-shadow: var(--sombra); }
+  button { font: inherit; cursor: pointer; }
+
+  /* portada */
+  #portada { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: linear-gradient(180deg, rgba(43,36,80,.55), rgba(43,36,80,0) 45%, rgba(233,162,143,.15) 70%, rgba(43,36,80,.55)); z-index: 30; transition: opacity .9s; opacity: 0; }
+  #portada.lista { opacity: 1; } #portada.fuera { opacity: 0; pointer-events: none; }
+  #portada h1 { margin: 0; font-size: clamp(38px, 9vw, 84px); font-weight: 900; line-height: .95; color: #fff4d6; letter-spacing: .5px; text-shadow: 0 4px 0 #6a3a6a, 0 8px 0 #3b1f4a, 0 14px 30px rgba(0,0,0,.45); }
+  #portada h1 small { display: block; font-size: .38em; color: #ffd38a; text-shadow: 0 3px 0 #6a3a6a, 0 8px 18px rgba(0,0,0,.4); margin-bottom: 6px; }
+  #portada p { color: #fff0dc; text-shadow: 0 2px 8px rgba(0,0,0,.6); margin: 14px 20px 26px; font-weight: 700; }
+  #empezar { padding: 16px 34px; font-size: 22px; font-weight: 900; color: #4a2a10; background: linear-gradient(#ffe38a, #ffbf3a); border: 3px solid #fff4c4; border-radius: 999px; box-shadow: 0 6px 0 #a8641a, 0 14px 28px rgba(0,0,0,.35); transition: transform .12s; }
+  #empezar:hover { transform: translateY(-2px) scale(1.03); } #empezar:active { transform: translateY(3px); box-shadow: 0 2px 0 #a8641a; }
+  #portada .pie { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 13px; color: #f3dcff; opacity: .85; }
+
+  /* HUD */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .8s; }
+  #hud.ver { opacity: 1; }
+  #hud > * { pointer-events: auto; }
+  #ficha { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; display: flex; gap: 10px; align-items: center; padding: 8px 14px 8px 8px; }
+  #retrato { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8fb0ff, #3d5bd9); display: grid; place-items: center; font-size: 30px; border: 3px solid var(--oro); box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
+  #ficha b { font-weight: 900; font-size: 15px; }
+  #corazones { display: flex; gap: 3px; margin: 3px 0; flex-wrap: wrap; max-width: 140px; }
+  #corazones i { width: 14px; height: 13px; background: #d9c7b0; clip-path: path('M7 13 C7 13 0 8 0 4 C0 1.5 2 0 4 0 C5.5 0 6.5 1 7 2 C7.5 1 8.5 0 10 0 C12 0 14 1.5 14 4 C14 8 7 13 7 13Z'); }
+  #corazones i.lleno { background: #ff5a6a; }
+  .stats { display: flex; gap: 10px; font-weight: 800; font-size: 14px; }
+  #mision { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; width: min(270px, 46vw); padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
+  #mision b { font-weight: 900; font-size: 15px; color: #7a3a9a; }
+  #mision span::before { content: '◇ '; color: #c9a06a; } #mision span.hecho { color: #3f8a3c; text-decoration: line-through; } #mision span.hecho::before { content: '✔ '; }
+  #mision .volver { color: #b0621a; font-weight: 900; } #mision .volver::before { content: '★ '; }
+  #sonido { position: absolute; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 118px); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; padding: 0; }
+  #sonido::before { content: '🔊'; } #sonido.mudo::before { content: '🔈'; opacity: .5; }
+  #banner { position: absolute; left: 50%; top: 18%; transform: translate(-50%, -20px) scale(.8); font-size: clamp(28px, 6vw, 52px); font-weight: 900; color: #fff4d6; text-shadow: 0 4px 0 #3b1f4a, 0 10px 24px rgba(0,0,0,.5); opacity: 0; transition: all .35s cubic-bezier(.2,1.6,.4,1); pointer-events: none; white-space: nowrap; }
+  #banner.ver { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #banner.enemigo { color: #ffd0c8; text-shadow: 0 4px 0 #7a1f2a, 0 10px 24px rgba(0,0,0,.5); }
+  #accion { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 4px); transform: translateX(-50%); padding: 10px 18px 10px 10px; font-weight: 900; font-size: 16px; display: flex; gap: 10px; align-items: center; animation: aparece .25s; white-space: nowrap; }
+  #accion kbd { display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 9px; background: #4a3626; color: var(--crema); font: 900 15px Nunito; box-shadow: 0 3px 0 #2b1d16; }
+  @keyframes aparece { from { transform: translate(-50%, 10px); opacity: 0; } }
+  #narrar { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 74px); transform: translateX(-50%); width: min(560px, calc(100vw - 24px)); text-align: center; padding: 10px 16px; font-weight: 800; font-size: 15px; background: rgba(43,29,46,.82); color: #fff1dc; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.3); pointer-events: none; }
+  #acciones { position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; width: max-content; max-width: calc(100vw - 16px); overflow-x: auto; }
+  #acciones button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; padding: 8px 10px; border: 0; border-radius: 14px; background: #f3e4c4; color: var(--tinta); font-weight: 900; font-size: 13px; box-shadow: 0 4px 0 #c9a06a; transition: transform .1s; }
+  #acciones button span { font-size: 22px; }
+  #acciones button:not(:disabled):hover { transform: translateY(-2px); background: #ffe9b8; }
+  #acciones button:not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 #c9a06a; }
+  #acciones button:disabled { opacity: .38; cursor: default; filter: grayscale(.6); }
+  #hud.combate #accion, #hud.combate #joystick, #hud.combate #ayuda { display: none; }
+  #joystick { position: absolute; left: 22px; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 10px); width: 110px; height: 110px; border-radius: 50%; background: rgba(255,248,230,.28); border: 3px solid rgba(255,248,230,.6); display: none; touch-action: none; }
+  #joystick i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px; border-radius: 50%; background: var(--crema); box-shadow: 0 4px 0 #c9a06a; }
+  @media (pointer: coarse) { #joystick { display: block; } #ayuda { display: none; } }
+  /* En el móvil, la interfaz se encoge para dejar ver el mundo */
+  @media (pointer: coarse), (max-width: 560px) {
+    .caja { border-width: 2px; border-radius: 16px; box-shadow: 0 3px 0 rgba(74,54,38,.18), 0 6px 14px rgba(40,20,40,.2); }
+    #ficha { top: max(8px, env(safe-area-inset-top)); left: 8px; gap: 6px; padding: 4px 9px 4px 4px; }
+    #retrato { width: 34px; height: 34px; font-size: 19px; border-width: 2px; }
+    #ficha b { font-size: 11.5px; }
+    #corazones { gap: 2px; margin: 2px 0; }
+    #corazones i { width: 10px; height: 9px; clip-path: path('M5 9 C5 9 0 5.6 0 2.8 C0 1 1.4 0 2.8 0 C3.9 0 4.6 .7 5 1.4 C5.4 .7 6.1 0 7.2 0 C8.6 0 10 1 10 2.8 C10 5.6 5 9 5 9Z'); }
+    .stats { font-size: 11.5px; gap: 7px; }
+    #mision { top: max(8px, env(safe-area-inset-top)); right: 48px; left: auto; width: auto; max-width: calc(100vw - 232px); padding: 5px 9px; font-size: 11px; gap: 1px; line-height: 1.25; }
+    #mision b { font-size: 11.5px; }
+    #sonido { top: max(8px, env(safe-area-inset-top)); right: 8px; width: 34px; height: 34px; font-size: 15px; }
+    #accion { left: auto; right: 10px; transform: none; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 10px); max-width: calc(100vw - 140px); font-size: 13.5px; padding: 6px 12px 6px 6px; gap: 7px; animation: none; }
+    #accion kbd { min-width: 26px; height: 26px; font-size: 13px; border-radius: 8px; }
+    #accion span { overflow: hidden; text-overflow: ellipsis; }
+    #joystick { width: 92px; height: 92px; left: 14px; bottom: calc(max(14px, env(safe-area-inset-bottom)) + 4px); opacity: .75; }
+    #joystick i { width: 40px; height: 40px; margin: -20px; }
+    #dialogo { padding: 20px 16px 12px; }
+    #quien { top: -15px; font-size: 14px; padding: 3px 13px; }
+    #opciones button { padding: 7px 14px; font-size: 14px; }
+    #banner { font-size: 30px; top: 22%; }
+  }
+  #ayuda { position: absolute; left: 12px; bottom: max(12px, env(safe-area-inset-bottom)); padding: 8px 12px; font-size: 13px; font-weight: 700; opacity: .9; animation: irse 1s 14s forwards; }
+  @keyframes irse { to { opacity: 0; visibility: hidden; } }
+
+  /* diálogo */
+  #dialogo { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100vw - 24px)); padding: 26px 22px 16px; z-index: 20; animation: sube .25s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes sube { from { transform: translate(-50%, 30px); opacity: 0; } }
+  #quien { position: absolute; top: -18px; left: 22px; padding: 4px 16px; background: #4e8a4a; color: #fff8e6; font-weight: 900; border-radius: 999px; box-shadow: 0 4px 0 #2f5a2c; transform: rotate(-2deg); }
+  #texto { min-height: 3.2em; font-size: 18px; font-weight: 700; }
+  #opciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  #opciones button { padding: 9px 18px; border: 0; border-radius: 999px; background: #ffd56a; font-weight: 900; color: #4a2a10; box-shadow: 0 4px 0 #c08a2a; }
+  #opciones button:hover { background: #ffe38a; }
+  #fundido { position: fixed; inset: 0; background: #1a1020; opacity: 0; pointer-events: none; transition: opacity .8s; z-index: 25; }
+  #fundido.ver { opacity: 1; }
+  [hidden] { display: none !important; }
+  #cambiar { margin-top: 14px; padding: 8px 18px; font-weight: 800; font-size: 15px; color: #fff4d6; background: rgba(43,29,46,.55); border: 2px solid rgba(255,244,214,.6); border-radius: 999px; }
+  #nivelH { font-size: 12px; color: #7a3a9a; font-weight: 900; margin-left: 4px; }
+  #xp { height: 5px; width: 100%; max-width: 140px; background: #e8dcc4; border-radius: 3px; overflow: hidden; margin-top: 3px; } #xp i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #b78bff, #7a3a9a); transition: width .6s; }
+  /* creador de personaje */
+  #creador { position: fixed; inset: 0; z-index: 22; pointer-events: none; }
+  #creador .panel { pointer-events: auto; position: absolute; right: 16px; top: 16px; bottom: 16px; width: 370px; padding: 18px 18px 14px; overflow-y: auto; transform: translateX(110%); transition: transform .45s cubic-bezier(.2,1.2,.4,1); }
+  #creador.abierto .panel { transform: none; }
+  #creador h2 { margin: 0 0 10px; font-size: 26px; font-weight: 900; color: #7a3a9a; }
+  #creador h3 { margin: 14px 0 6px; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; color: #a8804a; }
+  #creador .nombre { display: flex; gap: 8px; }
+  #cNombre { flex: 1; min-width: 0; font: 800 20px Nunito, sans-serif; color: var(--tinta); background: #fff; border: 2px solid var(--borde); border-radius: 14px; padding: 8px 12px; user-select: text; -webkit-user-select: text; }
+  #cAzar { width: 46px; font-size: 22px; border: 0; border-radius: 14px; background: #ffd56a; box-shadow: 0 3px 0 #c08a2a; }
+  #creador .error { color: #c0392b; font-weight: 800; margin: 6px 0 0; font-size: 14px; }
+  #creador .tarjetas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  #creador .tarjetas button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 2px; border: 2px solid transparent; border-radius: 14px; background: #f3e4c4; font-weight: 900; font-size: 12.5px; color: var(--tinta); box-shadow: 0 3px 0 #d9bf8a; }
+  #creador .tarjetas button span { font-size: 26px; }
+  #creador .tarjetas button.sel { background: #fff2c4; border-color: #e0a830; box-shadow: 0 3px 0 #c08a2a; transform: translateY(-2px); }
+  #creador .nota { margin: 6px 2px 0; font-size: 13.5px; line-height: 1.35; }
+  #creador .colores { display: grid; grid-template-columns: 62px 1fr; gap: 6px 8px; align-items: center; font-weight: 800; font-size: 13px; }
+  #creador .colores > div { display: flex; gap: 6px; flex-wrap: wrap; }
+  #creador .colores button { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px #d9bf8a; padding: 0; }
+  #creador .colores button.sel { box-shadow: 0 0 0 3px #7a3a9a; transform: scale(1.12); }
+  #cStats { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 10px; font-weight: 800; font-size: 13px; }
+  #cStats span { background: #f3e4c4; padding: 4px 9px; border-radius: 999px; }
+  #cListo { width: 100%; padding: 14px; font-size: 20px; font-weight: 900; color: #4a2a10; background: linear-gradient(#ffe38a, #ffbf3a); border: 0; border-radius: 16px; box-shadow: 0 5px 0 #a8641a; }
+  @media (pointer: coarse), (max-width: 760px) {
+    #creador .panel { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 52vh; border-radius: 22px 22px 0 0; padding: 14px 14px max(12px, env(safe-area-inset-bottom)); transform: translateY(110%); }
+    #creador h2 { font-size: 20px; margin-bottom: 8px; }
+    #creador h3 { margin-top: 10px; }
+    #creador .tarjetas button span { font-size: 22px; }
+  }
+  body.hablando #acciones, body.hablando #narrar, body.hablando #accion { display: none !important; }
+  @media (max-width: 560px) {
+    #texto { font-size: 16px; }
+    #acciones { width: calc(100vw - 16px); display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 6px; box-sizing: border-box; }
+    #acciones button { min-width: 0; padding: 7px 2px; font-size: 11.5px; }
+    #acciones button span { font-size: 20px; }
+    #narrar { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px); font-size: 14px; }
+  }

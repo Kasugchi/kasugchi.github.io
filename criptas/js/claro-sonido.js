@@ -6,7 +6,7 @@
 // =============================================================
 const mf = (n) => 440 * 2 ** ((n - 69) / 12);
 
-export function crearSonido() {
+export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque (pájaros, grillos) o cripta (gotas, eco y música en menor)
   let ctx = null, maestro, musica, ambiente, efectos, ruidoBuf, fuegoG, siguiente = 0, paso = 0, modo = 'paseo', modoVol = { paseo: null, combate: null };
   const S = {};
 
@@ -44,8 +44,8 @@ export function crearSonido() {
   };
 
   // Música: paseo (Fa mayor, arpegios de cuento) y combate (Re menor, con tambor)
-  const PASEO = [[53, [65, 69, 72, 77]], [50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [48, [64, 67, 72, 76]]];
-  const MELO = [77, -1, 76, 74, 72, -1, 74, -1, 69, -1, 70, 72, 74, -1, -1, -1, 76, -1, 77, 79, 77, -1, 74, -1, 72, -1, 70, 69, 72, -1, -1, -1];
+  const PASEO = entorno === 'cripta' ? [[50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [45, [61, 64, 69, 73]], [50, [62, 65, 69, 74]]] : [[53, [65, 69, 72, 77]], [50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [48, [64, 67, 72, 76]]];
+  const MELO = entorno === 'cripta' ? [74, -1, -1, 73, 74, -1, 77, -1, 76, -1, -1, 74, 73, -1, -1, -1, 70, -1, 69, -1, 70, -1, 73, -1, 74, -1, -1, -1, -1, -1, -1, -1] : [77, -1, 76, 74, 72, -1, 74, -1, 69, -1, 70, 72, 74, -1, -1, -1, 76, -1, 77, 79, 77, -1, 74, -1, 72, -1, 70, 69, 72, -1, -1, -1];
   const COMBATE = [[50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]], [45, [61, 64, 69]]];
   function programarMusica() {
     const bpm = modo === 'combate' ? 132 : 84, c = 60 / bpm / 2;   // corcheas
@@ -73,8 +73,12 @@ export function crearSonido() {
   S.actualizar = (distFuego = 99) => {
     if (!ctx) return; const t = ctx.currentTime;
     programarMusica();
+    if (entorno === 'cripta') {
+      if (t > proxPajaro) { proxPajaro = t + .8 + Math.random() * 2.5; const f = 1800 + Math.random() * 1400, o = nota(f, t, .12, { tipo: 'sine', vol: .03, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * .55, t + .1); }   // gotas
+    } else {
     if (t > proxPajaro) { proxPajaro = t + 2 + Math.random() * 5; const f = 2400 + Math.random() * 1600, n = 2 + Math.floor(Math.random() * 4); for (let i = 0; i < n; i++) { const o = nota(f, t + i * .11, .09, { tipo: 'sine', vol: .018, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * (1.3 + Math.random() * .4), t + i * .11 + .07); } }
     if (t > proxGrillo) { proxGrillo = t + .9 + Math.random() * 1.4; for (let i = 0; i < 3; i++) nota(4400 + Math.random() * 300, t + i * .05, .03, { tipo: 'square', vol: .006, destino: ambiente }); }
+    }
     fuegoG.gain.setTargetAtTime(Math.max(0, 1 - distFuego / 12) * .5, t, .3);
     if (t > proxChispa && distFuego < 12) { proxChispa = t + .05 + Math.random() * .25; ruido(t, .03 + Math.random() * .04, { vol: .15, tipo: 'highpass', f: 2500 + Math.random() * 3000, destino: fuegoG }); }
   };
