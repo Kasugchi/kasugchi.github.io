@@ -7,6 +7,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { toon, lienzo } from './claro-estilo.js';
+import { crearTorreta } from './claro-personajes.js';
 
 const T = 1.3, N = 9, MEDIO = (N - 1) / 2;    // tamaño de casilla y del tablero (9×9)
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -99,22 +100,32 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     return { centro: m.add(hacia.multiplyScalar(1.4)), desde: m.clone().add(hacia.multiplyScalar(3)) };
   }
 
+  // ---------- bandos ----------
+  const enemigos = () => unidades.filter((u) => u.bando === 'enemigo' && u.vivo);
+  const aliados = () => unidades.filter((u) => u.bando === 'aliado' && u.vivo);
+  const nuestro = (u) => u.bando !== 'enemigo';               // el héroe y sus torretas: paran con escudo blanco
+  const distancia = (a, b) => Math.abs(a.c.i - b.c.i) + Math.abs(a.c.j - b.c.j);
+
   // ---------- ataque y defensa ----------
-  async function atacar(a, d) {
-    mirarse(a, d); mirarse(d, a);
-    await a.pj.hacer('golpe', .55);
+  async function atacar(a, d, { dados: nDados = a.ataque, gesto = 'golpe', distanciaA = false } = {}) {
+    mirarse(a, d); if (!distanciaA) mirarse(d, a);
+    if (gesto) await a.pj.hacer(gesto, gesto === 'brutal' ? .8 : .55);
     const mesa = mesaDados(a, d);
-    hud.narrar(`${a.heroe ? 'Atacas' : a.nombre + ' ataca'}: ${a.ataque} ${a.ataque === 1 ? 'dado' : 'dados'}…`);
-    const r1 = await dados.tirar('combate', a.ataque, mesa.centro, mesa.desde), golpes = r1.filter((x) => x === 'calavera').length;
-    if (!golpes) { hud.narrar(una(a.heroe ? FRASES.falloHeroe : FRASES.falloEsq)); await espera(700); return; }
+    hud.narrar(`${a.heroe ? 'Atacas' : a.nombre + ' ataca'}: ${nDados} ${nDados === 1 ? 'dado' : 'dados'}…`);
+    const r1 = await dados.tirar('combate', nDados, mesa.centro, mesa.desde), golpes = r1.filter((x) => x === 'calavera').length;
+    if (!golpes) { hud.narrar(una(a.bando === 'enemigo' ? FRASES.falloEsq : FRASES.falloHeroe)); await espera(700); return; }
     hud.narrar(`¡${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}! ${d.heroe ? 'Te defiendes' : d.nombre + ' se defiende'}…`);
     await espera(450);
-    const r2 = await dados.tirar('combate', d.defensa, mesa.centro, mesa.desde), escudo = d.heroe ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
+    const r2 = await dados.tirar('combate', d.defensa, mesa.centro, mesa.desde), escudo = nuestro(d) ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
     const dano = Math.max(0, golpes - paradas);
     if (!dano) { sonido.bloqueo(); ui.numero(sobre(d, d.pj.altura), '¡Parado!', '#cfe8ff'); hud.narrar(`${d.heroe ? 'Lo paras' : d.nombre + ' lo para'} todo con ${paradas === 1 ? 'un escudo' : 'los escudos'}.`); await espera(600); return; }
     await herir(d, dano);
   }
   async function herir(d, dano) {
+    if (d.heroe && estado.escamas && !C.escamasUsadas) {            // rasgo de los escamados
+      C.escamasUsadas = true; dano -= 1; ui.numero(sobre(d, d.pj.altura + .5), 'Escamas', '#9fe8c0');
+      if (dano <= 0) { sonido.bloqueo(); hud.narrar('Tus escamas se tragan el golpe entero.'); await espera(700); return; }
+    }
     sonido.golpe(); d.pj.herido(); d.cuerpo -= dano; ui.numero(sobre(d, d.pj.altura), `-${dano}`); ui.chispas(sobre(d, 1), '#ffd0a0', 10, 2.5);
     if (d.heroe) { estado.cuerpo = Math.max(0, d.cuerpo); hud.actualizar(); }
     camara.temblar(.25);
@@ -123,17 +134,20 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function morir(u) {
     u.vivo = false;
     if (u.heroe) { u.pj.caido = true; hud.narrar('Caes al suelo… La guardabosques tendrá que venir a por ti.'); sonido.derrota(); await espera(1400); return; }
+    if (u.bando === 'aliado') { sonido.explosion(); ui.chispas(sobre(u, .8), '#ffb36a', 30, 4); escena.remove(u.pj.grupo); hud.narrar('¡La torreta salta en pedazos! Tendrás que montar otra.'); await espera(700); return; }
     sonido.huesos(); u.pj.desmontar(u.c.y); ui.chispas(sobre(u, .8), '#e7dcff', 16, 3); hud.narrar(una(FRASES.muereEsq)); u.rotulo && ui.quitar(u.rotulo); await espera(800);
   }
 
   // ---------- turnos ----------
   let turnoHeroe = null;
+  const HAB = () => estado.habilidad;                              // { id, nombre, icono }
   function accionesHeroe() {
-    const h = unidades[0], t = turnoHeroe, hayPegado = unidades.some((u) => !u.heroe && u.vivo && pegados(h, u));
+    const h = unidades[0], t = turnoHeroe, hayPegado = enemigos().some((u) => pegados(h, u)), hab = HAB();
+    const puedeHab = !t.actuado && estado.usos > 0 && !modoEleccion && (hab.id !== 'brutal' || hayPegado) && (hab.id !== 'torreta' || vecinos(h.c).some((c) => libre(c)));
     hud.acciones([
       { id: 'mover', texto: 'Moverse', corto: 'Mover', icono: '🎲', activo: !t.movido && !modoEleccion },
       { id: 'atacar', texto: 'Atacar', icono: '⚔️', activo: !t.actuado && hayPegado && !modoEleccion },
-      { id: 'hechizo', texto: `Bola de fuego (${estado.bolas})`, corto: `Fuego (${estado.bolas})`, icono: '🔥', activo: !t.actuado && estado.bolas > 0 && !modoEleccion },
+      { id: 'habilidad', texto: `${hab.nombre} (${estado.usos})`, corto: `${hab.nombre.split(' ')[0]} (${estado.usos})`, icono: hab.icono, activo: puedeHab },
       { id: 'pocion', texto: `Poción (${estado.pociones})`, icono: '🧪', activo: !t.actuado && estado.pociones > 0 && estado.cuerpo < estado.max && !modoEleccion },
       { id: 'fin', texto: modoEleccion ? 'Cancelar' : 'Terminar turno', corto: modoEleccion ? 'Cancelar' : 'Pasar', icono: modoEleccion ? '✖' : '⏭', activo: true }
     ], elegirAccion);
@@ -144,17 +158,23 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (id === 'mover') {
       hud.acciones([]); t.movido = true; hud.narrar('Tiras los dados de movimiento…');
       const pos = h.pj.grupo.position, r = await dados.tirar('mover', 2, pos.clone().add(camara.position.clone().sub(pos).setY(0).normalize().multiplyScalar(1.8)));
-      const pasos = r[0] + r[1]; hud.narrar(`¡${pasos} casillas! Toca dónde quieres ir.`);
-      const { dist } = caminos(h.c, pasos, h); alcanzables = new Map([...dist.keys()].filter((c) => c !== h.c).map((c) => [c, 'mover']));
-      modoEleccion = { tipo: 'mover', caminos: caminos(h.c, pasos, h) }; pintar(); return accionesHeroe();
+      const pasos = r[0] + r[1] + estado.pasosExtra;
+      hud.narrar(`¡${pasos} casillas!${estado.pasosExtra ? ' (Pies ligeros: +' + estado.pasosExtra + ')' : ''} Toca dónde quieres ir.`);
+      const cm = caminos(h.c, pasos, h); alcanzables = new Map([...cm.dist.keys()].filter((c) => c !== h.c).map((c) => [c, 'mover']));
+      modoEleccion = { tipo: 'mover', caminos: cm }; pintar(); return accionesHeroe();
     }
     if (id === 'atacar') {
-      const objetivos = unidades.filter((u) => !u.heroe && u.vivo && pegados(h, u));
+      const objetivos = enemigos().filter((u) => pegados(h, u));
       if (objetivos.length === 1) { hud.acciones([]); t.actuado = true; await atacar(h, objetivos[0]); return trasAccion(); }
       alcanzables = new Map(objetivos.map((u) => [u.c, 'objetivo'])); modoEleccion = { tipo: 'atacar' }; pintar(); hud.narrar('¿A cuál? Toca su casilla.'); return accionesHeroe();
     }
-    if (id === 'hechizo') {
-      alcanzables = new Map(unidades.filter((u) => !u.heroe && u.vivo).map((u) => [u.c, 'hechizo'])); modoEleccion = { tipo: 'hechizo' }; pintar(); hud.narrar('Bola de fuego: toca a un enemigo.'); return accionesHeroe();
+    if (id === 'habilidad') {
+      const hab = HAB();
+      if (hab.id === 'fuego') { alcanzables = new Map(enemigos().map((u) => [u.c, 'hechizo'])); hud.narrar('Bola de fuego: toca a un enemigo.'); }
+      else if (hab.id === 'brutal') { alcanzables = new Map(enemigos().filter((u) => pegados(h, u)).map((u) => [u.c, 'objetivo'])); hud.narrar('Golpe brutal: ¿a quién partes en dos?'); }
+      else if (hab.id === 'flecha') { const al = enemigos().filter((u) => distancia(h, u) <= 5); if (!al.length) { hud.narrar('No hay nadie a tiro (cinco casillas como mucho).'); return accionesHeroe(); } alcanzables = new Map(al.map((u) => [u.c, 'hechizo'])); hud.narrar('Flecha: toca a un enemigo a tiro.'); }
+      else if (hab.id === 'torreta') { alcanzables = new Map(vecinos(h.c).filter((c) => libre(c)).map((c) => [c, 'mover'])); hud.narrar('Torreta: toca una casilla pegada a ti para montarla.'); }
+      modoEleccion = { tipo: hab.id }; pintar(); return accionesHeroe();
     }
     if (id === 'pocion') {
       hud.acciones([]); t.actuado = true; estado.pociones--; const cura = Math.min(3, estado.max - estado.cuerpo); h.cuerpo += cura; estado.cuerpo = h.cuerpo; hud.actualizar();
@@ -175,49 +195,83 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!c || d > T * .75 || !alcanzables.has(c)) return true;
     const h = unidades[0], t = turnoHeroe, modo = modoEleccion; modoEleccion = null; alcanzables.clear(); pintar(); hud.acciones([]);
     if (modo.tipo === 'mover') { await andar(h, modo.caminos.ruta(c)); return trasAccion(), true; }
-    const objetivo = unidades.find((u) => u.vivo && !u.heroe && u.c === c);
     t.actuado = true;
+    const objetivo = unidades.find((u) => u.vivo && u.bando === 'enemigo' && u.c === c);
     if (modo.tipo === 'atacar') await atacar(h, objetivo);
-    else {
-      estado.bolas--; hud.actualizar(); mirarse(h, objetivo); sonido.hechizo(); h.pj.hacer('lanzar', .7); await espera(300);
+    else { estado.usos--; hud.actualizar(); await usarHabilidad(modo.tipo, h, objetivo, c); }
+    trasAccion(); return true;
+  };
+  async function usarHabilidad(id, h, objetivo, c) {
+    if (id === 'brutal') { hud.narrar('¡GOLPE BRUTAL!'); camara.temblar(.35); await atacar(h, objetivo, { dados: estado.ataque + 2, gesto: 'brutal' }); return; }
+    if (id === 'flecha') {
+      h.pj.hacer('disparar', .6); await espera(350); sonido.dado(.6);
+      await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1.1), '#e8d0a0', .4);
+      await atacar(h, objetivo, { gesto: null, distanciaA: true }); return;
+    }
+    if (id === 'fuego') {
+      mirarse(h, objetivo); sonido.hechizo(); h.pj.hacer('lanzar', .7); await espera(300);
       await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1)); sonido.explosion(); ui.chispas(sobre(objetivo, 1), '#ff9a4a', 40, 5);
       const mesa = mesaDados(h, objetivo); hud.narrar(`¡Bola de fuego! ${objetivo.nombre} tira 2 dados: cada calavera le quita 1 de daño.`);
       const r = await dados.tirar('combate', 2, mesa.centro, mesa.desde), dano = Math.max(0, 2 - r.filter((x) => x === 'calavera').length);
       if (dano) await herir(objetivo, dano); else { ui.numero(sobre(objetivo, objetivo.pj.altura), '¡Esquiva!', '#ffe08a'); hud.narrar('Se aparta chamuscado, pero entero.'); await espera(600); }
+      return;
     }
-    trasAccion(); return true;
-  };
+    if (id === 'torreta') {
+      h.pj.mirarA(Math.atan2(c.x - h.pj.grupo.position.x, c.z - h.pj.grupo.position.z));
+      await h.pj.hacer('construir', 1.1);
+      const pj = crearTorreta(); pj.grupo.position.set(c.x, c.y + .17, c.z); escena.add(pj.grupo);
+      const e0 = enemigos()[0]; if (e0) pj.mirarA(Math.atan2(e0.pj.grupo.position.x - c.x, e0.pj.grupo.position.z - c.z));
+      unidades.push({ bando: 'aliado', pj, nombre: 'La torreta', cuerpo: 2, ataque: 2, defensa: 1, alcance: 6, vivo: true, c });
+      sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); hud.narrar('¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
+      await espera(700);
+    }
+  }
 
+  async function turnoAliado(a) {
+    const objetivos = enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => distancia(a, x) - distancia(a, y));
+    if (!objetivos.length) return;
+    const e = objetivos[0]; camara.mirarHacia(a.pj.grupo.position);
+    a.pj.mirarA(Math.atan2(e.pj.grupo.position.x - a.pj.grupo.position.x, e.pj.grupo.position.z - a.pj.grupo.position.z)); a.pj.hacer('golpe', .3);
+    sonido.golpe(); await ui.proyectil(a.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(e, 1), '#7fe0ff', .35);
+    await atacar(a, e, { gesto: null, distanciaA: true });
+  }
   async function turnoEnemigo(e) {
-    const h = unidades[0]; if (!e.vivo || !h.vivo) return;
+    if (!e.vivo) return;
+    // va a por lo más cercano de nuestro bando: tú o tus torretas
+    const blancos = [unidades[0], ...aliados()].filter((u) => u.vivo);
+    if (!blancos.length) return;
+    const { dist, ruta } = caminos(e.c, 99, e);
+    const pasosA = (b) => Math.min(...vecinos(b.c).map((v) => (v === e.c ? 0 : dist.get(v) ?? 1e9)));
+    const b = blancos.sort((x, y) => pasosA(x) - pasosA(y))[0];
     camara.mirarHacia(e.pj.grupo.position);
-    if (!pegados(e, h)) {
-      const { dist, ruta } = caminos(e.c, 99, e);
-      let mejor = null, md = 1e9;   // la casilla libre pegada al héroe más cercana (por pasos)
-      for (const v of vecinos(h.c)) if (dist.has(v) && dist.get(v) < md) { md = dist.get(v); mejor = v; }
+    if (!pegados(e, b)) {
+      let mejor = null, md = 1e9;
+      for (const v of vecinos(b.c)) if (dist.has(v) && dist.get(v) < md) { md = dist.get(v); mejor = v; }
       if (mejor) { const r = ruta(mejor).slice(0, e.mover); if (r.length) { e.pj.hacer('rugir', .5); await espera(250); await andar(e, r, .2); } }
-      else { // no llega: se acerca lo que pueda
-        let cerca = null, cd = 1e9; for (const [c] of dist) { const dd = Math.abs(c.i - h.c.i) + Math.abs(c.j - h.c.j); if (dd < cd && dist.get(c) <= e.mover) { cd = dd; cerca = c; } }
+      else {
+        let cerca = null, cd = 1e9; for (const [c] of dist) { const dd = Math.abs(c.i - b.c.i) + Math.abs(c.j - b.c.j); if (dd < cd && dist.get(c) <= e.mover) { cd = dd; cerca = c; } }
         if (cerca && cerca !== e.c) await andar(e, ruta(cerca), .2);
       }
     }
-    if (pegados(e, h)) await atacar(e, h);
+    const pegado = [unidades[0], ...aliados()].find((u) => u.vivo && pegados(e, u));
+    if (pegado) await atacar(e, pegado);
     await espera(250);
   }
   async function comprobarFin() {
     const h = unidades[0];
     if (!h.vivo) { terminar('derrota'); return true; }
-    if (unidades.every((u) => u.heroe || !u.vivo)) { terminar('victoria'); return true; }
+    if (!enemigos().length) { terminar('victoria'); return true; }
     return false;
   }
   async function bucle() {
     while (C.activo) {
       hud.banner('Tu turno', 'heroe'); camara.mirarHacia(unidades[0].pj.grupo.position);
-      await new Promise((fin) => { turnoHeroe = { movido: false, actuado: false, fin }; hud.narrar('Muévete, ataca o lanza un hechizo. En el orden que quieras.'); accionesHeroe(); });
+      await new Promise((fin) => { turnoHeroe = { movido: false, actuado: false, fin }; hud.narrar('Muévete, ataca o usa tu habilidad. En el orden que quieras.'); accionesHeroe(); });
       hud.acciones([]); modoEleccion = null; alcanzables.clear(); pintar();
       if (!C.activo || await comprobarFin()) return;
+      for (const a of aliados()) { if (!C.activo) return; await turnoAliado(a); if (await comprobarFin()) return; }
       hud.banner('Turno de los esqueletos', 'enemigo'); await espera(700);
-      for (const e of unidades.slice(1)) { if (!C.activo) return; await turnoEnemigo(e); if (await comprobarFin()) return; }
+      for (const e of enemigos()) { if (!C.activo) return; await turnoEnemigo(e); if (await comprobarFin()) return; }
     }
   }
   function terminar(res) {
@@ -225,23 +279,25 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     C.activo = false; hud.acciones([]); dados.limpiar();
     const fin = resolver; resolver = null;
     tablero.cerrar = 0; sonido.musica('paseo');
-    setTimeout(() => fin?.({ resultado: res, caidos: unidades.filter((u) => !u.heroe && !u.vivo).length }), 600);
+    for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
+    setTimeout(() => fin?.({ resultado: res, caidos: unidades.filter((u) => u.bando === 'enemigo' && !u.vivo).map((u) => u.nombre) }), 600);
   }
 
   // ---------- empezar ----------
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
+  C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; sonido.circulo(); sonido.musica('combate');
-    const h = { heroe: true, pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
+    resolver = fin; C.activo = true; C.escamasUsadas = false; sonido.circulo(); sonido.musica('combate');
+    const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);
-    unidades = [h, ...grupo.map((e) => ({ ...e, vivo: true }))];
-    for (const u of unidades) u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u), u.c.reservada = true;
+    unidades = [h, ...grupo.map((e) => ({ ...e, bando: 'enemigo', vivo: true }))];
+    for (const u of unidades) u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u);
     hud.banner('¡Círculo de combate!', 'enemigo');
     camara.enfocarCombate(new THREE.Vector3(tablero.cx, tablero.y0, tablero.cz), heroe.grupo.position);
     await espera(900);
     await Promise.all(unidades.map((u) => andar(u, [u.c], .35)));
-    unidades.slice(1).forEach((e) => { mirarse(e, h); e.pj.hacer('rugir', .6); });
+    enemigos().forEach((e) => { mirarse(e, h); e.pj.hacer('rugir', .6); });
     mirarse(h, unidades[1]);
     await espera(600);
     bucle();

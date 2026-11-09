@@ -4,6 +4,7 @@
 //  usuarios/{uid}                 { nombre, email, ultimaVez }
 //  usuarios/{uid}/partidas/{id}   { id, modo, codigo, resumen, actualizada, estado (texto JSON) }
 //  usuarios/{uid}/viajero/ficha   { datos (texto JSON), actualizada }   — la ficha del viajero
+//  usuarios/{uid}/viajero/aventura { datos, actualizada }               — el héroe del modo aventura
 //
 //  El estado va como texto por lo mismo que en las salas: Firestore no
 //  guarda bien listas vacías ni objetos muy anidados, y el motor cuenta
@@ -133,6 +134,23 @@ export function subirFicha(f, ya = false) {
     const x = fichaPendiente; fichaPendiente = null;
     if (x && usuario) setDoc(docFicha(x.mundo), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar la ficha:', e.message));
   }, ya ? 0 : 4000);
+}
+
+// ---------- El héroe del modo aventura (claro.html) ----------
+//  usuarios/{uid}/viajero/aventura  { datos (texto JSON), actualizada }
+export async function leerAventuraNube() {
+  if (!usuario) return null;
+  try { const r = await getDoc(doc(db, 'usuarios', usuario.uid, 'viajero', 'aventura')); return r.exists() ? JSON.parse(r.data().datos) : null; }
+  catch (e) { console.warn('No se pudo leer el héroe de aventura:', e.message); return null; }
+}
+let aventuraPendiente = null, tAventura = null;
+export function subirAventura(a, ya = false) {
+  if (!usuario || !a) return;
+  aventuraPendiente = a; clearTimeout(tAventura);
+  tAventura = setTimeout(() => {
+    const x = aventuraPendiente; aventuraPendiente = null;
+    if (x && usuario) setDoc(doc(db, 'usuarios', usuario.uid, 'viajero', 'aventura'), { datos: JSON.stringify(x), actualizada: x.actualizada || Date.now() }).catch((e) => console.warn('No se pudo guardar el héroe de aventura:', e.message));
+  }, ya ? 0 : 2000);
 }
 
 // ---------- Actividad y errores (para el panel) ----------

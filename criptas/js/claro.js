@@ -14,7 +14,8 @@ import { OutputPass } from './vendor/addons/postprocessing/OutputPass.js';
 import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS } from './claro-mundo.js';
-import { crearMago, crearEsqueleto } from './claro-personajes.js';
+import { crearMago, crearEsqueleto, crearHeroe } from './claro-personajes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
@@ -48,10 +49,19 @@ const sonido = crearSonido();
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
 
 // ---------- estado del héroe ----------
-const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, setas: 0, pociones: 1, bolas: 2, mision: 'nueva', caidos: 0, cofre: false };
+const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, setas: 0, pociones: 1, usos: 2, mision: 'nueva', caidos: 0, cofre: false };
+// El héroe guardado (raza, clase, colores, nivel, experiencia, oro…). Si no hay, uno al azar de fondo hasta que crees el tuyo.
+let DEF = leerLocal(), nuevo = !DEF;
+if (!DEF) DEF = heroeAlAzar();
+function aplicarHeroe(def) {
+  DEF = def; const s = estadisticas(def);
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+}
+function guardarAhora() { DEF.oro = estado.oro; DEF.pociones = estado.pociones; guardarHeroe(DEF); }
+aplicarHeroe(DEF);
 
 // ---------- el héroe ----------
-const heroe = crearMago({ tunica: '#3d5bd9', adorno: P.oro, cristal: '#7ff6ff' });
+let heroe = crearHeroe(DEF);
 escena.add(heroe.grupo);
 const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloqueado: true, velocidad: 0, pasoFase: 0 };
 
@@ -142,6 +152,12 @@ function actualizarCamara(dt) {
   } else if (CAM.modo === 'combate') {
     obj = CAM.foco.clone().add(new THREE.Vector3(0, .6, 0)); if (CAM.mirar) obj.lerp(CAM.mirar, .35);
     if (CAM.yawObj != null) { let d = CAM.yawObj - CAM.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); CAM.yaw += d * Math.min(1, dt * 2.5); CAM.dist += (CAM.distObj - CAM.dist) * Math.min(1, dt * 2.5); CAM.pitch += (CAM.pitchObj - CAM.pitch) * Math.min(1, dt * 2.5); if (Math.abs(d) < .01) CAM.yawObj = null; }
+  } else if (CAM.modo === 'creador') {
+    // de cerca y un poco desplazado para que el panel no tape al héroe; gira solo, despacio
+    CAM.yaw = 3.1;
+    CAM.dist += ((MOVIL ? 8 : 5.6) - CAM.dist) * Math.min(1, dt * 3); CAM.pitch += (.14 - CAM.pitch) * Math.min(1, dt * 3);
+    const der = new THREE.Vector3(Math.cos(CAM.yaw), 0, -Math.sin(CAM.yaw)).multiplyScalar(MOVIL ? 0 : 1.3);
+    obj = heroe.grupo.position.clone().add(new THREE.Vector3(0, MOVIL ? -.15 : 1.1, 0)).add(der);   // en el móvil el panel tapa la mitad de abajo: el héroe, arriba
   } else obj = heroe.grupo.position.clone().add(new THREE.Vector3(0, 1.45, 0));
   CAM.objetivo.lerp(obj, Math.min(1, dt * (CAM.modo === 'paseo' ? 8 : 4)));
   const off = new THREE.Vector3(Math.sin(CAM.yaw) * Math.cos(CAM.pitch), Math.sin(CAM.pitch), Math.cos(CAM.yaw) * Math.cos(CAM.pitch)).multiplyScalar(CAM.dist);
@@ -157,7 +173,10 @@ const hud = {
   actualizar() {
     const c = $('#corazones'); c.innerHTML = '';
     for (let i = 0; i < estado.max; i++) { const s = document.createElement('i'); s.className = i < estado.cuerpo ? 'lleno' : ''; c.appendChild(s); }
-    $('#oro').textContent = estado.oro; $('#pociones').textContent = estado.pociones; $('#bolas').textContent = estado.bolas;
+    $('#oro').textContent = estado.oro; $('#pociones').textContent = estado.pociones; $('#bolas').textContent = estado.usos; $('#habIcono').textContent = estado.habilidad.icono;
+    const C0 = CLASES[DEF.clase], R0 = RAZAS[DEF.raza], n = DEF.nivel || 1, base = NIVELES[n - 1] || 0, sig = NIVELES[n];
+    $('#nombreH').textContent = DEF.nombre; $('#nivelH').textContent = `Nv ${n}`; $('#retrato').textContent = C0.icono; $('#retrato').style.background = `radial-gradient(circle at 40% 35%, #ffffff55, ${DEF.colores.ropa})`;
+    $('#xp i').style.width = sig ? Math.min(100, (DEF.xp - base) / (sig - base) * 100) + '%' : '100%'; $('#ficha').title = `${R0.nombre} ${C0.nombre.toLowerCase()} · ${DEF.xp} de experiencia`;
     const m = $('#mision');
     if (estado.mision === 'nueva') m.innerHTML = '<b>El claro</b><span>Habla con Brezo, junto a la hoguera</span>';
     else if (estado.mision === 'activa') {
@@ -215,7 +234,7 @@ async function interactuarYa(it) {
       const g = GRUPOS.filter((x) => !x.vivo).length;
       if (estado.setas >= 3 && g >= 2) {
         await hablar('Brezo', ['¡Lo has conseguido! Las setas brillan de maravilla y los esqueletos… bueno, ahora son decoración.', 'Toma la llave de runas. La cripta te espera. Y unas monedas, que el camino es largo.'], [['¡Gracias!', null]]);
-        estado.mision = 'hecha'; estado.oro += 25; ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 10); sonido.victoria(); mundo.abrirCripta(); sonido.abrir();
+        estado.mision = 'hecha'; estado.oro += 25; guardarAhora(); ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 10); sonido.victoria(); mundo.abrirCripta(); sonido.abrir();
         ui.chispas(mundo.cripta.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.5, 0)), '#c9a2ff', 60, 5); hud.actualizar();
       } else await hablar('Brezo', [`Llevas ${Math.min(3, estado.setas)} de 3 setas y has espantado a ${g} de 2 grupos. ¡Ánimo!`, estado.cuerpo < estado.max ? 'Si te han zurrado, siéntate junto a la hoguera: el fuego cura más que cualquier poción.' : 'Las setas suelen esconderse cerca del agua y entre las rocas.']);
     } else await hablar('Brezo', ['La cripta ya está abierta. Dicen que dentro hay un nigromante que colecciona calaveras. Tú no le des la tuya.']);
@@ -227,7 +246,7 @@ async function interactuarYa(it) {
     if (estado.cofre) return hablar('Cofre viejo', ['Vacío. Solo queda olor a madera húmeda y una araña indignada.']);
     estado.cofre = true; sonido.abrir(); const tapa = cofre.userData.tapa; let a = 0; const abrir = setInterval(() => { a += .08; tapa.rotation.x = -Math.min(1.9, a); if (a > 1.9) clearInterval(abrir); }, 16);
     ui.monedas(cofre.position.clone().add(new THREE.Vector3(0, .9, 0)), 12); ui.chispas(cofre.position.clone().add(new THREE.Vector3(0, 1, 0)), '#ffe08a', 30, 3);
-    estado.oro += 15; estado.pociones++; hud.actualizar(); await hablar('Cofre viejo', ['¡15 monedas y una poción de curación! Alguien se dejó esto con prisa.']);
+    estado.oro += 15; estado.pociones++; guardarAhora(); hud.actualizar(); await hablar('Cofre viejo', ['¡15 monedas y una poción de curación! Alguien se dejó esto con prisa.']);
   } else if (t === 'cartel') await hablar('Cartel', ['«➜ Cripta de los Huesos. ⬅ Morrandar (la tortuga grande, no tiene pérdida).»', 'Alguien ha añadido a lápiz: «Cuidado con el capitán. Muerde.»'], [], { grave: 1 });
   else if (t === 'hoguera') {
     await heroe.hacer('recoger', .8);
@@ -281,6 +300,7 @@ addEventListener('pointermove', (e) => {
   const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
   if (Math.hypot(p.x - p.x0, p.y - p.y0) > 7) p.movido = true;
   if (pellizco && punteros.size === 2) { const [a, b] = [...punteros.values()]; CAM.dist = THREE.MathUtils.clamp(pellizco.dist * pellizco.d / Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)), 4, 22); return; }
+  if (p.movido && CAM.modo === 'creador') { CAM.giro = (CAM.giro || 0) + dx * .012; return; }
   if (p.movido && CAM.modo !== 'intro') { CAM.yaw -= dx * .006; CAM.pitch = THREE.MathUtils.clamp(CAM.pitch + dy * .005, .08, 1.25); CAM.yawObj = null; }
 });
 addEventListener('pointerup', (e) => {
@@ -304,28 +324,94 @@ async function empezarCombate(g) {
   const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => ({ pj: m.pj, nombre: m.n, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }));
   for (const m of g.miembros) m.pj.vel = 0;
   $('#hud').classList.add('combate');
-  const { resultado } = await combate.empezar(grupo);
+  const { resultado, caidos } = await combate.empezar(grupo);
   $('#hud').classList.remove('combate'); hud.narrar('');
   CAM.modo = 'paseo'; CAM.yawObj = null;
   if (resultado === 'victoria') {
     g.vivo = false; hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
-    const oro = g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0); estado.oro += oro; estado.bolas = 2;
+    const oro = g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0); estado.oro += oro; estado.usos = estado.usosMax;
     ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), 8); setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
     if (GRUPOS.every((x) => !x.vivo) && estado.mision === 'activa' && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
+    await ganarExperiencia(caidos.reduce((s, n) => s + (XP[n] || 10), 0));
   } else {
     // derrota: Brezo te lleva junto a la hoguera
     hud.acciones([]);
     $('#fundido').classList.add('ver'); await new Promise((r) => setTimeout(r, 900));
     heroe.caido = false; heroe.cuerpo.rotation.x = 0;
     H.pos.set(SITIOS.hoguera.x + 2.2, 0, SITIOS.hoguera.z + 1.2); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z);
-    estado.cuerpo = estado.max; estado.bolas = 2; hud.actualizar();
+    estado.cuerpo = estado.max; estado.usos = estado.usosMax; hud.actualizar();
     for (const m of g.miembros) if (m.pj.restos == null) { const k = g.miembros.indexOf(m), a = k / g.miembros.length * Math.PI * 2; m.pj.grupo.position.set(g.ancla.x + Math.cos(a) * 1.6, 0, g.ancla.z + Math.sin(a) * 1.6); m.pj.grupo.position.y = mundo.alturaEn(m.pj.grupo.position.x, m.pj.grupo.position.z); }
     $('#fundido').classList.remove('ver');
     await hablar('Brezo', ['¡Menos mal que pasaba por allí! Te he traído a rastras hasta la hoguera.', 'Descansa y vuelve a intentarlo. Los esqueletos no se van a ir a ningún sitio. Literalmente: no tienen adónde.']);
   }
   if (estado.mision === 'activa' && estado.setas >= 3 && GRUPOS.every((x) => !x.vivo) && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
-  hud.actualizar(); H.bloqueado = false;
+  guardarAhora(); hud.actualizar(); H.bloqueado = false;
 }
+
+// ---------- tu héroe: cambiarlo, subir de nivel, la portada y el creador ----------
+function ponerHeroe(def) {
+  const viejo = heroe, pos = viejo.grupo.position.clone(), rot = viejo.grupo.rotation.y;
+  escena.remove(viejo.grupo); viejo.desechar?.();
+  heroe = crearHeroe(def); heroe.grupo.position.copy(pos); heroe.grupo.rotation.y = rot; heroe.mirarA(rot); escena.add(heroe.grupo);
+  H.pos = heroe.grupo.position; combate.ponerHeroe(heroe);
+}
+async function ganarExperiencia(xp) {
+  if (!xp) return;
+  DEF.xp = (DEF.xp || 0) + xp; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.6, 0)), `+${xp} exp`, '#b9a2ff');
+  const n = nivelDe(DEF.xp);
+  if (n > (DEF.nivel || 1)) {
+    DEF.oro = estado.oro; DEF.pociones = estado.pociones; DEF.nivel = n; aplicarHeroe(DEF); hud.actualizar();   // lo ganado en el combate no se pierde al recalcular
+    await new Promise((r) => setTimeout(r, 900));
+    hud.banner(`¡Nivel ${n}!`, 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.4); camara_luz();
+    ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 60, 5);
+    await hablar('¡Subes de nivel!', [`${DEF.nombre} llega a nivel ${n}: ${mejoraDeNivel(n)}. Y te recuperas del todo.`]);
+  }
+  guardarAhora(); hud.actualizar();
+}
+function camara_luz() { CAM.temblor = .15; }
+function pintarPortada() {
+  const C0 = CLASES[DEF.clase], R0 = RAZAS[DEF.raza];
+  $('#empezar').textContent = nuevo ? 'Crear mi héroe' : 'Bajar de Morrandar';
+  $('#cambiar').hidden = nuevo;
+  $('#saludo').textContent = nuevo ? 'Prototipo del modo aventura: crea tu héroe, pasea libre y, si tocas a los esqueletos, se juega por turnos.'
+    : `${DEF.nombre}, ${R0.nombre.toLowerCase()} ${C0.nombre.toLowerCase()} de nivel ${DEF.nivel || 1}, está listo para bajar.`;
+}
+const SITIO_CREADOR = new THREE.Vector3(-2.5, 0, -21);
+let borrador = null;
+function abrirCreador() {
+  borrador = JSON.parse(JSON.stringify(DEF)); if (nuevo) borrador.nombre = '';
+  $('#portada')?.classList.add('fuera'); setTimeout(() => $('#portada')?.remove(), 900);
+  $('#creador').hidden = false; requestAnimationFrame(() => $('#creador').classList.add('abierto'));
+  H.bloqueado = true; CAM.modo = 'creador'; CAM.yaw = 3.1; CAM.dist = 6; CAM.pitch = .2;
+  heroe.grupo.position.set(SITIO_CREADOR.x, mundo.alturaEn(SITIO_CREADOR.x, SITIO_CREADOR.z), SITIO_CREADOR.z); heroe.mirarA(Math.PI); heroe.grupo.rotation.y = Math.PI;
+  pintarCreador(true);
+}
+function pintarCreador(rehacer) {
+  const b = borrador, R0 = RAZAS[b.raza], C0 = CLASES[b.clase];
+  if (rehacer) { ponerHeroe(b); heroe.mirarA(heroe.grupo.rotation.y); heroe.hacer('girar', .7); }
+  $('#cNombre').value = b.nombre || '';
+  $('#cNombre').placeholder = 'Ponle nombre…';
+  const tarjetas = (sel, lista, actual, al) => { const d = $(sel); d.innerHTML = ''; for (const [id, x] of Object.entries(lista)) { const t = document.createElement('button'); t.className = id === actual ? 'sel' : ''; t.innerHTML = `<span>${x.icono}</span>${x.nombre}`; t.onclick = () => { sonido.dado(.4); al(id); }; d.appendChild(t); } };
+  tarjetas('#cRazas', RAZAS, b.raza, (id) => { b.raza = id; const R = RAZAS[id]; if (!R.pieles.includes(b.colores.piel)) b.colores.piel = R.pieles[0]; if (!R.pelos.includes(b.colores.pelo)) b.colores.pelo = R.pelos[0]; pintarCreador(true); });
+  tarjetas('#cClases', CLASES, b.clase, (id) => { b.clase = id; if (!CLASES[id].ropa.includes(b.colores.ropa)) b.colores.ropa = CLASES[id].ropa[0]; pintarCreador(true); });
+  $('#cRasgo').innerHTML = `<b>${R0.rasgo}.</b> ${R0.texto}`;
+  $('#cHab').innerHTML = `${C0.texto} <b>${C0.habilidad.icono} ${C0.habilidad.nombre}:</b> ${C0.habilidad.texto}`;
+  const muestras = (sel, lista, clave) => { const d = $(sel); d.innerHTML = ''; for (const c of lista) { const m = document.createElement('button'); m.style.background = c; m.className = b.colores[clave] === c ? 'sel' : ''; m.setAttribute('aria-label', c); m.onclick = () => { b.colores[clave] = c; sonido.dado(.3); pintarCreador(true); }; d.appendChild(m); } };
+  muestras('#cRopa', C0.ropa, 'ropa'); muestras('#cPiel', R0.pieles, 'piel'); muestras('#cPelo', R0.pelos, 'pelo');
+  $('#lPiel').textContent = b.raza === 'escamado' ? 'Escamas' : 'Piel'; $('#lPelo').textContent = b.raza === 'escamado' ? 'Cuernos' : 'Pelo';
+  const s = estadisticas(b);
+  $('#cStats').innerHTML = `<span>⚔️ Ataque ${s.ataque}</span><span>🛡️ Defensa ${s.defensa}</span><span>❤️ Cuerpo ${s.max}</span><span>${C0.habilidad.icono} ${s.usos} ${s.usos === 1 ? 'uso' : 'usos'}</span>`;
+  $('#cListo').textContent = nuevo ? '¡A la aventura!' : 'Guardar y bajar';
+}
+$('#cNombre').addEventListener('input', (e) => { borrador.nombre = e.target.value.replace(/[<>&"'`]/g, '').slice(0, 20); $('#cError').hidden = true; });
+$('#cAzar').addEventListener('click', () => { const r = heroeAlAzar(); Object.assign(borrador, { nombre: r.nombre, raza: r.raza, clase: r.clase, colores: r.colores }); sonido.dado(1); pintarCreador(true); });
+$('#cListo').addEventListener('click', () => {
+  borrador.nombre = (borrador.nombre || '').trim();
+  if (!borrador.nombre) { $('#cError').hidden = false; $('#cNombre').focus(); return; }
+  nuevo = false; aplicarHeroe(borrador); guardarHeroe(DEF, true); hud.actualizar();
+  $('#creador').classList.remove('abierto'); setTimeout(() => { $('#creador').hidden = true; }, 400);
+  sonido.recoger(); bajar();
+});
 
 // ---------- bucle ----------
 const reloj = new THREE.Clock();
@@ -399,6 +485,7 @@ function bucle() {
     if (p >= 1) { H.bloqueadoFin = true; CAM.modo = 'paseo'; H.bloqueado = false; heroe.vel = 0; $('#hud').classList.add('ver'); brezo.hacer('saludar', 1.2); hud.banner('El claro de los huesos', 'heroe'); }
   }
   moverHeroe(dt); rondaEsqueletos(dt); cercanos(); animarCosas(dt);
+  if (CAM.modo === 'creador') heroe.mirarA(Math.PI + (CAM.giro || 0) + Math.sin(t * .6) * .3);   // en el creador, de cara; arrastrando lo giras
   mundo.actualizar(t, dt);
   heroe.animar(dt, t); brezo.animar(dt, t);
   if (!H.bloqueado && !dialogo && !combate.activo && H.pos.distanceTo(brezo.grupo.position) < 6) brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z));
@@ -416,9 +503,15 @@ CAM.objetivo.copy(H.pos);
 hud.actualizar();
 bucle();
 $('#portada').classList.add('lista');
-$('#empezar').addEventListener('click', () => {
-  sonido.arrancar(); $('#portada').classList.add('fuera'); CAM.introT = 0; CAM.introEmpezada = true;
-  setTimeout(() => $('#portada').remove(), 900);
-});
+function bajar() {
+  $('#portada')?.classList.add('fuera'); CAM.modo = 'intro'; CAM.introT = 0; CAM.introEmpezada = true;
+  setTimeout(() => $('#portada')?.remove(), 900);
+}
+$('#empezar').addEventListener('click', () => { sonido.arrancar(); if (nuevo) abrirCreador(); else bajar(); });
+$('#cambiar').addEventListener('click', () => { sonido.arrancar(); abrirCreador(); });
+pintarPortada();
+// Si hay sesión, el héroe de la nube manda (puede venir de otro dispositivo)
+cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) && !$('#creador').classList.contains('abierto')) { nuevo = false; aplicarHeroe(h); ponerHeroe(h); hud.actualizar(); pintarPortada(); } });
 if (params.has('rapido')) { $('#portada').remove(); CAM.introT = 99; CAM.introEmpezada = true; }
-window.claro = { escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, heroe };
+if (params.has('crear')) { $('#portada').classList.add('fuera'); abrirCreador(); }
+window.claro = { escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
