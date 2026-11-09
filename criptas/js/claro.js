@@ -29,6 +29,8 @@ const params = new URLSearchParams(location.search);
 // En qué parada de Morrandar estás (el claro, el pantano…): cambia el paisaje, la guía, los monstruos y la cripta
 const PID = params.get('p') || 'claro', PAR = paradaDe(PID), TX = PAR.textos, GUIA = PAR.guia.nombre;
 document.title = PAR.nombre + ' · Criptas de Velmor';
+const DONDE = 'aventura-' + PID, OTROS = new Map();   // los de tu sala que están en esta misma parada
+let SALA = null;
 
 // ---------- motor ----------
 const lienzo = $('#lienzo');
@@ -479,6 +481,7 @@ function bucle() {
   heroe.animar(dt, t); brezo.animar(dt, t);
   if (!H.bloqueado && !dlg.actual && !combate.activo && H.pos.distanceTo(brezo.grupo.position) < 6) brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z));
   for (const g of GRUPOS) for (const m of g.miembros) m.pj.animar(dt, t);
+  moverOtros(dt, t);
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt);
   sonido.actualizar(H.pos.distanceTo(SITIOS.hoguera));
@@ -524,4 +527,38 @@ if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin
   if (caido) setTimeout(() => hablar(GUIA, TX.rescateCripta), 900);
 }
 if (params.has('crear')) { $('#portada').classList.add('fuera'); abrirCreador(); }
-window.claro = { escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
+// ---------- Jugar juntos: los de tu sala que estén en esta misma parada se ven paseando (la sala es la del pueblo) ----------
+const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase, colores: DEF.colores });
+{
+  const b = document.createElement('button'); b.id = 'sala'; b.className = 'caja'; b.textContent = '👥'; b.setAttribute('aria-label', 'Jugar juntos'); $('#hud').appendChild(b);
+  import('./reunion.js').then((RED) => RED.crearPanel({
+    donde: DONDE, boton: b, proponer: false, datos: () => ({ clase: DEF.clase, x: H.pos.x, z: H.pos.z }),
+    alConectar: (R) => { SALA = R; R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); R.on('gente', pintarOtros).on('frase', decirOtro); pintarOtros(R.gente()); },
+    alSalir: () => { SALA = null; pintarOtros({}); }
+  })).catch((e) => console.warn('Sin sala:', e?.message));
+}
+function pintarOtros(gente) {
+  for (const [id, o] of [...OTROS]) if (!gente[id] || gente[id].donde !== DONDE || gente[id].online === false) { escena.remove(o.pj.grupo); ui.quitar(o.rot); OTROS.delete(id); }
+  for (const [id, g] of Object.entries(gente)) {
+    if (id === SALA?.yo.id || g.donde !== DONDE || g.online === false) continue;
+    let o = OTROS.get(id);
+    if (!o || o.heroe !== g.heroe) {
+      if (o) { escena.remove(o.pj.grupo); ui.quitar(o.rot); }
+      let h = {}; try { h = JSON.parse(g.heroe || '{}'); } catch { /* sin datos: uno genérico */ }
+      const pj = crearHeroe({ raza: h.raza || 'humano', clase: h.clase || g.clase || 'mago', colores: h.colores || {} });
+      const x = g.x ?? 0, z = g.z ?? 0; pj.grupo.position.set(x, mundo.alturaEn(x, z), z); escena.add(pj.grupo);
+      o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: g.nombre }), tx: x, tz: z }; OTROS.set(id, o);
+    }
+    o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz;
+  }
+}
+function decirOtro(id, texto) { const o = OTROS.get(id); if (o) ui.numero(o.pj.grupo.position.clone().add(new THREE.Vector3(0, o.pj.altura + .8, 0)), String(texto).slice(0, 40), '#fff8e6'); }
+function moverOtros(dt, t) {
+  for (const o of OTROS.values()) {
+    const p = o.pj.grupo.position, dx = o.tx - p.x, dz = o.tz - p.z, d = Math.hypot(dx, dz);
+    if (d > 10) { p.x = o.tx; p.z = o.tz; } else if (d > .05) { const v = Math.min(d, dt * 6.5); p.x += dx / d * v; p.z += dz / d * v; o.pj.mirarA(Math.atan2(dx, dz)); }
+    o.pj.vel += ((d > .15 ? .75 : 0) - o.pj.vel) * Math.min(1, dt * 8); p.y = mundo.alturaEn(p.x, p.z); o.pj.animar(dt, t);
+  }
+  if (SALA && !combate.activo) SALA.mover(H.pos.x, H.pos.z, +heroe.grupo.rotation.y.toFixed(2));
+}
+window.claro = { OTROS, get SALA() { return SALA; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
