@@ -44,8 +44,12 @@ addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; cam
 
 // ---------- la misión: la Mazmorra Infinita en el plano de la cripta, para un héroe solo ----------
 const SEMILLA = params.get('semilla') || 'CLARO';
-const mision = aSolas(generarMision(SEMILLA, 6, 'cripta'));
-mision.titulo = 'La Cripta de los Huesos';
+// De dónde vienes: la cripta del claro, o un encargo del tablón de la cantina de Morrandar
+const DEL_PUEBLO = params.get('vuelta') === 'pueblo';
+const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || 6));
+const VOLVER = DEL_PUEBLO ? 'pueblo.html' : 'claro.html?desde=cripta';
+const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'));
+if (!DEL_PUEBLO) mision.titulo = 'La Cripta de los Huesos';   // la del claro tiene nombre propio; las del tablón, el suyo
 if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mision.objetivo.texto = 'Encuentra lo que buscas y vuelve a la escalera.'; }   // aquí no hay rondas: vas a tu ritmo
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
@@ -64,8 +68,12 @@ const heroe = crearHeroe(DEF); escena.add(heroe.grupo);
 const linterna = new THREE.PointLight('#ffcf8a', 11, 13, 1.3); escena.add(linterna);   // la luz que llevas contigo
 const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloqueado: true, pasoFase: 0 };
 {
-  const e = mision.escalera || [1, 1], p = cripta.aMundo(e[0], e[1]).add(new THREE.Vector3(C / 2, 0, C * 1.6));
-  H.pos.copy(p); heroe.mirarA(0);
+  // Apareces al pie de la escalera: en una casilla libre pegada a ella, mejor si es de su misma sala
+  const e = mision.escalera || [1, 1], rE = TB.region(e[0], e[1]);
+  const pie = [[0, 2], [1, 2], [-1, 0], [-1, 1], [2, 0], [2, 1], [0, -1], [1, -1]].map(([dx, dy]) => [e[0] + dx, e[1] + dy]).filter(([x, y]) => cripta.pisable(x, y));
+  const [x, y] = pie.find(([x, y]) => TB.region(x, y) === rE) || pie[0] || e;
+  H.pos.copy(cripta.aMundo(x, y)); heroe.mirarA(0);
+  cripta.revelar(TB.region(x, y));
 }
 
 // ---------- las tareas de la misión y las flags ----------
@@ -220,17 +228,18 @@ function revisarTrampas() {
 }
 async function ganar() {
   H.bloqueado = true;
-  const oro = Math.round((mision.recompensa || 100) / 2); estado.oro += oro; DEF.criptaHecha = true;
+  const oro = Math.round((mision.recompensa || 100) / 2); estado.oro += oro;
+  if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else DEF.criptaHecha = true;
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);
   await ganarExperiencia(60);
-  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.`, 'Brezo te estará esperando junto a la hoguera para que se lo cuentes todo.']);
+  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.`, DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : 'Brezo te estará esperando junto a la hoguera para que se lo cuentes todo.']);
   salir();
 }
 async function expulsado() {
   H.bloqueado = true; $('#fundido').classList.add('ver'); await espera(900); guardarAhora();
-  location.href = 'claro.html?desde=cripta&caido=1';
+  location.href = DEL_PUEBLO ? 'pueblo.html?caido=1' : 'claro.html?desde=cripta&caido=1';
 }
-function salir() { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = 'claro.html?desde=cripta'; }, 800); }
+function salir() { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = VOLVER; }, 800); }
 
 // ---------- lo que tienes cerca (puertas, buscar, escalera) ----------
 let cerca = null;
@@ -253,7 +262,7 @@ async function interactuar() {
     else if (c.tipo === 'escalera') {
       const req = mision.objetivo?.requiere || [], listo = mision.objetivo?.tipo === 'escalera' && req.every((f) => flags.has(f));
       if (listo) await ganar();
-      else await hablar('Escalera', [req.length ? 'Aún no tienes lo que viniste a buscar. ¿Subir de todas formas?' : '¿Volver al claro?'], [['Subir al claro', salir], ['Seguir explorando', null]]);
+      else await hablar('Escalera', [req.length ? 'Aún no tienes lo que viniste a buscar. ¿Subir de todas formas?' : (DEL_PUEBLO ? '¿Volver a Morrandar?' : '¿Volver al claro?')], [[DEL_PUEBLO ? 'Subir a Morrandar' : 'Subir al claro', salir], ['Seguir explorando', null]]);
     }
   } finally { H.ocupado = false; }
 }
