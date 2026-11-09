@@ -104,21 +104,21 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     mirarse(a, d); mirarse(d, a);
     await a.pj.hacer('golpe', .55);
     const mesa = mesaDados(a, d);
-    hud.narrar(`${a.nombre} ataca: ${a.ataque} ${a.ataque === 1 ? 'dado' : 'dados'}…`);
+    hud.narrar(`${a.heroe ? 'Atacas' : a.nombre + ' ataca'}: ${a.ataque} ${a.ataque === 1 ? 'dado' : 'dados'}…`);
     const r1 = await dados.tirar('combate', a.ataque, mesa.centro, mesa.desde), golpes = r1.filter((x) => x === 'calavera').length;
     if (!golpes) { hud.narrar(una(a.heroe ? FRASES.falloHeroe : FRASES.falloEsq)); await espera(700); return; }
-    hud.narrar(`¡${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}! ${d.nombre} se defiende…`);
+    hud.narrar(`¡${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}! ${d.heroe ? 'Te defiendes' : d.nombre + ' se defiende'}…`);
     await espera(450);
     const r2 = await dados.tirar('combate', d.defensa, mesa.centro, mesa.desde), escudo = d.heroe ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
     const dano = Math.max(0, golpes - paradas);
-    if (!dano) { sonido.bloqueo(); ui.numero(sobre(d, d.pj.altura), '¡Parado!', '#cfe8ff'); hud.narrar(`${d.nombre} lo para todo con ${paradas === 1 ? 'un escudo' : 'los escudos'}.`); await espera(600); return; }
+    if (!dano) { sonido.bloqueo(); ui.numero(sobre(d, d.pj.altura), '¡Parado!', '#cfe8ff'); hud.narrar(`${d.heroe ? 'Lo paras' : d.nombre + ' lo para'} todo con ${paradas === 1 ? 'un escudo' : 'los escudos'}.`); await espera(600); return; }
     await herir(d, dano);
   }
   async function herir(d, dano) {
     sonido.golpe(); d.pj.herido(); d.cuerpo -= dano; ui.numero(sobre(d, d.pj.altura), `-${dano}`); ui.chispas(sobre(d, 1), '#ffd0a0', 10, 2.5);
     if (d.heroe) { estado.cuerpo = Math.max(0, d.cuerpo); hud.actualizar(); }
     camara.temblar(.25);
-    if (d.cuerpo <= 0) await morir(d); else { hud.narrar(`${d.nombre} recibe ${dano} de daño.`); await espera(650); }
+    if (d.cuerpo <= 0) await morir(d); else { hud.narrar(d.heroe ? `Recibes ${dano} de daño.` : `${d.nombre} recibe ${dano} de daño.`); await espera(650); }
   }
   async function morir(u) {
     u.vivo = false;

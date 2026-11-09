@@ -300,7 +300,7 @@ $('#sonido').addEventListener('click', () => { const b = $('#sonido'); b.classLi
 // ---------- el combate ----------
 const combate = crearCombate({ escena, mundo, ui, dados, sonido, camara: cam, hud, heroe, estado });
 async function empezarCombate(g) {
-  H.destino = null; H.interaccion = null; heroe.vel = 0;
+  H.destino = null; H.interaccion = null; heroe.vel = 0; H.bloqueado = true;   // nada de pasear (ni de volver a pisar el círculo) hasta que acabe todo
   const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => ({ pj: m.pj, nombre: m.n, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }));
   for (const m of g.miembros) m.pj.vel = 0;
   $('#hud').classList.add('combate');
@@ -318,13 +318,13 @@ async function empezarCombate(g) {
     $('#fundido').classList.add('ver'); await new Promise((r) => setTimeout(r, 900));
     heroe.caido = false; heroe.cuerpo.rotation.x = 0;
     H.pos.set(SITIOS.hoguera.x + 2.2, 0, SITIOS.hoguera.z + 1.2); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z);
-    estado.cuerpo = estado.max; estado.bolas = 2;
+    estado.cuerpo = estado.max; estado.bolas = 2; hud.actualizar();
     for (const m of g.miembros) if (m.pj.restos == null) { const k = g.miembros.indexOf(m), a = k / g.miembros.length * Math.PI * 2; m.pj.grupo.position.set(g.ancla.x + Math.cos(a) * 1.6, 0, g.ancla.z + Math.sin(a) * 1.6); m.pj.grupo.position.y = mundo.alturaEn(m.pj.grupo.position.x, m.pj.grupo.position.z); }
     $('#fundido').classList.remove('ver');
     await hablar('Brezo', ['¡Menos mal que pasaba por allí! Te he traído a rastras hasta la hoguera.', 'Descansa y vuelve a intentarlo. Los esqueletos no se van a ir a ningún sitio. Literalmente: no tienen adónde.']);
   }
   if (estado.mision === 'activa' && estado.setas >= 3 && GRUPOS.every((x) => !x.vivo) && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
-  hud.actualizar();
+  hud.actualizar(); H.bloqueado = false;
 }
 
 // ---------- bucle ----------
