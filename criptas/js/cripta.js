@@ -24,6 +24,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
+import { crearJuntos } from './cripta-juntos.js';
 import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
@@ -80,7 +81,8 @@ const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloquea
   // Apareces al pie de la escalera: en una casilla libre pegada a ella, mejor si es de su misma sala
   const e = mision.escalera || [1, 1], rE = TB.region(e[0], e[1]);
   const pie = [[0, 2], [1, 2], [-1, 0], [-1, 1], [2, 0], [2, 1], [0, -1], [1, -1]].map(([dx, dy]) => [e[0] + dx, e[1] + dy]).filter(([x, y]) => cripta.pisable(x, y));
-  const [x, y] = pie.find(([x, y]) => TB.region(x, y) === rE) || pie[0] || e;
+  const enSala = pie.filter(([x, y]) => TB.region(x, y) === rE);   // al azar entre las buenas: si bajáis juntos, no salís uno encima del otro
+  const [x, y] = enSala[Math.floor(Math.random() * enSala.length)] || pie[0] || e;
   H.pos.copy(cripta.aMundo(x, y)); heroe.mirarA(0);
   cripta.revelar(TB.region(x, y));
 }
@@ -108,6 +110,7 @@ function modelo(tipo, jefe) {
   return pj;
 }
 const monstruos = [];
+let J = null;   // los de tu sala que están en esta misma cripta (cripta-juntos.js)
 function nacer(mo, alerta = false) {
   const st = D.MONSTRUOS[mo.tipo] || D.MONSTRUOS.esqueleto, pj = modelo(mo.tipo, mo.jefe), p = cripta.aMundo(mo.x, mo.y);
   pj.grupo.position.copy(p); pj.mirarA(Math.random() * 6);
@@ -116,7 +119,9 @@ function nacer(mo, alerta = false) {
   const x = { def: mo, id: mo.id, tipo: mo.tipo, nombre, pj, vivo: true, alerta, region: r, st,
     cuerpo: (mo.cuerpo || st.cuerpo) + (mo.jefe ? 2 : 0), ataque: mo.ataque || st.ataque, defensa: mo.defensa || st.defensa, mover: Math.min(8, st.mov || 6) };
   x.rotulo = ui.rotulo(pj.grupo, nombre, { tipo: 'enemigo', altura: pj.altura + .2 });
-  monstruos.push(x); return x;
+  monstruos.push(x);
+  if (J?.muertoFuera(x.id)) { x.vivo = false; pj.grupo.visible = false; }   // otro de la sala ya lo tumbó
+  return x;
 }
 mision.monstruos.forEach((mo) => nacer(mo));
 
@@ -130,12 +135,31 @@ const cam = {
 };
 const combate = crearCombate({ escena, mundo: cripta, ui, dados, sonido, camara: cam, hud, heroe, estado });
 
+// ---------- jugar juntos: la misma cripta para todos los de la sala ----------
+let ganarLuego = false;
+async function muertoFuera(id) {
+  const mo = monstruos.find((m) => m.id === id); if (!mo || !mo.vivo) return;
+  mo.vivo = false; if (mo.pj.desmontar && mo.visto) mo.pj.desmontar(0); else mo.pj.grupo.visible = false;
+  await evento('monstruo_muerto', { id });
+  if (mision.objetivo?.tipo === 'matar' && mision.objetivo.id === id) { if (combate.activo || H.bloqueado || dlg.actual) ganarLuego = true; else await ganar(); }
+}
+J = crearJuntos({ escena, ui, cripta, clave: `${PID}|${SEMILLA}|${NIVEL}|${DEL_PUEBLO ? 'p' : 'a'}`, heroe, H, def: () => DEF, combate, al: {
+  puerta: async (id) => { const p = cripta.puertas.find((x) => x.id === id); if (p && !p.abierta) { p.bloqueada = false; if (p.candado) { p.g.remove(p.candado); p.candado = null; } await abrir(p); } },
+  muerto: muertoFuera,
+  buscada: (r) => buscadas.add(r),
+  flag: (f) => ponerFlag(f),
+  pisa: (x, y) => { const r = TB.region(x, y); if (r !== '.') abrirRegion(r); },
+  llega: (n) => { hud.narrar(`${n} está en la cripta contigo. Lo que abráis, tumbéis o encontréis vale para los dos.`); setTimeout(() => hud.narrar(''), 5000); }
+} });
+
 async function empezarCombate(grupo) {
   H.destino = null; H.interaccion = null; H.bloqueado = true; heroe.vel = 0;
   for (const g of grupo) { g.alerta = true; g.pj.vel = 0; }
+  J?.luchar(grupo.map((g) => g.id));
   $('#hud').classList.add('combate');
   const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })));
   $('#hud').classList.remove('combate'); hud.narrar(''); CAM.modo = 'paseo';
+  J?.luchar([]); for (const id of caidosIds) J?.anotar('m', id);
   let xp = 0;
   const botin = {};
   for (const id of caidosIds) { const mo = monstruos.find((m) => m.id === id); if (!mo) continue; mo.vivo = false; xp += (XP_TIPO[mo.tipo] || 10) + (mo.def.jefe ? 40 : 0); for (const [k, n] of Object.entries(botinDe(mo.tipo, mo.def.jefe))) botin[k] = (botin[k] || 0) + n; }
@@ -165,7 +189,7 @@ async function ganarExperiencia(xp) {
 }
 
 // ---------- el guion de la misión (disparadores) ----------
-async function ponerFlag(nombre) { if (flags.has(nombre)) return; flags.add(nombre); hud.actualizar(); await evento('flag', { nombre }); }
+async function ponerFlag(nombre) { if (flags.has(nombre)) return; flags.add(nombre); J?.anotar('f', nombre); hud.actualizar(); await evento('flag', { nombre }); }
 function cumple(d, tipo, x) {
   if (d.cuando !== tipo) return false;
   if (tipo === 'flag') return d.requiere ? d.requiere.every((f) => flags.has(f)) : d.nombre === x.nombre;
@@ -198,14 +222,14 @@ function abrirRegion(r) {
 }
 async function abrir(p) {
   if (p.abierta) return;
-  cripta.abrirPuerta(p); sonido.abrir();
+  cripta.abrirPuerta(p); sonido.abrir(); J?.anotar('p', p.id);
   abrirRegion(TB.region(...p.a)); abrirRegion(TB.region(...p.b));
   await evento('puerta_abierta', { id: p.id });
 }
 
 // ---------- buscar tesoro, trampas, la escalera ----------
 async function buscar(r) {
-  buscadas.add(r); await heroe.hacer('recoger', .8);
+  buscadas.add(r); J?.anotar('b', r); await heroe.hacer('recoger', .8);
   const t = mision.tesoros?.[r];
   if (t) {
     if (t.oro) estado.oro += t.oro;
@@ -285,13 +309,13 @@ function vigilar() {
   if (combate.activo || H.bloqueado || dlg.actual) return;
   const [hx, hy] = cripta.deMundo(H.pos), hr = TB.region(hx, hy);
   const ven = monstruos.filter((m) => {
-    if (!m.vivo || !m.visto) return false;   // lo que no has visto aún, tampoco te ve a ti
+    if (!m.vivo || !m.visto || J?.ocupado(m.id)) return false;   // lo que no has visto aún no te ve; y si pelea con otro, está a lo suyo
     const [mx, my] = cripta.deMundo(m.pj.grupo.position), d = Math.abs(mx - hx) + Math.abs(my - hy);
     return (m.region === hr && hr !== '.') || (m.region === '.' && hr === '.' && d <= 5) || (m.alerta && d <= 7);
   });
   if (!ven.length) return;
   const [ax, ay] = cripta.deMundo(ven[0].pj.grupo.position);
-  const grupo = monstruos.filter((m) => m.vivo && m.visto && (Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay) <= 7));
+  const grupo = monstruos.filter((m) => m.vivo && m.visto && !J?.ocupado(m.id) && (Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay) <= 7));
   empezarCombate(grupo);
 }
 
@@ -381,6 +405,7 @@ function bucle() {
   cripta.actualizar(t, dt); heroe.animar(dt, t);
   for (const m of monstruos) { if (!m.pj.grupo.parent) continue; m.pj.animar(dt, t); if (m.vivo && m.alerta && !combate.activo) m.pj.mirarA(Math.atan2(H.pos.x - m.pj.grupo.position.x, H.pos.z - m.pj.grupo.position.z)); if (!m.visto && cripta.vista(...cripta.deMundo(m.pj.grupo.position))) m.visto = true; m.pj.grupo.visible = !!(m.visto || !m.vivo); if (m.rotulo) m.rotulo.visible = !!(m.vivo && m.visto); }
   linterna.position.copy(H.pos).add(new THREE.Vector3(0, 2.2, 0));
+  J.actualizar(dt, t); if (ganarLuego && !combate.activo && !H.bloqueado && !dlg.actual) { ganarLuego = false; ganar(); }
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt); sonido.actualizar(99);
   if (composer) composer.render(); else render.render(escena, camara);
@@ -395,4 +420,4 @@ setTimeout(async () => {
   H.bloqueado = false;
 }, 900);
 lienzo.addEventListener('pointerdown', () => sonido.arrancar(), { once: true });
-window.cripta = { escena, estado, H, CAM, mision, monstruos, combate, flags, cripta, ponerFlag, abrir, abrirRegion, interactuar, get cerca() { return cerca; }, get def() { return DEF; } };
+window.cripta = { J, escena, estado, H, CAM, mision, monstruos, combate, flags, cripta, ponerFlag, abrir, abrirRegion, interactuar, get cerca() { return cerca; }, get def() { return DEF; } };

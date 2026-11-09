@@ -7,6 +7,7 @@
 //  claro-dados, claro-combate y claro-sonido.
 // =============================================================
 import * as THREE from 'three';
+import { avisarBajada } from './cripta-juntos.js';
 import { crearCalidad } from './calidad.js';
 import { EffectComposer } from './vendor/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from './vendor/addons/postprocessing/RenderPass.js';
@@ -32,6 +33,8 @@ const PID = params.get('p') || 'claro', PAR = paradaDe(PID), TX = PAR.textos, GU
 document.title = PAR.nombre + ' · Criptas de Velmor';
 const DONDE = 'aventura-' + PID, OTROS = new Map();   // los de tu sala que están en esta misma parada
 let SALA = null;
+const CARGADA = Date.now(), BAJADAS_VISTAS = new Set();   // las invitaciones a bajar a la cripta
+let bajadaPendiente = null;
 
 // ---------- motor ----------
 const lienzo = $('#lienzo');
@@ -244,7 +247,7 @@ async function interactuarYa(it) {
   else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: ' + GUIA + '.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
   else if (t === 'cripta') {
     if (estado.mision !== 'hecha') await hablar(PAR.cripta.nombre, [TX.cerrada]);
-    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['Bajar a la cripta', () => { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`; }, 700); }], ['Ahora no', null]]);
+    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['Bajar a la cripta', () => bajarCripta(PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`)], ['Ahora no', null]]);
   } else if (t === 'pasarela') {
     await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html?desde=escala'; }], ['Quedarme', null]]);
   }
@@ -531,6 +534,24 @@ if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin
 }
 if (params.has('crear')) { $('#portada').classList.add('fuera'); abrirCreador(); }
 // ---------- Jugar juntos: los de tu sala que estén en esta misma parada se ven paseando (la sala es la del pueblo) ----------
+// Bajar a la cripta: si estás en una sala, los demás se enteran y pueden seguirte (misma cripta, misma semilla)
+async function bajarCripta(url) {
+  guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver');
+  await Promise.race([avisarBajada(SALA, url), new Promise((r) => setTimeout(r, 1500))]).catch(() => {});
+  setTimeout(() => { location.href = url; }, 400);
+}
+function mirarBajadas(id, g) {
+  let b = null; try { b = JSON.parse(g.baja || 'null'); } catch { return; }
+  if (!b || b.n < CARGADA - 15000 || BAJADAS_VISTAS.has(id + b.n)) return;   // solo las de ahora, y cada una una vez
+  BAJADAS_VISTAS.add(id + b.n);
+  let h = {}; try { h = JSON.parse(g.heroe || '{}'); } catch { /* sin nombre */ }
+  bajadaPendiente = { nombre: h.nombre || g.nombre || 'Alguien', url: b.url };
+}
+function ofrecerBajada() {
+  if (!bajadaPendiente || combate.activo || dlg.actual || H.bloqueado) return;
+  const { nombre, url } = bajadaPendiente; bajadaPendiente = null;
+  hablar('Jugar juntos', [`${nombre} acaba de bajar a la cripta. Si bajas ahora, entraréis en la misma: lo que abra uno se abre para los dos.`], [[`Bajar con ${nombre}`, () => bajarCripta(url)], ['Me quedo aquí', null]]);
+}
 const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase, colores: DEF.colores });
 {
   const b = document.createElement('button'); b.id = 'sala'; b.className = 'caja'; b.textContent = '👥'; b.setAttribute('aria-label', 'Jugar juntos'); $('#hud').appendChild(b);
@@ -543,6 +564,7 @@ const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase
 function pintarOtros(gente) {
   for (const [id, o] of [...OTROS]) if (!gente[id] || gente[id].donde !== DONDE || gente[id].online === false) { escena.remove(o.pj.grupo); ui.quitar(o.rot); OTROS.delete(id); }
   for (const [id, g] of Object.entries(gente)) {
+    if (id !== SALA?.yo.id && g.baja) mirarBajadas(id, g);
     if (id === SALA?.yo.id || g.donde !== DONDE || g.online === false) continue;
     let o = OTROS.get(id);
     if (!o || o.heroe !== g.heroe) {
@@ -563,5 +585,6 @@ function moverOtros(dt, t) {
     o.pj.vel += ((d > .15 ? .75 : 0) - o.pj.vel) * Math.min(1, dt * 8); p.y = mundo.alturaEn(p.x, p.z); o.pj.animar(dt, t);
   }
   if (SALA && !combate.activo) SALA.mover(H.pos.x, H.pos.z, +heroe.grupo.rotation.y.toFixed(2));
+  ofrecerBajada();
 }
-window.claro = { OTROS, get SALA() { return SALA; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
+window.claro = { bajarCripta, OTROS, get SALA() { return SALA; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
