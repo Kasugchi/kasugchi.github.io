@@ -6,7 +6,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
-import { P, toon, pieza, contorno, fbm, ruido, azar, lienzo } from './claro-estilo.js';
+import { P as PBASE, toon, pieza, contorno, fbm, ruido, azar, lienzo } from './claro-estilo.js';
 
 // Sitios importantes del claro (el juego los usa para colocar cosas)
 export const SITIOS = {
@@ -45,22 +45,24 @@ export function alturaEn(x, z) {
   return h;
 }
 
-export function crearMundo(escena, { movil = false } = {}) {
+// tema: colores y ambiente de cada parada de Morrandar (ver paradas.js); sin tema, el claro de siempre
+export function crearMundo(escena, { movil = false, tema = null } = {}) {
+  const P = { ...PBASE, ...(tema?.colores || {}) };
   const animables = [];             // funciones (t, dt) que se llaman cada fotograma
   const obstaculos = [];            // círculos { x, z, r } por donde no se puede pasar
   const rnd = azar(11);
 
   // ---------- Luz de atardecer ----------
   const solDir = new THREE.Vector3(-.75, .32, .58).normalize();
-  const sol = new THREE.DirectionalLight('#ffd2a1', 2.3);
+  const sol = new THREE.DirectionalLight(tema?.luzSol || '#ffd2a1', tema ? 2 : 2.3);
   sol.position.copy(solDir).multiplyScalar(60); sol.castShadow = true;
   sol.shadow.mapSize.set(movil ? 1024 : 2048, movil ? 1024 : 2048);
   Object.assign(sol.shadow.camera, { left: -30, right: 30, top: 30, bottom: -30, near: 1, far: 160 });
   sol.shadow.bias = -.0006; sol.shadow.normalBias = .04;
   escena.add(sol, sol.target);
-  escena.add(new THREE.HemisphereLight('#b7a6ff', '#4d7a3a', 1.05));
+  escena.add(new THREE.HemisphereLight(tema?.cielo || '#b7a6ff', P.hierbaOscura, 1.05));
   escena.add(new THREE.AmbientLight('#ffb38a', .25));
-  escena.fog = new THREE.Fog(P.niebla, 50, 190);
+  escena.fog = new THREE.Fog(P.niebla, ...(tema?.niebla || [50, 190]));
 
   // ---------- Cielo pintado: degradado, resplandor del sol y estrellas que empiezan a salir ----------
   const cielo = new THREE.Mesh(new THREE.SphereGeometry(420, 32, 16), new THREE.ShaderMaterial({
@@ -157,7 +159,7 @@ export function crearMundo(escena, { movil = false } = {}) {
   {
     const gf = mergeGeometries([new THREE.CylinderGeometry(.015, .015, .3, 4).translate(0, .15, 0).toNonIndexed(), new THREE.IcosahedronGeometry(.08, 0).translate(0, .32, 0)]);
     const N = movil ? 260 : 520, flores = new THREE.InstancedMesh(gf, toon('#ffffff'), N), m = new THREE.Matrix4();
-    const colores = ['#ff8fb8', '#ffe066', '#ffffff', '#c59bff', '#ff9e5e'];
+    const colores = tema?.flores || ['#ff8fb8', '#ffe066', '#ffffff', '#c59bff', '#ff9e5e'];
     for (let i = 0; i < N; i++) {
       const g = Math.floor(rnd() * 40), cx = ruido(g * 3.1, 1) * 90 - 45, cz = ruido(1, g * 2.7) * 80 - 40;
       const x = cx + (rnd() - .5) * 4, z = cz + (rnd() - .5) * 4;
@@ -479,7 +481,7 @@ export function crearMundo(escena, { movil = false } = {}) {
   // ---------- Hojas que caen y pájaros que cruzan el cielo ----------
   {
     const N = movil ? 40 : 80, gh = new THREE.PlaneGeometry(.22, .14), hojas = new THREE.InstancedMesh(gh, toon('#e8913a', { side: THREE.DoubleSide }), N), d = [], m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3(1, 1, 1), pp = new THREE.Vector3();
-    const tonos = ['#e8913a', '#d9622f', '#f2c14a', '#9fbf4a'];
+    const tonos = tema?.hojas || ['#e8913a', '#d9622f', '#f2c14a', '#9fbf4a'];
     for (let i = 0; i < N; i++) { d.push({ x: (rnd() - .5) * 70, y: rnd() * 12, z: (rnd() - .5) * 70, f: rnd() * 6, v: .4 + rnd() * .5 }); hojas.setColorAt(i, new THREE.Color(tonos[i % 4])); }
     escena.add(hojas);
     animables.push((t, dt) => {
@@ -500,6 +502,17 @@ export function crearMundo(escena, { movil = false } = {}) {
       const a = t * .05; bandada.position.set(Math.cos(a) * 120, 55 + Math.sin(t * .2) * 4, Math.sin(a) * 120 - 40); bandada.rotation.y = -a;
       for (const [w, sd, i] of alas) w.rotation.z = sd * Math.sin(t * 6 + i) * .6;
     });
+  }
+
+  // ---------- Neblina baja (solo en las paradas que la tienen, como el pantano) ----------
+  if (tema?.neblinaBaja) {
+    const tx = lienzo(128, 128, (x, w) => { const g = x.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2); g.addColorStop(0, 'rgba(255,255,255,.55)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.fillRect(0, 0, w, w); });
+    const capas = [];
+    for (let i = 0; i < (movil ? 14 : 26); i++) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(14, 14).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: tx, color: tema.neblinaBaja, transparent: true, opacity: .35, depthWrite: false }));
+      const a = rnd() * 6.28, d = rnd() * 45; m.position.set(Math.cos(a) * d, .5 + rnd() * .8, Math.sin(a) * d); m.renderOrder = 2; escena.add(m); capas.push({ m, f: rnd() * 6 });
+    }
+    animables.push((t) => { for (const c of capas) { c.m.position.x += Math.sin(t * .1 + c.f) * .01; c.m.material.opacity = .25 + Math.sin(t * .3 + c.f) * .1; } });
   }
 
   return {

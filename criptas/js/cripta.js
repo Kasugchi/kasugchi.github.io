@@ -15,6 +15,7 @@ import * as D from './datos.js';
 import * as TB from './tablero.js';
 import { generarMision } from './procedural.js';
 import { EFECTOS_CRIPTA } from './cocina.js';
+import { paradaDe } from './paradas.js';
 import { crearCripta, aSolas, C } from './claro-cripta.js';
 import { crearHeroe, crearEsqueleto, crearMago } from './claro-personajes.js';
 import { crearUI3D } from './claro-ui3d.js';
@@ -44,13 +45,18 @@ if (!MOVIL && !params.has('sinbrillo')) {
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight); });
 
 // ---------- la misión: la Mazmorra Infinita en el plano de la cripta, para un héroe solo ----------
-const SEMILLA = params.get('semilla') || 'CLARO';
-// De dónde vienes: la cripta del claro, o un encargo del tablón de la cantina de Morrandar
+// De dónde vienes: la cripta de una parada (el claro, el pantano…), o un encargo de la oficina de Morrandar
 const DEL_PUEBLO = params.get('vuelta') === 'pueblo';
-const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || 6));
-const VOLVER = DEL_PUEBLO ? 'pueblo.html' : 'claro.html?desde=cripta';
+const PID = params.get('p') || 'claro', PAR = paradaDe(PID);
+const SEMILLA = params.get('semilla') || PAR.cripta.semilla;
+const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || PAR.cripta.nivel));
+const AL_SITIO = PAR.corto.replace(/^El /, 'al ').replace(/^La /, 'a la ');
+const ESCENARIO = PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}&`;
+const VOLVER = DEL_PUEBLO ? 'pueblo.html' : (PID === 'claro' ? 'claro.html?desde=cripta' : `${ESCENARIO}desde=cripta`);
 const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'));
-if (!DEL_PUEBLO) mision.titulo = 'La Cripta de los Huesos';   // la del claro tiene nombre propio; las del tablón, el suyo
+if (!DEL_PUEBLO) mision.titulo = PAR.cripta.titulo;   // la de cada parada tiene nombre propio; las de los encargos, el suyo
+// Los monstruos de la zona: en el pantano, zombis y brujas (el jefe conserva su nombre y su fuerza)
+if (PAR.cripta.monstruos) { const L = PAR.cripta.monstruos; const re = (mo, i) => { if (!mo.jefe && !mo.nombre) mo.tipo = L[(i * 7 + (mo.x || 0)) % L.length]; }; mision.monstruos.forEach(re); for (const d of mision.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos.forEach(re); }
 if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mision.objetivo.texto = 'Encuentra lo que buscas y vuelve a la escalera.'; }   // aquí no hay rondas: vas a tu ritmo
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
@@ -233,15 +239,15 @@ function revisarTrampas() {
 async function ganar() {
   H.bloqueado = true;
   const oro = Math.round((mision.recompensa || 100) / 2); estado.oro += oro;
-  if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else DEF.criptaHecha = true;
+  if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else if (PID === 'claro') DEF.criptaHecha = true; else { DEF.paradas ||= {}; (DEF.paradas[PID] ||= {}).criptaHecha = true; }
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);
   await ganarExperiencia(60);
-  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.` + (() => { const t = {}; for (const b of BOTIN_TOTAL) for (const [k, n] of Object.entries(b)) t[k] = (t[k] || 0) + n; const s = textoBotin(t); return s ? ` En la bolsa, para la forja: ${s}.` : ''; })(), DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : 'Brezo te estará esperando junto a la hoguera para que se lo cuentes todo.']);
+  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.` + (() => { const t = {}; for (const b of BOTIN_TOTAL) for (const [k, n] of Object.entries(b)) t[k] = (t[k] || 0) + n; const s = textoBotin(t); return s ? ` En la bolsa, para la forja: ${s}.` : ''; })(), DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : `${PAR.guia.nombre} te estará esperando junto al fuego para que se lo cuentes todo.`]);
   salir();
 }
 async function expulsado() {
   H.bloqueado = true; $('#fundido').classList.add('ver'); await espera(900); delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true);
-  location.href = DEL_PUEBLO ? 'pueblo.html?caido=1' : 'claro.html?desde=cripta&caido=1';
+  location.href = DEL_PUEBLO ? 'pueblo.html?caido=1' : (PID === 'claro' ? 'claro.html?desde=cripta&caido=1' : `${ESCENARIO}desde=cripta&caido=1`);
 }
 function salir() { delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = VOLVER; }, 800); }
 
@@ -266,7 +272,7 @@ async function interactuar() {
     else if (c.tipo === 'escalera') {
       const req = mision.objetivo?.requiere || [], listo = mision.objetivo?.tipo === 'escalera' && req.every((f) => flags.has(f));
       if (listo) await ganar();
-      else await hablar('Escalera', [req.length ? 'Aún no tienes lo que viniste a buscar. ¿Subir de todas formas?' : (DEL_PUEBLO ? '¿Volver a Morrandar?' : '¿Volver al claro?')], [[DEL_PUEBLO ? 'Subir a Morrandar' : 'Subir al claro', salir], ['Seguir explorando', null]]);
+      else await hablar('Escalera', [req.length ? 'Aún no tienes lo que viniste a buscar. ¿Subir de todas formas?' : (DEL_PUEBLO ? '¿Volver a Morrandar?' : `¿Volver ${AL_SITIO}?`)], [[DEL_PUEBLO ? 'Subir a Morrandar' : `Subir ${AL_SITIO}`, salir], ['Seguir explorando', null]]);
     }
   } finally { H.ocupado = false; }
 }

@@ -21,10 +21,14 @@ import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
+import { paradaDe, criptaHechaEn } from './paradas.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
 const params = new URLSearchParams(location.search);
+// En qué parada de Morrandar estás (el claro, el pantano…): cambia el paisaje, la guía, los monstruos y la cripta
+const PID = params.get('p') || 'claro', PAR = paradaDe(PID), TX = PAR.textos, GUIA = PAR.guia.nombre;
+document.title = PAR.nombre + ' · Criptas de Velmor';
 
 // ---------- motor ----------
 const lienzo = $('#lienzo');
@@ -44,7 +48,7 @@ if (!MOVIL && !params.has('sinbrillo')) {
 }
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight); });
 
-const mundo = crearMundo(escena, { movil: MOVIL });
+const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido();
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
@@ -60,7 +64,10 @@ function aplicarHeroe(def) {
 }
 function guardarAhora() {
   DEF.oro = estado.oro; DEF.pociones = estado.pociones;
-  if (typeof GRUPOS !== 'undefined') DEF.claro = { mision: estado.mision, setas: estado.setas, setasCogidas: estado.setasCogidas || [], cofre: estado.cofre, grupos: GRUPOS.map((g) => g.vivo) };   // el claro queda como lo dejas
+  if (typeof GRUPOS !== 'undefined') {   // la parada queda como la dejas
+    const e = { mision: estado.mision, setas: estado.setas, setasCogidas: estado.setasCogidas || [], cofre: estado.cofre, grupos: GRUPOS.map((g) => g.vivo) };
+    if (PID === 'claro') DEF.claro = e; else { DEF.paradas ||= {}; DEF.paradas[PID] = { ...(DEF.paradas[PID] || {}), ...e }; }
+  }
   guardarHeroe(DEF);
 }
 aplicarHeroe(DEF);
@@ -71,23 +78,23 @@ escena.add(heroe.grupo);
 const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloqueado: true, velocidad: 0, pasoFase: 0 };
 
 // ---------- la guardabosques ----------
-const brezo = crearMago({ tunica: '#4e8a4a', adorno: '#e8c27a', sombrero: 'capucha', colorSombrero: '#3b6b3a', pelo: '#c9702e', baston: 'cayado', capa: '#7a4a2e' });
+const brezo = crearMago(PAR.guia.modelo);
 brezo.grupo.position.set(SITIOS.guarda.x, mundo.alturaEn(SITIOS.guarda.x, SITIOS.guarda.z), SITIOS.guarda.z);
 brezo.mirarA(Math.atan2(SITIOS.llegada.x - SITIOS.guarda.x, SITIOS.llegada.z - SITIOS.guarda.z));
 escena.add(brezo.grupo);
-ui.rotulo(brezo.grupo, 'Brezo', { altura: 2.75, sub: 'Guardabosques' });
+ui.rotulo(brezo.grupo, GUIA, { altura: 2.75, sub: PAR.guia.sub });
 let marcaBrezo = ui.marcador(brezo.grupo, '!', 3.55);
 mundo.obstaculos.push({ x: SITIOS.guarda.x, z: SITIOS.guarda.z, r: .6 });
 
 // ---------- los esqueletos, en dos grupos ----------
 const GRUPOS = [
-  { nombre: 'Esqueletos del sendero', ancla: new THREE.Vector3(12, 0, -6), miembros: [{ n: 'Esqueleto' }, { n: 'Esqueleto' }] },
-  { nombre: 'Guardia de la cripta', ancla: new THREE.Vector3(18.5, 0, 12.5), miembros: [{ n: 'Esqueleto' }, { n: 'Capitán Fémur', jefe: true }, { n: 'Esqueleto' }] }
+  { nombre: PAR.enemigo.grupos[0], ancla: new THREE.Vector3(12, 0, -6), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.nombre }] },
+  { nombre: PAR.enemigo.grupos[1], ancla: new THREE.Vector3(18.5, 0, 12.5), miembros: [{ n: PAR.enemigo.nombre }, { n: PAR.enemigo.jefe, jefe: true }, { n: PAR.enemigo.nombre }] }
 ];
 for (const g of GRUPOS) {
   g.vivo = true;
   g.miembros.forEach((m, k) => {
-    m.pj = crearEsqueleto({ escala: m.jefe ? 1.22 : 1, ojo: m.jefe ? '#c06aff' : '#ff5a2a' });
+    m.pj = crearEsqueleto({ escala: m.jefe ? 1.22 : 1, ojo: m.jefe ? '#c06aff' : (PAR.enemigo.ojo || '#ff5a2a'), color: PAR.enemigo.color });
     const a = k / g.miembros.length * Math.PI * 2, x = g.ancla.x + Math.cos(a) * 1.6, z = g.ancla.z + Math.sin(a) * 1.6;
     m.pj.grupo.position.set(x, mundo.alturaEn(x, z), z); escena.add(m.pj.grupo);
     m.rotulo = ui.rotulo(m.pj.grupo, m.n, { tipo: 'enemigo', altura: m.jefe ? 2.85 : 2.4 });
@@ -102,10 +109,10 @@ const SETAS = [[-12, -2], [-22, 9], [6, -14], [9, 9], [-8, 14], [2, 5]];
 SETAS.forEach(([x, z], idx) => {
   const g = new THREE.Group(), y = mundo.alturaEn(x, z); g.position.set(x, y, z); escena.add(g);
   g.add(pieza(new THREE.CylinderGeometry(.09, .13, .55, 8).translate(0, .27, 0), '#f3ecd9', { borde: .02 }));
-  const som = pieza(new THREE.SphereGeometry(.34, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), '#5ad1ff', { borde: .025, emissive: '#3ab8ff', emissiveIntensity: .9 }); som.position.y = .5; som.scale.y = .8; g.add(som);
+  const som = pieza(new THREE.SphereGeometry(.34, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), PAR.objeto.sombrero, { borde: .025, emissive: PAR.objeto.brillo, emissiveIntensity: .9 }); som.position.y = .5; som.scale.y = .8; g.add(som);
   g.add(new THREE.Mesh(mergeGeometries([0, 1, 2, 3, 4].map((k) => new THREE.SphereGeometry(.05, 6, 5).translate(Math.cos(k * 1.3) * .22, .58 + (k % 2) * .06, Math.sin(k * 1.3) * .22))), toon('#e8fbff', { emissive: '#ffffff', emissiveIntensity: .8 })));
   const peq = g.clone(); peq.scale.setScalar(.55); peq.position.set(x + .5, y, z + .3); escena.add(peq);
-  interactivo({ tipo: 'seta', idx, nombre: 'Seta de luz', verbo: 'Recoger', obj: g, extra: peq, pos: g.position, r: 1.1, color: '#7fe0ff', fase: Math.random() * 6 });
+  interactivo({ tipo: 'seta', idx, nombre: PAR.objeto.nombre, verbo: 'Recoger', obj: g, extra: peq, pos: g.position, r: 1.1, color: PAR.objeto.chispas, fase: Math.random() * 6 });
 });
 // Cofre junto a la colina de la cripta
 const cofre = new THREE.Group();
@@ -130,13 +137,13 @@ const cofre = new THREE.Group();
   mundo.obstaculos.push({ x, z, r: .5 });
   interactivo({ tipo: 'parcela', nombre: 'Parcela en venta', verbo: 'Mirar', obj: g, pos: g.position, r: 2 });
 }
-interactivo({ tipo: 'brezo', nombre: 'Brezo', verbo: 'Hablar', obj: brezo.grupo, pos: brezo.grupo.position, r: 2.1 });
+interactivo({ tipo: 'brezo', nombre: GUIA, verbo: 'Hablar', obj: brezo.grupo, pos: brezo.grupo.position, r: 2.1 });
 interactivo({ tipo: 'cartel', nombre: 'Cartel', verbo: 'Leer', obj: null, pos: SITIOS.cartel.clone().setY(mundo.alturaEn(SITIOS.cartel.x, SITIOS.cartel.z)), r: 1.7 });
 interactivo({ tipo: 'hoguera', nombre: 'Hoguera', verbo: 'Descansar', obj: null, pos: SITIOS.hoguera.clone().setY(mundo.alturaEn(SITIOS.hoguera.x, SITIOS.hoguera.z)), r: 2.4, color: '#ffb36a' });
 interactivo({ tipo: 'estanque', nombre: 'Estanque', verbo: 'Mirar', obj: null, pos: new THREE.Vector3(SITIOS.estanque.x + 6.4, 0, SITIOS.estanque.z).setY(mundo.alturaEn(SITIOS.estanque.x + 6.4, SITIOS.estanque.z)), r: 1.6, color: '#7fe0ff' });
-interactivo({ tipo: 'cripta', nombre: 'Cripta de los Huesos', corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: SITIOS.cripta.clone().add(new THREE.Vector3(-1.8, 0, 0)).setY(mundo.alturaEn(SITIOS.cripta.x - 1.8, SITIOS.cripta.z)), r: 2.2, color: '#c9a2ff' });
+interactivo({ tipo: 'cripta', nombre: PAR.cripta.nombre, corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: SITIOS.cripta.clone().add(new THREE.Vector3(-1.8, 0, 0)).setY(mundo.alturaEn(SITIOS.cripta.x - 1.8, SITIOS.cripta.z)), r: 2.2, color: '#c9a2ff' });
 interactivo({ tipo: 'pasarela', nombre: 'Pasarela de Morrandar', corto: 'Morrandar', verbo: 'Subir', obj: null, pos: SITIOS.llegada.clone().add(new THREE.Vector3(0, 0, -1.5)), r: 1.8 });
-const rotCripta = ui.rotulo(mundo.cripta, 'Cripta de los Huesos', { tipo: 'cosa', altura: 5.6 });
+const rotCripta = ui.rotulo(mundo.cripta, PAR.cripta.nombre, { tipo: 'cosa', altura: 5.6 });
 
 // ---------- cámara en tercera persona ----------
 const CAM = { yaw: 3.93, pitch: .38, dist: 9, objetivo: new THREE.Vector3(), temblor: 0, modo: 'intro', foco: null, mirar: null, introT: 0 };
@@ -175,12 +182,13 @@ function actualizarCamara(dt) {
 
 // ---------- HUD y diálogos (compartidos con la cripta) ----------
 function textoMision() {
-  if (estado.mision === 'nueva') return '<b>El claro</b><span>Habla con Brezo, junto a la hoguera</span>';
+  const hecha = criptaHechaEn(PID, DEF);
+  if (estado.mision === 'nueva') return `<b>${PAR.corto}</b><span>${TX.mision}</span>`;
   if (estado.mision === 'activa') {
     const g = GRUPOS.filter((x) => !x.vivo).length;
-    return `<b>El claro de los huesos</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">Setas de luz ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">Esqueletos ${g}/2</span>${estado.setas >= 3 && g >= 2 ? '<span class="volver">¡Vuelve con Brezo!</span>' : ''}`;
+    return `<b>${PAR.nombre}</b><span class="${estado.setas >= 3 ? 'hecho' : ''}">${PAR.objeto.corto} ${Math.min(3, estado.setas)}/3</span><span class="${g >= 2 ? 'hecho' : ''}">${PAR.enemigo.plural[0].toUpperCase() + PAR.enemigo.plural.slice(1)} ${g}/2</span>${estado.setas >= 3 && g >= 2 ? `<span class="volver">¡Vuelve con ${GUIA}!</span>` : ''}`;
   }
-  return DEF.criptaHecha ? '<b>La cripta, vencida</b><span>Puedes volver a bajar cuando quieras</span>' : '<b>La cripta está abierta</b><span>Entra… si te atreves</span>';
+  return hecha ? `<b>${PAR.cripta.nombre}, vencida</b><span>Puedes volver a bajar cuando quieras</span>` : `<b>${PAR.cripta.nombre}: abierta</b><span>Entra… si te atreves</span>`;
 }
 const { hud, hablar, dlg } = crearHud({ estado, def: () => DEF, sonido, movil: MOVIL, mision: textoMision });
 
@@ -198,37 +206,37 @@ async function interactuarYa(it) {
   if (t === 'brezo') {
     brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z)); brezo.hacer('saludar', 1);
     if (estado.mision === 'nueva') {
-      await hablar('Brezo', ['¡Anda! Un viajero bajando de Morrandar. Hacía semanas que la tortuga no paraba en este claro.', 'Yo cuido el bosque, pero desde que se abrió la cripta, los esqueletos se pasean por el sendero como si fuera suyo.', 'Si me traes tres setas de luz (brillan azules, no tiene pérdida) y espantas a los dos grupos de esqueletos, te doy la llave de runas.'], [['¡Hecho!', () => { estado.mision = 'activa'; ui.quitar(marcaBrezo); marcaBrezo = null; sonido.recoger(); hud.actualizar(); }], ['Ahora no', null]]);
+      await hablar(GUIA, TX.saludo, [['¡Hecho!', () => { estado.mision = 'activa'; ui.quitar(marcaBrezo); marcaBrezo = null; sonido.recoger(); hud.actualizar(); }], ['Ahora no', null]]);
     } else if (estado.mision === 'activa') {
       const g = GRUPOS.filter((x) => !x.vivo).length;
       if (estado.setas >= 3 && g >= 2) {
-        await hablar('Brezo', ['¡Lo has conseguido! Las setas brillan de maravilla y los esqueletos… bueno, ahora son decoración.', 'Toma la llave de runas. La cripta te espera. Y unas monedas, que el camino es largo.'], [['¡Gracias!', null]]);
+        await hablar(GUIA, TX.hecho, [['¡Gracias!', null]]);
         estado.mision = 'hecha'; estado.oro += 25; guardarAhora(); ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 10); sonido.victoria(); mundo.abrirCripta(); sonido.abrir();
         ui.chispas(mundo.cripta.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, 2.5, 0)), '#c9a2ff', 60, 5); hud.actualizar();
-      } else await hablar('Brezo', [`Llevas ${Math.min(3, estado.setas)} de 3 setas y has espantado a ${g} de 2 grupos. ¡Ánimo!`, estado.cuerpo < estado.max ? 'Si te han zurrado, siéntate junto a la hoguera: el fuego cura más que cualquier poción.' : 'Las setas suelen esconderse cerca del agua y entre las rocas.']);
-    } else if (DEF.criptaHecha && !DEF.brezoContado) {
-      await hablar('Brezo', ['¡Has vuelto entero! Bueno, casi entero. Cuéntamelo todo… No, espera, ya me lo cuentan tus botas: barro de cripta y polvo de hueso.', 'Toma, una poción de las buenas. Y que sepas que el bosque respira más tranquilo esta noche.'], [['¡Gracias, Brezo!', null]]);
-      DEF.brezoContado = true; estado.pociones++; sonido.recoger(); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#8affb0', 24, 3); guardarAhora(); hud.actualizar();
-    } else await hablar('Brezo', [DEF.criptaHecha ? 'Abajo los huesos se vuelven a montar solos, así que si te aburres, ya sabes dónde hay pelea.' : 'La cripta ya está abierta. Dicen que dentro hay un nigromante que colecciona calaveras. Tú no le des la tuya.']);
+      } else await hablar(GUIA, [`Llevas ${Math.min(3, estado.setas)} de 3 ${PAR.objeto.plural} y has espantado a ${g} de 2 grupos. ¡Ánimo!`, estado.cuerpo < estado.max ? 'Si te han zurrado, siéntate junto al fuego: cura más que cualquier poción.' : TX.pista]);
+    } else if (criptaHechaEn(PID, DEF) && !(PID === 'claro' ? DEF.brezoContado : DEF.paradas?.[PID]?.contado)) {
+      await hablar(GUIA, TX.vuelta, [[`¡Gracias, ${GUIA}!`, null]]);
+      if (PID === 'claro') DEF.brezoContado = true; else { DEF.paradas ||= {}; (DEF.paradas[PID] ||= {}).contado = true; } estado.pociones++; sonido.recoger(); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#8affb0', 24, 3); guardarAhora(); hud.actualizar();
+    } else await hablar(GUIA, [criptaHechaEn(PID, DEF) ? TX.despues : TX.abierta]);
   } else if (t === 'seta') {
     await heroe.hacer('recoger', .6);
-    sonido.recoger(); ui.chispas(it.pos.clone().add(new THREE.Vector3(0, .6, 0)), '#9fe8ff', 30, 3); escena.remove(it.obj, it.extra); it.anillo.visible = false;
-    interactivos.splice(interactivos.indexOf(it), 1); estado.setas++; (estado.setasCogidas ||= []).push(it.idx); guardarAhora(); ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `Seta ${estado.setas}`, '#9fe8ff'); hud.actualizar();
+    sonido.recoger(); ui.chispas(it.pos.clone().add(new THREE.Vector3(0, .6, 0)), PAR.objeto.chispas, 30, 3); escena.remove(it.obj, it.extra); it.anillo.visible = false;
+    interactivos.splice(interactivos.indexOf(it), 1); estado.setas++; (estado.setasCogidas ||= []).push(it.idx); guardarAhora(); ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `${PAR.objeto.nombre} ${estado.setas}`, PAR.objeto.chispas); hud.actualizar();
   } else if (t === 'cofre') {
     if (estado.cofre) return hablar('Cofre viejo', ['Vacío. Solo queda olor a madera húmeda y una araña indignada.']);
     estado.cofre = true; sonido.abrir(); const tapa = cofre.userData.tapa; let a = 0; const abrir = setInterval(() => { a += .08; tapa.rotation.x = -Math.min(1.9, a); if (a > 1.9) clearInterval(abrir); }, 16);
     ui.monedas(cofre.position.clone().add(new THREE.Vector3(0, .9, 0)), 12); ui.chispas(cofre.position.clone().add(new THREE.Vector3(0, 1, 0)), '#ffe08a', 30, 3);
     estado.oro += 15; estado.pociones++; guardarAhora(); hud.actualizar(); await hablar('Cofre viejo', ['¡15 monedas y una poción de curación! Alguien se dejó esto con prisa.']);
-  } else if (t === 'cartel') await hablar('Cartel', ['«➜ Cripta de los Huesos. ⬅ Morrandar (la tortuga grande, no tiene pérdida).»', 'Alguien ha añadido a lápiz: «Cuidado con el capitán. Muerde.»'], [], { grave: 1 });
+  } else if (t === 'cartel') await hablar('Cartel', TX.cartel, [], { grave: 1 });
   else if (t === 'hoguera') {
     await heroe.hacer('recoger', .8);
     if (estado.cuerpo < estado.max) { const c = estado.max - estado.cuerpo; estado.cuerpo = estado.max; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.4, 0)), `+${c}`, '#7dffa0'); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1, 0)), '#ffb36a', 20, 2); sonido.recoger(); hud.actualizar(); await hablar('Hoguera', ['Te sientas un rato. El calor te recompone los huesos (los tuyos, que son los buenos).']); }
-    else await hablar('Hoguera', ['Crepita a gusto. Huele a pino y a castañas que no hay.']);
-  } else if (t === 'estanque') { ui.chispas(new THREE.Vector3(SITIOS.estanque.x + 2, 0, SITIOS.estanque.z), '#bff2ff', 18, 3); sonido.recoger(); await hablar('Estanque', ['Un pez asoma, te mira de arriba abajo y se vuelve a meter. Juzgado por un pez.']); }
-  else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: Brezo.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
+    else await hablar('Hoguera', [TX.hoguera]);
+  } else if (t === 'estanque') { ui.chispas(new THREE.Vector3(SITIOS.estanque.x + 2, 0, SITIOS.estanque.z), '#bff2ff', 18, 3); sonido.recoger(); await hablar('Estanque', [TX.estanque]); }
+  else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: ' + GUIA + '.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
   else if (t === 'cripta') {
-    if (estado.mision !== 'hecha') await hablar('Cripta de los Huesos', ['La puerta está sellada con runas que zumban. Hace falta una llave… Seguro que la guardabosques sabe algo.']);
-    else await hablar('Cripta de los Huesos', [DEF.criptaHecha ? 'La escalera sigue ahí, oscura como siempre. Abajo, los huesos ya se han vuelto a montar.' : 'Las runas se apartan y una escalera baja a la oscuridad. Huele a tiempo y a huesos viejos.'], [['Bajar a la cripta', () => { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = 'cripta.html'; }, 700); }], ['Ahora no', null]]);
+    if (estado.mision !== 'hecha') await hablar(PAR.cripta.nombre, [TX.cerrada]);
+    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['Bajar a la cripta', () => { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`; }, 700); }], ['Ahora no', null]]);
   } else if (t === 'pasarela') {
     await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html'; }], ['Quedarme', null]]);
   }
@@ -304,9 +312,9 @@ async function empezarCombate(g) {
     const oro = g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0); estado.oro += oro; estado.usos = estado.usosMax;
     ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), 8); setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
     if (GRUPOS.every((x) => !x.vivo) && estado.mision === 'activa' && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
-    const botin = {}; for (const m of g.miembros) for (const [k, n] of Object.entries(botinDe('esqueleto', m.jefe))) botin[k] = (botin[k] || 0) + n;   // huesos para la forja de Morrandar
+    const botin = {}; for (const m of g.miembros) for (const [k, n] of Object.entries(botinDe(PAR.enemigo.tipo, m.jefe))) botin[k] = (botin[k] || 0) + n;   // huesos para la forja de Morrandar
     sumarBotin(DEF, botin); const tb = textoBotin(botin); if (tb) setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), tb, '#e8e0d0'), 1100);
-    await ganarExperiencia(caidos.reduce((s, n) => s + (XP[n] || 10), 0));
+    await ganarExperiencia(g.miembros.reduce((s, m) => s + (m.jefe ? 25 : 10), 0));
   } else {
     // derrota: Brezo te lleva junto a la hoguera
     hud.acciones([]);
@@ -316,7 +324,7 @@ async function empezarCombate(g) {
     estado.cuerpo = estado.max; estado.usos = estado.usosMax; hud.actualizar();
     for (const m of g.miembros) if (m.pj.restos == null) { const k = g.miembros.indexOf(m), a = k / g.miembros.length * Math.PI * 2; m.pj.grupo.position.set(g.ancla.x + Math.cos(a) * 1.6, 0, g.ancla.z + Math.sin(a) * 1.6); m.pj.grupo.position.y = mundo.alturaEn(m.pj.grupo.position.x, m.pj.grupo.position.z); }
     $('#fundido').classList.remove('ver');
-    await hablar('Brezo', ['¡Menos mal que pasaba por allí! Te he traído a rastras hasta la hoguera.', 'Descansa y vuelve a intentarlo. Los esqueletos no se van a ir a ningún sitio. Literalmente: no tienen adónde.']);
+    await hablar(GUIA, TX.rescate);
   }
   if (estado.mision === 'activa' && estado.setas >= 3 && GRUPOS.every((x) => !x.vivo) && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
   guardarAhora(); hud.actualizar(); H.bloqueado = false;
@@ -458,7 +466,7 @@ function bucle() {
     if (p < .88) { H.pos.lerpVectors(desde, hasta, p / .88); H.pos.y += Math.sin(p / .88 * Math.PI) * -1.2 + .2; }
     else { const q = (p - .88) / .12; H.pos.set(hasta.x + 1.2 * q, 0, hasta.z + 4.5 * q); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); }   // unos pasos ya en la hierba
     heroe.vel = .75; heroe.mirarA(p < .88 ? Math.atan2(hasta.x - desde.x, hasta.z - desde.z) : Math.atan2(1.2, 4.5));   // de cara a donde va
-    if (p >= 1) { H.bloqueadoFin = true; CAM.modo = 'paseo'; H.bloqueado = false; heroe.vel = 0; $('#hud').classList.add('ver'); brezo.hacer('saludar', 1.2); hud.banner('El claro de los huesos', 'heroe'); }
+    if (p >= 1) { H.bloqueadoFin = true; CAM.modo = 'paseo'; H.bloqueado = false; heroe.vel = 0; $('#hud').classList.add('ver'); brezo.hacer('saludar', 1.2); hud.banner(PAR.nombre, 'heroe'); }
   }
   moverHeroe(dt); rondaEsqueletos(dt); cercanos(); animarCosas(dt);
   if (CAM.modo === 'creador') heroe.mirarA(Math.PI + (CAM.giro || 0) + Math.sin(t * .6) * .3);   // en el creador, de cara; arrastrando lo giras
@@ -475,7 +483,7 @@ function bucle() {
 
 // ---------- el claro como lo dejaste (misión, setas, cofre, esqueletos) ----------
 function restaurarClaro() {
-  const c = DEF.claro; if (!c) return;
+  const c = PID === 'claro' ? DEF.claro : DEF.paradas?.[PID]; if (!c) return;
   Object.assign(estado, { mision: c.mision || 'nueva', setas: c.setas || 0, setasCogidas: c.setasCogidas || [], cofre: !!c.cofre });
   for (const it of interactivos.filter((x) => x.tipo === 'seta' && estado.setasCogidas.includes(x.idx))) { escena.remove(it.obj, it.extra); it.anillo.visible = false; interactivos.splice(interactivos.indexOf(it), 1); }
   if (estado.cofre) cofre.userData.tapa.rotation.x = -1.9;
@@ -507,8 +515,8 @@ if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin
   $('#portada').remove(); CAM.modo = 'paseo'; H.bloqueadoFin = true; H.bloqueado = false; $('#hud').classList.add('ver');
   H.pos.set(SITIOS.cripta.x - 4, 0, SITIOS.cripta.z + .5); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); heroe.mirarA(-Math.PI / 2); CAM.yaw = -1.25; CAM.objetivo.copy(H.pos);   // la cámara, al oeste: te ve salir con la cripta detrás
   const caido = params.has('caido');
-  history.replaceState(null, '', 'claro.html');
-  if (caido) setTimeout(() => hablar('Brezo', ['¡Te he sacado a rastras de esa cripta! Estabas más tieso que los esqueletos.', 'Descansa junto al fuego y vuelve a bajar cuando quieras. Lo que ganaste, ganado está.']), 900);
+  history.replaceState(null, '', PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}`);
+  if (caido) setTimeout(() => hablar(GUIA, TX.rescateCripta), 900);
 }
 if (params.has('crear')) { $('#portada').classList.add('fuera'); abrirCreador(); }
 window.claro = { escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };

@@ -32,6 +32,7 @@ Juego de mazmorras por turnos estilo juego de mesa, multijugador con código de 
 - `index.html` + `js/ui.js`: menú del juego, mundos, partidas, la mazmorra (motor en `js/motor.js`, dibujo en `js/render*.js`, `js/tablero.js`).
 - `tortuga.html`: Morrandar en 3D (la base). Sala multijugador con el botón 👥.
 - `pueblo.html`: **el pueblo** estilo Animal Crossing (three.js). Es un archivo grande (~2.500 líneas) con todo dentro: terreno, casas, vecinos (`VEC`), diálogos, reloj propio, cantina, tu casa con muebles (`MUEBLES`), libreta (menú ☰), sala en vivo y pueblo compartido.
+- `js/paradas.js`: **las paradas de Morrandar** (claro, pantano…). `claro.html?p=<id>` monta el escenario de cada parada (paisaje, guía, objetos, monstruos y cripta) y `cripta.html?p=<id>` su cripta. Para añadir una parada, copia un bloque de `PARADAS`. En el pueblo, el atril del mirador (mapa de viaje) decide adónde va Morrandar (`EP.parada`) y la escala de la pasarela baja allí.
 - `claro.html` + `js/claro*.js`: **prototipo del modo aventura** («El claro de los huesos»): mundo libre en 3D estilo cuento, personajes hechos en código, y combate por turnos que brota del suelo (tablero, dados 3D). Independiente del pueblo.
 - `cabana.html`: la cabaña de trofeos. `reunion.html`: la sala (lobby ligero). `duelo.html`: duelo de insultos. `panel.html`: panel de administración. `pruebas.html`: índice de páginas de prueba.
 
