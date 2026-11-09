@@ -7,7 +7,7 @@
 const mf = (n) => 440 * 2 ** ((n - 69) / 12);
 
 export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque (pájaros, grillos), pantano (ranas, zumbidos y música turbia) o cripta (gotas, eco y música en menor)
-  let ctx = null, maestro, musica, ambiente, efectos, ruidoBuf, fuegoG, siguiente = 0, paso = 0, modo = 'paseo', modoVol = { paseo: null, combate: null };
+  let mudo = false, ctx = null, maestro, musica, ambiente, efectos, ruidoBuf, fuegoG, siguiente = 0, paso = 0, modo = 'paseo', modoVol = { paseo: null, combate: null };
   const S = {};
 
   function nota(n, t, dur, { tipo = 'triangle', vol = .08, destino = efectos, ataque = .005, filtro, hz = n >= 200 } = {}) {
@@ -25,7 +25,7 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   S.arrancar = () => {
     if (ctx) { ctx.resume?.(); return; }
     ctx = new (window.AudioContext || window.webkitAudioContext)();
-    maestro = ctx.createGain(); maestro.gain.value = .9; maestro.connect(ctx.destination);
+    maestro = ctx.createGain(); maestro.gain.value = mudo ? 0 : .9; maestro.connect(ctx.destination);
     const eco = ctx.createConvolver(), len = ctx.sampleRate * 1.6, ir = ctx.createBuffer(2, len, ctx.sampleRate);
     for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
     eco.buffer = ir; const ecoG = ctx.createGain(); ecoG.gain.value = .25; eco.connect(ecoG); ecoG.connect(maestro);
@@ -109,6 +109,7 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
     if (!ctx) return; const t = ya(), silabas = Math.min(14, Math.ceil(texto.length / 5));
     for (let i = 0; i < silabas; i++) nota(560 - grave * 180 + Math.random() * 220, t + i * .075, .06, { tipo: 'square', vol: .02, filtro: 2400 });
   };
-  S.silenciar = (si) => { if (maestro) maestro.gain.setTargetAtTime(si ? 0 : .9, ctx.currentTime, .1); };
+  S.mudo = () => mudo;
+  S.silenciar = (si) => { mudo = !!si; if (maestro) maestro.gain.setTargetAtTime(si ? 0 : .9, ctx.currentTime, .1); };
   return S;
 }

@@ -8,6 +8,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
+import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
 import { crearCalidad } from './calidad.js';
 import { EffectComposer } from './vendor/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from './vendor/addons/postprocessing/RenderPass.js';
@@ -306,7 +307,6 @@ pad.addEventListener('pointermove', (e) => { if (!joy || e.pointerId !== joy.id)
 const soltarJoy = () => { joy = null; bola.style.transform = ''; };
 pad.addEventListener('pointerup', soltarJoy); pad.addEventListener('pointercancel', soltarJoy);
 $('#accion').addEventListener('click', () => { if (H.cerca && !dlg.actual && !combate.activo) interactuar(H.cerca); });
-$('#sonido').addEventListener('click', () => { const b = $('#sonido'); b.classList.toggle('mudo'); sonido.silenciar(b.classList.contains('mudo')); });
 
 // ---------- el combate ----------
 const combate = crearCombate({ escena, mundo, ui, dados, sonido, camara: cam, hud, heroe, estado });
@@ -554,11 +554,21 @@ function ofrecerBajada() {
 }
 const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase, colores: DEF.colores });
 {
-  const b = document.createElement('button'); b.id = 'sala'; b.className = 'caja'; b.textContent = '👥'; b.setAttribute('aria-label', 'Jugar juntos'); $('#hud').appendChild(b);
+  // El botón ☰: jugar juntos, sonido, pantalla completa, controles y volver (igual en todo el juego)
+  const bSala = document.createElement('button');   // el panel de la sala se abre desde la libreta
+  sonido.silenciar(leerMudo());
+  const MENU = crearMenu({ boton: $('#menuB'), apps: () => [
+    { ico: '👥', titulo: 'Jugar juntos', sub: SALA ? 'Sala ' + SALA.codigo : 'Con código', hacer: () => { setTimeout(() => bSala.click(), 0); } },
+    { ico: sonido.mudo() ? '🔇' : '🔊', titulo: 'Sonido', sub: sonido.mudo() ? 'Apagado' : 'Encendido', hacer: (M) => { sonido.arrancar(); sonido.silenciar(!sonido.mudo()); guardarMudo(sonido.mudo()); M.pintar(); return 'seguir'; } },
+    appPantalla(),
+    { ico: '❔', titulo: 'Cómo se juega', sub: 'Controles', hacer: (M) => { M.pagina('Cómo se juega', AYUDA); return 'seguir'; } },
+    { ico: '🐢', titulo: 'Morrandar', sub: 'Subir al pueblo', apagada: combate.activo, hacer: () => { if (combate.activo) return; guardarAhora(); guardarHeroe(DEF, true); location.href = 'pueblo.html?desde=escala'; } },
+    appMenu()
+  ] });
   import('./reunion.js').then((RED) => RED.crearPanel({
-    donde: DONDE, boton: b, proponer: false, datos: () => ({ clase: DEF.clase, x: H.pos.x, z: H.pos.z }),
-    alConectar: (R) => { SALA = R; R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); R.on('gente', pintarOtros).on('frase', decirOtro); pintarOtros(R.gente()); },
-    alSalir: () => { SALA = null; pintarOtros({}); }
+    donde: DONDE, boton: bSala, proponer: false, datos: () => ({ clase: DEF.clase, x: H.pos.x, z: H.pos.z }),
+    alConectar: (R) => { SALA = R; MENU.marca(R.codigo); R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); R.on('gente', pintarOtros).on('frase', decirOtro); pintarOtros(R.gente()); },
+    alSalir: () => { SALA = null; MENU.marca(''); pintarOtros({}); }
   })).catch((e) => console.warn('Sin sala:', e?.message));
 }
 function pintarOtros(gente) {

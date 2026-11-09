@@ -12,7 +12,7 @@
 import * as THREE from 'three';
 import { crearHeroe } from './claro-personajes.js';
 
-export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate, al }) {
+export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate, al, botonSala }) {
   const OTROS = new Map();
   const hecho = { p: new Set(), m: new Set(), b: new Set(), f: new Set() };   // puertas, muertos, buscadas, flags
   const deFuera = { m: new Set() };                                             // monstruos que han caído en manos de otros
@@ -38,11 +38,11 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
   };
 
   // ---------- el botón 👥 y la conexión (la sala es la de siempre, la del pueblo) ----------
-  const b = document.createElement('button'); b.id = 'sala'; b.className = 'caja'; b.textContent = '👥'; b.setAttribute('aria-label', 'Jugar juntos'); document.querySelector('#hud').appendChild(b);
+  const b = botonSala || document.createElement('button');   // el panel se abre desde la libreta ☰
   import('./reunion.js').then((RED) => RED.crearPanel({
     donde: 'cripta', boton: b, proponer: false, datos: () => ({ clase: def().clase, x: H.pos.x, z: H.pos.z }),
-    alConectar: (R) => { SALA = R; R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); publicar(); R.on('gente', juntar).on('frase', decir); juntar(R.gente()); },
-    alSalir: () => { SALA = null; juntar({}); }
+    alConectar: (R) => { SALA = R; al.marca?.(R.codigo); R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); publicar(); R.on('gente', juntar).on('frase', decir); juntar(R.gente()); },
+    alSalir: () => { SALA = null; al.marca?.(''); juntar({}); }
   })).catch((e) => console.warn('Sin sala:', e?.message));
 
   // ---------- los demás ----------
