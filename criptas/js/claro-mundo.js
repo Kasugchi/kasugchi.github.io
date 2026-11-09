@@ -286,11 +286,16 @@ export function crearMundo(escena, { movil = false } = {}) {
     const h = SITIOS.hoguera; fuego.position.set(h.x, alturaEn(h.x, h.z), h.z); escena.add(fuego);
     for (let i = 0; i < 8; i++) { const p = pieza(new THREE.DodecahedronGeometry(.28, 0), P.roca2, { flatShading: true }); p.position.set(Math.cos(i / 8 * 6.28) * .9, .1, Math.sin(i / 8 * 6.28) * .9); fuego.add(p); }
     for (let i = 0; i < 3; i++) { const l = pieza(new THREE.CylinderGeometry(.12, .12, 1.3, 6), P.tronco); l.rotation.set(Math.PI / 2, 0, i * 2.1); l.position.y = .2; fuego.add(l); }
+    // Las llamas: varias lenguas con la base clavada en los troncos (crecen hacia arriba, no botan),
+    // cada una con su ritmo, y chispas que suben y se apagan.
     const llamas = [];
-    [['#ff5a2a', .55, 1.2], ['#ff9a2a', .42, .95], ['#ffe066', .26, .7]].forEach(([col, r, a], k) => {
-      const f = new THREE.Mesh(new THREE.ConeGeometry(r, a, 7), toon(col, { emissive: col, emissiveIntensity: 1.6 }));
-      f.position.y = .3 + a / 2; fuego.add(f); llamas.push(f);
+    const lengua = (r, alto) => { const g = new THREE.ConeGeometry(r, alto, 8, 3).translate(0, alto / 2, 0), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i) / alto; p.setX(i, p.getX(i) * (1 + Math.sin(y * Math.PI) * .45)); p.setZ(i, p.getZ(i) * (1 + Math.sin(y * Math.PI) * .45)); } g.computeVertexNormals(); return g; };
+    [['#ff4a1a', .5, 1.15, 0, 0, 1], ['#ff7a2a', .28, .95, .3, .1, .85], ['#ff7a2a', .26, .85, -.28, -.12, .85], ['#ffa83a', .24, .8, .05, .3, .9], ['#ffa83a', .22, .7, -.1, -.3, .9], ['#ffe27a', .2, .65, 0, 0, 1]].forEach(([col, r, a, x, z, op], k) => {
+      const f = new THREE.Mesh(lengua(r, a), new THREE.MeshBasicMaterial({ color: col, transparent: op < 1, opacity: op, depthWrite: op >= 1 }));
+      f.position.set(x, .28, z); f.renderOrder = 4 + k; fuego.add(f); llamas.push({ f, fase: k * 1.7, vel: 2.2 + k * .35, alto: a });
     });
+    const chispas = [], tch = new THREE.SpriteMaterial({ color: '#ffc04a', transparent: true, blending: THREE.AdditiveBlending, depthWrite: false });
+    for (let i = 0; i < 14; i++) { const s = new THREE.Sprite(tch.clone()); s.scale.setScalar(.07); fuego.add(s); chispas.push({ s, t: Math.random() * 2, v: .8 + Math.random() * .9, x: (Math.random() - .5) * .5, z: (Math.random() - .5) * .5, w: Math.random() * 6 }); }
     const luz = new THREE.PointLight('#ff9a4a', 9, 14, 1.6); luz.position.y = 1.2; fuego.add(luz);
     for (const [ang, dist] of [[.6, 2.4], [2.3, 2.5], [4.2, 2.3]]) {
       const t = pieza(new THREE.CylinderGeometry(.3, .32, 1.6, 8), P.tronco, { borde: .03 }); t.rotation.set(0, -ang, Math.PI / 2);
@@ -299,8 +304,17 @@ export function crearMundo(escena, { movil = false } = {}) {
     }
     obstaculos.push({ x: h.x, z: h.z, r: 1.2 });
     animables.push((t) => {
-      llamas.forEach((f, k) => { const s = 1 + Math.sin(t * (9 + k * 3)) * .1 + Math.sin(t * 23 + k) * .05; f.scale.set(1 / Math.sqrt(s), s, 1 / Math.sqrt(s)); f.rotation.y = t * (1 + k); });
-      luz.intensity = 8 + Math.sin(t * 11) * 1.2 + Math.sin(t * 27) * .8;
+      for (const l of llamas) {
+        const s = 1 + Math.sin(t * l.vel + l.fase) * .12 + Math.sin(t * l.vel * 2.3 + l.fase * 2) * .05;
+        l.f.scale.set(1 - (s - 1) * .5, s, 1 - (s - 1) * .5);
+        l.f.rotation.z = Math.sin(t * 1.3 + l.fase) * .08; l.f.rotation.x = Math.cos(t * 1.1 + l.fase) * .06; l.f.rotation.y = t * .4 + l.fase;
+      }
+      for (const c of chispas) {
+        const k = (t * .45 * c.v + c.w) % 1, y = .5 + k * 2.6 * c.v;
+        c.s.position.set(c.x + Math.sin(t * 2 + c.w) * .2 * k, y, c.z + Math.cos(t * 1.7 + c.w) * .2 * k);
+        c.s.material.opacity = Math.max(0, 1 - k * 1.2);
+      }
+      luz.intensity = 8 + Math.sin(t * 4.3) * .8 + Math.sin(t * 9.7) * .4;   // parpadeo suave, sin tirones
     });
   }
 

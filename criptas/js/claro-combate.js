@@ -29,7 +29,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     casillas = [];
     for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
       const x = cx + (i - MEDIO) * T, z = cz + (j - MEDIO) * T, y = mundo.alturaEn(x, z);
-      const tapada = mundo.obstaculos.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + .35) || Math.abs(y - y0) > 1.6 || Math.hypot(i - MEDIO, j - MEDIO) > MEDIO + .7;
+      const tapada = mundo.obstaculos.some((o) => Math.hypot(o.x - x, o.z - z) < o.r + .6) || Math.abs(y - y0) > 1.6 || Math.hypot(i - MEDIO, j - MEDIO) > MEDIO + .7;
       casillas.push({ i, j, x, y, z, tapada });
     }
     const libres = casillas.filter((c) => !c.tapada);
@@ -222,7 +222,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       const pj = crearTorreta(); pj.grupo.position.set(c.x, c.y + .17, c.z); escena.add(pj.grupo);
       const e0 = enemigos()[0]; if (e0) pj.mirarA(Math.atan2(e0.pj.grupo.position.x - c.x, e0.pj.grupo.position.z - c.z));
       unidades.push({ bando: 'aliado', pj, nombre: 'La torreta', cuerpo: 2, ataque: 2, defensa: 1, alcance: 6, vivo: true, c });
-      sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); hud.narrar('¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
+      camara.mirarHacia(pj.grupo.position); sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); hud.narrar('¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
       await espera(700);
     }
   }
@@ -307,6 +307,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   C.depurar = () => ({ casillas: [...alcanzables.keys()].map((c) => ({ x: c.x, z: c.z, tipo: alcanzables.get(c) })), unidades: unidades.map((u) => ({ n: u.nombre, vivo: u.vivo, x: u.c?.x, z: u.c?.z, cuerpo: u.cuerpo })) });
   C.actualizar = (dt, t) => {
     tiempo = t;
+    for (const u of unidades) if (u.bando === 'aliado' && u.vivo) u.pj.animar(dt, t);   // las torretas (el resto se anima fuera)
     for (let i = tweens.length - 1; i >= 0; i--) { const w = tweens[i]; w.t += dt; const p = Math.min(1, w.t / w.dur); w.f(p * p * (3 - 2 * p)); if (p >= 1) { tweens.splice(i, 1); w.fin(); } }
     if (!tablero) return;
     if (tablero.cerrar != null) {
