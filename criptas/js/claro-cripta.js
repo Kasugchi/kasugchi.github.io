@@ -179,7 +179,8 @@ export function crearCripta(escena, m, { movil = false } = {}) {
       const palo = pieza(new THREE.CylinderGeometry(.04, .05, .5, 5), '#3d2a20', { borde: 0 }); palo.position.y = ALTO_MURO + .05; palo.rotation.set(dy * -.4, 0, dx * .4); g.add(palo);
       const f = new THREE.Mesh(new THREE.ConeGeometry(.13, .38, 6).translate(0, .19, 0), new THREE.MeshBasicMaterial({ color: '#ffb04a' })); f.position.set(-dx * .1, ALTO_MURO + .27, -dy * .1); g.add(f);
       let luz = null; if (luces < (movil ? 5 : 9) && r !== '.') { luz = new THREE.PointLight('#ff9a4a', 4, 7, 1.6); luz.position.set(-dx * .5, ALTO_MURO + .4, -dy * .5); g.add(luz); luces++; }
-      antorchas.push({ f, luz, fase: rnd() * 6 });
+      antorchas.push({ f, luz, fase: rnd() * 6, g, x, y, r });
+      if (r === '.') g.visible = false;   // las del pasillo, hasta que las veas
     }
     animables.push((t) => { for (const a of antorchas) { a.f.scale.set(1, 1 + Math.sin(t * 8 + a.fase) * .18, 1); if (a.luz) a.luz.intensity = 3.6 + Math.sin(t * 5 + a.fase) * .6; } });
   }
@@ -220,6 +221,55 @@ export function crearCripta(escena, m, { movil = false } = {}) {
     }
   });
 
+  // ---- niebla de los pasillos: cada casilla se destapa cuando la ves (en línea recta o justo al lado) ----
+  const vistas = new Set(), pasillo = regiones.get('.')?.casillas || [], nieblaIdx = new Map(), disipando = [];
+  const niebla = new THREE.InstancedMesh(new THREE.BoxGeometry(C + .04, .2, C + .04), new THREE.MeshToonMaterial({ color: '#3f3452', emissive: '#150c22', gradientMap: toon('#fff').gradientMap }), Math.max(1, pasillo.length));
+  {
+    const m4 = new THREE.Matrix4();
+    pasillo.forEach(([x, y], k) => { const p = aMundo(x, y); m4.makeTranslation(p.x, ALTO_MURO + .12, p.z); niebla.setMatrixAt(k, m4); nieblaIdx.set(x + ',' + y, k); });
+    niebla.castShadow = true; escena.add(niebla);
+  }
+  const esPasillo = (x, y) => TB.dentro(x, y) && TB.region(x, y) === '.';
+  // ¿Se ve esta casilla? Las salas, cuando están reveladas; el pasillo, casilla a casilla.
+  const vista = (x, y) => TB.dentro(x, y) && (esPasillo(x, y) ? vistas.has(x + ',' + y) : !!regiones.get(TB.region(x, y))?.visible);
+  function destapar(x, y) {
+    const k = x + ',' + y; if (vistas.has(k) || !esPasillo(x, y)) return false;
+    vistas.add(k); disipando.push({ i: nieblaIdx.get(k), p: aMundo(x, y), t: 0 }); return true;
+  }
+  // Mirar desde una casilla del pasillo: las de alrededor y en línea recta hasta chocar con algo
+  function mirarDesde(x, y) {
+    let cambio = destapar(x, y);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) if (esPasillo(x + dx, y + dy) && (dx === 0 || dy === 0 ? pasa([x, y], [x + dx, y + dy]) : pasa([x, y], [x + dx, y]) && pasa([x + dx, y], [x + dx, y + dy]))) cambio = destapar(x + dx, y + dy) || cambio;
+    for (const [dx, dy] of DIRS) {
+      let cx = x, cy = y;
+      for (let n = 0; n < 14; n++) { const nx = cx + dx, ny = cy + dy; if (!esPasillo(nx, ny) || !pasa([cx, cy], [nx, ny]) || rocas.has(nx + ',' + ny)) break; cambio = destapar(nx, ny) || cambio; cx = nx; cy = ny; }
+    }
+    return cambio;
+  }
+  // Las puertas (y lo que hay detrás) solo aparecen cuando ves al menos uno de sus lados
+  function pintarPuertas() { for (const p of puertas) if (p.g) p.g.visible = vista(...p.a) || vista(...p.b); }
+  // Llamado cada fotograma con la casilla del héroe; desde una sala, se mira por sus puertas abiertas
+  let ultima = '';
+  function explorar(x, y) {
+    const k = x + ',' + y + ',' + puertas.filter((p) => p.abierta).length; if (k === ultima) return; ultima = k;
+    let cambio = false;
+    if (esPasillo(x, y)) cambio = mirarDesde(x, y);
+    else { const r = TB.region(x, y); for (const p of puertas) if (p.abierta) for (const [a, b] of [[p.a, p.b], [p.b, p.a]]) if (TB.region(...a) === r && esPasillo(...b)) cambio = mirarDesde(...b) || cambio; }
+    if (cambio) { for (const a of antorchas) if (a.r === '.' && !a.g.visible && vistas.has(a.x + ',' + a.y)) a.g.visible = true; }
+    pintarPuertas();
+  }
+  animables.push((t, dt) => {
+    if (!disipando.length) return;
+    const m4 = new THREE.Matrix4();
+    for (let i = disipando.length - 1; i >= 0; i--) {
+      const d = disipando[i]; d.t += dt; const k = Math.min(1, d.t / .5), e = 1 - k;
+      m4.makeScale(Math.max(.001, e), Math.max(.001, e), Math.max(.001, e)).setPosition(d.p.x, ALTO_MURO + .12 + k * 1.2, d.p.z); niebla.setMatrixAt(d.i, m4);
+      if (k >= 1) disipando.splice(i, 1);
+    }
+    niebla.instanceMatrix.needsUpdate = true;
+  });
+  pintarPuertas();
+
   // ---- trampas (escondidas hasta que alguien las pisa) ----
   const trampas = (m.trampas || []).map((t) => ({ ...t, disparada: false }));
   function mostrarTrampa(tr) {
@@ -233,7 +283,7 @@ export function crearCripta(escena, m, { movil = false } = {}) {
   function tableroCombate() {
     const casillas = [], idx = new Map();
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const p = aMundo(x, y), c = { i: x, j: y, x: p.x, y: 0, z: p.z, tapada: !pisable(x, y) || !regiones.get(TB.region(x, y))?.visible };
+      const p = aMundo(x, y), c = { i: x, j: y, x: p.x, y: 0, z: p.z, tapada: !pisable(x, y) || !vista(x, y) };
       casillas.push(c); idx.set(x + ',' + y, c);
     }
     return { casillas, T: C, celda: (i, j) => idx.get(i + ',' + j) || null, pasa: (a, b) => pasa([a.i, a.j], [b.i, b.j]) };
@@ -260,7 +310,7 @@ export function crearCripta(escena, m, { movil = false } = {}) {
   }
 
   return {
-    m, W, H, C, aMundo, deMundo, pasa, pisable, enEscalera, puertas, puertaPorBorde, regiones, revelar, abrirPuerta, trampas, mostrarTrampa, mover, tableroCombate,
+    m, W, H, C, aMundo, deMundo, pasa, pisable, enEscalera, vista, explorar, puertas, puertaPorBorde, regiones, revelar, abrirPuerta, trampas, mostrarTrampa, mover, tableroCombate,
     alturaEn: () => 0, obstaculos: [],
     actualizar(t, dt) { for (const f of animables) f(t, dt); }
   };

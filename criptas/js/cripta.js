@@ -263,13 +263,13 @@ function vigilar() {
   if (combate.activo || H.bloqueado || dlg.actual) return;
   const [hx, hy] = cripta.deMundo(H.pos), hr = TB.region(hx, hy);
   const ven = monstruos.filter((m) => {
-    if (!m.vivo || !cripta.regiones.get(m.region)?.visible) return false;
+    if (!m.vivo || !m.visto) return false;   // lo que no has visto aún, tampoco te ve a ti
     const [mx, my] = cripta.deMundo(m.pj.grupo.position), d = Math.abs(mx - hx) + Math.abs(my - hy);
     return (m.region === hr && hr !== '.') || (m.region === '.' && hr === '.' && d <= 5) || (m.alerta && d <= 7);
   });
   if (!ven.length) return;
   const [ax, ay] = cripta.deMundo(ven[0].pj.grupo.position);
-  const grupo = monstruos.filter((m) => m.vivo && cripta.regiones.get(m.region)?.visible && (Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay) <= 7));
+  const grupo = monstruos.filter((m) => m.vivo && m.visto && (Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay) <= 7));
   empezarCombate(grupo);
 }
 
@@ -355,9 +355,9 @@ function actualizarCamara(dt) {
 const reloj = new THREE.Clock(); let t = 0;
 function bucle() {
   const dt = Math.min(.05, reloj.getDelta()); t += dt;
-  moverHeroe(dt); vigilar(); cercanos();
+  moverHeroe(dt); cripta.explorar(...cripta.deMundo(H.pos)); vigilar(); cercanos();
   cripta.actualizar(t, dt); heroe.animar(dt, t);
-  for (const m of monstruos) { if (!m.pj.grupo.parent) continue; m.pj.animar(dt, t); if (m.vivo && m.alerta && !combate.activo) m.pj.mirarA(Math.atan2(H.pos.x - m.pj.grupo.position.x, H.pos.z - m.pj.grupo.position.z)); if (m.rotulo) m.rotulo.visible = m.vivo && !!cripta.regiones.get(m.region)?.visible; }
+  for (const m of monstruos) { if (!m.pj.grupo.parent) continue; m.pj.animar(dt, t); if (m.vivo && m.alerta && !combate.activo) m.pj.mirarA(Math.atan2(H.pos.x - m.pj.grupo.position.x, H.pos.z - m.pj.grupo.position.z)); if (!m.visto && cripta.vista(...cripta.deMundo(m.pj.grupo.position))) m.visto = true; m.pj.grupo.visible = !!(m.visto || !m.vivo); if (m.rotulo) m.rotulo.visible = !!(m.vivo && m.visto); }
   linterna.position.copy(H.pos).add(new THREE.Vector3(0, 2.2, 0));
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt); sonido.actualizar(99);
