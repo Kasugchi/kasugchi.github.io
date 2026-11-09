@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>Criptas · El claro de los huesos (prototipo)</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "three": "./js/vendor/three.module.min.js",
+    "./js/acceso.js": "./js/acceso.js?v=20261109011550",
+    "./js/campanas.js": "./js/campanas.js?v=20261109011550",
+    "./js/cancionero.js": "./js/cancionero.js?v=20261109011550",
+    "./js/claro-combate.js": "./js/claro-combate.js?v=20261109011550",
+    "./js/claro-dados.js": "./js/claro-dados.js?v=20261109011550",
+    "./js/claro-estilo.js": "./js/claro-estilo.js?v=20261109011550",
+    "./js/claro-mundo.js": "./js/claro-mundo.js?v=20261109011550",
+    "./js/claro-personajes.js": "./js/claro-personajes.js?v=20261109011550",
+    "./js/claro-sonido.js": "./js/claro-sonido.js?v=20261109011550",
+    "./js/claro-ui3d.js": "./js/claro-ui3d.js?v=20261109011550",
+    "./js/claro.js": "./js/claro.js?v=20261109011550",
+    "./js/cocina.js": "./js/cocina.js?v=20261109011550",
+    "./js/datos.js": "./js/datos.js?v=20261109011550",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261109011550",
+    "./js/firebase.js": "./js/firebase.js?v=20261109011550",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261109011550",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261109011550",
+    "./js/ia.js": "./js/ia.js?v=20261109011550",
+    "./js/iconos.js": "./js/iconos.js?v=20261109011550",
+    "./js/insultos.js": "./js/insultos.js?v=20261109011550",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261109011550",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261109011550",
+    "./js/motor.js": "./js/motor.js?v=20261109011550",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261109011550",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261109011550",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261109011550",
+    "./js/nube.js": "./js/nube.js?v=20261109011550",
+    "./js/panel.js": "./js/panel.js?v=20261109011550",
+    "./js/planos.js": "./js/planos.js?v=20261109011550",
+    "./js/poderes.js": "./js/poderes.js?v=20261109011550",
+    "./js/procedural.js": "./js/procedural.js?v=20261109011550",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261109011550",
+    "./js/red.js": "./js/red.js?v=20261109011550",
+    "./js/render.js": "./js/render.js?v=20261109011550",
+    "./js/render3d.js": "./js/render3d.js?v=20261109011550",
+    "./js/reunion.js": "./js/reunion.js?v=20261109011550",
+    "./js/sprites.js": "./js/sprites.js?v=20261109011550",
+    "./js/tablero.js": "./js/tablero.js?v=20261109011550",
+    "./js/ui.js": "./js/ui.js?v=20261109011550",
+    "./js/viajero.js": "./js/viajero.js?v=20261109011550"
+  }
+}
+</script>
+<style>
+  :root { --crema: #fff8e6; --tinta: #4a3626; --borde: #e3c99a; --oro: #ffcd4a; --sombra: 0 6px 0 rgba(74,54,38,.18), 0 10px 24px rgba(40,20,40,.25); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2b2450; font: 16px/1.35 'Nunito', system-ui, sans-serif; color: var(--tinta); user-select: none; -webkit-user-select: none; touch-action: none; }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .caja { background: var(--crema); border: 3px solid var(--borde); border-radius: 22px; box-shadow: var(--sombra); }
+  button { font: inherit; cursor: pointer; }
+
+  /* portada */
+  #portada { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: linear-gradient(180deg, rgba(43,36,80,.55), rgba(43,36,80,0) 45%, rgba(233,162,143,.15) 70%, rgba(43,36,80,.55)); z-index: 30; transition: opacity .9s; opacity: 0; }
+  #portada.lista { opacity: 1; } #portada.fuera { opacity: 0; pointer-events: none; }
+  #portada h1 { margin: 0; font-size: clamp(38px, 9vw, 84px); font-weight: 900; line-height: .95; color: #fff4d6; letter-spacing: .5px; text-shadow: 0 4px 0 #6a3a6a, 0 8px 0 #3b1f4a, 0 14px 30px rgba(0,0,0,.45); }
+  #portada h1 small { display: block; font-size: .38em; color: #ffd38a; text-shadow: 0 3px 0 #6a3a6a, 0 8px 18px rgba(0,0,0,.4); margin-bottom: 6px; }
+  #portada p { color: #fff0dc; text-shadow: 0 2px 8px rgba(0,0,0,.6); margin: 14px 20px 26px; font-weight: 700; }
+  #empezar { padding: 16px 34px; font-size: 22px; font-weight: 900; color: #4a2a10; background: linear-gradient(#ffe38a, #ffbf3a); border: 3px solid #fff4c4; border-radius: 999px; box-shadow: 0 6px 0 #a8641a, 0 14px 28px rgba(0,0,0,.35); transition: transform .12s; }
+  #empezar:hover { transform: translateY(-2px) scale(1.03); } #empezar:active { transform: translateY(3px); box-shadow: 0 2px 0 #a8641a; }
+  #portada .pie { position: absolute; bottom: max(14px, env(safe-area-inset-bottom)); left: 0; right: 0; font-size: 13px; color: #f3dcff; opacity: .85; }
+
+  /* HUD */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; opacity: 0; transition: opacity .8s; }
+  #hud.ver { opacity: 1; }
+  #hud > * { pointer-events: auto; }
+  #ficha { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; display: flex; gap: 10px; align-items: center; padding: 8px 14px 8px 8px; }
+  #retrato { width: 54px; height: 54px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #8fb0ff, #3d5bd9); display: grid; place-items: center; font-size: 30px; border: 3px solid var(--oro); box-shadow: inset 0 -4px 0 rgba(0,0,0,.2); }
+  #ficha b { font-weight: 900; font-size: 15px; }
+  #corazones { display: flex; gap: 3px; margin: 3px 0; flex-wrap: wrap; max-width: 140px; }
+  #corazones i { width: 14px; height: 13px; background: #d9c7b0; clip-path: path('M7 13 C7 13 0 8 0 4 C0 1.5 2 0 4 0 C5.5 0 6.5 1 7 2 C7.5 1 8.5 0 10 0 C12 0 14 1.5 14 4 C14 8 7 13 7 13Z'); }
+  #corazones i.lleno { background: #ff5a6a; }
+  .stats { display: flex; gap: 10px; font-weight: 800; font-size: 14px; }
+  #mision { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; width: min(270px, 46vw); padding: 10px 14px; display: flex; flex-direction: column; gap: 3px; font-size: 14px; }
+  #mision b { font-weight: 900; font-size: 15px; color: #7a3a9a; }
+  #mision span::before { content: '◇ '; color: #c9a06a; } #mision span.hecho { color: #3f8a3c; text-decoration: line-through; } #mision span.hecho::before { content: '✔ '; }
+  #mision .volver { color: #b0621a; font-weight: 900; } #mision .volver::before { content: '★ '; }
+  #sonido { position: absolute; right: 12px; top: calc(max(12px, env(safe-area-inset-top)) + 118px); width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; padding: 0; }
+  #sonido::before { content: '🔊'; } #sonido.mudo::before { content: '🔈'; opacity: .5; }
+  #banner { position: absolute; left: 50%; top: 18%; transform: translate(-50%, -20px) scale(.8); font-size: clamp(28px, 6vw, 52px); font-weight: 900; color: #fff4d6; text-shadow: 0 4px 0 #3b1f4a, 0 10px 24px rgba(0,0,0,.5); opacity: 0; transition: all .35s cubic-bezier(.2,1.6,.4,1); pointer-events: none; white-space: nowrap; }
+  #banner.ver { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #banner.enemigo { color: #ffd0c8; text-shadow: 0 4px 0 #7a1f2a, 0 10px 24px rgba(0,0,0,.5); }
+  #accion { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 4px); transform: translateX(-50%); padding: 10px 18px 10px 10px; font-weight: 900; font-size: 16px; display: flex; gap: 10px; align-items: center; animation: aparece .25s; white-space: nowrap; }
+  #accion kbd { display: grid; place-items: center; min-width: 30px; height: 30px; border-radius: 9px; background: #4a3626; color: var(--crema); font: 900 15px Nunito; box-shadow: 0 3px 0 #2b1d16; }
+  @keyframes aparece { from { transform: translate(-50%, 10px); opacity: 0; } }
+  #narrar { position: absolute; left: 50%; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 74px); transform: translateX(-50%); width: min(560px, calc(100vw - 24px)); text-align: center; padding: 10px 16px; font-weight: 800; font-size: 15px; background: rgba(43,29,46,.82); color: #fff1dc; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,.3); pointer-events: none; }
+  #acciones { position: absolute; left: 50%; bottom: max(12px, env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 8px; padding: 8px; width: max-content; max-width: calc(100vw - 16px); overflow-x: auto; }
+  #acciones button { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 76px; padding: 8px 10px; border: 0; border-radius: 14px; background: #f3e4c4; color: var(--tinta); font-weight: 900; font-size: 13px; box-shadow: 0 4px 0 #c9a06a; transition: transform .1s; }
+  #acciones button span { font-size: 22px; }
+  #acciones button:not(:disabled):hover { transform: translateY(-2px); background: #ffe9b8; }
+  #acciones button:not(:disabled):active { transform: translateY(3px); box-shadow: 0 1px 0 #c9a06a; }
+  #acciones button:disabled { opacity: .38; cursor: default; filter: grayscale(.6); }
+  #hud.combate #accion, #hud.combate #joystick, #hud.combate #ayuda { display: none; }
+  #joystick { position: absolute; left: 22px; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 10px); width: 110px; height: 110px; border-radius: 50%; background: rgba(255,248,230,.28); border: 3px solid rgba(255,248,230,.6); display: none; touch-action: none; }
+  #joystick i { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px; border-radius: 50%; background: var(--crema); box-shadow: 0 4px 0 #c9a06a; }
+  @media (pointer: coarse) { #joystick { display: block; } #ayuda { display: none; } }
+  #ayuda { position: absolute; left: 12px; bottom: max(12px, env(safe-area-inset-bottom)); padding: 8px 12px; font-size: 13px; font-weight: 700; opacity: .9; animation: irse 1s 14s forwards; }
+  @keyframes irse { to { opacity: 0; visibility: hidden; } }
+
+  /* diálogo */
+  #dialogo { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(640px, calc(100vw - 24px)); padding: 26px 22px 16px; z-index: 20; animation: sube .25s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes sube { from { transform: translate(-50%, 30px); opacity: 0; } }
+  #quien { position: absolute; top: -18px; left: 22px; padding: 4px 16px; background: #4e8a4a; color: #fff8e6; font-weight: 900; border-radius: 999px; box-shadow: 0 4px 0 #2f5a2c; transform: rotate(-2deg); }
+  #texto { min-height: 3.2em; font-size: 18px; font-weight: 700; }
+  #opciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  #opciones button { padding: 9px 18px; border: 0; border-radius: 999px; background: #ffd56a; font-weight: 900; color: #4a2a10; box-shadow: 0 4px 0 #c08a2a; }
+  #opciones button:hover { background: #ffe38a; }
+  #fundido { position: fixed; inset: 0; background: #1a1020; opacity: 0; pointer-events: none; transition: opacity .8s; z-index: 25; }
+  #fundido.ver { opacity: 1; }
+  [hidden] { display: none !important; }
+  body.hablando #acciones, body.hablando #narrar, body.hablando #accion { display: none !important; }
+  @media (max-width: 560px) {
+    #ficha { transform: scale(.86); transform-origin: top left; }
+    #mision { top: calc(max(12px, env(safe-area-inset-top)) + 78px); left: 12px; right: auto; width: auto; max-width: 64vw; font-size: 12.5px; padding: 7px 11px; border-radius: 16px; }
+    #mision b { font-size: 13px; }
+    #sonido { top: max(12px, env(safe-area-inset-top)); }
+    #texto { font-size: 16px; }
+    #acciones { width: calc(100vw - 16px); display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 6px; box-sizing: border-box; }
+    #acciones button { min-width: 0; padding: 7px 2px; font-size: 11.5px; }
+    #acciones button span { font-size: 20px; }
+    #narrar { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 76px); font-size: 14px; }
+  }
+</style>
+<style id="cerrojo">body{visibility:hidden}</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+
+<div id="portada">
+  <div>
+    <h1><small>Morrandar se detiene en…</small>El claro<br>de los huesos</h1>
+    <p>Prototipo del modo aventura: pasea libre y, si tocas a los esqueletos, se juega por turnos.</p>
+    <button id="empezar">Bajar de Morrandar</button>
+  </div>
+  <div class="pie">Criptas de Velmor · prueba visual</div>
+</div>
+
+<div id="hud">
+  <div id="ficha" class="caja">
+    <div id="retrato">🧙</div>
+    <div><b>Tu mago</b><div id="corazones"></div><div class="stats"><span>🪙 <span id="oro">0</span></span><span>🧪 <span id="pociones">1</span></span><span>🔥 <span id="bolas">2</span></span></div></div>
+  </div>
+  <div id="mision" class="caja"></div>
+  <button id="sonido" class="caja" aria-label="Sonido"></button>
+  <div id="banner"></div>
+  <div id="narrar" hidden></div>
+  <div id="acciones" class="caja" hidden></div>
+  <button id="accion" class="caja" hidden></button>
+  <div id="joystick"><i></i></div>
+  <div id="ayuda" class="caja">WASD o clic para andar · Mayús corre · arrastra para girar · rueda para acercar · E para interactuar</div>
+</div>
+
+<div id="dialogo" class="caja" hidden><div id="quien"></div><div id="texto"></div><div id="opciones"></div></div>
+<div id="fundido"></div>
+
+<script type="module">
+import './js/acceso.js';
+import './js/claro.js';
+</script>
+</body>
+</html>
