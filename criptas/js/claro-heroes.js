@@ -30,13 +30,14 @@ export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 export const FORJA = { arma: [60, 150, 300], armadura: [50, 130, 260], pocion: 25 };
 
 // Lo que el héroe tiene ahora mismo, según raza, clase, nivel y lo que le ha forjado Brasa
-export function estadisticas(h) {
-  const c = CLASES[h.clase], n = h.nivel || 1;
+// enCripta: la comida de Marga solo cuenta dentro de la cripta (y se gasta en ella)
+export function estadisticas(h, enCripta = false) {
+  const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null;
   return {
-    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0) + (h.forja?.arma || 0),   // un arma encontrada solo cuenta si es mejor que la tuya
-    defensa: c.defensa + (n >= 5 ? 1 : 0) + (h.forja?.armadura || 0),
-    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1),
-    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0),
+    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0) + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
+    defensa: c.defensa + (n >= 5 ? 1 : 0) + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
+    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + (co === 'cuerpo' ? 2 : 0),
+    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) + (co === 'habilidad' ? 1 : 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     escamas: h.raza === 'escamado'
   };

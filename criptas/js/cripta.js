@@ -14,6 +14,7 @@ import { OutputPass } from './vendor/addons/postprocessing/OutputPass.js';
 import * as D from './datos.js';
 import * as TB from './tablero.js';
 import { generarMision } from './procedural.js';
+import { EFECTOS_CRIPTA } from './cocina.js';
 import { crearCripta, aSolas, C } from './claro-cripta.js';
 import { crearHeroe, crearEsqueleto, crearMago } from './claro-personajes.js';
 import { crearUI3D } from './claro-ui3d.js';
@@ -60,7 +61,7 @@ const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
 let DEF = leerLocal() || { ...heroeAlAzar(), nombre: 'Viajero' };
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, pociones: 1, usos: 2, mision: 'cripta' };
 function aplicarHeroe(def) {
-  DEF = def; const s = estadisticas(def);
+  DEF = def; const s = estadisticas(def, true);
   Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 aplicarHeroe(DEF);
@@ -236,10 +237,10 @@ async function ganar() {
   salir();
 }
 async function expulsado() {
-  H.bloqueado = true; $('#fundido').classList.add('ver'); await espera(900); guardarAhora();
+  H.bloqueado = true; $('#fundido').classList.add('ver'); await espera(900); delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true);
   location.href = DEL_PUEBLO ? 'pueblo.html?caido=1' : 'claro.html?desde=cripta&caido=1';
 }
-function salir() { guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = VOLVER; }, 800); }
+function salir() { delete DEF.comida; guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver'); setTimeout(() => { location.href = VOLVER; }, 800); }
 
 // ---------- lo que tienes cerca (puertas, buscar, escalera) ----------
 let cerca = null;
@@ -377,7 +378,7 @@ hud.actualizar(); bucle();
 $('#hud').classList.add('ver');
 $('#fundido').classList.add('ver'); setTimeout(() => $('#fundido').classList.remove('ver'), 100);
 setTimeout(async () => {
-  await hablar(mision.titulo, ['Bajas los escalones y el aire se vuelve frío. Huele a tiempo, a cera y a huesos que no se están quietos.', mision.objetivo?.texto || 'Explora la cripta.'], [], { grave: .9 });
+  await hablar(mision.titulo, ['Bajas los escalones y el aire se vuelve frío. Huele a tiempo, a cera y a huesos que no se están quietos.', mision.objetivo?.texto || 'Explora la cripta.', ...(DEF.comida ? [`Aún te dura la comida de Marga (${DEF.comida.n}): ${EFECTOS_CRIPTA[DEF.comida.efecto]?.replace('En tu próxima cripta: ', '') || ''}`] : [])], [], { grave: .9 });
   H.bloqueado = false;
 }, 900);
 lienzo.addEventListener('pointerdown', () => sonido.arrancar(), { once: true });
