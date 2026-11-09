@@ -481,7 +481,8 @@ function bucle() {
     const p = Math.min(1, CAM.introT / 6.5);
     const desde = new THREE.Vector3(-6, 22.5, -66), hasta = SITIOS.llegada.clone().setY(.15);
     if (p < .88) { H.pos.lerpVectors(desde, hasta, p / .88); H.pos.y += Math.sin(p / .88 * Math.PI) * -1.2 + .2; }
-    else { const q = (p - .88) / .12; H.pos.set(hasta.x + 1.2 * q, 0, hasta.z + 4.5 * q); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); }   // unos pasos ya en la hierba heroe.vel = .75; heroe.mirarA(Math.atan2(hasta.x - desde.x, hasta.z - desde.z));
+    else { const q = (p - .88) / .12; H.pos.set(hasta.x + 1.2 * q, 0, hasta.z + 4.5 * q); H.pos.y = mundo.alturaEn(H.pos.x, H.pos.z); }   // unos pasos ya en la hierba
+    heroe.vel = .75; heroe.mirarA(p < .88 ? Math.atan2(hasta.x - desde.x, hasta.z - desde.z) : Math.atan2(1.2, 4.5));   // de cara a donde va
     if (p >= 1) { H.bloqueadoFin = true; CAM.modo = 'paseo'; H.bloqueado = false; heroe.vel = 0; $('#hud').classList.add('ver'); brezo.hacer('saludar', 1.2); hud.banner('El claro de los huesos', 'heroe'); }
   }
   moverHeroe(dt); rondaEsqueletos(dt); cercanos(); animarCosas(dt);
