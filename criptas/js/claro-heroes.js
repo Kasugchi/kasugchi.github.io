@@ -26,12 +26,15 @@ export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740];
 export const nivelDe = (xp) => { let n = 1; for (let i = 1; i < NIVELES.length; i++) if (xp >= NIVELES[i]) n = i + 1; return n; };
 export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 
-// Lo que el héroe tiene ahora mismo, según raza, clase y nivel
+// La forja de Brasa (en Morrandar): precio de cada mejora; cada nivel, un dado más
+export const FORJA = { arma: [60, 150, 300], armadura: [50, 130, 260], pocion: 25 };
+
+// Lo que el héroe tiene ahora mismo, según raza, clase, nivel y lo que le ha forjado Brasa
 export function estadisticas(h) {
   const c = CLASES[h.clase], n = h.nivel || 1;
   return {
-    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
-    defensa: c.defensa + (n >= 5 ? 1 : 0),
+    ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0) + (h.forja?.arma || 0),   // un arma encontrada solo cuenta si es mejor que la tuya
+    defensa: c.defensa + (n >= 5 ? 1 : 0) + (h.forja?.armadura || 0),
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
