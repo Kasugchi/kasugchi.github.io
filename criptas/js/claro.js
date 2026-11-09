@@ -7,6 +7,7 @@
 //  claro-dados, claro-combate y claro-sonido.
 // =============================================================
 import * as THREE from 'three';
+import { crearCalidad } from './calidad.js';
 import { EffectComposer } from './vendor/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from './vendor/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from './vendor/addons/postprocessing/UnrealBloomPass.js';
@@ -48,6 +49,7 @@ if (!MOVIL && !params.has('sinbrillo')) {
   composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), .45, .55, .82));
   composer.addPass(new OutputPass());
 }
+const CAL = crearCalidad(render, Math.min(devicePixelRatio, MOVIL ? 1.6 : 2), (r) => { composer?.setPixelRatio(r); composer?.setSize(innerWidth, innerHeight); });
 addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; camara.updateProjectionMatrix(); render.setSize(innerWidth, innerHeight); composer?.setSize(innerWidth, innerHeight); });
 
 usarMapa(PAR.mapa);   // cada parada, su sitio para cada cosa
@@ -486,6 +488,7 @@ function bucle() {
   actualizarCamara(dt);
   sonido.actualizar(H.pos.distanceTo(SITIOS.hoguera));
   if (composer) composer.render(); else render.render(escena, camara);
+  CAL.tick();
   requestAnimationFrame(bucle);
 }
 
