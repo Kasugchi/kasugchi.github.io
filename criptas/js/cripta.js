@@ -22,7 +22,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
-import { CLASES, estadisticas, nivelDe, mejoraDeNivel, leerLocal, guardarHeroe, heroeAlAzar } from './claro-heroes.js';
+import { CLASES, estadisticas, nivelDe, mejoraDeNivel, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -78,7 +78,7 @@ const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloquea
 }
 
 // ---------- las tareas de la misión y las flags ----------
-const flags = new Set(), hechos = new Set(), buscadas = new Set();
+const flags = new Set(), hechos = new Set(), buscadas = new Set(), BOTIN_TOTAL = [];
 function textoMision() {
   const tareas = (mision.tareas || []).map((t) => `<span class="${t.flag && flags.has(t.flag) ? 'hecho' : ''}">${t.texto}</span>`).join('');
   return `<b>${mision.titulo}</b>${tareas || `<span>${mision.objetivo?.texto || 'Explora la cripta'}</span>`}`;
@@ -129,12 +129,15 @@ async function empezarCombate(grupo) {
   const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })));
   $('#hud').classList.remove('combate'); hud.narrar(''); CAM.modo = 'paseo';
   let xp = 0;
-  for (const id of caidosIds) { const mo = monstruos.find((m) => m.id === id); if (!mo) continue; mo.vivo = false; xp += (XP_TIPO[mo.tipo] || 10) + (mo.def.jefe ? 40 : 0); }
+  const botin = {};
+  for (const id of caidosIds) { const mo = monstruos.find((m) => m.id === id); if (!mo) continue; mo.vivo = false; xp += (XP_TIPO[mo.tipo] || 10) + (mo.def.jefe ? 40 : 0); for (const [k, n] of Object.entries(botinDe(mo.tipo, mo.def.jefe))) botin[k] = (botin[k] || 0) + n; }
+  sumarBotin(DEF, botin); BOTIN_TOTAL.push(botin);
   for (const g of grupo) { const u = monstruos.find((m) => m.id === g.id); if (u?.vivo) { u.def.x = cripta.deMundo(u.pj.grupo.position)[0]; u.def.y = cripta.deMundo(u.pj.grupo.position)[1]; } }
   if (resultado === 'derrota') return expulsado();
   hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
   const oro = caidosIds.length * 5; estado.oro += oro; estado.usos = estado.usosMax;
   setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
+  const tb = textoBotin(botin); if (tb) setTimeout(() => { ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), tb, '#e8e0d0'); sonido.recoger(); }, 1100);
   await ganarExperiencia(xp);
   for (const id of caidosIds) await evento('monstruo_muerto', { id });
   if (mision.objetivo?.tipo === 'matar' && caidosIds.includes(mision.objetivo.id)) await ganar();
@@ -233,7 +236,7 @@ async function ganar() {
   if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else DEF.criptaHecha = true;
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);
   await ganarExperiencia(60);
-  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.`, DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : 'Brezo te estará esperando junto a la hoguera para que se lo cuentes todo.']);
+  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.` + (() => { const t = {}; for (const b of BOTIN_TOTAL) for (const [k, n] of Object.entries(b)) t[k] = (t[k] || 0) + n; const s = textoBotin(t); return s ? ` En la bolsa, para la forja: ${s}.` : ''; })(), DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : 'Brezo te estará esperando junto a la hoguera para que se lo cuentes todo.']);
   salir();
 }
 async function expulsado() {

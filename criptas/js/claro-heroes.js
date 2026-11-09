@@ -26,8 +26,28 @@ export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740];
 export const nivelDe = (xp) => { let n = 1; for (let i = 1; i < NIVELES.length; i++) if (xp >= NIVELES[i]) n = i + 1; return n; };
 export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 
-// La forja de Brasa (en Morrandar): precio de cada mejora; cada nivel, un dado más
-export const FORJA = { arma: [60, 150, 300], armadura: [50, 130, 260], pocion: 25 };
+// Lo que sueltan los monstruos de las criptas (como en una cacería: se lleva a la forja)
+export const MATERIALES = {
+  hueso: { n: 'Hueso pulido', e: '🦴' }, polvo: { n: 'Polvo de tumba', e: '⚱️' }, venda: { n: 'Venda de momia', e: '🧻' },
+  ectoplasma: { n: 'Ectoplasma', e: '👻' }, piedra: { n: 'Piedra rúnica', e: '🪨' }, trofeo: { n: 'Trofeo de jefe', e: '🏆' }
+};
+export const BOTIN = { esqueleto: 'hueso', guerrero: 'hueso', orco: 'hueso', sacerdotisa: 'hueso', zombi: 'polvo', trasgo: 'polvo', bruja: 'polvo', momia: 'venda', fantasma: 'ectoplasma', hechicero: 'ectoplasma', ilusionista: 'ectoplasma', gargola: 'piedra', golem: 'piedra' };
+// Qué cae al vencer a un monstruo: su material (no siempre) y, si era jefe, su trofeo y dos más
+export function botinDe(tipo, jefe) {
+  const m = BOTIN[tipo] || 'polvo', r = {};
+  if (jefe) { r.trofeo = 1; r[m] = 2; } else if (Math.random() < .65) r[m] = 1;
+  return r;
+}
+export function sumarBotin(h, b) { h.materiales ||= {}; for (const [k, n] of Object.entries(b)) h.materiales[k] = (h.materiales[k] || 0) + n; }
+export const textoBotin = (b) => Object.entries(b).filter(([, n]) => n > 0).map(([k, n]) => `${MATERIALES[k].e}×${n}`).join(' ');
+
+// La forja de Brasa (en Morrandar): lo que cuesta cada mejora, en oro y materiales; cada nivel, un dado (o un uso) más
+export const FORJA = {
+  arma: [{ oro: 60, hueso: 3 }, { oro: 150, hueso: 5, polvo: 2 }, { oro: 300, trofeo: 1, piedra: 2 }],
+  armadura: [{ oro: 50, hueso: 2 }, { oro: 130, venda: 2, polvo: 2 }, { oro: 260, trofeo: 1, ectoplasma: 2 }],
+  amuleto: [{ oro: 80, ectoplasma: 2 }, { oro: 200, trofeo: 1, piedra: 1 }],
+  pocion: 25
+};
 
 // Lo que el héroe tiene ahora mismo, según raza, clase, nivel y lo que le ha forjado Brasa
 // enCripta: la comida de Marga solo cuenta dentro de la cripta (y se gasta en ella)
@@ -37,7 +57,7 @@ export function estadisticas(h, enCripta = false) {
     ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + (n >= 3 ? 1 : 0) + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
     defensa: c.defensa + (n >= 5 ? 1 : 0) + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + (co === 'cuerpo' ? 2 : 0),
-    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) + (co === 'habilidad' ? 1 : 0),
+    usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + (n >= 2 ? 1 : 0) + (n >= 4 ? 1 : 0) + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     escamas: h.raza === 'escamado'
   };

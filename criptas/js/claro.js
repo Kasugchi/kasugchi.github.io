@@ -15,7 +15,7 @@ import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe } from './claro-personajes.js';
-import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
@@ -304,6 +304,8 @@ async function empezarCombate(g) {
     const oro = g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0); estado.oro += oro; estado.usos = estado.usosMax;
     ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), 8); setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
     if (GRUPOS.every((x) => !x.vivo) && estado.mision === 'activa' && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
+    const botin = {}; for (const m of g.miembros) for (const [k, n] of Object.entries(botinDe('esqueleto', m.jefe))) botin[k] = (botin[k] || 0) + n;   // huesos para la forja de Morrandar
+    sumarBotin(DEF, botin); const tb = textoBotin(botin); if (tb) setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), tb, '#e8e0d0'), 1100);
     await ganarExperiencia(caidos.reduce((s, n) => s + (XP[n] || 10), 0));
   } else {
     // derrota: Brezo te lleva junto a la hoguera
@@ -342,6 +344,7 @@ async function ganarExperiencia(xp) {
 }
 function camara_luz() { CAM.temblor = .15; }
 function pintarPortada() {
+  if (!$('#portada')) return;   // ya se quitó (entraste directo o volviste de la cripta)
   const C0 = CLASES[DEF.clase], R0 = RAZAS[DEF.raza];
   $('#empezar').textContent = nuevo ? 'Crear mi héroe' : 'Bajar de Morrandar';
   $('#cambiar').hidden = nuevo;
