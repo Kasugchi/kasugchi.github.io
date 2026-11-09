@@ -26,7 +26,7 @@ export function seccionesTortuga() {
       ['<b>Mordo el Tuerto</b>', 'Mercader de dudosa reputación. De momento solo enseña su género.'],
       ['<b>El Viejo Anzuelo</b>', 'Pesca páginas perdidas. Pregúntale qué ha sacado hoy.'],
       ['<b>Pip, la Guía Ciega y Tintero</b>', 'El grumete, quien guía a Morrandar y el gato. Hablad con ellos.'],
-      ['<b>La Forja Fría</b>', 'Apagada hasta que alguien rescate a Bruna (próximamente).'],
+      ['<b>La Forja Fría</b>', 'Apagada hasta que alguien rescate a Bruna de las Celdas de Hierro (minas de Hierroviejo). Mientras, su aprendiz Brasa trabaja en la forja pequeña.'],
       ['<b>Morrandar</b>', 'Su cabeza, al final del caparazón. Se le puede acariciar.']
     ])],
     ['El banco de Madre Hiel', `

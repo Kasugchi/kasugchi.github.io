@@ -70,6 +70,49 @@ export const PARADAS = {
       hoguera: 'El fuego sisea con la humedad. Huele a turba y a sopa de algo.',
       mision: 'Habla con la Abuela Cieno, junto al fuego'
     }
+  },
+  celdas: {
+    nombre: 'Las minas de Hierroviejo', corto: 'Las minas', icono: '⛓️',
+    descripcion: 'Una cantera de piedra rojiza y vagonetas oxidadas. Debajo están las Celdas de Hierro, donde dicen que tienen presa a Bruna, la herrera de Morrandar.',
+    requiere: 'pantano',                         // se abre al vencer la Ciénaga Hundida
+    tema: {
+      colores: { cieloAlto: '#3a2a3a', cieloMedio: '#a86a4a', horizonte: '#f0b070', niebla: '#c08a6a', hierba: '#8a7a4a', hierbaOscura: '#6a5a3a', hierbaClara: '#b0a060', camino: '#9a6a4a', tierra: '#6a4a3a', tronco: '#4a3a2e', copa: '#6a7a3a', copa2: '#8a8a42', copa3: '#5a6232', agua: '#6a8a9a', aguaHonda: '#3a5a6a', roca: '#9a6a5a', roca2: '#7a5a4a' },
+      niebla: [26, 140], flores: ['#e8c050', '#e08a40', '#d8d0c0'], hojas: ['#a08a4a', '#8a6a3a', '#c0a050', '#7a5a3a'], luzSol: '#ffc890', cielo: '#d8a080'
+    },
+    // La entrada a las celdas al norte, el campamento al sur y muchas rocas (es una cantera)
+    mapa: {
+      sitios: { hoguera: [-8, 14], guarda: [-10.5, 15.6], cartel: [6, 20], estanque: [16, -6], cripta: [0, -27], colina: [0, -33] },
+      criptaGiro: 0,
+      camino: [[4, 30], [5, 22], [3, 14], [1, 6], [0, -2], [-1, -10], [0, -18], [0, -23], [0, -24]],
+      charcas: [[16, -6, 3], [-20, -14, 2.6]],
+      arboles: [[-18, 4, 1.1, 41], [20, 12, 1.2, 53], [-24, 22, 1.25, 67], [24, -20, 1.1, 83]],
+      rocas: [[-8, -6, 1.4], [9, -14, 1.2], [-14, -22, 1.6], [13, 4, 1], [-4, 24, .9], [22, 22, 1.3], [-26, -4, 1.5], [26, -2, 1.1], [8, -24, 1.3], [-6, -16, .9], [18, 26, .8], [-18, -30, 1.2]],
+      grupos: [[10, 6], [-6, -14]],
+      objetos: [[-16, -8], [14, -12], [-22, 10], [20, 0], [-12, 26], [6, -18]],
+      cofre: [24, 14], parcela: [-22, 26]
+    },
+    guia: { nombre: 'Hollín', sub: 'Minero jubilado', modelo: { tunica: '#5a4a3a', adorno: '#e0a040', sombrero: 'capucha', colorSombrero: '#4a3a2e', pelo: '#e8e0d0', piel: '#e0a77e', baston: 'cayado', capa: '#3a3030' } },
+    objeto: { nombre: 'Seta de herrumbre', plural: 'setas de herrumbre', corto: 'Setas de herrumbre', sombrero: '#e07a3a', brillo: '#ff9a3a', chispas: '#ffd090' },
+    enemigo: { tipo: 'esqueleto', nombre: 'Carcelero', plural: 'carceleros', grupos: ['Carceleros de la cantera', 'Guardia de las celdas'], jefe: 'Alcaide Herrumbre', color: '#8a7a6a', ojo: '#ffb03a' },
+    cripta: { nombre: 'Celdas de Hierro', semilla: 'CADENA', nivel: 9, titulo: 'Las Celdas de Hierro', monstruos: ['esqueleto', 'guerrero', 'esqueleto', 'momia', 'gargola'],
+      preso: 'la herrera Bruna',
+      rescate: '¡Es Bruna! Tiene las manos negras de hollín y la barba de chispas quemadas. «¿Brasa os manda? Esa niña… Sacadme de aquí, que tengo una forja que encender.»',
+      final: 'Bruna no se queda ni a despedirse: sube derecha por la escala de Morrandar, que tiene una forja fría que encender. Ve a verla al pueblo, junto al río.' },
+    textos: {
+      saludo: ['¡Alto ahí! Ah, no, que tú no llevas casco de carcelero. Perdona, la costumbre.', 'Me llamo Hollín. Piqué piedra en esta cantera cuarenta años, hasta que llegaron los carceleros de hueso y la convirtieron en una prisión.', 'Tienen a gente encerrada en las Celdas de Hierro. Tráeme tres setas de herrumbre (las naranjas que brillan, comen óxido) y quítame de en medio a esos carceleros. Con las setas te hago una ganzúa que abre la verja.'],
+      hecho: ['¡Tres setas y ni un carcelero en pie! Toma: una ganzúa de herrumbre. Abre la verja de las celdas.', 'Y estas monedas. Abajo hay una enana que lleva meses gritando que tiene una forja que encender. Igual la conoces.'],
+      pista: 'Las setas de herrumbre crecen al pie de las rocas grandes. Les gusta el hierro viejo.',
+      abierta: 'La verja está abierta. Abajo huele a hierro, a humedad y a alguien que lleva meses cantando canciones de herrería para no volverse loca.',
+      vuelta: ['¡Has vuelto! Y con cara de haber visto cosas. ¿Era tu herrera la que gritaba?', 'Toma una poción. Los mineros siempre llevamos una de sobra.'],
+      despues: 'Los carceleros se vuelven a montar con los huesos que quedan. La cantera es así: siempre hay más piedra y más huesos.',
+      rescate: ['¡Te has caído en un hoyo de la cantera, criatura! Te he sacado con la polea.', 'Descansa junto al fuego. Los carceleros no corren, pero son muchos.'],
+      rescateCripta: ['Te han sacado de las celdas a rastras. Al menos no te han encerrado.', 'Lo que ganaste ahí abajo, tuyo es. Descansa y vuelve a intentarlo.'],
+      cartel: ['«➜ Celdas de Hierro (prohibido el paso a no carceleros). ⬅ Morrandar.»', 'Alguien ha tachado «no carceleros» y ha escrito debajo: «nadie, por favor».'],
+      cerrada: 'Una verja de hierro con un candado del tamaño de tu cabeza. Hollín, el minero, sabrá cómo abrirla.',
+      estanque: 'Agua de mina, rojiza y fría. Se te queda la cara naranja solo de mirarla.',
+      hoguera: 'Un fuego de carbón, de los de verdad. Huele a forja.',
+      mision: 'Habla con Hollín, junto al fuego'
+    }
   }
 };
 

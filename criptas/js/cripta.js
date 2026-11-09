@@ -60,6 +60,16 @@ const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'));
 if (!DEL_PUEBLO) mision.titulo = PAR.cripta.titulo;   // la de cada parada tiene nombre propio; las de los encargos, el suyo
 // Los monstruos de la zona: en el pantano, zombis y brujas (el jefe conserva su nombre y su fuerza)
 if (PAR.cripta.monstruos) { const L = PAR.cripta.monstruos; const re = (mo, i) => { if (!mo.jefe && !mo.nombre) mo.tipo = L[(i * 7 + (mo.x || 0)) % L.length]; }; mision.monstruos.forEach(re); for (const d of mision.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos.forEach(re); }
+// Un preso con nombre propio (en las Celdas de Hierro, Bruna): se cambia el del generador en todos los textos
+if (PAR.cripta.preso && !DEL_PUEBLO) {
+  const t = Object.values(mision.tesoros || {}).find((x) => x.flag === 'rescatado'), viejo = t?.texto.match(/Encadenado al muro está (.+?)\. /)?.[1];
+  if (viejo) {
+    const mayus = (x) => x[0].toUpperCase() + x.slice(1), nuevo = PAR.cripta.preso;
+    const j = JSON.stringify(mision).split(mayus(viejo)).join(nuevo).split(viejo).join(nuevo);
+    Object.assign(mision, JSON.parse(j));
+    for (const x of Object.values(mision.tesoros)) if (x.flag === 'rescatado' && PAR.cripta.rescate) x.texto = PAR.cripta.rescate;
+  }
+}
 if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mision.objetivo.texto = 'Encuentra lo que buscas y vuelve a la escalera.'; }   // aquí no hay rondas: vas a tu ritmo
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
@@ -269,7 +279,7 @@ async function ganar() {
   if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else if (PID === 'claro') DEF.criptaHecha = true; else { DEF.paradas ||= {}; (DEF.paradas[PID] ||= {}).criptaHecha = true; }
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);
   await ganarExperiencia(60);
-  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.` + (() => { const t = {}; for (const b of BOTIN_TOTAL) for (const [k, n] of Object.entries(b)) t[k] = (t[k] || 0) + n; const s = textoBotin(t); return s ? ` En la bolsa, para la forja: ${s}.` : ''; })(), DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : `${PAR.guia.nombre} te estará esperando junto al fuego para que se lo cuentes todo.`]);
+  await hablar(mision.titulo, [`¡Lo has conseguido! Sales a la luz del atardecer con ${oro} monedas de recompensa y la cabeza bien alta.` + (() => { const t = {}; for (const b of BOTIN_TOTAL) for (const [k, n] of Object.entries(b)) t[k] = (t[k] || 0) + n; const s = textoBotin(t); return s ? ` En la bolsa, para la forja: ${s}.` : ''; })(), DEL_PUEBLO ? 'Morrandar te espera arriba. Marga ya está tirando de la jarra: esta historia se cuenta en la cantina.' : (PAR.cripta.final || `${PAR.guia.nombre} te estará esperando junto al fuego para que se lo cuentes todo.`)]);
   salir();
 }
 async function expulsado() {
