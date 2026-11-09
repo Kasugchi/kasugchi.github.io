@@ -976,6 +976,7 @@ async function entrarPorReunion() {
 }
 $('#b-morrandar')?.addEventListener('click', () => { location.href = 'tortuga.html?elegir'; });
 $('#b-pueblo')?.addEventListener('click', () => { location.href = 'pueblo.html'; });
+$('#b-claro')?.addEventListener('click', () => { location.href = 'claro.html'; });
 // Desde el campamento, al pueblo: la partida queda guardada y el pueblo ofrece volver justo aquí.
 $('#b-ir-pueblo')?.addEventListener('click', () => {
   const e = app.estadoReal || app.estado; if (e) guardarPartida(e);
