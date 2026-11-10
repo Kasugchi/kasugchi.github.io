@@ -128,7 +128,9 @@ function nacer(mo, alerta = false) {
   const r = TB.region(mo.x, mo.y); cripta.regiones.get(r).g.add(pj.grupo);
   const nombre = mo.nombre || (mo.jefe ? (st.nombre + ' jefe') : st.nombre);
   const x = { def: mo, id: mo.id, tipo: mo.tipo, nombre, pj, vivo: true, alerta, region: r, st,
-    cuerpo: (mo.cuerpo || st.cuerpo) + (mo.jefe ? 2 : 0), ataque: mo.ataque || st.ataque, defensa: mo.defensa || st.defensa, mover: Math.min(8, st.mov || 6) };
+    // Los jefes ya traen su cuerpo del generador (no se suma otra vez) y su defensa se queda en 4 como mucho:
+    // los monstruos paran con el escudo negro (1 de cada 6), y con 5 dados el Rey Momia parecía inmortal.
+    cuerpo: mo.cuerpo || (st.cuerpo + (mo.jefe ? 2 : 0)), ataque: mo.ataque || st.ataque, defensa: Math.min(mo.jefe ? 4 : 9, mo.defensa || st.defensa), mover: Math.min(8, st.mov || 6) };
   x.rotulo = ui.rotulo(pj.grupo, nombre, { tipo: 'enemigo', altura: pj.altura + .2 });
   monstruos.push(x);
   if (J?.muertoFuera(x.id)) { x.vivo = false; pj.grupo.visible = false; }   // otro de la sala ya lo tumbó
