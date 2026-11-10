@@ -22,6 +22,7 @@ export const SITIOS = {
 };
 // Charcas extra (el pantano tiene muchas): [x, z, radio]
 let CHARCAS = [];
+let BOSQUE = null;   // cuántos árboles hay alrededor (null: los de siempre)
 let ARBOLES = [[-11, -6, 1.15, 77], [9, -17, 1, 31], [-21, -15, 1.3, 91]];
 let ROCAS = [[-9, -27, 1.2], [6, -28, .8], [12, -9, .7], [-20, 0, 1.4], [-13, 12, .9], [4, 14, 1.1], [20, -14, 1.6], [-27, -6, .9], [15, 18, .7], [-2, 22, 1.3], [24, -4, .6]];
 // Cada parada de Morrandar puede traer su propio mapa: dónde está cada cosa, el camino, charcas, árboles y rocas
@@ -32,6 +33,7 @@ export function usarMapa(m) {
   if (m.camino) { CAMINO.length = 0; CAMINO.push(...m.camino); }
   if (m.charcas) CHARCAS = m.charcas;
   if (m.arboles) ARBOLES = m.arboles;
+  if (m.bosque != null) BOSQUE = m.bosque;
   if (m.rocas) ROCAS = m.rocas;
 }
 // ¿Cae en el agua (estanque o charca), con un margen?
@@ -228,7 +230,7 @@ export function crearMundo(escena, { movil = false, tema = null } = {}) {
     const sitio = (x, z) => distCamino(x, z) > 4 && !enAgua(x, z, 2.4) && Math.hypot(x - frente.x, z - frente.z) > 9 && Math.hypot(x - SITIOS.colina.x, z - SITIOS.colina.z) > 11
       && Math.hypot(x - SITIOS.hoguera.x, z - SITIOS.hoguera.z) > 7 && !(Math.abs(x + 6) < 7 && z < -28) && !hay.some(([a, b]) => Math.hypot(a - x, b - z) < 5);
     let n = 0;
-    for (let i = 0; i < 500 && n < (movil ? 40 : 60); i++) {
+    for (let i = 0; i < 500 && n < (BOSQUE ?? (movil ? 40 : 60)); i++) {
       const ang = rnd() * Math.PI * 2, dist = 24 + rnd() * 34, x = Math.cos(ang) * dist, z = Math.sin(ang) * dist;
       if (!sitio(x, z)) continue;
       arbol(x, z, .85 + rnd() * .6, i * 13 + 5); hay.push([x, z]); n++;

@@ -9,6 +9,7 @@
 import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
+import { decorarIsla } from './decor-isla.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
 import { crearCalidad } from './calidad.js';
@@ -61,6 +62,7 @@ addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; cam
 usarMapa(PAR.mapa);   // cada parada, su sitio para cada cosa
 const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
+const DECOR = PAR.decor === 'isla' ? decorarIsla(escena, mundo) : null;   // el decorado propio de algunas paradas
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido({ entorno: PAR.tema?.sonido || 'bosque' });
 if (PAR.tema?.cine) ponerCine();   // la parada de las películas antiguas
@@ -511,7 +513,7 @@ function bucle() {
   }
   moverHeroe(dt); rondaEsqueletos(dt); cercanos(); animarCosas(dt);
   if (CAM.modo === 'creador') heroe.mirarA(Math.PI + (CAM.giro || 0) + Math.sin(t * .6) * .3);   // en el creador, de cara; arrastrando lo giras
-  mundo.actualizar(t, dt);
+  mundo.actualizar(t, dt); DECOR?.actualizar(t);
   heroe.animar(dt, t); brezo.animar(dt, t);
   if (!H.bloqueado && !dlg.actual && !combate.activo && H.pos.distanceTo(brezo.grupo.position) < 6) brezo.mirarA(Math.atan2(H.pos.x - brezo.grupo.position.x, H.pos.z - brezo.grupo.position.z));
   for (const g of GRUPOS) for (const m of g.miembros) m.pj.animar(dt, t);

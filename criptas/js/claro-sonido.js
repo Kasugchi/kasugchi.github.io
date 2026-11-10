@@ -52,14 +52,23 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   // el cine: piano de película muda (ragtime en Do: Do, La7, Re7, Sol7), con bajo y acorde que se turnan («um-pa»)
   const CINE = [[48, [64, 67, 72]], [45, [61, 64, 67, 69]], [50, [62, 66, 69, 72]], [43, [62, 65, 67, 71]]];
   const MELO_C = [76, 77, 76, -1, 72, -1, 76, 79, -1, 78, 79, -1, 76, -1, 72, 74, 73, 74, 76, -1, 73, -1, 69, 72, 74, -1, 78, 77, 74, -1, 71, 67];
+  // la isla: calipso en Do (Do, Fa, Sol7, Do) con marimba y bajo sincopado
+  const ISLA = [[48, [64, 67, 72]], [41, [65, 69, 72]], [43, [62, 65, 67, 71]], [48, [64, 67, 72]]];
+  const MELO_I = [72, -1, 74, 76, -1, 79, 76, -1, 77, -1, 76, 74, 72, -1, 69, -1, 71, -1, 74, 77, -1, 74, 71, -1, 72, 76, -1, 79, 81, -1, 79, -1];
   const COMBATE = [[50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]], [45, [61, 64, 69]]];
   function programarMusica() {
-    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : entorno === 'cine' ? 116 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
+    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : entorno === 'cine' ? 116 : entorno === 'isla' ? 108 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
     while (siguiente < ctx.currentTime + .4) {
       const t = siguiente, compas = Math.floor(paso / 8) % 4, k = paso % 8;
       // paseo
       const P = modoVol.paseo;
-      if (entorno === 'cine') {   // pianito: bajo en 1 y 3, acorde en 2 y 4, melodía sincopada por encima
+      if (entorno === 'isla') {   // marimba: golpe corto con un brillo dos octavas arriba; bajo en 1, «y» del 2 y 4
+        const [ib, iac] = ISLA[compas], mar = (n, v) => { nota(n, t, c * 1.6, { tipo: 'sine', vol: v, destino: P }); nota(n + 24, t, c * .4, { tipo: 'sine', vol: v * .25, destino: P }); };
+        if (k === 0 || k === 3 || k === 6) nota(ib - 12, t, c * 1.5, { tipo: 'triangle', vol: .11, destino: P, filtro: 900 });
+        if (k === 2 || k === 5 || k === 7) for (const n of iac) mar(n, .022);
+        const m = MELO_I[paso % 32]; if (m > 0) mar(m, .05);
+        if (k % 2 === 1) ruido(t, .05, { vol: .02, tipo: 'highpass', f: 6000, destino: P });   // maracas
+      } else if (entorno === 'cine') {   // pianito: bajo en 1 y 3, acorde en 2 y 4, melodía sincopada por encima
         const [cb, cac] = CINE[compas], tecla = (n, d, v) => { nota(n, t, d, { tipo: 'triangle', vol: v, destino: P, filtro: 3200 }); nota(n + .08, t, d * .6, { tipo: 'square', vol: v * .18, destino: P, filtro: 1800 }); };
         if (k === 0 || k === 4) tecla(k === 0 ? cb - 12 : cb - 5, c * 1.2, .09);
         if (k === 2 || k === 6) for (const n of cac) tecla(n, c * .9, .03);
@@ -87,7 +96,10 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   S.actualizar = (distFuego = 99) => {
     if (!ctx) return; const t = ctx.currentTime;
     programarMusica();
-    if (entorno === 'cine') {   // el traqueteo del proyector
+    if (entorno === 'isla') {   // olas que van y vienen, y alguna gaviota
+      if (t > proxGrillo) { proxGrillo = t + 4 + Math.random() * 2; ruido(t, 3.2, { vol: .07, tipo: 'lowpass', f: 700, destino: ambiente }); ruido(t + .4, 2.2, { vol: .03, tipo: 'bandpass', f: 2200, destino: ambiente }); }
+      if (t > proxPajaro) { proxPajaro = t + 6 + Math.random() * 9; for (let i = 0; i < 3; i++) { const o = nota(1500 + Math.random() * 300, t + i * .22, .18, { tipo: 'triangle', vol: .018, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(900, t + i * .22 + .17); } }
+    } else if (entorno === 'cine') {   // el traqueteo del proyector
       if (t > proxGrillo) { proxGrillo = t + .5; for (let i = 0; i < 9; i++) ruido(t + i * .055, .012, { vol: .025, tipo: 'highpass', f: 3500, destino: ambiente }); }
     } else if (entorno === 'cripta') {
       if (t > proxPajaro) { proxPajaro = t + .8 + Math.random() * 2.5; const f = 1800 + Math.random() * 1400, o = nota(f, t, .12, { tipo: 'sine', vol: .03, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * .55, t + .1); }   // gotas

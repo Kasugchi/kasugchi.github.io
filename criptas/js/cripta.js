@@ -84,7 +84,7 @@ if (PAR.cripta.preso && !DEL_PUEBLO) {
 if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mision.objetivo.texto = 'Encuentra lo que buscas y vuelve a la escalera.'; }   // aquí no hay rondas: vas a tu ritmo
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
-const sonido = crearSonido({ entorno: PAR.tema?.cine && !DEL_PUEBLO ? 'cine' : 'cripta' });
+const sonido = crearSonido({ entorno: PAR.tema?.cine && !DEL_PUEBLO ? 'cine' : 'cripta' });   // (la gruta de la isla suena a cripta: dentro no hay olas)
 if (PAR.tema?.cine && !DEL_PUEBLO) ponerCine();   // el Cine Abandonado, también en blanco y negro
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL ? 1.4 : 1 });
 

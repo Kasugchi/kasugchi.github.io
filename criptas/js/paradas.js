@@ -100,6 +100,47 @@ export const PARADAS = {
       mision: 'Habla con el Capitán Pistón, junto al fuego'
     }
   },
+  isla: {
+    nombre: 'La isla de los Tres Garfios', corto: 'La isla', icono: '🏝️',
+    descripcion: 'Una isla pirata con palmeras, un barco varado y una feria abandonada que aún gira sola. Bajo la cabeza de mono de piedra está la gruta.',
+    requiere: 'claro',                           // se abre al vencer la cripta del claro
+    decor: 'isla',                               // palmeras, la feria, el barco y la cabeza de mono (js/decor-isla.js)
+    tema: {
+      colores: { cieloAlto: '#3a4a8a', cieloMedio: '#e88a7a', horizonte: '#ffd08a', niebla: '#f0c8a0', hierba: '#e8d49a', hierbaOscura: '#c8b078', hierbaClara: '#f6e6b8', camino: '#c8a070', tierra: '#a8845a', tronco: '#8a6a42', copa: '#3a9a4a', copa2: '#4aae58', copa3: '#2a7a3a', agua: '#3ac0c8', aguaHonda: '#1a7a9a', roca: '#a89a82', roca2: '#8a7e68' },
+      niebla: [34, 160], sonido: 'isla', flores: ['#ff6a8a', '#ffd04a', '#ff9a3a'], hojas: ['#4aae58', '#3a9a4a', '#f0c060', '#e88a5a'], luzSol: '#ffd8a8', cielo: '#ffc8a0'
+    },
+    mapa: {
+      sitios: { hoguera: [10, -14], guarda: [12.5, -15.6], cartel: [-8, -20], estanque: [16, 10], cripta: [24, -4], colina: [31, -4] },
+      criptaGiro: -Math.PI / 2,
+      camino: [[-6, -31], [-4, -25], [-1, -19], [3, -14], [8, -10], [12, -7], [16, -5], [19, -4], [20, -4]],   // 9 puntos como mínimo (las farolas van entre ellos)
+      bosque: 8, arboles: [],   // aquí mandan las palmeras (las pone decor-isla.js)
+      charcas: [[0, 40, 9], [-38, -8, 8], [38, -26, 7], [-14, 36, 6], [16, 10, 4]],
+      arboles: [[-30, -24, 1.1, 41], [26, -30, 1.2, 53]],
+      rocas: [[-6, 30, 1.2], [10, 30, .8], [-36, 12, 1.1], [34, 14, .9], [4, -26, 1], [-20, -6, .8], [20, -18, 1.3]],
+      grupos: [[-2, 4], [8, 18]],
+      objetos: [[-24, -10], [2, 32], [-32, 26], [22, 26], [-14, -22], [12, -24]],
+      cofre: [-36, 30], parcela: [22, -24]
+    },
+    guia: { nombre: 'Capitana Salitre', sub: 'Vendedora de mapas', modelo: { tunica: '#a8343a', adorno: '#f0c060', sombrero: 'pico', colorSombrero: '#1a1a2a', pelo: '#e8e0d0', piel: '#c8865a', baston: 'cayado', capa: '#2a2a3a' } },
+    objeto: { nombre: 'Moneda de ocho', plural: 'monedas de ocho', corto: 'Monedas de ocho', sombrero: '#ffd04a', brillo: '#ffc020', chispas: '#fff0a0' },
+    enemigo: { tipo: 'esqueleto', nombre: 'Pirata de hueso', plural: 'piratas de hueso', grupos: ['Tripulación de la playa', 'Guardia del mono'], jefe: 'Capitán Taquilla', color: '#f0e6cc', ojo: '#5affd0' },
+    cripta: { nombre: 'La Gruta del Mono de Piedra', semilla: 'GRUTA', nivel: 7, titulo: 'La Gruta del Mono de Piedra', monstruos: ['esqueleto', 'esqueleto', 'zombi', 'esqueleto', 'momia'] },
+    textos: {
+      saludo: ['¡Alto ahí, grumete! ¿Quieres comprar un mapa del tesoro? Tengo veintitrés. Veintidós son falsos, pero tienen unos dibujitos preciosos.', 'Soy la Capitana Salitre, retirada de la piratería por motivos de espalda. Desde que el Capitán Taquilla volvió de entre los muertos, su tripulación de huesos patrulla la playa y cobra entrada hasta por respirar.', 'Tráeme tres monedas de ocho y quítame de encima a esas dos cuadrillas de piratas de hueso. Te daré el mapa bueno: el que abre la Gruta del Mono de Piedra.'],
+      hecho: ['¡Tres monedas y ni un pirata en pie! Si fueras un poco más feo, te contrataba de contramaestre.', 'Toma el mapa bueno. Sí, es este. No, el otro no. Este. Y unas monedas, que de algo hay que vivir.'],
+      pista: 'Las monedas de ocho brillan en la arena, junto a las rocas y cerca del agua. Los piratas son malísimos escondiendo cosas.',
+      abierta: 'La gruta está abierta. El mono de piedra te mira raro, pero los monos de piedra miran raro a todo el mundo.',
+      vuelta: ['¡Has salido de la gruta! ¿Había tesoro? ¿Era grande? ¿Me lo das? Era broma. Más o menos.', 'Toma una poción. Es grog rebajado: sabe a demonios, pero cura.'],
+      despues: 'Los piratas de hueso vuelven cada noche a la feria. Les gusta el carrusel. A quién no.',
+      rescate: ['¡Hombre al agua! O a la arena, que aquí es lo mismo. Te he arrastrado hasta mi hoguera.', 'Descansa. Los piratas de hueso pegan fuerte, pero insultan peor.'],
+      rescateCripta: ['Te han sacado de la gruta más blanco que la vela de un barco. Siéntate al fuego.', 'Lo que ganaste ahí dentro, tuyo es. Lo que perdiste era vergüenza, y de eso un pirata nunca tiene.'],
+      cartel: ['«➜ Gruta del Mono de Piedra. ⬅ Morrandar. ↗ Feria del Capitán (cerrada por defunción del dueño).»', 'Debajo, con otra letra: «Reabierta por el dueño. Sigue muerto».'],
+      cerrada: 'La boca de la gruta está tapada por un portón con un candado en forma de plátano. La Capitana Salitre tiene el mapa que la abre.',
+      estanque: 'Una laguna de agua turquesa. Un pez con parche en el ojo te mira desafiante y se va.',
+      hoguera: 'Una hoguera de playa. Huele a sal, a madera de barco y a algo que la Capitana llama «cena».',
+      mision: 'Habla con la Capitana Salitre, junto a la hoguera'
+    }
+  },
   celdas: {
     nombre: 'Las minas de Hierroviejo', corto: 'Las minas', icono: '⛓️',
     descripcion: 'Una cantera de piedra rojiza y vagonetas oxidadas. Debajo están las Celdas de Hierro, donde dicen que tienen presa a Bruna, la herrera de Morrandar.',
