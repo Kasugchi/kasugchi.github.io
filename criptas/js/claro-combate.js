@@ -155,9 +155,11 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // ---------- turnos ----------
   let turnoHeroe = null;
   const HAB = () => estado.habilidad;                              // { id, nombre, icono }
+  const MJ = () => estado.hab || {};                               // las mejoras propias de la clase
+  const sinGastar = (id) => id === 'torreta' && MJ().rapida;        // montaje rápido: la torreta no gasta el ataque
   function accionesHeroe() {
     const h = unidades[0], t = turnoHeroe, hayPegado = enemigos().some((u) => pegados(h, u)), hab = HAB();
-    const puedeHab = !t.actuado && estado.usos > 0 && !modoEleccion && (hab.id !== 'brutal' || hayPegado) && (hab.id !== 'torreta' || vecinos(h.c).some((c) => libre(c)));
+    const puedeHab = (!t.actuado || sinGastar(hab.id)) && estado.usos > 0 && !modoEleccion && (hab.id !== 'brutal' || hayPegado) && (hab.id !== 'torreta' || vecinos(h.c).some((c) => libre(c)));
     hud.acciones([
       { id: 'mover', texto: 'Moverse', corto: 'Mover', icono: '🎲', activo: !t.movido && !modoEleccion },
       { id: 'atacar', texto: 'Atacar', icono: '⚔️', activo: !t.actuado && hayPegado && !modoEleccion },
@@ -209,24 +211,24 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!c || d > T * .75 || !alcanzables.has(c)) return true;
     const h = unidades[0], t = turnoHeroe, modo = modoEleccion; modoEleccion = null; alcanzables.clear(); pintar(); hud.acciones([]);
     if (modo.tipo === 'mover') { await andar(h, modo.caminos.ruta(c)); return trasAccion(), true; }
-    t.actuado = true;
+    if (!sinGastar(modo.tipo)) t.actuado = true;
     const objetivo = unidades.find((u) => u.vivo && u.bando === 'enemigo' && u.c === c);
     if (modo.tipo === 'atacar') await atacar(h, objetivo);
     else { estado.usos--; hud.actualizar(); await usarHabilidad(modo.tipo, h, objetivo, c); }
     trasAccion(); return true;
   };
   async function usarHabilidad(id, h, objetivo, c) {
-    if (id === 'brutal') { hud.narrar('¡GOLPE BRUTAL!'); camara.temblar(.35); await atacar(h, objetivo, { dados: estado.ataque + 2, gesto: 'brutal' }); return; }
+    if (id === 'brutal') { hud.narrar('¡GOLPE BRUTAL!'); camara.temblar(.35); await atacar(h, objetivo, { dados: estado.ataque + 2 + (MJ().furia || 0), gesto: 'brutal' }); return; }
     if (id === 'flecha') {
       h.pj.hacer('disparar', .6); await espera(350); sonido.dado(.6);
       await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1.1), '#e8d0a0', .4);
-      await atacar(h, objetivo, { gesto: null, distanciaA: true }); return;
+      await atacar(h, objetivo, { gesto: null, distanciaA: true, dados: estado.ataque + 2 * (MJ().certera || 0) }); return;
     }
     if (id === 'fuego') {
       mirarse(h, objetivo); sonido.hechizo(); h.pj.hacer('lanzar', .7); await espera(300);
       await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1)); sonido.explosion(); ui.chispas(sobre(objetivo, 1), '#ff9a4a', 40, 5);
-      const mesa = mesaDados(h, objetivo); hud.narrar(`¡Bola de fuego! ${objetivo.nombre} tira 2 dados: cada calavera le quita 1 de daño.`);
-      const r = await dados.tirar('combate', 2, mesa.centro, mesa.desde), dano = Math.max(0, 2 - r.filter((x) => x === 'calavera').length);
+      const fuerza = 2 + (MJ().gorda || 0), mesa = mesaDados(h, objetivo); hud.narrar(`¡Bola de fuego${fuerza > 2 ? ' gorda' : ''}! ${objetivo.nombre} tira 2 dados: cada calavera le quita 1 de los ${fuerza} de daño.`);
+      const r = await dados.tirar('combate', 2, mesa.centro, mesa.desde), dano = Math.max(0, fuerza - r.filter((x) => x === 'calavera').length);
       if (dano) await herir(objetivo, dano); else { ui.numero(sobre(objetivo, objetivo.pj.altura), '¡Esquiva!', '#ffe08a'); hud.narrar('Se aparta chamuscado, pero entero.'); await espera(600); }
       return;
     }
@@ -235,8 +237,9 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       await h.pj.hacer('construir', 1.1);
       const pj = crearTorreta(); pj.grupo.position.set(c.x, c.y + .17, c.z); escena.add(pj.grupo);
       const e0 = enemigos()[0]; if (e0) pj.mirarA(Math.atan2(e0.pj.grupo.position.x - c.x, e0.pj.grupo.position.z - c.z));
-      unidades.push({ bando: 'aliado', pj, nombre: 'La torreta', cuerpo: 2, ataque: 2, defensa: 1, alcance: 6, vivo: true, c });
-      camara.mirarHacia(pj.grupo.position); sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); hud.narrar('¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
+      const rf = MJ().reforzada || 0; if (rf) pj.grupo.scale.setScalar(1 + rf * .12);   // reforzada: más grande y más bruta
+      unidades.push({ bando: 'aliado', pj, nombre: rf ? 'La torreta reforzada' : 'La torreta', cuerpo: 2 + rf, ataque: 2 + rf, defensa: 1, alcance: 6, vivo: true, c });
+      camara.mirarHacia(pj.grupo.position); sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); hud.narrar(MJ().rapida && estado.usos ? `¡Clonc, chas! Torreta montada en un plis. Te quedan ${estado.usos}: ¿otra?` : '¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
       await espera(700);
     }
   }

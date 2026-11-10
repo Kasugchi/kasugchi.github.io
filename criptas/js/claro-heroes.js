@@ -59,6 +59,7 @@ export function estadisticas(h, enCripta = false) {
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
+    hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0 },   // mejoras propias de la clase
     escamas: h.raza === 'escamado'
   };
 }
@@ -76,7 +77,17 @@ export const OPCIONES_MEJORA = [
   { id: 'usos', texto: '✨ Un uso más de tu habilidad', max: 4 }
 ];
 // Las que todavía se pueden coger (ataque y defensa tienen tope, para que nadie sea invencible)
-export function mejorasDisponibles(h) { const mj = mejorasDe(h); return OPCIONES_MEJORA.filter((o) => !o.max || mj[o.id] < o.max); }
+// Y las propias de cada clase: hacen su habilidad más gorda (el ingeniero puede acabar plantando torretas como un chamán sus tótems)
+export const MEJORAS_CLASE = {
+  ingeniero: [
+    { id: 'reforzada', texto: '⚙️ Torreta reforzada: +1 de cuerpo y +1 dado de ataque a cada torreta', max: 3 },
+    { id: 'rapida', texto: '🔩 Montaje rápido: montar torretas ya no te gasta el ataque (puedes plantar varias en un turno)', max: 1 }
+  ],
+  mago: [{ id: 'gorda', texto: '🔥 Bola de fuego más gorda: un punto más de daño', max: 2 }],
+  explorador: [{ id: 'certera', texto: '🏹 Flecha certera: dos dados más al disparar', max: 2 }],
+  barbaro: [{ id: 'furia', texto: '💥 Más brutal: el golpe brutal tira un dado más', max: 2 }]
+};
+export function mejorasDisponibles(h) { const mj = mejorasDe(h); return [...OPCIONES_MEJORA, ...(MEJORAS_CLASE[h.clase] || [])].filter((o) => !o.max || (mj[o.id] || 0) < o.max); }
 // Apunta la elección (y convierte a los héroes antiguos al sistema nuevo sin que pierdan nada)
 export function prepararSubida(h) { if (!h.mejoras) h.mejoras = mejorasDe(h); }   // llamar ANTES de subirle el nivel
 export function elegirMejora(h, id) { prepararSubida(h); h.mejoras[id] = (h.mejoras[id] || 0) + 1; }
