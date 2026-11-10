@@ -166,6 +166,7 @@ const rotCripta = ui.rotulo(mundo.cripta, PAR.cripta.nombre, { tipo: 'cosa', alt
 const CAM = { yaw: 3.93, pitch: .38, dist: 9, objetivo: new THREE.Vector3(), temblor: 0, modo: 'intro', foco: null, mirar: null, introT: 0 };
 const cam = {
   get position() { return camara.position; },
+  soltar() { CAM.modo = 'paseo'; CAM.yawObj = null; CAM.mirar = null; },   // al acabar una pelea ajena (pelear juntos)
   temblar(s) { CAM.temblor = Math.max(CAM.temblor, s); },
   enfocarCombate(centro, desde) { CAM.modo = 'combate'; CAM.foco = centro.clone(); CAM.mirar = null; CAM.yawObj = Math.atan2(desde.x - centro.x, desde.z - centro.z); CAM.distObj = 14; CAM.pitchObj = .82; },
   mirarHacia(p) { CAM.mirar = p.clone(); }
@@ -633,7 +634,7 @@ function moverOtros(dt, t) {
   PJ?.actualizar(dt, t);
 }
 // Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js)
-PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe: () => heroe, estado, def: () => DEF, sala: () => SALA, otros: () => OTROS, donde: () => DONDE,
+PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe: () => heroe, estado, def: () => DEF, sala: () => SALA, otros: () => OTROS, donde: () => DONDE,
   fabricar: (t, jefe) => { const esc = jefe ? 1.25 : 1, ojo = PAR.enemigo.ojo; return t === 'zombi' ? crearZombi({ escala: esc, ojo }) : t === 'momia' ? crearMomia({ escala: esc, ojo }) : crearEsqueleto({ escala: esc, ojo, color: PAR.enemigo.color }); },
   enemigosLocales: () => GRUPOS.filter((g) => g.vivo).flatMap((g) => g.miembros.map((m) => m.pj)),
   alAcabar: async ({ fin, caidos, caiste }) => {

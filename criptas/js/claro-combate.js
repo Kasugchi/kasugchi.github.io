@@ -435,7 +435,9 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     return pj._gesto || null;
   }
   C.instantanea = () => C.activo && tablero ? {
-    id: C.idPelea, de: turnoDe, cx: +tablero.cx.toFixed(2), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
+    id: C.idPelea, de: turnoDe, cx: +tablero.cx.toFixed(2),
+    // las losas del círculo (en la mazmorra no hace falta: el suelo ya es el tablero)
+    t: tablero.externo ? null : tablero.libres.map((c) => [+c.x.toFixed(2), +c.y.toFixed(2), +c.z.toFixed(2)]), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
     u: unidades.map((u) => ({ id: u.id ?? null, n: u.nombre, b: u.bando, uid: u.uid || null, t: u.tipo || null, j: !!u.jefe, x: +u.pj.grupo.position.x.toFixed(2), z: +u.pj.grupo.position.z.toFixed(2), ry: +u.pj.grupo.rotation.y.toFixed(2), c: u.cuerpo, v: u.vivo, a: espiarGestos(u.pj) })),
     // si es el turno de un compañero: sus botones, las casillas iluminadas y lo que se le dice
     turno: actorR && botonesR ? { uid: actorR.uid, n: botonesR.n, botones: botonesR.lista, texto: textoR, y: +(tablero.y0 || 0).toFixed(2),

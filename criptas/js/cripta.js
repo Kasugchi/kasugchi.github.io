@@ -154,6 +154,7 @@ mision.monstruos.forEach((mo) => nacer(mo));
 const CAM = { yaw: Math.PI, pitch: .78, dist: 11, objetivo: H.pos.clone(), temblor: 0, modo: 'paseo', foco: null, mirar: null };
 const cam = {
   get position() { return camara.position; },
+  soltar() { CAM.modo = 'paseo'; CAM.yawObj = null; CAM.mirar = null; },   // al acabar una pelea ajena (pelear juntos)
   temblar(s) { CAM.temblor = Math.max(CAM.temblor, s); },
   enfocarCombate(centro, desde) { CAM.modo = 'combate'; CAM.foco = centro.clone(); CAM.mirar = null; CAM.pitchObj = .95; CAM.distObj = MOVIL ? 17 : 12; },
   mirarHacia(p) { CAM.mirar = p.clone(); }
@@ -164,7 +165,7 @@ const combate = crearCombate({ escena, mundo: cripta, ui, dados, sonido, camara:
 let ganarLuego = false, PJ = null;
 // Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js); se monta tras J
 function montarPeleaJuntos() {
-  PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
+  PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
     fabricar: (t, jefe) => modelo(t, jefe),
     enemigosLocales: () => monstruos.filter((m) => m.vivo).map((m) => m.pj),
     alAcabar: async ({ fin, caidos, ids }) => {

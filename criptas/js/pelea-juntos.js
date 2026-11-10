@@ -13,8 +13,9 @@
 //  muñeco («a»); sus toques vuelven en «orden». Si no hace nada en un minuto, pasa.
 // =============================================================
 import * as THREE from 'three';
+import { toon } from './claro-estilo.js';
 
-export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, estado, def, sala, otros, fabricar, enemigosLocales, donde, alAcabar }) {
+export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe, estado, def, sala, otros, fabricar, enemigosLocales, donde, alAcabar }) {
   const P = {};
   let ultimaFoto = '', tFoto = 0, publicando = false, finPublicado = null;
   const unidos = new Set();
@@ -61,18 +62,30 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
   // ---------- si la pelea es de otro: verla y poder entrar ----------
   function anilloDe(f) {
     const g = new THREE.Group();
-    const aro = new THREE.Mesh(new THREE.RingGeometry(f.r - .35, f.r, 72), new THREE.MeshBasicMaterial({ color: '#c9a2ff', transparent: true, opacity: .7, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending }));
-    aro.rotation.x = -Math.PI / 2; aro.position.y = .2; g.add(aro);
-    const cupula = new THREE.Mesh(new THREE.SphereGeometry(f.r, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#b48aff', transparent: true, opacity: .07, side: THREE.DoubleSide, depthWrite: false }));
+    // mezcla normal (la aditiva, sobre la arena clara, se quedaba en blanco y no se veía)
+    const aro = new THREE.Mesh(new THREE.RingGeometry(f.r - .45, f.r, 72), new THREE.MeshBasicMaterial({ color: '#9a5aff', transparent: true, opacity: .75, side: THREE.DoubleSide, depthWrite: false }));
+    aro.rotation.x = -Math.PI / 2; aro.position.y = .25; g.add(aro);
+    const cupula = new THREE.Mesh(new THREE.SphereGeometry(f.r, 32, 12, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#8a4aff', transparent: true, opacity: .08, side: THREE.DoubleSide, depthWrite: false }));
     cupula.scale.y = .35; g.add(cupula);
-    g.position.set(f.cx, H.pos.y, f.cz); escena.add(g);
-    return { g, aro, cupula };
+    g.position.set(f.cx, f.t?.[0]?.[1] ?? H.pos.y, f.cz); escena.add(g);
+    // las losas del tablero, como las ve el que pelea
+    if (f.t?.length) {
+      const T = 1.3, geo = new THREE.BoxGeometry(T * .94, .14, T * .94), losas = new THREE.InstancedMesh(geo, toon('#cfc2a8'), f.t.length), marco = new THREE.InstancedMesh(new THREE.BoxGeometry(T * .99, .1, T * .99), toon('#6a5b72'), f.t.length);
+      const m4 = new THREE.Matrix4();
+      f.t.forEach(([x, y, z], k) => {
+        losas.setMatrixAt(k, m4.makeTranslation(x, y + .1, z)); marco.setMatrixAt(k, m4.makeTranslation(x, y + .02, z));
+        losas.setColorAt(k, new THREE.Color((Math.round(x / T) + Math.round(z / T)) % 2 ? '#d9cdb2' : '#bfb196'));
+      });
+      losas.receiveShadow = true; escena.add(losas, marco);
+      return { g, aro, cupula, losas: [losas, marco] };
+    }
+    return { g, aro, cupula, losas: [] };
   }
   function verAjena(id, f, nombre) {
     let A = ajenas.get(id);
     if (!A || A.foto.id !== f.id) {
       if (A) quitarAjena(id);
-      A = { foto: f, fantasmas: new Map(), ocultos: [], nombre };
+      A = { foto: f, fantasmas: new Map(), ocultos: [], nombre, tirada: f.dd?.n ?? 0 };   // la tirada que ya había no se repite
       A.anillo = anilloDe(f);
       A.cartel = ui.rotulo(A.anillo.g, `⚔️ Pelea de ${nombre}: pisa el anillo para entrar`, { altura: 3.2 });
       // los monstruos de mi mundo que están en esa pelea se esconden: los muestra la foto
@@ -100,7 +113,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
     // ¿estoy yo dentro?
     const mio = f.u.find((u) => u.uid && u.uid === yo);
     if (mio) {
-      if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
+      if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); cam?.enfocarCombate(new THREE.Vector3(f.cx, H.pos.y, f.cz), H.pos.clone()); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
       dentro.ir = { x: mio.x, z: mio.z, ry: mio.ry };   // se anda hasta allí poco a poco (cada fotograma), sin saltitos
       gestos(heroe(), mio);
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
@@ -110,8 +123,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
     }
     // los dados: la misma tirada, con las mismas caras, en el mismo sitio
     if (f.dd && dados) {
-      if (A.tirada == null) A.tirada = f.dd.n;   // al llegar, la tirada vieja no se repite
-      else if (f.dd.n > A.tirada) { A.tirada = f.dd.n; const v = (a) => a && new THREE.Vector3(a[0], a[1], a[2]); dados.tirar(f.dd.tipo, f.dd.res.length, v(f.dd.c), v(f.dd.d), f.dd.res); }
+      if (f.dd.n > A.tirada) { P.tiradas = (P.tiradas || 0) + 1; A.tirada = f.dd.n; const v = (a) => a && new THREE.Vector3(a[0], a[1], a[2]); dados.tirar(f.dd.tipo, f.dd.res.length, v(f.dd.c), v(f.dd.d), f.dd.res); }
     }
   }
   // El gesto que ha hecho cada muñeco en la pantalla del que manda (golpe, disparar, rugir…) y lo que le han quitado
@@ -137,6 +149,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
     }
     escena.add(miTurno.marcas);
     if (primera) hud.banner('¡Te toca!', 'heroe');
+    cam?.mirarHacia(H.pos);
     if (T.texto) hud.narrar(T.texto);
     hud.acciones(T.botones || [], (id) => {
       if (miTurno?.enviado) return;
@@ -161,7 +174,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
   };
   function quitarAjena(id) {
     const A = ajenas.get(id); if (!A) return;
-    escena.remove(A.anillo.g); if (A.cartel) ui.quitar(A.cartel);
+    escena.remove(A.anillo.g, ...A.anillo.losas); if (A.cartel) ui.quitar(A.cartel);
     for (const pj of A.fantasmas.values()) escena.remove(pj.grupo);
     for (const pj of A.ocultos) pj.grupo.visible = true;
     for (const o of otros().values()) { o.pj.enPelea = false; o.pj.caido = false; }
@@ -171,7 +184,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
     const yoDentro = dentro && dentro.de === id;
     quitarAjena(id);
     if (!yoDentro) return;
-    quitarMiTurno(); miTurno = null; dados?.limpiar?.();
+    quitarMiTurno(); miTurno = null; dados?.limpiar?.(); cam?.soltar?.();
     dentro = null; heroe().caido = false; H.bloqueado = false;
     sala()?.cambiar({ unirse: '', pjPelea: '', orden: '' });
     const yo = (f.companeros || []).find((c) => c.uid === sala()?.yo.id);
@@ -205,7 +218,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe, es
       else heroe().mirarA(o.ry);
     }
     for (const A of ajenas.values()) {
-      A.anillo.aro.rotation.z += dt * .4; A.anillo.aro.material.opacity = .55 + Math.sin(t * 3) * .2;
+      A.anillo.aro.rotation.z += dt * .4; A.anillo.aro.material.opacity = .6 + Math.sin(t * 3) * .2;
       for (const pj of A.fantasmas.values()) {
         const o = pj.objetivo; if (!o) { pj.animar?.(dt, t); continue; }   // el que ha caído sigue su animación de caer
         const p = pj.grupo.position, dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz);
