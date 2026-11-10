@@ -369,8 +369,10 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!enemigos().length) { terminar('victoria'); return true; }
     return false;
   }
+  let turnoDe = 'heroe';   // de quién es el turno (para la foto: los que miran saben si esperar)
   async function bucle() {
     while (C.activo) {
+      turnoDe = 'heroe';
       hud.banner('Tu turno', 'heroe'); camara.mirarHacia(unidades[0].pj.grupo.position);
       if (C.rezo > 0) C.rezo--;                                        // el rezo se va gastando
       for (const u of enemigos()) if (u.sangra) { u.sangra = 0; ui.numero(sobre(u, u.pj.altura + .4), 'Sangra', '#ff6a6a'); await herir(u, 1); }
@@ -379,8 +381,8 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       await new Promise((fin) => { turnoHeroe = { movido: false, actuado: false, fin }; hud.narrar('Muévete, ataca o usa tu habilidad. En el orden que quieras.'); accionesHeroe(); });
       hud.acciones([]); modoEleccion = null; alcanzables.clear(); pintar();
       if (!C.activo || await comprobarFin()) return;
-      for (const a of aliados()) { if (!C.activo) return; await turnoAliado(a); if (await comprobarFin()) return; }
-      hud.banner('Turno de los esqueletos', 'enemigo'); await espera(700);
+      for (const a of aliados()) { if (!C.activo) return; turnoDe = a.remoto ? a.nombre : 'heroe'; await turnoAliado(a); if (await comprobarFin()) return; }
+      turnoDe = 'enemigos'; hud.banner('Turno de los esqueletos', 'enemigo'); await espera(700);
       for (const e of enemigos()) { if (!C.activo) return; await turnoEnemigo(e); if (await comprobarFin()) return; }
     }
   }
@@ -420,7 +422,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // ---------- jugar juntos (js/pelea-juntos.js) ----------
   // Foto de la pelea para los demás de la sala: dónde está el círculo, quién hay y cómo va cada uno
   C.instantanea = () => C.activo && tablero ? {
-    id: C.idPelea, cx: +tablero.cx.toFixed(2), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
+    id: C.idPelea, de: turnoDe, cx: +tablero.cx.toFixed(2), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
     u: unidades.map((u) => ({ id: u.id ?? null, n: u.nombre, b: u.bando, uid: u.uid || null, t: u.tipo || null, j: !!u.jefe, x: +u.pj.grupo.position.x.toFixed(2), z: +u.pj.grupo.position.z.toFixed(2), ry: +u.pj.grupo.rotation.y.toFixed(2), c: u.cuerpo, v: u.vivo })),
     // si un compañero está decidiendo: qué puede hacer (casillas a las que llega, o a quién puede pegar)
     turno: esperaRemota ? { uid: esperaRemota.uid, n: esperaRemota.n, fase: esperaRemota.fase, y: +(tablero.y0 || 0).toFixed(2),

@@ -100,11 +100,11 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
     const mio = f.u.find((u) => u.uid && u.uid === yo);
     if (mio) {
       if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); }
-      H.pos.x = mio.x; H.pos.z = mio.z; heroe().grupo.rotation.y = mio.ry;
+      H.pos.x = mio.x; H.pos.z = mio.z; heroe().mirarA(mio.ry);   // con mirarA: si se pisa el giro a mano, el muñeco tira hacia su rumbo y da vueltas
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
       heroe().caido = !mio.v;
       if (f.turno?.uid === yo) verMiTurno(f);
-      else { quitarMiTurno(); if (f.texto) hud.narrar(f.texto); }
+      else { quitarMiTurno(); hud.narrar(f.de === 'heroe' ? `Turno de ${A.nombre}. Luego te toca a ti.` : f.de && f.de !== 'enemigos' ? `Turno de ${f.de}…` : f.texto || ''); }
     }
   }
   // ---------- mi turno en la pelea de otro: casillas para tocar y botones para pegar ----------
@@ -184,7 +184,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
         const o = pj.objetivo; if (!o) { pj.animar?.(dt, t); continue; }   // el que ha caído sigue su animación de caer
         const p = pj.grupo.position, dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz);
         if (d > .03) { const v = Math.min(d, dt * 5); p.x += dx / d * v; p.z += dz / d * v; }
-        pj.vel = d > .1 ? .8 : 0; pj.grupo.rotation.y = o.ry; p.y = H.pos.y; pj.animar?.(dt, t);
+        pj.vel = d > .1 ? .8 : 0; if (pj.mirarA) pj.mirarA(o.ry); else pj.grupo.rotation.y = o.ry; p.y = H.pos.y; pj.animar?.(dt, t);
       }
       // pisar el anillo: pedir entrar
       const f = A.foto, dd = Math.hypot(H.pos.x - f.cx, H.pos.z - f.cz);
