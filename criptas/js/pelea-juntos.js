@@ -78,7 +78,11 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
         const clave = u.id ?? 'k' + k;
         let pj = A.fantasmas.get(clave);
         if (!pj) { pj = fabricar(u.t, u.j); pj.grupo.position.set(u.x, 0, u.z); escena.add(pj.grupo); A.fantasmas.set(clave, pj); }
-        pj.objetivo = { x: u.x, z: u.z, ry: u.ry }; pj.caido = !u.v;
+        pj.objetivo = { x: u.x, z: u.z, ry: u.ry };
+        if (!u.v && !pj.muerto) {   // muere como en una pelea propia: se desmonta o se desploma y desaparece (nada de quedarse torcido)
+          pj.muerto = true; pj.objetivo = null;
+          if (pj.desmontar) pj.desmontar(pj.grupo.position.y); else { pj.caido = true; setTimeout(() => { pj.grupo.visible = false; }, 1500); }
+        }
       } else if (u.b === 'heroe' || (u.uid && u.uid !== yo)) {
         const o = otros().get(u.b === 'heroe' ? id : u.uid);
         if (o) { o.pj.enPelea = true; o.tx = u.x; o.tz = u.z; o.pj.caido = !u.v; }
@@ -134,7 +138,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
     for (const A of ajenas.values()) {
       A.anillo.aro.rotation.z += dt * .4; A.anillo.aro.material.opacity = .55 + Math.sin(t * 3) * .2;
       for (const pj of A.fantasmas.values()) {
-        const o = pj.objetivo; if (!o) continue;
+        const o = pj.objetivo; if (!o) { pj.animar?.(dt, t); continue; }   // el que ha caído sigue su animación de caer
         const p = pj.grupo.position, dx = o.x - p.x, dz = o.z - p.z, d = Math.hypot(dx, dz);
         if (d > .03) { const v = Math.min(d, dt * 5); p.x += dx / d * v; p.z += dz / d * v; }
         pj.vel = d > .1 ? .8 : 0; pj.grupo.rotation.y = o.ry; p.y = H.pos.y; pj.animar?.(dt, t);
