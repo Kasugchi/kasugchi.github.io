@@ -618,7 +618,7 @@ function pintarOtros(gente) {
       const x = g.x ?? 0, z = g.z ?? 0; pj.grupo.position.set(x, mundo.alturaEn(x, z), z); escena.add(pj.grupo);
       o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: g.nombre }), tx: x, tz: z }; OTROS.set(id, o);
     }
-    o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz;
+    if (!o.pj.enPelea) { o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz; }   /* en una pelea lo coloca la foto de la pelea, no su sitio de la sala */
   }
 }
 function decirOtro(id, texto) { const o = OTROS.get(id); if (o) ui.numero(o.pj.grupo.position.clone().add(new THREE.Vector3(0, o.pj.altura + .8, 0)), String(texto).slice(0, 40), '#fff8e6'); }

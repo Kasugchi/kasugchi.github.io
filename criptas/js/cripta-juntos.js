@@ -63,7 +63,7 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
         OTROS.set(id, o);
         if (OTROS.size === 1) al.llega?.(h.nombre || g.nombre || 'Alguien');
       }
-      o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz;
+      if (!o.pj.enPelea) { o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz; }   /* en una pelea lo coloca la foto de la pelea */
       o.lucha = String(g.lucha || '').split(',').filter(Boolean);
       let hs = null; try { hs = JSON.parse(g.hechos || 'null'); } catch { /* nada */ }
       if (hs) mezclar(hs);
