@@ -49,17 +49,28 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   const MELO_P = [71, -1, -1, 69, 67, -1, 66, -1, 64, -1, -1, -1, 67, -1, 69, -1, 71, -1, 74, -1, 72, -1, 71, 69, 66, -1, -1, -1, -1, -1, -1, -1];
   const PASEO = entorno === 'pantano' ? PANTANO : entorno === 'cripta' ? [[50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [45, [61, 64, 69, 73]], [50, [62, 65, 69, 74]]] : [[53, [65, 69, 72, 77]], [50, [62, 65, 69, 74]], [46, [62, 65, 70, 74]], [48, [64, 67, 72, 76]]];
   const MELO = entorno === 'pantano' ? MELO_P : entorno === 'cripta' ? [74, -1, -1, 73, 74, -1, 77, -1, 76, -1, -1, 74, 73, -1, -1, -1, 70, -1, 69, -1, 70, -1, 73, -1, 74, -1, -1, -1, -1, -1, -1, -1] : [77, -1, 76, 74, 72, -1, 74, -1, 69, -1, 70, 72, 74, -1, -1, -1, 76, -1, 77, 79, 77, -1, 74, -1, 72, -1, 70, 69, 72, -1, -1, -1];
+  // el cine: piano de película muda (ragtime en Do: Do, La7, Re7, Sol7), con bajo y acorde que se turnan («um-pa»)
+  const CINE = [[48, [64, 67, 72]], [45, [61, 64, 67, 69]], [50, [62, 66, 69, 72]], [43, [62, 65, 67, 71]]];
+  const MELO_C = [76, 77, 76, -1, 72, -1, 76, 79, -1, 78, 79, -1, 76, -1, 72, 74, 73, 74, 76, -1, 73, -1, 69, 72, 74, -1, 78, 77, 74, -1, 71, 67];
   const COMBATE = [[50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]], [45, [61, 64, 69]]];
   function programarMusica() {
-    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
+    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : entorno === 'cine' ? 116 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
     while (siguiente < ctx.currentTime + .4) {
       const t = siguiente, compas = Math.floor(paso / 8) % 4, k = paso % 8;
       // paseo
-      const [b, ac] = PASEO[compas], P = modoVol.paseo;
+      const P = modoVol.paseo;
+      if (entorno === 'cine') {   // pianito: bajo en 1 y 3, acorde en 2 y 4, melodía sincopada por encima
+        const [cb, cac] = CINE[compas], tecla = (n, d, v) => { nota(n, t, d, { tipo: 'triangle', vol: v, destino: P, filtro: 3200 }); nota(n + .08, t, d * .6, { tipo: 'square', vol: v * .18, destino: P, filtro: 1800 }); };
+        if (k === 0 || k === 4) tecla(k === 0 ? cb - 12 : cb - 5, c * 1.2, .09);
+        if (k === 2 || k === 6) for (const n of cac) tecla(n, c * .9, .03);
+        const m = MELO_C[paso % 32]; if (m > 0) tecla(m + 12, c * 1.4, .035);
+      } else {
+      const [b, ac] = PASEO[compas];
       if (k === 0) nota(b - 12, t, c * 7, { tipo: 'sine', vol: .12, destino: P });
       nota(ac[[0, 1, 2, 3, 2, 1, 2, 3][k]], t, c * 2.4, { tipo: 'triangle', vol: .045, destino: P, filtro: 2200 });
       const m = MELO[paso % 32]; if (m > 0 && Math.floor(paso / 32) % 2) nota(m, t, c * 3, { tipo: 'sine', vol: .04, destino: P, ataque: .04 });
       if (k === 4 && Math.random() < .3) nota(ac[3] + 12, t, 1.2, { tipo: 'sine', vol: .025, destino: P });
+      }
       // combate
       const [cb, cac] = COMBATE[compas], C = modoVol.combate;
       nota(cb - 12 + (k % 2 ? 12 : 0), t, c * .9, { tipo: 'sawtooth', vol: .05, destino: C, filtro: 700 });
@@ -76,7 +87,9 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   S.actualizar = (distFuego = 99) => {
     if (!ctx) return; const t = ctx.currentTime;
     programarMusica();
-    if (entorno === 'cripta') {
+    if (entorno === 'cine') {   // el traqueteo del proyector
+      if (t > proxGrillo) { proxGrillo = t + .5; for (let i = 0; i < 9; i++) ruido(t + i * .055, .012, { vol: .025, tipo: 'highpass', f: 3500, destino: ambiente }); }
+    } else if (entorno === 'cripta') {
       if (t > proxPajaro) { proxPajaro = t + .8 + Math.random() * 2.5; const f = 1800 + Math.random() * 1400, o = nota(f, t, .12, { tipo: 'sine', vol: .03, destino: ambiente }); o.frequency.exponentialRampToValueAtTime(f * .55, t + .1); }   // gotas
     } else if (entorno === 'pantano') {
       // ranas: un «croac» grave (dos golpes de cuerda con el tono que baja), a veces contestado por otra

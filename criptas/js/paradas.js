@@ -71,6 +71,35 @@ export const PARADAS = {
       mision: 'Habla con la Abuela Cieno, junto al fuego'
     }
   },
+  cine: {
+    nombre: 'El muelle de los dibujos', corto: 'El muelle', icono: '🎞️',
+    descripcion: 'Un muelle de río donde todo es en blanco y negro, como en las películas de antes. Suena un piano y los esqueletos bailan a saltitos.',
+    requiere: 'claro',                           // se abre al vencer la cripta del claro
+    tema: {
+      cine: true,                                // blanco y negro, grano, parpadeo y carteles de cine mudo (js/cine.js)
+      colores: { cieloAlto: '#3a3a40', cieloMedio: '#9a9aa0', horizonte: '#f0f0e8', niebla: '#d8d8d0', hierba: '#8a9a7a', hierbaOscura: '#4a5a4a', hierbaClara: '#c8d0b8', camino: '#b8a890', tierra: '#5a4a3a', tronco: '#3a2a20', copa: '#5a7a5a', copa2: '#7a9a6a', copa3: '#3a5a3a', agua: '#8aa0b0', aguaHonda: '#3a4a5a', roca: '#9a9a90', roca2: '#6a6a60' },
+      niebla: [30, 150], sonido: 'cine', flores: ['#ffffff', '#d8d8d8', '#a0a0a0'], hojas: ['#e8e8e8', '#9a9a9a', '#5a5a5a', '#c8c8c8'], luzSol: '#fff8e8', cielo: '#e8e8f0'
+    },
+    guia: { nombre: 'Capitán Pistón', sub: 'Patrón del vapor', modelo: { tunica: '#2a2a3a', adorno: '#f0f0f0', sombrero: 'capucha', colorSombrero: '#f0f0f0', pelo: '#e8e8e8', baston: 'cayado', capa: '#1a1a2a' } },
+    objeto: { nombre: 'Bobina de película', plural: 'bobinas de película', corto: 'Bobinas', sombrero: '#e8e8e8', brillo: '#ffffff', chispas: '#ffffff' },
+    enemigo: { tipo: 'esqueleto', nombre: 'Esqueleto bailarín', plural: 'esqueletos bailarines', grupos: ['Compañía de baile', 'Orquesta de huesos'], jefe: 'Director de Orquesta', color: '#f0f0f0', ojo: '#ffffff' },
+    cripta: { nombre: 'El Cine Abandonado', semilla: 'CINE', nivel: 7, titulo: 'El Cine Abandonado', monstruos: ['esqueleto', 'zombi', 'esqueleto', 'momia', 'esqueleto'] },
+    textos: {
+      saludo: ['¡Ahoy, marinero de tierra! Bienvenido a mi muelle, donde los colores se fueron de vacaciones y nunca volvieron.', 'Soy el Capitán Pistón, patrón del vapor más silbón del río. O lo era, hasta que los esqueletos se pusieron a bailar en mi cubierta y se llevaron las bobinas de la película.', 'Tráeme tres bobinas de película y echa a esas dos compañías de baile de mi muelle. Te daré la llave del Cine Abandonado, que es de donde salen.'],
+      hecho: ['¡Tres bobinas y ni un hueso bailando! Toot-toot, como decimos los del vapor.', 'Toma la llave del cine. Y estas monedas, que en blanco y negro brillan igual.'],
+      pista: 'Las bobinas brillan blancas. Los esqueletos las esconden junto al agua y entre las rocas, que les gusta el eco.',
+      abierta: 'El Cine Abandonado ya está abierto. Dentro se oye un piano que nadie toca. Yo que tú no aplaudiría.',
+      vuelta: ['¡Has salido del cine! ¿Qué tal la película? No me lo cuentes, que no he ido.', 'Toma una poción. Es de las de antes: sabe a regaliz.'],
+      despues: 'Los esqueletos vuelven a bailar cuando suena el piano. Y el piano suena siempre. Pobres.',
+      rescate: ['¡Hombre al agua! O casi. Te he sacado con el bichero.', 'Descansa en mi cubierta. Los esqueletos bailan fatal, pero pegan fuerte.'],
+      rescateCripta: ['Te han sacado del cine antes de los créditos. Siéntate, que te traigo un café.', 'Lo que ganaste ahí dentro, tuyo es.'],
+      cartel: ['«➜ Cine Abandonado (sesión continua). ⬅ Morrandar.»', 'Debajo, un papel pegado: «Se busca pianista. Que no sea un esqueleto».'],
+      cerrada: 'La taquilla está cerrada y la puerta tiene un candado con forma de claqué. El Capitán Pistón tendrá la llave.',
+      estanque: 'El río es gris como todo lo demás, pero el pez que te mira tiene unos guantes blancos preciosos.',
+      hoguera: 'Un fuego en blanco y negro. Calienta igual, que es lo importante.',
+      mision: 'Habla con el Capitán Pistón, junto al fuego'
+    }
+  },
   celdas: {
     nombre: 'Las minas de Hierroviejo', corto: 'Las minas', icono: '⛓️',
     descripcion: 'Una cantera de piedra rojiza y vagonetas oxidadas. Debajo están las Celdas de Hierro, donde dicen que tienen presa a Bruna, la herrera de Morrandar.',

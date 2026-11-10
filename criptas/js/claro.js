@@ -8,6 +8,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
+import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
 import { crearCalidad } from './calidad.js';
 import { EffectComposer } from './vendor/addons/postprocessing/EffectComposer.js';
@@ -61,6 +62,7 @@ const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido({ entorno: PAR.tema?.sonido || 'bosque' });
+if (PAR.tema?.cine) ponerCine();   // la parada de las películas antiguas
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL ? 1.4 : 1 });
 
 // ---------- estado del héroe ----------
@@ -366,6 +368,7 @@ async function ganarExperiencia(xp) {
 function camara_luz() { CAM.temblor = .15; }
 function pintarPortada() {
   if (!$('#portada')) return;   // ya se quitó (entraste directo o volviste de la cripta)
+  { const [a, ...b] = PAR.nombre.split(' de '); $('#portada h1').innerHTML = `<small>Morrandar se detiene en…</small>${a}${b.length ? '<br>de ' + b.join(' de ') : ''}`; document.title = `Criptas · ${PAR.nombre}`; }   // el nombre de cada parada
   const C0 = CLASES[DEF.clase], R0 = RAZAS[DEF.raza];
   $('#empezar').textContent = nuevo ? 'Crear mi héroe' : 'Bajar de Morrandar';
   $('#cambiar').hidden = nuevo;

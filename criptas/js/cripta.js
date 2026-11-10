@@ -25,6 +25,7 @@ import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
 import { crearJuntos } from './cripta-juntos.js';
+import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA } from './menu-aventura.js';
 import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin, LOAS, REZOS_CRIPTA } from './claro-heroes.js';
 
@@ -82,7 +83,8 @@ if (PAR.cripta.preso && !DEL_PUEBLO) {
 if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mision.objetivo.texto = 'Encuentra lo que buscas y vuelve a la escalera.'; }   // aquí no hay rondas: vas a tu ritmo
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
-const sonido = crearSonido({ entorno: 'cripta' });
+const sonido = crearSonido({ entorno: PAR.tema?.cine && !DEL_PUEBLO ? 'cine' : 'cripta' });
+if (PAR.tema?.cine && !DEL_PUEBLO) ponerCine();   // el Cine Abandonado, también en blanco y negro
 const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL ? 1.4 : 1 });
 
 // ---------- tu héroe ----------
