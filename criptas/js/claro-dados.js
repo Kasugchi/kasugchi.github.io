@@ -40,8 +40,8 @@ function cara(tipo) {
 const mats = new Map();
 const matCara = (tipo) => { if (!mats.has(tipo)) mats.set(tipo, new THREE.MeshStandardMaterial({ map: cara(tipo), roughness: .45, metalness: 0 })); return mats.get(tipo); };
 
-export function crearDados(escena, { alSonar } = {}) {
-  const geo = new RoundedBoxGeometry(.5, .5, .5, 4, .09);
+export function crearDados(escena, { alSonar, escala: E = 1 } = {}) {   // escala: más grandes en el móvil, que se ven pequeños
+  const geo = new RoundedBoxGeometry(.5 * E, .5 * E, .5 * E, 4, .09 * E);
   let enJuego = [], ultimo = -1;
   function encima(render) { const f = render.info.render.frame; if (f !== ultimo) { ultimo = f; render.clearDepth(); } }
 
@@ -64,7 +64,7 @@ export function crearDados(escena, { alSonar } = {}) {
       for (let k = 0; k < n; k++) {
         const m = dado(tipo), caras = m.userData.caras, i = Math.floor(Math.random() * 6);
         res.push(caras[i]);
-        const lado = (k - (n - 1) / 2) * .75, destino = centro.clone().add(new THREE.Vector3(lado, .25, (Math.random() - .5) * .4));
+        const lado = (k - (n - 1) / 2) * .75 * E, destino = centro.clone().add(new THREE.Vector3(lado, .25 * E, (Math.random() - .5) * .4));
         const origen = (desde || centro.clone().add(new THREE.Vector3(0, 0, 4))).clone().add(new THREE.Vector3(lado * .5, 2.2 + Math.random() * .5, 0));
         m.position.copy(origen); m.quaternion.setFromEuler(new THREE.Euler(Math.random() * 6, Math.random() * 6, Math.random() * 6));
         anims.push({ m, origen, destino, fin: giroFinal(i), w: new THREE.Vector3((Math.random() - .5) * 26, (Math.random() - .5) * 18, (Math.random() - .5) * 26), t: -k * .07, dur: 1.05 + Math.random() * .2, botes: new Set() });

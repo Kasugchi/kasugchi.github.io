@@ -61,7 +61,7 @@ const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido({ entorno: PAR.tema?.sonido || 'bosque' });
-const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
+const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL ? 1.4 : 1 });
 
 // ---------- estado del héroe ----------
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, setas: 0, pociones: 1, usos: 2, mision: 'nueva', caidos: 0, cofre: false };

@@ -64,6 +64,11 @@ const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'), { sala: 1, jefe: 
 if (!DEL_PUEBLO) mision.titulo = PAR.cripta.titulo;   // la de cada parada tiene nombre propio; las de los encargos, el suyo
 // Los monstruos de la zona: en el pantano, zombis y brujas (el jefe conserva su nombre y su fuerza)
 if (PAR.cripta.monstruos) { const L = PAR.cripta.monstruos; const re = (mo, i) => { if (!mo.jefe && !mo.nombre) mo.tipo = L[(i * 7 + (mo.x || 0)) % L.length]; }; mision.monstruos.forEach(re); for (const d of mision.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos.forEach(re); }
+// El generador escribe para un grupo («Volved a la escalera»); en la aventura vas tú solo
+const A_SOLAS = [['os envía', 'te envía'], ['hacia vosotros', 'hacia ti'], ['Habéis llegado', 'Has llegado'], ['Volved', 'Vuelve'], ['ganaréis', 'ganarás'], ['pongáis', 'pongas'],
+  ['Tenéis', 'Tienes'], ['Corred', 'Corre'], ['Rompéis', 'Rompes'], ['Sacadme', 'Sácame'], ['podéis', 'puedes'], ['Encontráis', 'Encuentras'], ['os esperaba', 'te esperaba'],
+  ['Encontradlos y terminad', 'Encuéntralos y termina'], ['Vencedle, coged su alma y llevadla', 'Véncele, coge su alma y llévala'], ['Bajad, encontradlo y traedlo', 'Baja, encuéntralo y tráelo']];
+{ let j = JSON.stringify(mision); for (const [a, b] of A_SOLAS) j = j.split(a).join(b); Object.assign(mision, JSON.parse(j)); }
 // Un preso con nombre propio (en las Celdas de Hierro, Bruna): se cambia el del generador en todos los textos
 if (PAR.cripta.preso && !DEL_PUEBLO) {
   const t = Object.values(mision.tesoros || {}).find((x) => x.flag === 'rescatado'), viejo = t?.texto.match(/Encadenado al muro está (.+?)\. /)?.[1];
@@ -78,7 +83,7 @@ if (mision.objetivo?.tipo === 'escapar') { mision.objetivo.tipo = 'escalera'; mi
 const cripta = crearCripta(escena, mision, { movil: MOVIL });
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido({ entorno: 'cripta' });
-const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f) });
+const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL ? 1.4 : 1 });
 
 // ---------- tu héroe ----------
 let DEF = leerLocal() || { ...heroeAlAzar(), nombre: 'Viajero' };

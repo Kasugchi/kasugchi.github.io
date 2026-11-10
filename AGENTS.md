@@ -44,6 +44,20 @@ Juego de mazmorras por turnos estilo juego de mesa, multijugador con código de 
 - `viajero.js`: la ficha del jugador por mundo (héroes, banco, cabaña, diario, `ficha.pueblo`).
 - `vendor/`: three.js r160 vendorizado. **No actualizar.**
 
+### Modo aventura (claro, paradas, criptas 3D)
+
+- **Héroe de aventura** (`js/claro-heroes.js`): uno por jugador, se guarda en local y en la nube (`usuarios/{uid}/viajero/aventura`). Ahí están `RAZAS` (cada una con una pasiva y una racial activa), `CLASES`, `LOAS` del trol, `FORJA`, materiales y botín, y las mejoras al subir de nivel (`OPCIONES_MEJORA` + `MEJORAS_CLASE`).
+- **Combate** (`js/claro-combate.js`): por turnos sobre casillas, dados 3D (`js/claro-dados.js`, se pintan siempre por encima). Las raciales activas son un botón, una vez por pelea, sin gastar acción.
+- **Criptas** (`cripta.html` + `js/cripta.js`): salen del generador del juego de mesa (`js/procedural.js`) pero recortadas para un héroe (`aSolas` en `js/claro-cripta.js`: uno por sala y pasillo, el jefe con un escolta, como mucho tres por pelea, +1 de cuerpo al ganar cada pelea).
+- **Bruna**: la herrera presa en las Celdas de Hierro (parada `celdas`). Al rescatarla (`EP.bruna`), la forja grande del pueblo se enciende y hace el último nivel de mejora; Brasa, su aprendiz, hace el resto.
+- **Juntos**: en el claro y en la cripta se ven los de la sala (`js/cripta-juntos.js`): todo va en la ficha de cada uno dentro de `reunion/gente`, sin rutas nuevas en la base de datos. Quien baja a una cripta deja `baja` y los demás pueden seguirle. Los combates aún son de cada uno.
+- **Botón ☰** (`js/menu-aventura.js`): la libreta común de la aventura (sala, sonido, pantalla completa con `js/pantalla.js`, controles). El pueblo tiene la suya con las mismas opciones.
+- **Portada**: `js/sitios.js` pinta en el menú las tarjetas de cada sitio (pueblo, tortuga, paradas, cabaña…).
+
+### Equilibrio (`herramientas/simulacion.py`)
+
+Simula miles de criptas enteras con las reglas del combate y saca el ranking raza × clase. **Si tocas números de combate** (clases, razas, loas, monstruos), cópialos también allí y vuelve a pasarlo: `python3 criptas/herramientas/simulacion.py`. Objetivo: todas las combinaciones entre un 75 % y un 95 % a nivel 3.
+
 ### La gramola de Rufo (`js/midi.js` y `midi/`)
 
 Máquina de discos de la cantina que toca MIDIs sintetizados con WebAudio. Un disco es un JSON (`midi/*.json`) listado en `midi/catalogo.json`; los que son solo de Carlos van en `midi/local-*.json` + `midi/catalogo-local.json` (en `.gitignore`: **el repo y la web son públicos, no subas música con derechos**). Para convertir un `.mid`: `python3 criptas/midi/convertir.py cancion.mid` (añade `--publico` solo si es libre de derechos).
@@ -74,4 +88,5 @@ Abre la consola del navegador: no debe haber errores rojos. `window.pueblo` expo
 - [ ] Estás en una rama, no en `main`.
 - [ ] Sin errores en la consola, probado en vista móvil.
 - [ ] `version.py` ejecutado si tocaste `criptas/js/`.
+- [ ] Comprobado con `node --input-type=module --check < archivo.js` (un error de sintaxis deja la página en blanco).
 - [ ] Un commit con un mensaje claro en español que diga qué cambia.

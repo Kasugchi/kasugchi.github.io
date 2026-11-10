@@ -368,6 +368,16 @@ export function crearHeroe({ raza = 'humano', clase = 'mago', colores = {} } = {
 
   // ---- cabeza según la raza ----
   const cabeza = new THREE.Group(); cabeza.position.y = 1.47; cuerpo.add(cabeza);
+  if (raza === 'troll') {   // pinta de chamán: collar de colmillos y plumas colgando de una oreja (se ven con cualquier ropa o sombrero)
+    for (let i = 0; i < 7; i++) {
+      const ang = (i - 3) * .32, d = malla(new THREE.ConeGeometry(.035, .13, 5), '#f4ecd8', { borde: .01 });
+      d.position.set(Math.sin(ang) * .34, 1.03 - Math.abs(i - 3) * .012, Math.cos(ang) * .3); d.rotation.x = Math.PI; cuerpo.add(d);
+    }
+    const cuenta = malla(new THREE.SphereGeometry(.05, 8, 6), '#c0503a', { borde: .01 }); cuenta.position.set(0, 1.02, .33); cuerpo.add(cuenta);
+    [['#3ad0e0', 0], ['#e84a3a', .14]].forEach(([c, dz]) => {
+      const p = malla(new THREE.SphereGeometry(.07, 8, 6), c, { borde: .012 }); p.scale.set(.45, 1.9, .2); p.position.set(.62, -.22, -.04 + dz); p.rotation.z = .25; cabeza.add(p);
+    });
+  }
   cabeza.scale.set(1 / F.ancho, 1 / F.alto, 1 / F.ancho);         // la cabeza no se estira con el cuerpo
   const craneo = malla(new THREE.SphereGeometry(.42, 22, 16), piel); cabeza.add(craneo);
   const esc = raza === 'escamado';

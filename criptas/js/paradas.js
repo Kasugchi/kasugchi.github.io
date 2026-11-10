@@ -96,7 +96,7 @@ export const PARADAS = {
     enemigo: { tipo: 'esqueleto', nombre: 'Carcelero', plural: 'carceleros', grupos: ['Carceleros de la cantera', 'Guardia de las celdas'], jefe: 'Alcaide Herrumbre', color: '#8a7a6a', ojo: '#ffb03a' },
     cripta: { nombre: 'Celdas de Hierro', semilla: 'CADENA', nivel: 9, titulo: 'Las Celdas de Hierro', monstruos: ['esqueleto', 'guerrero', 'esqueleto', 'momia', 'gargola'],
       preso: 'la herrera Bruna',
-      rescate: '¡Es Bruna! Tiene las manos negras de hollín y la barba de chispas quemadas. «¿Brasa os manda? Esa niña… Sacadme de aquí, que tengo una forja que encender.»',
+      rescate: '¡Es Bruna! Tiene las manos negras de hollín y la barba de chispas quemadas. «¿Te manda Brasa? Esa niña… Sácame de aquí, que tengo una forja que encender.»',
       final: 'Bruna no se queda ni a despedirse: sube derecha por la escala de Morrandar, que tiene una forja fría que encender. Ve a verla al pueblo, junto al río.' },
     textos: {
       saludo: ['¡Alto ahí! Ah, no, que tú no llevas casco de carcelero. Perdona, la costumbre.', 'Me llamo Hollín. Piqué piedra en esta cantera cuarenta años, hasta que llegaron los carceleros de hueso y la convirtieron en una prisión.', 'Tienen a gente encerrada en las Celdas de Hierro. Tráeme tres setas de herrumbre (las naranjas que brillan, comen óxido) y quítame de en medio a esos carceleros. Con las setas te hago una ganzúa que abre la verja.'],
