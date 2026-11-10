@@ -18,16 +18,17 @@ const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // Quita monstruos a una misión pensada para cuatro héroes: como mucho dos por sala
 // (tres donde está el jefe) y unos pocos por el pasillo. Siempre con la misma semilla.
-export function aSolas(m, maxPasillo = 3) {
+// topes: cuántos monstruos se quedan por sala, en la sala del jefe (contándole) y por pasillo
+export function aSolas(m, { sala = 2, jefe = 3, pasillo = 3, aparecer = 2 } = {}) {
   const porSala = {}, salida = [];
   for (const mo of m.monstruos) {
     const r = TB.region(mo.x, mo.y), jefeAqui = m.monstruos.some((o) => o.jefe && TB.region(o.x, o.y) === r);
-    const tope = r === '.' ? maxPasillo : jefeAqui ? 3 : 2;
+    const tope = r === '.' ? pasillo : jefeAqui ? jefe : sala;
     porSala[r] = porSala[r] || 0;
     if (mo.jefe || porSala[r] < tope) { salida.push(mo); porSala[r]++; }
   }
   m.monstruos = salida;
-  for (const d of m.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos = a.monstruos.slice(0, 2);
+  for (const d of m.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos = a.monstruos.slice(0, aparecer);
   return m;
 }
 

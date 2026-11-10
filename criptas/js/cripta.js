@@ -57,7 +57,10 @@ const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || PAR.cripta.nivel)
 const AL_SITIO = PAR.corto.replace(/^El /, 'al ').replace(/^La /, 'a la ');
 const ESCENARIO = PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}&`;
 const VOLVER = DEL_PUEBLO ? 'pueblo.html?desde=escala' : (PID === 'claro' ? 'claro.html?desde=cripta' : `${ESCENARIO}desde=cripta`);
-const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'));
+// Las criptas del generador están pensadas para una mesa de 4 héroes. En la aventura vas solo (o con uno o dos más):
+// un monstruo por sala, uno por pasillo y el jefe con un escolta. Medido con simulaciones: un héroe de nivel 3
+// sale vivo de la cripta del claro casi 9 de cada 10 veces (antes, uno de nivel 1 salía vivo 2 de cada 100).
+const mision = aSolas(generarMision(SEMILLA, NIVEL, 'cripta'), { sala: 1, jefe: 2, pasillo: 1, aparecer: 1 });
 if (!DEL_PUEBLO) mision.titulo = PAR.cripta.titulo;   // la de cada parada tiene nombre propio; las de los encargos, el suyo
 // Los monstruos de la zona: en el pantano, zombis y brujas (el jefe conserva su nombre y su fuerza)
 if (PAR.cripta.monstruos) { const L = PAR.cripta.monstruos; const re = (mo, i) => { if (!mo.jefe && !mo.nombre) mo.tipo = L[(i * 7 + (mo.x || 0)) % L.length]; }; mision.monstruos.forEach(re); for (const d of mision.disparadores || []) for (const a of d.acciones || []) if (a.tipo === 'aparecer') a.monstruos.forEach(re); }
@@ -130,7 +133,8 @@ function nacer(mo, alerta = false) {
   const x = { def: mo, id: mo.id, tipo: mo.tipo, nombre, pj, vivo: true, alerta, region: r, st,
     // Los jefes ya traen su cuerpo del generador (no se suma otra vez) y su defensa se queda en 4 como mucho:
     // los monstruos paran con el escudo negro (1 de cada 6), y con 5 dados el Rey Momia parecía inmortal.
-    cuerpo: mo.cuerpo || (st.cuerpo + (mo.jefe ? 2 : 0)), ataque: mo.ataque || st.ataque, defensa: Math.min(mo.jefe ? 4 : 9, mo.defensa || st.defensa), mover: Math.min(8, st.mov || 6) };
+    // el jefe, uno menos de cuerpo: está hecho para cuatro héroes
+    cuerpo: mo.jefe ? Math.max(4, (mo.cuerpo || st.cuerpo + 2) - 1) : (mo.cuerpo || st.cuerpo), ataque: mo.ataque || st.ataque, defensa: Math.min(mo.jefe ? 4 : 9, mo.defensa || st.defensa), mover: Math.min(8, st.mov || 6) };
   x.rotulo = ui.rotulo(pj.grupo, nombre, { tipo: 'enemigo', altura: pj.altura + .2 });
   monstruos.push(x);
   if (J?.muertoFuera(x.id)) { x.vivo = false; pj.grupo.visible = false; }   // otro de la sala ya lo tumbó
@@ -192,6 +196,8 @@ async function empezarCombate(grupo) {
   if (resultado === 'derrota') return expulsado();
   hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
   const oro = caidosIds.length * 5; estado.oro += oro; estado.usos = estado.usosMax;
+  // respiras hondo: +1 de cuerpo tras cada pelea ganada (yendo solo, sin esto la cripta se gana a base de suerte)
+  if (estado.cuerpo < estado.max) { estado.cuerpo++; setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '+1 ❤ Respiras hondo', '#ff9aa8'), 1600); }
   setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
   const tb = textoBotin(botin); if (tb) setTimeout(() => { ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), tb, '#e8e0d0'); sonido.recoger(); }, 1100);
   await ganarExperiencia(xp);
@@ -339,7 +345,9 @@ function vigilar() {
   });
   if (!ven.length) return;
   const [ax, ay] = cripta.deMundo(ven[0].pj.grupo.position);
-  const grupo = monstruos.filter((m) => m.vivo && m.visto && !J?.ocupado(m.id) && (Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay) <= 7));
+  const dist = (m) => Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay);
+  // como mucho tres a la vez (el jefe siempre entra si está cerca): uno solo contra media cripta no es una pelea
+  const grupo = monstruos.filter((m) => m.vivo && m.visto && !J?.ocupado(m.id) && dist(m) <= 7).sort((a, b) => (b.def.jefe ? 1 : 0) - (a.def.jefe ? 1 : 0) || dist(a) - dist(b)).slice(0, 3);
   empezarCombate(grupo);
 }
 
