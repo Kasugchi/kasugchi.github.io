@@ -441,4 +441,4 @@ setTimeout(async () => {
   H.bloqueado = false;
 }, 900);
 lienzo.addEventListener('pointerdown', () => sonido.arrancar(), { once: true });
-window.cripta = { J, escena, estado, H, CAM, mision, monstruos, combate, flags, cripta, ponerFlag, abrir, abrirRegion, interactuar, get cerca() { return cerca; }, get def() { return DEF; } };
+window.cripta = { J, THREE, dados, camara, escena, estado, H, CAM, mision, monstruos, combate, flags, cripta, ponerFlag, abrir, abrirRegion, interactuar, get cerca() { return cerca; }, get def() { return DEF; } };

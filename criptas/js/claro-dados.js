@@ -42,11 +42,15 @@ const matCara = (tipo) => { if (!mats.has(tipo)) mats.set(tipo, new THREE.MeshSt
 
 export function crearDados(escena, { alSonar } = {}) {
   const geo = new RoundedBoxGeometry(.5, .5, .5, 4, .09);
-  let enJuego = [];
+  let enJuego = [], ultimo = -1;
+  function encima(render) { const f = render.info.render.frame; if (f !== ultimo) { ultimo = f; render.clearDepth(); } }
 
   function dado(tipo) {
     const caras = tipo === 'mover' ? [1, 6, 2, 5, 3, 4] : CARAS_COMBATE;   // caras opuestas suman 7 en los rojos
     const m = new THREE.Mesh(geo, caras.map(matCara)); m.castShadow = true; m.userData.caras = caras;
+    // Siempre por encima de muros y árboles: se pintan los últimos y, justo antes, se borra la profundidad
+    // (una vez por fotograma), así se ven enteros aunque caigan detrás de una pared, y entre ellos se tapan bien.
+    m.renderOrder = 999; m.onBeforeRender = encima;
     escena.add(m); return m;
   }
   // Giro final para que la cara «i» mire arriba, con un giro de yaw al azar
