@@ -99,7 +99,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
     // ¿estoy yo dentro?
     const mio = f.u.find((u) => u.uid && u.uid === yo);
     if (mio) {
-      if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); }
+      if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
       H.pos.x = mio.x; H.pos.z = mio.z; heroe().mirarA(mio.ry);   // con mirarA: si se pisa el giro a mano, el muñeco tira hacia su rumbo y da vueltas
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
       heroe().caido = !mio.v;
@@ -115,8 +115,11 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
     quitarMiTurno();
     miTurno = { clave, n: T.n, fase: T.fase, celdas: T.celdas || [], marcas: new THREE.Group() };
     if (T.fase === 'mover') {
-      const geo = new THREE.CircleGeometry(.45, 20), mat = new THREE.MeshBasicMaterial({ color: '#8ad8ff', transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending });
-      for (const [x, z] of miTurno.celdas) { const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.set(x, (T.y || H.pos.y) + .22, z); miTurno.marcas.add(m); }
+      // azul de verdad (con mezcla normal: la suma sobre la arena quedaba blanca), un aro con el centro más flojo
+      const aro = new THREE.RingGeometry(.3, .44, 24), punto = new THREE.CircleGeometry(.3, 20);
+      const matA = new THREE.MeshBasicMaterial({ color: '#2a8cff', transparent: true, opacity: .85, depthWrite: false }), matP = new THREE.MeshBasicMaterial({ color: '#5aaaff', transparent: true, opacity: .3, depthWrite: false });
+      for (const [x, z] of miTurno.celdas) for (const [g, m] of [[aro, matA], [punto, matP]]) { const k = new THREE.Mesh(g, m); k.rotation.x = -Math.PI / 2; k.position.set(x, (T.y || H.pos.y) + .22, z); miTurno.marcas.add(k); }
+      miTurno.matA = matA;
       escena.add(miTurno.marcas);
       hud.banner('¡Te toca!', 'heroe'); hud.narrar('Tu turno: toca una casilla azul para moverte, o quédate quieto.');
       hud.acciones([{ id: 'quieto', texto: 'No moverme', corto: 'Quieto', icono: '⏸', activo: true }], () => { ordenar({ tipo: 'quieto' }); quitarMiTurno(); });
@@ -142,7 +145,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
   };
   function quitarAjena(id) {
     const A = ajenas.get(id); if (!A) return;
-    escena.remove(A.anillo.g); ui.quitar(A.cartel);
+    escena.remove(A.anillo.g); if (A.cartel) ui.quitar(A.cartel);
     for (const pj of A.fantasmas.values()) escena.remove(pj.grupo);
     for (const pj of A.ocultos) pj.grupo.visible = true;
     for (const o of otros().values()) { o.pj.enPelea = false; o.pj.caido = false; }
@@ -178,6 +181,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
   // ---------- cada fotograma ----------
   P.actualizar = (dt, t) => {
     publicar(dt);
+    if (miTurno?.matA) miTurno.matA.opacity = .6 + Math.sin(t * 5) * .25;
     for (const A of ajenas.values()) {
       A.anillo.aro.rotation.z += dt * .4; A.anillo.aro.material.opacity = .55 + Math.sin(t * 3) * .2;
       for (const pj of A.fantasmas.values()) {
