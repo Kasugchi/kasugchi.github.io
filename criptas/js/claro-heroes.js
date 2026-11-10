@@ -12,7 +12,7 @@ export const RAZAS = {
   enano: { nombre: 'Enano', icono: '🧔', rasgo: 'Duro de pelar', texto: 'Dos puntos de cuerpo más. Racial: «Piel de piedra», hasta tu siguiente turno ningún golpe te quita más de 1. Bajito, ancho y testarudo.', activa: { id: 'piedra', nombre: 'Piel de piedra', icono: '🪨' }, pieles: ['#f0bf98', '#d99c74', '#a96e48', '#7a4a2e'], pelos: ['#b8462a', '#6b3a2a', '#2b1d16', '#d9d2c4', '#e3a13a'] },
   elfo: { nombre: 'Elfo', icono: '🧝', rasgo: 'Pies ligeros', texto: 'Dos casillas más cada vez que se mueve. Racial: «Sombra del bosque», te escabulles hasta cuatro casillas sin gastar el movimiento.', activa: { id: 'sombra', nombre: 'Sombra del bosque', icono: '🍃' }, pieles: ['#f7dcc4', '#e8c1a0', '#c99a7a', '#9a7ab8'], pelos: ['#f1e3b0', '#e8e8f0', '#2b1d16', '#7a5ad9', '#3f8a6a'] },
   escamado: { nombre: 'Escamado', icono: '🐲', rasgo: 'Escamas', activa: { id: 'aliento', nombre: 'Aliento de dragón', icono: '🔥' }, texto: 'El primer golpe de cada combate le hace uno menos. Racial: «Aliento de dragón», fuego a todos los enemigos pegados a ti. Gente dragón de Velmor.', pieles: ['#4fae7a', '#3f8fb0', '#c4553a', '#b08a3a'], pelos: ['#f2d48a', '#e8e0d0', '#2b1d16', '#ff9a4a', '#9ad0ff'] },
-  troll: { nombre: 'Trol', icono: '🧌', rasgo: 'Ciudad de oro', activa: { id: 'rezo', nombre: 'Rezo vudú', icono: '🗿' }, texto: 'Saca más oro de los monstruos. Racial: «Rezo vudú», elige a qué loa rezas antes de bajar a la cripta y pide su bendición dos veces allí abajo. Alto, encorvado y con colmillos.', pieles: ['#5a8ac8', '#4a9a8a', '#7aa05a', '#8a6ab0'], pelos: ['#e84a3a', '#3ad0e0', '#f0f0f0', '#ff8a2a', '#2b1d16'] },
+  troll: { nombre: 'Trol', icono: '🧌', rasgo: 'Carne de trol', activa: { id: 'rezo', nombre: 'Rezo vudú', icono: '🗿' }, texto: 'Al ganar cada pelea recupera 1 de cuerpo más. Racial: «Rezo vudú», elige a qué loa rezas antes de bajar a la cripta y pide su bendición dos veces allí abajo. Alto, encorvado y con colmillos.', pieles: ['#5a8ac8', '#4a9a8a', '#7aa05a', '#8a6ab0'], pelos: ['#e84a3a', '#3ad0e0', '#f0f0f0', '#ff8a2a', '#2b1d16'] },
 };
 
 // Los loas del trol: se elige uno antes de bajar a la cripta; cada rezo da su bendición durante dos turnos
@@ -71,7 +71,8 @@ export function estadisticas(h, enCripta = false) {
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0 },   // mejoras propias de la clase
     escamas: h.raza === 'escamado',
-    oroExtra: h.raza === 'troll' ? .4 : 0,                                 // ciudad de oro: +40 % de oro de los monstruos
+    oroExtra: 0,
+    carneTrol: h.raza === 'troll',                                           // carne de trol: +1 de cuerpo extra al ganar cada pelea
     racial: RAZAS[h.raza]?.activa || null   // la racial activa: un botón, una vez por pelea, sin gastar acción
   };
 }

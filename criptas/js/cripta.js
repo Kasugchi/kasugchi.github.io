@@ -85,7 +85,7 @@ let DEF = leerLocal() || { ...heroeAlAzar(), nombre: 'Viajero' };
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, pociones: 1, usos: 2, mision: 'cripta' };
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def, true);
-  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, oroExtra: s.oroExtra, racial: s.racial, rezos: REZOS_CRIPTA, loa: def.loa || 'tigre', hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, oroExtra: s.oroExtra, carneTrol: s.carneTrol, racial: s.racial, rezos: REZOS_CRIPTA, loa: def.loa || 'tigre', hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 aplicarHeroe(DEF);
 const heroe = crearHeroe(DEF); escena.add(heroe.grupo);
@@ -197,7 +197,8 @@ async function empezarCombate(grupo) {
   hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
   const oro = Math.round(caidosIds.length * 5 * (1 + (estado.oroExtra || 0))); estado.oro += oro; estado.usos = estado.usosMax;
   // respiras hondo: +1 de cuerpo tras cada pelea ganada (yendo solo, sin esto la cripta se gana a base de suerte)
-  if (estado.cuerpo < estado.max) { estado.cuerpo++; setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '+1 ❤ Respiras hondo', '#ff9aa8'), 1600); }
+  const recupera = Math.min(estado.max - estado.cuerpo, 1 + (estado.carneTrol ? 1 : 0));   // carne de trol: uno más
+  if (recupera > 0) { estado.cuerpo += recupera; setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), `+${recupera} ❤ ${estado.carneTrol ? 'Carne de trol' : 'Respiras hondo'}`, '#ff9aa8'), 1600); }
   setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
   const tb = textoBotin(botin); if (tb) setTimeout(() => { ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), tb, '#e8e0d0'); sonido.recoger(); }, 1100);
   await ganarExperiencia(xp);
