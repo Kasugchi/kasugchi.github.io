@@ -141,6 +141,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       C.escamasUsadas = true; dano -= 1; ui.numero(sobre(d, d.pj.altura + .5), 'Escamas', '#9fe8c0');
       if (dano <= 0) { sonido.bloqueo(); hud.narrar('Tus escamas se tragan el golpe entero.'); await espera(700); return; }
     }
+    if (d.heroe && C.piedra > 0 && dano > 1) { dano = 1; ui.numero(sobre(d, d.pj.altura + .5), 'Piel de piedra', '#d8d0c0'); }
     sonido.golpe(); d.pj.herido(); d.cuerpo -= dano; ui.numero(sobre(d, d.pj.altura), `-${dano}`); ui.chispas(sobre(d, 1), '#ffd0a0', 10, 2.5);
     if (d.heroe) { estado.cuerpo = Math.max(0, d.cuerpo); hud.actualizar(); }
     camara.temblar(.25);
@@ -165,14 +166,14 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       { id: 'mover', texto: 'Moverse', corto: 'Mover', icono: '🎲', activo: !t.movido && !modoEleccion },
       { id: 'atacar', texto: 'Atacar', icono: '⚔️', activo: !t.actuado && hayPegado && !modoEleccion },
       { id: 'habilidad', texto: `${hab.nombre} (${estado.usos})`, corto: `${hab.nombre.split(' ')[0]} (${estado.usos})`, icono: hab.icono, activo: puedeHab },
-      estado.rezo && { id: 'rezo', texto: C.rezo > 0 ? `Rezo (${C.rezo})` : 'Rezo vudú', corto: 'Rezo', icono: '🗿', activo: !C.rezoUsado && !modoEleccion },
+      estado.racial && { id: 'racial', texto: estado.racial.nombre, corto: estado.racial.nombre.replace(/[¡!]/g, '').split(' ')[0], icono: estado.racial.icono, activo: !C.racialUsada && !modoEleccion && (estado.racial.id !== 'aliento' || hayPegado) },
       { id: 'pocion', texto: `Poción (${estado.pociones})`, icono: '🧪', activo: !t.actuado && estado.pociones > 0 && estado.cuerpo < estado.max && !modoEleccion },
       { id: 'fin', texto: modoEleccion ? 'Cancelar' : 'Terminar turno', corto: modoEleccion ? 'Cancelar' : 'Pasar', icono: modoEleccion ? '✖' : '⏭', activo: true }
     ].filter(Boolean), elegirAccion);
   }
   async function elegirAccion(id) {
     const h = unidades[0], t = turnoHeroe;
-    if (id === 'fin') { if (modoEleccion) { modoEleccion = null; alcanzables.clear(); pintar(); hud.narrar('Elige otra cosa.'); return accionesHeroe(); } hud.acciones([]); return t.fin(); }
+    if (id === 'fin') { if (modoEleccion) { if (modoEleccion.tipo === 'sombra') C.racialUsada = false; modoEleccion = null; alcanzables.clear(); pintar(); hud.narrar('Elige otra cosa.'); return accionesHeroe(); } hud.acciones([]); return t.fin(); }
     if (id === 'mover') {
       hud.acciones([]); t.movido = true; hud.narrar('Tiras los dados de movimiento…');
       const pos = h.pj.grupo.position, r = await dados.tirar('mover', 2, pos.clone().add(camara.position.clone().sub(pos).setY(0).normalize().multiplyScalar(1.8)));
@@ -194,12 +195,33 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       else if (hab.id === 'torreta') { alcanzables = new Map(vecinos(h.c).filter((c) => libre(c)).map((c) => [c, 'mover'])); hud.narrar('Torreta: toca una casilla pegada a ti para montarla.'); }
       modoEleccion = { tipo: hab.id }; pintar(); return accionesHeroe();
     }
-    if (id === 'rezo') {   // racial del trol: no gasta acción, una vez por pelea, dura dos turnos
-      if (C.rezoUsado) return accionesHeroe();
-      hud.acciones([]); C.rezoUsado = true; C.rezo = 2;
-      sonido.hechizo(); await h.pj.hacer('celebrar', .9); ui.chispas(sobre(h, 1.2), '#c08aff', 40, 4); ui.chispas(sobre(h, .4), '#7dffa0', 20, 3);
-      ui.numero(sobre(h, h.pj.altura + .3), '¡Rezo vudú! +2 ⚔️ +1 🛡️', '#d8b0ff'); hud.narrar('Invocas a tus loas con un baile muy serio. Durante dos turnos pegas con dos dados más y paras con uno más.');
-      await espera(700); return accionesHeroe();
+    if (id === 'racial') {   // la racial de cada raza: una vez por pelea y sin gastar acción
+      if (C.racialUsada) return accionesHeroe();
+      const R = estado.racial; hud.acciones([]); C.racialUsada = true;
+      const cartel = (txt, col) => ui.numero(sobre(h, h.pj.altura + .3), txt, col);
+      if (R.id === 'rezo') {
+        C.rezo = 2; sonido.hechizo(); await h.pj.hacer('celebrar', .9); ui.chispas(sobre(h, 1.2), '#c08aff', 40, 4); ui.chispas(sobre(h, .4), '#7dffa0', 20, 3);
+        cartel('¡Rezo vudú! +2 ⚔️ +1 🛡️', '#d8b0ff'); hud.narrar('Invocas a tus loas con un baile muy serio. Durante dos turnos pegas con dos dados más y paras con uno más.');
+      } else if (R.id === 'aporellos') {
+        if (t.actuado) t.actuado = false; else C.accionExtra = true;   // si ya habías actuado, recuperas la acción; si no, tendrás dos
+        sonido.victoria(); await h.pj.hacer('celebrar', .7); ui.chispas(sobre(h, 1.2), '#ffd34a', 30, 3.5);
+        cartel('¡A por ellos! Dos acciones', '#ffe08a'); hud.narrar('¡Gritas tan fuerte que hasta los huesos se encogen! Este turno puedes hacer dos acciones (atacar, habilidad o poción).');
+      } else if (R.id === 'piedra') {
+        C.piedra = 1; sonido.bloqueo(); await h.pj.hacer('celebrar', .6); ui.chispas(sobre(h, 1), '#b8b0a0', 36, 3);
+        h.pj.grupo.traverse((o) => { if (o.isMesh && o.material?.color && !o.userData.colorPiedra) { o.userData.colorPiedra = o.material.color.clone(); o.material = o.material.clone(); o.material.color.lerp(new THREE.Color('#9a9488'), .55); } });
+        cartel('¡Piel de piedra!', '#d8d0c0'); hud.narrar('Te quedas tieso como una roca. Hasta tu próximo turno, ningún golpe te quitará más de 1.');
+      } else if (R.id === 'sombra') {
+        const cm = caminos(h.c, 4, h); alcanzables = new Map([...cm.dist.keys()].filter((c) => c !== h.c).map((c) => [c, 'mover']));
+        if (!alcanzables.size) { C.racialUsada = false; hud.narrar('No hay hueco por donde escabullirse.'); return accionesHeroe(); }
+        ui.chispas(sobre(h, .6), '#8ae08a', 30, 3); modoEleccion = { tipo: 'sombra', caminos: cm }; pintar(); hud.narrar('Sombra del bosque: toca adónde te escabulles (hasta cuatro casillas).'); return accionesHeroe();
+      } else if (R.id === 'aliento') {
+        const pegadosA = enemigos().filter((u) => pegados(h, u));
+        mirarse(h, pegadosA[0]); sonido.explosion(); await h.pj.hacer('lanzar', .6); camara.temblar(.3);
+        hud.narrar('¡Aliento de dragón! Todo lo que tienes pegado se chamusca.');
+        for (const u of pegadosA) { ui.chispas(sobre(u, 1), '#ff8a3a', 40, 4); await herir(u, 1); }
+        if (await comprobarFin()) return;
+      }
+      await espera(600); return accionesHeroe();
     }
     if (id === 'pocion') {
       hud.acciones([]); t.actuado = true; estado.pociones--; const cura = Math.min(3, estado.max - estado.cuerpo); h.cuerpo += cura; estado.cuerpo = h.cuerpo; hud.actualizar();
@@ -210,6 +232,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function trasAccion() {
     if (await comprobarFin()) return;
     const t = turnoHeroe;
+    if (t.actuado && C.accionExtra) { C.accionExtra = false; t.actuado = false; hud.narrar('¡Otra más! Te queda una acción.'); }
     if (t.movido && t.actuado) return t.fin();
     accionesHeroe();
   }
@@ -219,7 +242,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     let c = null, d = 1e9; for (const x of casillas) { const e = Math.hypot(x.x - punto.x, x.z - punto.z); if (e < d) { d = e; c = x; } }
     if (!c || d > T * .75 || !alcanzables.has(c)) return true;
     const h = unidades[0], t = turnoHeroe, modo = modoEleccion; modoEleccion = null; alcanzables.clear(); pintar(); hud.acciones([]);
-    if (modo.tipo === 'mover') { await andar(h, modo.caminos.ruta(c)); return trasAccion(), true; }
+    if (modo.tipo === 'mover' || modo.tipo === 'sombra') { if (modo.tipo === 'sombra') ui.chispas(sobre(h, .6), '#8ae08a', 20, 2); await andar(h, modo.caminos.ruta(c), modo.tipo === 'sombra' ? .14 : .26); return trasAccion(), true; }
     if (!sinGastar(modo.tipo)) t.actuado = true;
     const objetivo = unidades.find((u) => u.vivo && u.bando === 'enemigo' && u.c === c);
     if (modo.tipo === 'atacar') await atacar(h, objetivo);
@@ -293,6 +316,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     while (C.activo) {
       hud.banner('Tu turno', 'heroe'); camara.mirarHacia(unidades[0].pj.grupo.position);
       if (C.rezo > 0) C.rezo--;                                        // el rezo se va gastando
+      if (C.piedra > 0 && --C.piedra === 0) unidades[0].pj.grupo.traverse((o) => { if (o.userData.colorPiedra) { o.material.color.copy(o.userData.colorPiedra); delete o.userData.colorPiedra; } });
       // rasgo de los troles: se regeneran al empezar su turno (hasta 3 veces por pelea)
       const yo = unidades[0];
       if (estado.regenera && yo.vivo && yo.cuerpo < estado.max && (C.regenerado || 0) < estado.regenera) {
@@ -321,7 +345,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; C.escamasUsadas = false; C.regenerado = 0; C.rezo = 0; C.rezoUsado = false; sonido.circulo(); sonido.musica('combate');
+    resolver = fin; C.activo = true; C.escamasUsadas = false; C.regenerado = 0; C.rezo = 0; C.racialUsada = false; C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);
