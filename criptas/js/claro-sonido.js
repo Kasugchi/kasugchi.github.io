@@ -52,22 +52,25 @@ export function crearSonido({ entorno = 'bosque' } = {}) {   // entorno: bosque 
   // el cine: piano de película muda (ragtime en Do: Do, La7, Re7, Sol7), con bajo y acorde que se turnan («um-pa»)
   const CINE = [[48, [64, 67, 72]], [45, [61, 64, 67, 69]], [50, [62, 66, 69, 72]], [43, [62, 65, 67, 71]]];
   const MELO_C = [76, 77, 76, -1, 72, -1, 76, 79, -1, 78, 79, -1, 76, -1, 72, 74, 73, 74, 76, -1, 73, -1, 69, 72, 74, -1, 78, 77, 74, -1, 71, 67];
-  // la isla: calipso en Do (Do, Fa, Sol7, Do) con marimba y bajo sincopado
-  const ISLA = [[48, [64, 67, 72]], [41, [65, 69, 72]], [43, [62, 65, 67, 71]], [48, [64, 67, 72]]];
-  const MELO_I = [72, -1, 74, 76, -1, 79, 76, -1, 77, -1, 76, 74, 72, -1, 69, -1, 71, -1, 74, 77, -1, 74, 71, -1, 72, 76, -1, 79, 81, -1, 79, -1];
+  // la isla: reggae pirata en La menor (Lam, Sol, Fa, Mi7), con steel drum, acorde a contratiempo y bombo en el 3
+  const ISLA = [[45, [69, 72, 76]], [43, [67, 71, 74]], [41, [65, 69, 72]], [40, [68, 71, 74]]];
+  const MELO_I = [69, 72, 76, -1, 74, 72, -1, 71, 67, 71, 74, -1, 72, 71, -1, 67, 65, 69, 72, -1, 74, 72, 69, -1, 68, 71, 74, -1, 76, -1, -1, -1];
+  const MELO_I2 = [76, -1, 77, 76, 74, -1, 72, -1, 74, -1, 76, 74, 71, -1, -1, 67, 69, -1, 72, 74, 72, -1, 69, 65, 64, -1, 68, -1, 71, 74, 76, -1];
   const COMBATE = [[50, [62, 65, 69]], [46, [62, 65, 70]], [48, [64, 67, 72]], [45, [61, 64, 69]]];
   function programarMusica() {
-    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : entorno === 'cine' ? 116 : entorno === 'isla' ? 108 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
+    const bpm = modo === 'combate' ? 132 : entorno === 'pantano' ? 70 : entorno === 'cine' ? 116 : entorno === 'isla' ? 100 : 84, c = 60 / bpm / 2;   // corcheas (el pantano, más lento)
     while (siguiente < ctx.currentTime + .4) {
       const t = siguiente, compas = Math.floor(paso / 8) % 4, k = paso % 8;
       // paseo
       const P = modoVol.paseo;
-      if (entorno === 'isla') {   // marimba: golpe corto con un brillo dos octavas arriba; bajo en 1, «y» del 2 y 4
-        const [ib, iac] = ISLA[compas], mar = (n, v) => { nota(n, t, c * 1.6, { tipo: 'sine', vol: v, destino: P }); nota(n + 24, t, c * .4, { tipo: 'sine', vol: v * .25, destino: P }); };
-        if (k === 0 || k === 3 || k === 6) nota(ib - 12, t, c * 1.5, { tipo: 'triangle', vol: .11, destino: P, filtro: 900 });
-        if (k === 2 || k === 5 || k === 7) for (const n of iac) mar(n, .022);
-        const m = MELO_I[paso % 32]; if (m > 0) mar(m, .05);
-        if (k % 2 === 1) ruido(t, .05, { vol: .02, tipo: 'highpass', f: 6000, destino: P });   // maracas
+      if (entorno === 'isla') {   // steel drum: golpe seco con un armónico raro por encima, como un bidón afinado
+        const [ib, iac] = ISLA[compas];
+        const pan = (n, v, d = c * 1.8) => { nota(n, t, d, { tipo: 'sine', vol: v, destino: P }); nota(n + 19.02, t, d * .35, { tipo: 'sine', vol: v * .35, destino: P }); nota(n + 12, t, d * .6, { tipo: 'triangle', vol: v * .2, destino: P, filtro: 2400 }); };
+        if (k === 0 || k === 3 || k === 4 || k === 6) nota((k === 3 ? ib + 7 : ib) - 12, t, c * 1.4, { tipo: 'triangle', vol: .12, destino: P, filtro: 700 });   // bajo que camina
+        if (k === 2 || k === 6) for (const n of iac) nota(n - 12, t, c * .5, { tipo: 'square', vol: .012, destino: P, filtro: 1500 });   // el «chak» a contratiempo
+        if (k === 4) ruido(t, .12, { vol: .07, tipo: 'lowpass', f: 160, destino: P });   // bombo en el tres
+        const m = (Math.floor(paso / 32) % 2 ? MELO_I2 : MELO_I)[paso % 32]; if (m > 0) pan(m, .05);
+        if (k % 2 === 1) ruido(t, .05, { vol: .018, tipo: 'highpass', f: 6000, destino: P });   // maracas
       } else if (entorno === 'cine') {   // pianito: bajo en 1 y 3, acorde en 2 y 4, melodía sincopada por encima
         const [cb, cac] = CINE[compas], tecla = (n, d, v) => { nota(n, t, d, { tipo: 'triangle', vol: v, destino: P, filtro: 3200 }); nota(n + .08, t, d * .6, { tipo: 'square', vol: v * .18, destino: P, filtro: 1800 }); };
         if (k === 0 || k === 4) tecla(k === 0 ? cb - 12 : cb - 5, c * 1.2, .09);

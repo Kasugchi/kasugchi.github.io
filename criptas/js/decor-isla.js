@@ -108,24 +108,50 @@ export function decorarIsla(escena, mundo) {
     anima.push((t) => { vela.rotation.y = Math.sin(t * .9) * .15; calavera.rotation.y = Math.sin(t * 1.3) * .5; });
   }
 
-  // ---------- la cabeza de mono de piedra sobre la gruta ----------
+  // ---------- la cabeza de mono gigante: se entra a la gruta por la boca ----------
   {
-    const g = new THREE.Group(); g.position.set(0, 6.6, -.9); mundo.cripta.add(g);
-    const piedra = '#8a8a78', clara = '#b0aa92';
-    const cabeza = pieza(new THREE.SphereGeometry(2.3, 20, 14), piedra, { borde: .05, flatShading: true }); cabeza.scale.set(1.1, 1, .95); g.add(cabeza);
-    for (const lx of [-1, 1]) {
-      const oreja = pieza(new THREE.SphereGeometry(.95, 14, 10), piedra, { borde: .04, flatShading: true }); oreja.scale.set(.5, 1, 1); oreja.position.set(lx * 2.45, .2, -.2); g.add(oreja);
-      const dentro = pieza(new THREE.SphereGeometry(.6, 12, 8), clara, { borde: 0 }); dentro.scale.set(.4, .9, .9); dentro.position.set(lx * 2.65, .2, -.05); g.add(dentro);
-      const ojo = new THREE.Mesh(new THREE.SphereGeometry(.28, 10, 8), toon('#ffd04a', { emissive: '#ffb020', emissiveIntensity: 1.8 })); ojo.position.set(lx * .8, .55, 1.95); g.add(ojo);
+    const C = mundo.cripta;
+    // fuera la entrada de siempre (pilares, arco, runas, antorchas): solo quedan la puerta oscura, los escalones y las luces
+    let puerta = null;
+    for (const h of [...C.children]) {
+      const p = h.geometry?.parameters;
+      if (h.isLight) continue;
+      if (h.geometry?.type === 'PlaneGeometry' && p.height === 4.2) { puerta = h; continue; }
+      if (h.geometry?.type === 'BoxGeometry' && p.depth === .7) continue;
+      h.visible = false;
     }
-    const ceja = pieza(new THREE.BoxGeometry(3.2, .45, .8), piedra, { borde: .03, flatShading: true }); ceja.position.set(0, 1.05, 1.7); ceja.rotation.x = -.2; g.add(ceja);
-    const hocico = pieza(new THREE.SphereGeometry(1.35, 16, 10), clara, { borde: .04, flatShading: true }); hocico.scale.set(1.15, .8, .8); hocico.position.set(0, -.75, 1.55); g.add(hocico);
-    for (const lx of [-.32, .32]) { const nariz = new THREE.Mesh(new THREE.SphereGeometry(.13, 8, 6), toon('#3a3a30')); nariz.position.set(lx, -.35, 2.55); g.add(nariz); }
-    const boca = pieza(new THREE.TorusGeometry(.7, .11, 6, 14, Math.PI), '#3a3a30', { borde: 0 }); boca.rotation.z = Math.PI; boca.position.set(0, -.95, 2.42); g.add(boca);
-    // musgo y una enredadera colgando por la cara
-    for (let k = 0; k < 9; k++) { const m = pieza(new THREE.SphereGeometry(.3 + Math.random() * .25, 8, 6), '#5a8a3a', { borde: 0 }); const a = Math.random() * Math.PI, r = 2.2; m.position.set(Math.cos(a) * r * 1.05, Math.sin(a) * r * .9 + .2, .6 + Math.random() * .8); g.add(m); }
-    const luz = new THREE.PointLight('#ffc04a', 6, 12, 1.6); luz.position.set(0, .5, 3); g.add(luz);
-    anima.push((t) => { luz.intensity = 5 + Math.sin(t * 2.2) * 1.5; });
+    if (puerta) puerta.position.z = .15;
+    const g = new THREE.Group(); C.add(g);
+    const piedra = '#8a8a78', clara = '#b4ad94', oscura = '#5e5d50';
+    const cabeza = pieza(new THREE.SphereGeometry(5, 26, 18), piedra, { borde: .07, flatShading: true }); cabeza.scale.set(1.15, 1, .9); cabeza.position.set(0, 5.2, -4.2); g.add(cabeza);
+    for (const lx of [-1, 1]) {
+      const oreja = pieza(new THREE.SphereGeometry(2, 14, 10), piedra, { borde: .05, flatShading: true }); oreja.scale.set(.45, 1, .9); oreja.position.set(lx * 5.9, 6, -4.4); g.add(oreja);
+      const dentro = pieza(new THREE.SphereGeometry(1.3, 12, 8), clara, { borde: 0, flatShading: true }); dentro.scale.set(.35, .9, .8); dentro.position.set(lx * 6.25, 6, -4); g.add(dentro);
+      const cuenca = pieza(new THREE.SphereGeometry(1.05, 12, 8), oscura, { borde: 0 }); cuenca.scale.set(1, .8, .5); cuenca.position.set(lx * 1.75, 7.6, -.35); g.add(cuenca);
+      const ojo = new THREE.Mesh(new THREE.SphereGeometry(.55, 12, 10), toon('#ffd04a', { emissive: '#ffb020', emissiveIntensity: 2 })); ojo.position.set(lx * 1.75, 7.6, -.05); g.add(ojo);
+    }
+    const ceja = pieza(new THREE.BoxGeometry(6.4, .9, 1.6), piedra, { borde: .05, flatShading: true }); ceja.position.set(0, 8.75, -.9); ceja.rotation.x = -.25; g.add(ceja);
+    // el hocico, con los agujeros de la nariz, encima de la boca
+    const hocico = pieza(new THREE.SphereGeometry(2.2, 16, 10), clara, { borde: .05, flatShading: true }); hocico.scale.set(1.5, .85, .75); hocico.position.set(0, 5.7, -.5); g.add(hocico);
+    for (const lx of [-.6, .6]) { const nariz = new THREE.Mesh(new THREE.SphereGeometry(.3, 8, 6), toon('#2a2a22')); nariz.scale.set(1, .7, .5); nariz.position.set(lx, 5.85, 1.1); g.add(nariz); }
+    // la boca abierta de par en par: labios de piedra alrededor de la puerta, y unos dientes
+    const labio = pieza(new THREE.TorusGeometry(1.75, .5, 8, 22), clara, { borde: .04, flatShading: true }); labio.scale.set(1.15, 1.3, 1); labio.position.set(0, 2.2, .1); g.add(labio);
+    const fondo = new THREE.Mesh(new THREE.CircleGeometry(1.75, 22), toon('#120c16', { emissive: '#2a1145', emissiveIntensity: .5 })); fondo.scale.set(1.15, 1.3, 1); fondo.position.set(0, 2.2, .05); g.add(fondo);
+    for (let k = 0; k < 6; k++) {
+      const x = (k - 2.5) * .5, arriba = pieza(new THREE.ConeGeometry(.2, .55, 5), '#e8e2cc', { borde: .02 });
+      arriba.rotation.x = Math.PI; arriba.position.set(x, 4.35 - Math.abs(x) * .25, .35); g.add(arriba);
+    }
+    const barbilla = pieza(new THREE.SphereGeometry(1.6, 12, 8), piedra, { borde: .04, flatShading: true }); barbilla.scale.set(1.7, .45, .9); barbilla.position.set(0, -.05, -.4); g.add(barbilla);
+    // musgo por encima y una enredadera colgando de la oreja
+    const azarM = (i) => (Math.sin(i * 91.7) * 4375.85) % 1;
+    for (let k = 0; k < 16; k++) { const a = Math.abs(azarM(k + 1)) * Math.PI, m = pieza(new THREE.SphereGeometry(.45 + Math.abs(azarM(k + 7)) * .4, 8, 6), k % 2 ? '#5a8a3a' : '#6a9a42', { borde: 0 }); m.position.set(Math.cos(a) * 5.3, 5.2 + Math.sin(a) * 4.7, -3 + Math.abs(azarM(k + 3)) * 1.5); g.add(m); }
+    for (let k = 0; k < 6; k++) { const hoja = pieza(new THREE.SphereGeometry(.28, 6, 5), '#4a7a30', { borde: 0 }); hoja.position.set(-5.7 + Math.sin(k) * .2, 4.6 - k * .7, -2.6); g.add(hoja); }
+    const luzOjos = new THREE.PointLight('#ffc04a', 10, 18, 1.4); luzOjos.position.set(0, 7.6, 2.5); g.add(luzOjos);
+    const luzBoca = new THREE.PointLight('#a77bff', 4, 7, 1.8); luzBoca.position.set(0, 1.6, 1.4); g.add(luzBoca);
+    anima.push((t) => { luzOjos.intensity = 9 + Math.sin(t * 2.2) * 2.5; luzBoca.intensity = 3.5 + Math.sin(t * 3.1) * 1; });
+    C.updateMatrixWorld(true);
+    const centro = C.localToWorld(new THREE.Vector3(0, 0, -4.4));
+    obstaculos.push({ x: centro.x, z: centro.z, r: 5.2 });
   }
 
   return { actualizar: (t) => { for (const f of anima) f(t); } };

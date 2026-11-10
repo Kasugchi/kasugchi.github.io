@@ -110,7 +110,7 @@ export const PARADAS = {
       niebla: [34, 160], sonido: 'isla', flores: ['#ff6a8a', '#ffd04a', '#ff9a3a'], hojas: ['#4aae58', '#3a9a4a', '#f0c060', '#e88a5a'], luzSol: '#ffd8a8', cielo: '#ffc8a0'
     },
     mapa: {
-      sitios: { hoguera: [10, -14], guarda: [12.5, -15.6], cartel: [-8, -20], estanque: [16, 10], cripta: [24, -4], colina: [31, -4] },
+      sitios: { hoguera: [10, -14], guarda: [12.5, -15.6], cartel: [-8, -20], estanque: [16, 10], cripta: [24, -4], colina: [37, -4] },
       criptaGiro: -Math.PI / 2,
       camino: [[-6, -31], [-4, -25], [-1, -19], [3, -14], [8, -10], [12, -7], [16, -5], [19, -4], [20, -4]],   // 9 puntos como mínimo (las farolas van entre ellos)
       bosque: 8, arboles: [],   // aquí mandan las palmeras (las pone decor-isla.js)
