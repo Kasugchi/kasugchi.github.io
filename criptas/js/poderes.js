@@ -35,6 +35,14 @@ export const LISTA = [
     { id: 'playa', ico: '🏖️', t: 'Todos a la playa', todos: 1 },
     { id: 'anuncio', ico: '📢', t: 'Anuncio a voces…', todos: 1, texto: 1 }
   ] },
+  { grupo: '🌦 El tiempo (para todos, 15 minutos)', items: [
+    { id: 'despejado', ico: '☀️', t: 'Despejar el cielo', todos: 1 },
+    { id: 'llovizna', ico: '🌦', t: 'Llovizna', todos: 1 },
+    { id: 'lluvia', ico: '🌧', t: 'Lluvia', todos: 1 },
+    { id: 'tormenta', ico: '⛈', t: 'Diluvio', todos: 1 },
+    { id: 'nieve', ico: '🌨', t: 'Nieve', todos: 1 },
+    { id: 'tiempoNormal', ico: '🔄', t: 'Que haga el tiempo que toque', todos: 1 }
+  ] },
   { grupo: '🪄 Solo para mí', items: [
     { id: 'vuelo', ico: '🪽', t: 'Volar', local: 1, alterna: 1 },
     { id: 'turbo', ico: '⚡', t: 'Súper velocidad', local: 1, alterna: 1 },
@@ -229,6 +237,13 @@ export function iniciarPoderes(C) {
   function ejecutar(id, arg, deId) {
     switch (id) {
       case 'limpiar': limpiar(deId === C.getR()?.yo.id || !C.getR()); break;
+      // el tiempo: manda sobre el del calendario durante 15 minutos (el pueblo lo aplica en ambiente())
+      case 'despejado': C.clima?.({ tipo: 'lluvia', p: 0 }); C.aviso('☀️ Se abren las nubes'); break;
+      case 'llovizna': C.clima?.({ tipo: 'lluvia', p: .4 }); C.aviso('🌦 Cae una llovizna'); break;
+      case 'lluvia': C.clima?.({ tipo: 'lluvia', p: .75 }); C.aviso('🌧 Se pone a llover'); break;
+      case 'tormenta': C.clima?.({ tipo: 'lluvia', p: 1 }); C.aviso('⛈ ¡Diluvia sobre Morrandar!'); break;
+      case 'nieve': C.clima?.({ tipo: 'nieve', p: .9 }); C.aviso('🌨 Empieza a nevar'); break;
+      case 'tiempoNormal': C.clima?.(null); C.aviso('🔄 El tiempo vuelve a ser el de siempre'); break;
       case 'patos': disfraz('pato', 25); C.aviso('🦆 ¡Cuac! Todos se han vuelto patos'); break;
       case 'ranas': lluvia('🐸', 40, 8, 1.1, () => nota(180, .08, 'square', .04, 260)); break;
       case 'quesos': lluvia('🧀', 40, 8, 1.1, () => nota(880, .06, 'sine', .04)); break;
@@ -254,8 +269,20 @@ export function iniciarPoderes(C) {
       case 'vuelo': case 'turbo': case 'coloso': case 'minimo': case 'saltarin': alternar(id); break;
     }
   }
+  // En el móvil no hay barra espaciadora: un botón para saltar mientras dure el modo saltarín
+  let botonSalto = null;
+  function ponerBotonSalto(si) {
+    if (!si) { botonSalto?.remove(); botonSalto = null; return; }
+    if (botonSalto || !matchMedia('(pointer: coarse)').matches) return;
+    const b = document.createElement('button'); b.textContent = '🦘'; b.setAttribute('aria-label', 'Saltar');
+    b.style.cssText = 'position:fixed;right:18px;bottom:calc(max(22px, env(safe-area-inset-bottom)) + 84px);width:64px;height:64px;border-radius:50%;border:0;background:#fff8e6;box-shadow:0 4px 0 #d9c49a;font-size:30px;z-index:15;touch-action:none';
+    const on = (v) => (e) => { e.preventDefault(); e.stopPropagation(); b.pulsado = v; };
+    b.addEventListener('pointerdown', on(true)); b.addEventListener('pointerup', on(false)); b.addEventListener('pointercancel', on(false)); b.addEventListener('pointerleave', on(false));
+    document.body.appendChild(b); botonSalto = b;
+  }
   function alternar(id) {
     estado[id] = estado[id] ? 0 : 1;
+    if (id === 'saltarin') ponerBotonSalto(!!estado.saltarin);
     if (id === 'coloso' && estado.coloso) estado.minimo = 0; if (id === 'minimo' && estado.minimo) estado.coloso = 0;
     P.vel = estado.turbo ? 2.6 : 1;
     C.aviso({ vuelo: estado.vuelo ? '🪽 ¡Vuelas!' : 'Vuelves al suelo', turbo: estado.turbo ? '⚡ Súper velocidad' : 'Velocidad normal', coloso: estado.coloso ? '👑 Eres enorme' : 'Tamaño normal', minimo: estado.minimo ? '🔬 Eres diminuto' : 'Tamaño normal', saltarin: estado.saltarin ? '🦘 ¡Salta con la barra!' : 'Se acabó el salto' }[id]);
@@ -285,7 +312,7 @@ export function iniciarPoderes(C) {
     // poderes personales
     const ch = J.ch;
     alt += ((estado.vuelo ? 3.2 + Math.sin(t * 2.2) * .35 : 0) - alt) * (1 - Math.exp(-4 * dt));
-    if (estado.saltarin) { if (saltoY <= 0 && C.teclas.has(' ')) saltoV = 7.2; saltoV -= 18 * dt; saltoY = Math.max(0, saltoY + saltoV * dt); if (saltoY === 0) saltoV = 0; } else { saltoY = 0; saltoV = 0; }
+    if (estado.saltarin) { if (saltoY <= 0 && (C.teclas.has(' ') || botonSalto?.pulsado)) saltoV = 7.2; saltoV -= 18 * dt; saltoY = Math.max(0, saltoY + saltoV * dt); if (saltoY === 0) saltoV = 0; } else { saltoY = 0; saltoV = 0; }
     if (!C.dentro() || alt > .05 || saltoY > 0) ch.position.y += alt + saltoY;
     const k = estado.coloso ? 2.8 : estado.minimo ? .4 : escalaGlobal;
     if (escalaGlobal !== 1 || escalaVista !== 1) for (const o of [...PNJ.map((p) => p.ch), ...[...otros.values()].map((a) => a.ch)]) if (o) o.scale.setScalar(escalaGlobal);
