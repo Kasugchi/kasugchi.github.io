@@ -48,6 +48,7 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
   // ---------- los demás ----------
   const aqui = (id, g) => id !== SALA?.yo.id && g.donde === 'cripta' && g.cripta === clave && g.online !== false;
   function juntar(gente) {
+    al.gente?.(gente);   // pelear juntos
     for (const [id, o] of [...OTROS]) if (!gente[id] || !aqui(id, gente[id])) { o.pj.grupo.removeFromParent(); ui.quitar(o.rot); OTROS.delete(id); }
     for (const [id, g] of Object.entries(gente)) {
       if (!aqui(id, g)) continue;
@@ -80,6 +81,7 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
   // Cada fotograma: se mueven suaves, ven lo que tienen delante (y tú con ellos) y tú mandas tu sitio
   J.actualizar = (dt, t) => {
     for (const o of OTROS.values()) {
+      if (o.pj.manejado) { o.pj.animar(dt, t); continue; }   // está dentro de mi pelea: lo mueve el combate
       const p = o.pj.grupo.position, dx = o.tx - p.x, dz = o.tz - p.z, d = Math.hypot(dx, dz);
       if (d > 8) { p.x = o.tx; p.z = o.tz; } else if (d > .05) { const v = Math.min(d, dt * 6.5); p.x += dx / d * v; p.z += dz / d * v; o.pj.mirarA(Math.atan2(dx, dz)); }
       o.pj.vel += ((d > .15 ? .75 : 0) - o.pj.vel) * Math.min(1, dt * 8); p.y = 0; o.pj.animar(dt, t);

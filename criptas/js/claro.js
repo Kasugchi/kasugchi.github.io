@@ -8,6 +8,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
+import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
 import { crearCalidad } from './calidad.js';
@@ -34,7 +35,7 @@ const params = new URLSearchParams(location.search);
 const PID = params.get('p') || 'claro', PAR = paradaDe(PID), TX = PAR.textos, GUIA = PAR.guia.nombre;
 document.title = PAR.nombre + ' · Criptas de Velmor';
 const DONDE = 'aventura-' + PID, OTROS = new Map();   // los de tu sala que están en esta misma parada
-let SALA = null;
+let SALA = null, PJ = null;   // la sala y pelear juntos (se montan más abajo)
 const CARGADA = Date.now(), BAJADAS_VISTAS = new Set();   // las invitaciones a bajar a la cripta
 let bajadaPendiente = null;
 
@@ -314,7 +315,7 @@ $('#accion').addEventListener('click', () => { if (H.cerca && !dlg.actual && !co
 const combate = crearCombate({ escena, mundo, ui, dados, sonido, camara: cam, hud, heroe, estado });
 async function empezarCombate(g) {
   H.destino = null; H.interaccion = null; heroe.vel = 0; H.bloqueado = true;   // nada de pasear (ni de volver a pisar el círculo) hasta que acabe todo
-  const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => ({ pj: m.pj, nombre: m.n, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }));
+  const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => ({ pj: m.pj, nombre: m.n, tipo: PAR.enemigo.tipo, jefe: !!m.jefe, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }));
   for (const m of g.miembros) m.pj.vel = 0;
   $('#hud').classList.add('combate');
   const { resultado, caidos } = await combate.empezar(grupo);
@@ -601,6 +602,7 @@ const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase
 }
 function pintarOtros(gente) {
   for (const [id, o] of [...OTROS]) if (!gente[id] || gente[id].donde !== DONDE || gente[id].online === false) { escena.remove(o.pj.grupo); ui.quitar(o.rot); OTROS.delete(id); }
+  PJ?.gente(gente);
   for (const [id, g] of Object.entries(gente)) {
     if (id !== SALA?.yo.id && g.baja) mirarBajadas(id, g);
     if (id === SALA?.yo.id || g.donde !== DONDE || g.online === false) continue;
@@ -618,11 +620,24 @@ function pintarOtros(gente) {
 function decirOtro(id, texto) { const o = OTROS.get(id); if (o) ui.numero(o.pj.grupo.position.clone().add(new THREE.Vector3(0, o.pj.altura + .8, 0)), String(texto).slice(0, 40), '#fff8e6'); }
 function moverOtros(dt, t) {
   for (const o of OTROS.values()) {
+    if (o.pj.manejado) { o.pj.animar(dt, t); continue; }   // está dentro de mi pelea: lo mueve el combate
     const p = o.pj.grupo.position, dx = o.tx - p.x, dz = o.tz - p.z, d = Math.hypot(dx, dz);
     if (d > 10) { p.x = o.tx; p.z = o.tz; } else if (d > .05) { const v = Math.min(d, dt * 6.5); p.x += dx / d * v; p.z += dz / d * v; o.pj.mirarA(Math.atan2(dx, dz)); }
     o.pj.vel += ((d > .15 ? .75 : 0) - o.pj.vel) * Math.min(1, dt * 8); p.y = mundo.alturaEn(p.x, p.z); o.pj.animar(dt, t);
   }
   if (SALA && !combate.activo) SALA.mover(H.pos.x, H.pos.z, +heroe.grupo.rotation.y.toFixed(2));
   ofrecerBajada();
+  PJ?.actualizar(dt, t);
 }
+// Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js)
+PJ = crearPeleaJuntos({ escena, ui, hud, combate, H, heroe: () => heroe, estado, def: () => DEF, sala: () => SALA, otros: () => OTROS, donde: () => DONDE,
+  fabricar: (t, jefe) => { const esc = jefe ? 1.25 : 1, ojo = PAR.enemigo.ojo; return t === 'zombi' ? crearZombi({ escala: esc, ojo }) : t === 'momia' ? crearMomia({ escala: esc, ojo }) : crearEsqueleto({ escala: esc, ojo, color: PAR.enemigo.color }); },
+  enemigosLocales: () => GRUPOS.filter((g) => g.vivo).flatMap((g) => g.miembros.map((m) => m.pj)),
+  alAcabar: async ({ fin, caidos, caiste }) => {
+    if (fin === 'victoria') {
+      const oro = caidos.length * 5; estado.oro += oro; estado.usos = estado.usosMax; hud.banner('¡Victoria en compañía!', 'heroe'); sonido.victoria();
+      ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'); await ganarExperiencia(caidos.length * 10);
+    } else if (caiste) hud.narrar('Te levantas a duras penas. La próxima, más cerca de tu compañero.');
+    hud.actualizar(); guardarAhora();
+  } });
 window.claro = { bajarCripta, OTROS, get SALA() { return SALA; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };

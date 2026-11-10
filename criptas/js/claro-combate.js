@@ -154,6 +154,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function morir(u) {
     u.vivo = false;
     if (u.heroe) { u.pj.caido = true; hud.narrar('Caes al suelo… La guardabosques tendrá que venir a por ti.'); sonido.derrota(); await espera(1400); return; }
+    if (u.remoto) { u.pj.caido = true; sonido.derrota(); hud.narrar(`¡${u.nombre} cae! Se levantará cuando acabe la pelea.`); await espera(900); return; }
     if (u.bando === 'aliado') { sonido.explosion(); ui.chispas(sobre(u, .8), '#ffb36a', 30, 4); escena.remove(u.pj.grupo); hud.narrar('¡La torreta salta en pedazos! Tendrás que montar otra.'); await espera(700); return; }
     sonido.huesos(); if (u.pj.desmontar) u.pj.desmontar(u.c.y); else { u.pj.caido = true; setTimeout(() => escena.remove(u.pj.grupo), 1600); } ui.chispas(sobre(u, .8), '#e7dcff', 16, 3); hud.narrar(una(FRASES.muereEsq)); u.rotulo && ui.quitar(u.rotulo); await espera(800);
   }
@@ -289,12 +290,29 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   }
 
   async function turnoAliado(a) {
+    if (a.remoto) return turnoCompanero(a);
     const objetivos = enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => distancia(a, x) - distancia(a, y));
     if (!objetivos.length) return;
     const e = objetivos[0]; camara.mirarHacia(a.pj.grupo.position);
     a.pj.mirarA(Math.atan2(e.pj.grupo.position.x - a.pj.grupo.position.x, e.pj.grupo.position.z - a.pj.grupo.position.z)); a.pj.hacer('golpe', .3);
     sonido.golpe(); await ui.proyectil(a.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(e, 1), '#7fe0ff', .35);
     await atacar(a, e, { gesto: null, distanciaA: true });
+  }
+  // El compañero de la sala (de momento juega solo): va a por el enemigo más cercano y le pega; el explorador dispara de lejos
+  async function turnoCompanero(a) {
+    if (!a.vivo || !enemigos().length) return;
+    camara.mirarHacia(a.pj.grupo.position);
+    const lejos = a.alcance > 1, aTiro = enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => x.cuerpo - y.cuerpo);
+    if (!aTiro.length || !lejos) {
+      const { dist, ruta } = caminos(a.c, 99, a);
+      let mejor = null, md = 1e9;
+      for (const e of enemigos()) for (const v of vecinos(e.c)) if ((dist.get(v) ?? 1e9) < md || v === a.c) { md = v === a.c ? 0 : dist.get(v); mejor = v; }
+      if (mejor && mejor !== a.c) { const r = ruta(mejor).slice(0, a.mover); if (r.length) await andar(a, r, .22); }
+    }
+    const blanco = lejos ? enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => x.cuerpo - y.cuerpo)[0] : enemigos().find((e) => pegados(a, e));
+    if (!blanco) return;
+    if (lejos && !pegados(a, blanco)) { a.pj.hacer('disparar', .5); await espera(300); await ui.proyectil(sobre(a, 1.2), sobre(blanco, 1.1), '#e8d0a0', .35); await atacar(a, blanco, { gesto: null, distanciaA: true }); }
+    else await atacar(a, blanco);
   }
   async function turnoEnemigo(e) {
     if (!e.vivo) return;
@@ -344,8 +362,10 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     C.activo = false; hud.acciones([]); dados.limpiar();
     const fin = resolver; resolver = null;
     tablero.cerrar = 0; sonido.musica('paseo');
-    for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
+    for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo && !u.remoto)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
+    for (const a of unidades.filter((u) => u.remoto)) { a.pj.caido = false; a.pj.manejado = false; }
     const muertos = unidades.filter((u) => u.bando === 'enemigo' && !u.vivo);
+    C.final = { id: C.idPelea, fin: res, caidos: muertos.map((u) => u.tipo || 'esqueleto'), ids: muertos.map((u) => u.id).filter((x) => x != null), companeros: unidades.filter((u) => u.remoto).map((u) => ({ uid: u.uid, c: Math.max(0, u.cuerpo), v: u.vivo })) };
     setTimeout(() => fin?.({ resultado: res, caidos: muertos.map((u) => u.nombre), caidosIds: muertos.map((u) => u.id) }), 600);
   }
 
@@ -353,7 +373,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; if (estado.racial?.id === 'rezo') estado.rezos = 1;   // un rezo por pelea (medido: con dos por cripta el trol quedaba el último)
+    resolver = fin; C.activo = true; C.idPelea = Math.random().toString(36).slice(2, 8); C.final = null; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; if (estado.racial?.id === 'rezo') estado.rezos = 1;   // un rezo por pelea (medido: con dos por cripta el trol quedaba el último)
     C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
@@ -370,6 +390,22 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     bucle();
   });
 
+  // ---------- jugar juntos (js/pelea-juntos.js) ----------
+  // Foto de la pelea para los demás de la sala: dónde está el círculo, quién hay y cómo va cada uno
+  C.instantanea = () => C.activo && tablero ? {
+    id: C.idPelea, cx: +tablero.cx.toFixed(2), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
+    u: unidades.map((u) => ({ id: u.id ?? null, n: u.nombre, b: u.bando, uid: u.uid || null, t: u.tipo || null, j: !!u.jefe, x: +u.pj.grupo.position.x.toFixed(2), z: +u.pj.grupo.position.z.toFixed(2), ry: +u.pj.grupo.rotation.y.toFixed(2), c: u.cuerpo, v: u.vivo }))
+  } : null;
+  // Alguien de la sala pisa el círculo: su héroe entra en el tablero (pj es su muñeco, el que ya se ve paseando)
+  C.unirRemoto = async ({ uid, nombre, pj, cuerpo, max, ataque, defensa, mover, alcance }) => {
+    if (!C.activo || unidades.some((u) => u.uid === uid)) return false;
+    pj.manejado = true; pj.caido = false;   // mientras dure, lo mueve el combate y no su posición de la sala
+    const u = { bando: 'aliado', remoto: true, uid, pj, nombre, cuerpo, max, ataque, defensa, mover: mover || 6, alcance: alcance || 1, vivo: cuerpo > 0 };
+    u.c = masCercana(pj.grupo.position.x, pj.grupo.position.z, u); if (!u.c) return false;
+    unidades.push(u); sonido.circulo(); ui.chispas(sobre(u, 1), '#c9a2ff', 30, 3);
+    hud.narrar(`¡${nombre} entra en el círculo! Peleará a tu lado.`); andar(u, [u.c], .3);
+    return true;
+  };
   // Para las pruebas: qué casillas están iluminadas y dónde está cada uno
   C.depurar = () => ({ casillas: [...alcanzables.keys()].map((c) => ({ x: c.x, z: c.z, tipo: alcanzables.get(c) })), unidades: unidades.map((u) => ({ n: u.nombre, vivo: u.vivo, x: u.c?.x, z: u.c?.z, cuerpo: u.cuerpo })) });
   C.forzarVictoria = () => { for (const u of unidades) if (u.bando === 'enemigo') u.vivo = false; terminar('victoria'); };

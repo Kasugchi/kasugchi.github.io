@@ -25,6 +25,7 @@ import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
 import { crearJuntos } from './cripta-juntos.js';
+import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA } from './menu-aventura.js';
 import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin, LOAS, REZOS_CRIPTA } from './claro-heroes.js';
@@ -160,7 +161,20 @@ const cam = {
 const combate = crearCombate({ escena, mundo: cripta, ui, dados, sonido, camara: cam, hud, heroe, estado });
 
 // ---------- jugar juntos: la misma cripta para todos los de la sala ----------
-let ganarLuego = false;
+let ganarLuego = false, PJ = null;
+// Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js); se monta tras J
+function montarPeleaJuntos() {
+  PJ = crearPeleaJuntos({ escena, ui, hud, combate, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
+    fabricar: (t, jefe) => modelo(t, jefe),
+    enemigosLocales: () => monstruos.filter((m) => m.vivo).map((m) => m.pj),
+    alAcabar: async ({ fin, caidos, ids }) => {
+      if (fin !== 'victoria') { hud.actualizar(); return; }
+      let xp = 0; for (const t of caidos) xp += XP_TIPO[t] || 10;
+      for (const id of ids) { const mo = monstruos.find((m) => m.id === id); if (mo && mo.vivo) { mo.vivo = false; mo.pj.grupo.visible = false; } }
+      const oro = caidos.length * 5; estado.oro += oro; estado.usos = estado.usosMax; hud.banner('¡Victoria en compañía!', 'heroe'); sonido.victoria();
+      ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'); await ganarExperiencia(xp); hud.actualizar(); guardarAhora();
+    } });
+}
 async function muertoFuera(id) {
   const mo = monstruos.find((m) => m.id === id); if (!mo || !mo.vivo) return;
   mo.vivo = false; if (mo.pj.desmontar && mo.visto) mo.pj.desmontar(0); else mo.pj.grupo.visible = false;
@@ -184,15 +198,17 @@ J = crearJuntos({ botonSala: bSala, escena, ui, cripta, clave: `${PID}|${SEMILLA
   flag: (f) => ponerFlag(f),
   pisa: (x, y) => { const r = TB.region(x, y); if (r !== '.') abrirRegion(r); },
   marca: (c) => MENU.marca(c),
+  gente: (g) => PJ?.gente(g),
   llega: (n) => { hud.narrar(`${n} está en la cripta contigo. Lo que abráis, tumbéis o encontréis vale para los dos.`); setTimeout(() => hud.narrar(''), 5000); }
 } });
+montarPeleaJuntos();
 
 async function empezarCombate(grupo) {
   H.destino = null; H.interaccion = null; H.bloqueado = true; heroe.vel = 0;
   for (const g of grupo) { g.alerta = true; g.pj.vel = 0; }
   J?.luchar(grupo.map((g) => g.id));
   $('#hud').classList.add('combate');
-  const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })));
+  const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, tipo: g.tipo, jefe: !!g.def?.jefe, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })));
   $('#hud').classList.remove('combate'); hud.narrar(''); CAM.modo = 'paseo';
   J?.luchar([]); for (const id of caidosIds) J?.anotar('m', id);
   let xp = 0;
@@ -444,7 +460,7 @@ function bucle() {
   cripta.actualizar(t, dt); heroe.animar(dt, t);
   for (const m of monstruos) { if (!m.pj.grupo.parent) continue; m.pj.animar(dt, t); if (m.vivo && m.alerta && !combate.activo) m.pj.mirarA(Math.atan2(H.pos.x - m.pj.grupo.position.x, H.pos.z - m.pj.grupo.position.z)); if (!m.visto && cripta.vista(...cripta.deMundo(m.pj.grupo.position))) m.visto = true; m.pj.grupo.visible = !!(m.visto || !m.vivo); if (m.rotulo) m.rotulo.visible = !!(m.vivo && m.visto); }
   linterna.position.copy(H.pos).add(new THREE.Vector3(0, 2.2, 0));
-  J.actualizar(dt, t); if (ganarLuego && !combate.activo && !H.bloqueado && !dlg.actual) { ganarLuego = false; ganar(); }
+  J.actualizar(dt, t); PJ?.actualizar(dt, t); if (ganarLuego && !combate.activo && !H.bloqueado && !dlg.actual) { ganarLuego = false; ganar(); }
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt); sonido.actualizar(99);
   if (composer) composer.render(); else render.render(escena, camara);
