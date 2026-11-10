@@ -14,6 +14,7 @@
 // =============================================================
 import * as THREE from 'three';
 import { toon } from './claro-estilo.js';
+import { crearTorreta } from './claro-personajes.js';
 
 export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe, estado, def, sala, otros, fabricar, enemigosLocales, donde, alAcabar }) {
   const P = {};
@@ -95,10 +96,10 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
     A.foto = f;
     const yo = sala()?.yo.id;
     f.u.forEach((u, k) => {
-      if (u.b === 'enemigo') {
+      if (u.b === 'enemigo' || (u.b === 'aliado' && !u.uid)) {   // los monstruos y las torretas (aliados sin dueño en la sala)
         const clave = u.id ?? 'k' + k;
         let pj = A.fantasmas.get(clave);
-        if (!pj) { pj = fabricar(u.t, u.j); pj.grupo.position.set(u.x, 0, u.z); escena.add(pj.grupo); A.fantasmas.set(clave, pj); }
+        if (!pj) { pj = u.b === 'aliado' ? crearTorreta() : fabricar(u.t, u.j); if (u.b === 'aliado') ui.chispas(new THREE.Vector3(u.x, H.pos.y + .8, u.z), '#ffd27a', 24, 3); pj.grupo.position.set(u.x, 0, u.z); escena.add(pj.grupo); A.fantasmas.set(clave, pj); }
         pj.objetivo = { x: u.x, z: u.z, ry: u.ry };
         gestos(pj, u);
         if (!u.v && !pj.muerto) {   // muere como en una pelea propia: se desmonta o se desploma y desaparece (nada de quedarse torcido)
