@@ -433,14 +433,38 @@ function moverHeroe(dt) {
     mov.normalize();
     const v = (corre ? 7.5 : 5) * l; H.pos.x += mov.x * v * dt; H.pos.z += mov.z * v * dt;
     heroe.mirarA(Math.atan2(mov.x, mov.z));
-    for (const o of mundo.obstaculos) { const dx = H.pos.x - o.x, dz = H.pos.z - o.z, d = Math.hypot(dx, dz), min = o.r + .45; if (d < min && d > 0) { H.pos.x = o.x + dx / d * min; H.pos.z = o.z + dz / d * min; } }
-    const r = Math.hypot(H.pos.x, H.pos.z); if (r > 50) { H.pos.x *= 50 / r; H.pos.z *= 50 / r; }
+    const tR = enRampa(H.pos.x, H.pos.z);
+    if (tR != null) H.pos.x = RAMPA.x + THREE.MathUtils.clamp(H.pos.x - RAMPA.x, -1.05, 1.05);   // en la pasarela, la barandilla hace de tope
+    else {
+      for (const o of mundo.obstaculos) { if (o.pasarela) continue; const dx = H.pos.x - o.x, dz = H.pos.z - o.z, d = Math.hypot(dx, dz), min = o.r + .45; if (d < min && d > 0) { H.pos.x = o.x + dx / d * min; H.pos.z = o.z + dz / d * min; } }
+      const r = Math.hypot(H.pos.x, H.pos.z); if (r > 50) { H.pos.x *= 50 / r; H.pos.z *= 50 / r; }
+    }
     H.pasoFase += v * dt; if (H.pasoFase > 1.4) { H.pasoFase = 0; sonido.paso(); }
   }
   heroe.vel += ((l > .05 ? (corre ? 1 : .75) * l : 0) - heroe.vel) * Math.min(1, dt * 10);
-  H.pos.y += (mundo.alturaEn(H.pos.x, H.pos.z) - H.pos.y) * Math.min(1, dt * 15);
+  const tR = enRampa(H.pos.x, H.pos.z);
+  H.pos.y += ((tR != null ? alturaRampa(tR) : mundo.alturaEn(H.pos.x, H.pos.z)) - H.pos.y) * Math.min(1, dt * 15);
+  if (tR != null && tR > .2 && !H.subiendo) subirAMorrandar();   // un cachito de pasarela y, si sigues, para arriba
   // ¿estás pisando el círculo de algún grupo de esqueletos?
   for (const g of GRUPOS) if (g.vivo && g.miembros.some((m) => !m.pj.restos && m.pj.grupo.position.distanceTo(H.pos) < 3.6)) { empezarCombate(g); break; }
+}
+// ---------- la pasarela de Morrandar se puede subir andando ----------
+// Baja en línea recta de (−6, 22.5, −66) al pie, en SITIOS.llegada, con una pequeña panza en medio (igual que se dibuja en claro-mundo.js)
+const RAMPA = { x: -6, zPie: SITIOS.llegada.z, zArriba: -66, yArriba: 22.5 };
+function enRampa(x, z) {
+  const t = (RAMPA.zPie - z) / (RAMPA.zPie - RAMPA.zArriba);
+  return Math.abs(x - RAMPA.x) < 1.3 && t > .02 && t < 1.02 ? Math.min(1, t) : null;
+}
+const alturaRampa = (t) => .15 + (RAMPA.yArriba - .15) * t - Math.sin(t * Math.PI) * 1.2 + .2;
+function subirAMorrandar() {
+  if (combate.activo) return;
+  H.subiendo = true; H.bloqueado = true; sonido.recoger?.();
+  guardarAhora(); guardarHeroe(DEF, true); $('#fundido').classList.add('ver');
+  const t0 = performance.now(), z0 = H.pos.z;
+  (function andarSolo() {   // sigue subiendo él solo mientras se funde a negro
+    const k = Math.min(1, (performance.now() - t0) / 900); H.pos.z = z0 - k * 4; H.pos.y = alturaRampa(enRampa(H.pos.x, H.pos.z) ?? .3); heroe.vel = .75; heroe.mirarA(Math.PI);
+    if (k < 1) requestAnimationFrame(andarSolo); else location.href = 'pueblo.html?desde=escala';
+  })();
 }
 function rondaEsqueletos(dt) {
   if (combate.activo) return;
