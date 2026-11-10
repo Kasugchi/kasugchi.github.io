@@ -255,6 +255,13 @@
 <meta name="theme-color" content="#1f1611">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
 <link rel="manifest" href="manifest.webmanifest">
+<script>
+  // Fuera de la web de verdad (pruebas, ramas, local) la app se instala con otro nombre e icono, para no confundirlas
+  if (!/^(lab\.crove\.cc|kasugchi\.github\.io)$/.test(location.hostname)) {
+    document.querySelector('link[rel="manifest"]').href = 'manifest-pruebas.webmanifest';
+    document.querySelector('link[rel="icon"]').href = 'icono-pruebas.svg';
+  }
+</script>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">

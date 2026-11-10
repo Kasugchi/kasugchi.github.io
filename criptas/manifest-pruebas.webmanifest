@@ -1,0 +1,10 @@
+{
+  "name": "Criptas (pruebas)",
+  "short_name": "Criptas 🧪",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "background_color": "#12302c",
+  "theme_color": "#12302c",
+  "icons": [{ "src": "icono-pruebas.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

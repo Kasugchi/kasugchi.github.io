@@ -9,6 +9,13 @@
 <title>Criptas · La cripta de los huesos (prototipo)</title>
 <meta name="robots" content="noindex">
 <link rel="icon" href="icono.svg" type="image/svg+xml">
+<script>
+  // Fuera de la web de verdad (pruebas, ramas, local) la app se instala con otro nombre e icono, para no confundirlas
+  if (!/^(lab\.crove\.cc|kasugchi\.github\.io)$/.test(location.hostname)) {
+    document.querySelector('link[rel="manifest"]').href = 'manifest-pruebas.webmanifest';
+    document.querySelector('link[rel="icon"]').href = 'icono-pruebas.svg';
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
 <script type="importmap" id="versiones">
