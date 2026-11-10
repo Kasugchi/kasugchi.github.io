@@ -52,7 +52,7 @@ export const LUGARES = { pueblo: '🏘 en el pueblo', tortuga: '🐢 en Morranda
 // Recuerda en este dispositivo si se prefiere la tortuga o la pantalla ligera.
 export const vistaPreferida = () => leer('criptas_vistaReunion', '');
 export const ponerVista = (v) => guardar('criptas_vistaReunion', v);
-export const paginaDeVista = (v) => (v === 'ligera' ? 'reunion.html' : 'tortuga.html');
+export const paginaDeVista = (v) => (v === 'ligera' ? 'reunion.html' : 'pueblo.html');
 // La reunión en la que está esta pestaña (para volver a ella tras la partida).
 export const reunionActual = () => leerS('criptas_reunion');
 export const olvidarReunion = () => guardarS('criptas_reunion', null);

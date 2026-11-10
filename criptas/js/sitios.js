@@ -51,7 +51,6 @@ function pintar(caja, h) {
   caja.innerHTML = `<h2>Morrandar y sus paradas</h2>${heroe}
     <div class="sitios">
       ${tarjeta({ ico: '🏘', titulo: 'El pueblo de Morrandar', sub: 'Casas, vecinos, la cantina con su gramola, la forja y la oficina de encargos.', href: 'pueblo.html', clase: 'grande' })}
-      ${tarjeta({ ico: '🐢', titulo: 'Morrandar', sub: 'La tortuga gigante por fuera: tu base y el mapa del mundo.', href: 'tortuga.html?elegir' })}
     </div>
     <div class="grupo">Paradas (modo aventura)</div>
     <div class="sitios">${paradas}</div>
