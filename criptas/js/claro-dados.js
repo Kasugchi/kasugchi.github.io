@@ -58,11 +58,14 @@ export function crearDados(escena, { alSonar, escala: E = 1 } = {}) {   // escal
 
   return {
     // Tira n dados alrededor de «centro». Devuelve los resultados cuando han parado.
-    tirar(tipo, n, centro, desde) {
+    // «forzado»: las caras que tienen que salir (para repetir en otra pantalla la tirada de un compañero)
+    tirar(tipo, n, centro, desde, forzado = null) {
       this.limpiar();
       const res = [], anims = [];
       for (let k = 0; k < n; k++) {
-        const m = dado(tipo), caras = m.userData.caras, i = Math.floor(Math.random() * 6);
+        const m = dado(tipo), caras = m.userData.caras;
+        let i = Math.floor(Math.random() * 6);
+        if (forzado?.[k] != null) { const j = caras.indexOf(forzado[k]); if (j >= 0) i = j; }
         res.push(caras[i]);
         const lado = (k - (n - 1) / 2) * .75 * E, destino = centro.clone().add(new THREE.Vector3(lado, .25 * E, (Math.random() - .5) * .4));
         const origen = (desde || centro.clone().add(new THREE.Vector3(0, 0, 4))).clone().add(new THREE.Vector3(lado * .5, 2.2 + Math.random() * .5, 0));
@@ -70,6 +73,7 @@ export function crearDados(escena, { alSonar, escala: E = 1 } = {}) {   // escal
         anims.push({ m, origen, destino, fin: giroFinal(i), w: new THREE.Vector3((Math.random() - .5) * 26, (Math.random() - .5) * 18, (Math.random() - .5) * 26), t: -k * .07, dur: 1.05 + Math.random() * .2, botes: new Set() });
       }
       enJuego = anims;
+      this.alTirar?.({ tipo, res, centro, desde });   // pelear juntos: los demás ven la misma tirada
       return new Promise((listo) => { this._listo = () => listo(res); });
     },
     limpiar() { for (const a of enJuego) escena.remove(a.m); enJuego = []; },

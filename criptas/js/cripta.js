@@ -164,7 +164,7 @@ const combate = crearCombate({ escena, mundo: cripta, ui, dados, sonido, camara:
 let ganarLuego = false, PJ = null;
 // Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js); se monta tras J
 function montarPeleaJuntos() {
-  PJ = crearPeleaJuntos({ escena, ui, hud, combate, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
+  PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
     fabricar: (t, jefe) => modelo(t, jefe),
     enemigosLocales: () => monstruos.filter((m) => m.vivo).map((m) => m.pj),
     alAcabar: async ({ fin, caidos, ids }) => {

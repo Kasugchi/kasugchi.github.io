@@ -633,7 +633,7 @@ function moverOtros(dt, t) {
   PJ?.actualizar(dt, t);
 }
 // Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js)
-PJ = crearPeleaJuntos({ escena, ui, hud, combate, H, heroe: () => heroe, estado, def: () => DEF, sala: () => SALA, otros: () => OTROS, donde: () => DONDE,
+PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, H, heroe: () => heroe, estado, def: () => DEF, sala: () => SALA, otros: () => OTROS, donde: () => DONDE,
   fabricar: (t, jefe) => { const esc = jefe ? 1.25 : 1, ojo = PAR.enemigo.ojo; return t === 'zombi' ? crearZombi({ escala: esc, ojo }) : t === 'momia' ? crearMomia({ escala: esc, ojo }) : crearEsqueleto({ escala: esc, ojo, color: PAR.enemigo.color }); },
   enemigosLocales: () => GRUPOS.filter((g) => g.vivo).flatMap((g) => g.miembros.map((m) => m.pj)),
   alAcabar: async ({ fin, caidos, caiste }) => {
