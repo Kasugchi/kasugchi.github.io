@@ -70,7 +70,7 @@ let DEF = leerLocal(), nuevo = !DEF;
 if (!DEF) DEF = heroeAlAzar();
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def);
-  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, regenera: s.regenera, racial: s.racial, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, oroExtra: s.oroExtra, racial: s.racial, rezos: 1, loa: def.loa || 'tigre', hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 function guardarAhora() {
   DEF.oro = estado.oro; DEF.pociones = estado.pociones;
@@ -320,7 +320,7 @@ async function empezarCombate(g) {
   CAM.modo = 'paseo'; CAM.yawObj = null;
   if (resultado === 'victoria') {
     g.vivo = false; hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
-    const oro = g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0); estado.oro += oro; estado.usos = estado.usosMax;
+    const oro = Math.round((g.miembros.length * 5 + (g.miembros.some((m) => m.jefe) ? 10 : 0)) * (1 + (estado.oroExtra || 0))); estado.oro += oro; estado.usos = estado.usosMax; estado.rezos = 1;   // fuera de las criptas, un rezo por pelea
     ui.monedas(H.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), 8); setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
     if (GRUPOS.every((x) => !x.vivo) && estado.mision === 'activa' && !marcaBrezo) marcaBrezo = ui.marcador(brezo.grupo, '?', 3.55);
     const botin = {}; for (const m of g.miembros) for (const [k, n] of Object.entries(botinDe(PAR.enemigo.tipo, m.jefe))) botin[k] = (botin[k] || 0) + n;   // huesos para la forja de Morrandar

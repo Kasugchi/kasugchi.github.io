@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { toon, lienzo } from './claro-estilo.js';
 import { crearTorreta } from './claro-personajes.js';
+import { LOAS } from './claro-heroes.js';
 
 const T = 1.3, N = 9, MEDIO = (N - 1) / 2;    // tamaño de casilla y del tablero (9×9)
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -122,7 +123,8 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
 
   // ---------- ataque y defensa ----------
   async function atacar(a, d, { dados: nDados = a.ataque, gesto = 'golpe', distanciaA = false } = {}) {
-    if (a.heroe && C.rezo > 0) nDados += 2;                       // rezo vudú del trol
+    const loa = C.rezo > 0 ? estado.loa : null;                    // la bendición del loa del trol, si está rezando
+    if (a.heroe && loa) nDados += loa === 'tigre' ? 2 : loa === 'raptor' ? 1 : 0;
     mirarse(a, d); if (!distanciaA) mirarse(d, a);
     if (gesto) await a.pj.hacer(gesto, gesto === 'brutal' ? .8 : .55);
     const mesa = mesaDados(a, d);
@@ -131,10 +133,12 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!golpes) { hud.narrar(una(a.bando === 'enemigo' ? FRASES.falloEsq : FRASES.falloHeroe)); await espera(700); return; }
     hud.narrar(`¡${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}! ${d.heroe ? 'Te defiendes' : d.nombre + ' se defiende'}…`);
     await espera(450);
-    const r2 = await dados.tirar('combate', d.defensa + (d.heroe && C.rezo > 0 ? 1 : 0), mesa.centro, mesa.desde), escudo = nuestro(d) ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
+    const r2 = await dados.tirar('combate', d.defensa + (d.heroe && C.rezo > 0 && estado.loa === 'rana' ? 1 : 0), mesa.centro, mesa.desde), escudo = nuestro(d) ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
     const dano = Math.max(0, golpes - paradas);
     if (!dano) { sonido.bloqueo(); ui.numero(sobre(d, d.pj.altura), '¡Parado!', '#cfe8ff'); hud.narrar(`${d.heroe ? 'Lo paras' : d.nombre + ' lo para'} todo con ${paradas === 1 ? 'un escudo' : 'los escudos'}.`); await espera(600); return; }
     await herir(d, dano);
+    if (a.heroe && loa === 'tigre' && d.vivo) d.sangra = 1;                                   // tigre: sangra al turno siguiente
+    if (a.heroe && loa === 'muerte' && a.cuerpo < estado.max) { a.cuerpo++; estado.cuerpo = a.cuerpo; hud.actualizar(); ui.numero(sobre(a, a.pj.altura), '+1 💀', '#b8ffb0'); }
   }
   async function herir(d, dano) {
     if (d.heroe && estado.escamas && !C.escamasUsadas) {            // rasgo de los escamados
@@ -166,7 +170,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       { id: 'mover', texto: 'Moverse', corto: 'Mover', icono: '🎲', activo: !t.movido && !modoEleccion },
       { id: 'atacar', texto: 'Atacar', icono: '⚔️', activo: !t.actuado && hayPegado && !modoEleccion },
       { id: 'habilidad', texto: `${hab.nombre} (${estado.usos})`, corto: `${hab.nombre.split(' ')[0]} (${estado.usos})`, icono: hab.icono, activo: puedeHab },
-      estado.racial && { id: 'racial', texto: estado.racial.nombre, corto: estado.racial.nombre.replace(/[¡!]/g, '').split(' ')[0], icono: estado.racial.icono, activo: !C.racialUsada && !modoEleccion && (estado.racial.id !== 'aliento' || hayPegado) },
+      estado.racial && { id: 'racial', texto: estado.racial.id === 'rezo' ? `Rezo (${estado.rezos})` : estado.racial.nombre, corto: estado.racial.id === 'rezo' ? `Rezo (${estado.rezos})` : estado.racial.nombre.replace(/[¡!]/g, '').split(' ')[0], icono: estado.racial.icono, activo: (estado.racial.id === 'rezo' ? estado.rezos > 0 && !(C.rezo > 0) : !C.racialUsada) && !modoEleccion && (estado.racial.id !== 'aliento' || hayPegado) },
       { id: 'pocion', texto: `Poción (${estado.pociones})`, icono: '🧪', activo: !t.actuado && estado.pociones > 0 && estado.cuerpo < estado.max && !modoEleccion },
       { id: 'fin', texto: modoEleccion ? 'Cancelar' : 'Terminar turno', corto: modoEleccion ? 'Cancelar' : 'Pasar', icono: modoEleccion ? '✖' : '⏭', activo: true }
     ].filter(Boolean), elegirAccion);
@@ -177,7 +181,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (id === 'mover') {
       hud.acciones([]); t.movido = true; hud.narrar('Tiras los dados de movimiento…');
       const pos = h.pj.grupo.position, r = await dados.tirar('mover', 2, pos.clone().add(camara.position.clone().sub(pos).setY(0).normalize().multiplyScalar(1.8)));
-      const pasos = r[0] + r[1] + estado.pasosExtra;
+      const pasos = r[0] + r[1] + estado.pasosExtra + (C.rezo > 0 && estado.loa === 'raptor' ? 3 : 0);
       hud.narrar(`¡${pasos} casillas!${estado.pasosExtra ? ' (Pies ligeros: +' + estado.pasosExtra + ')' : ''} Toca dónde quieres ir.`);
       const cm = caminos(h.c, pasos, h); alcanzables = new Map([...cm.dist.keys()].filter((c) => c !== h.c).map((c) => [c, 'mover']));
       modoEleccion = { tipo: 'mover', caminos: cm }; pintar(); return accionesHeroe();
@@ -196,12 +200,16 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       modoEleccion = { tipo: hab.id }; pintar(); return accionesHeroe();
     }
     if (id === 'racial') {   // la racial de cada raza: una vez por pelea y sin gastar acción
-      if (C.racialUsada) return accionesHeroe();
-      const R = estado.racial; hud.acciones([]); C.racialUsada = true;
+      const R = estado.racial;
+      if (R.id === 'rezo' ? !(estado.rezos > 0) || C.rezo > 0 : C.racialUsada) return accionesHeroe();
+      hud.acciones([]); if (R.id === 'rezo') estado.rezos--; else C.racialUsada = true;
       const cartel = (txt, col) => ui.numero(sobre(h, h.pj.altura + .3), txt, col);
       if (R.id === 'rezo') {
-        C.rezo = 2; sonido.hechizo(); await h.pj.hacer('celebrar', .9); ui.chispas(sobre(h, 1.2), '#c08aff', 40, 4); ui.chispas(sobre(h, .4), '#7dffa0', 20, 3);
-        cartel('¡Rezo vudú! +2 ⚔️ +1 🛡️', '#d8b0ff'); hud.narrar('Invocas a tus loas con un baile muy serio. Durante dos turnos pegas con dos dados más y paras con uno más.');
+        const L = LOAS[estado.loa] || LOAS.tigre; C.rezo = 2;
+        sonido.hechizo(); await h.pj.hacer('celebrar', .9); ui.chispas(sobre(h, 1.2), '#c08aff', 40, 4); ui.chispas(sobre(h, .4), '#7dffa0', 20, 3);
+        if (estado.loa === 'rana') { const cura = Math.min(3, estado.max - h.cuerpo); h.cuerpo += cura; estado.cuerpo = h.cuerpo; if (cura) ui.numero(sobre(h, h.pj.altura - .3), `+${cura}`, '#7dffa0'); }
+        hud.actualizar(); cartel(`${L.icono} ${L.nombre}`, '#d8b0ff');
+        hud.narrar(`Bailas para ${L.nombre.replace('Loa', 'el loa')}. Durante dos turnos: ${L.texto.replace(/^El de curarse: /, '')} (Te quedan ${estado.rezos} rezos.)`);
       } else if (R.id === 'aporellos') {
         if (t.actuado) t.actuado = false; else C.accionExtra = true;   // si ya habías actuado, recuperas la acción; si no, tendrás dos
         sonido.victoria(); await h.pj.hacer('celebrar', .7); ui.chispas(sobre(h, 1.2), '#ffd34a', 30, 3.5);
@@ -316,13 +324,9 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     while (C.activo) {
       hud.banner('Tu turno', 'heroe'); camara.mirarHacia(unidades[0].pj.grupo.position);
       if (C.rezo > 0) C.rezo--;                                        // el rezo se va gastando
+      for (const u of enemigos()) if (u.sangra) { u.sangra = 0; ui.numero(sobre(u, u.pj.altura + .4), 'Sangra', '#ff6a6a'); await herir(u, 1); }
+      if (await comprobarFin()) return;
       if (C.piedra > 0 && --C.piedra === 0) unidades[0].pj.grupo.traverse((o) => { if (o.userData.colorPiedra) { o.material.color.copy(o.userData.colorPiedra); delete o.userData.colorPiedra; } });
-      // rasgo de los troles: se regeneran al empezar su turno (hasta 3 veces por pelea)
-      const yo = unidades[0];
-      if (estado.regenera && yo.vivo && yo.cuerpo < estado.max && (C.regenerado || 0) < estado.regenera) {
-        C.regenerado = (C.regenerado || 0) + 1; yo.cuerpo++; estado.cuerpo = yo.cuerpo; hud.actualizar();
-        ui.numero(sobre(yo, yo.pj.altura), '+1 Regeneración', '#7dffa0'); ui.chispas(sobre(yo, 1), '#8affb0', 14, 2); await espera(500);
-      }
       await new Promise((fin) => { turnoHeroe = { movido: false, actuado: false, fin }; hud.narrar('Muévete, ataca o usa tu habilidad. En el orden que quieras.'); accionesHeroe(); });
       hud.acciones([]); modoEleccion = null; alcanzables.clear(); pintar();
       if (!C.activo || await comprobarFin()) return;
@@ -345,7 +349,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; C.escamasUsadas = false; C.regenerado = 0; C.rezo = 0; C.racialUsada = false; C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
+    resolver = fin; C.activo = true; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);

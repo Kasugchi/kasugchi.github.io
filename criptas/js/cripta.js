@@ -26,7 +26,7 @@ import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA } from './menu-aventura.js';
-import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin, LOAS, REZOS_CRIPTA } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -85,7 +85,7 @@ let DEF = leerLocal() || { ...heroeAlAzar(), nombre: 'Viajero' };
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, pociones: 1, usos: 2, mision: 'cripta' };
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def, true);
-  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, regenera: s.regenera, racial: s.racial, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, oroExtra: s.oroExtra, racial: s.racial, rezos: REZOS_CRIPTA, loa: def.loa || 'tigre', hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 aplicarHeroe(DEF);
 const heroe = crearHeroe(DEF); escena.add(heroe.grupo);
@@ -195,7 +195,7 @@ async function empezarCombate(grupo) {
   for (const g of grupo) { const u = monstruos.find((m) => m.id === g.id); if (u?.vivo) { u.def.x = cripta.deMundo(u.pj.grupo.position)[0]; u.def.y = cripta.deMundo(u.pj.grupo.position)[1]; } }
   if (resultado === 'derrota') return expulsado();
   hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
-  const oro = caidosIds.length * 5; estado.oro += oro; estado.usos = estado.usosMax;
+  const oro = Math.round(caidosIds.length * 5 * (1 + (estado.oroExtra || 0))); estado.oro += oro; estado.usos = estado.usosMax;
   // respiras hondo: +1 de cuerpo tras cada pelea ganada (yendo solo, sin esto la cripta se gana a base de suerte)
   if (estado.cuerpo < estado.max) { estado.cuerpo++; setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), '+1 ❤ Respiras hondo', '#ff9aa8'), 1600); }
   setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.1, 0)), `+${oro} oro`, '#ffd34a'), 500);
@@ -446,8 +446,16 @@ function bucle() {
 hud.actualizar(); bucle();
 $('#hud').classList.add('ver');
 $('#fundido').classList.add('ver'); setTimeout(() => $('#fundido').classList.remove('ver'), 100);
+// El trol, antes de meterse en faena, elige a qué loa le reza (vale para toda la cripta)
+async function elegirLoa() {
+  await hablar('Rezo vudú', [`Antes de adentrarte, te arrodillas y trazas un círculo en el polvo. ¿A qué loa le pides que te acompañe? Podrás pedir su bendición ${REZOS_CRIPTA} veces aquí abajo.`],
+    Object.entries(LOAS).map(([id, l]) => [`${l.icono} ${l.nombre}${DEF.loa === id ? ' (el de la otra vez)' : ''}: ${l.texto}`, () => { DEF.loa = id; estado.loa = id; }]), { grave: .8 });
+  const l = LOAS[estado.loa]; if (l) { ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), `${l.icono} ${l.nombre}`, '#d8b0ff'); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1, 0)), '#c08aff', 30, 3); sonido.hechizo(); }
+  guardarAhora(); hud.actualizar();
+}
 setTimeout(async () => {
   await hablar(mision.titulo, ['Bajas los escalones y el aire se vuelve frío. Huele a tiempo, a cera y a huesos que no se están quietos.', mision.objetivo?.texto || 'Explora la cripta.', ...(DEF.comida ? [`Aún te dura la comida de Marga (${DEF.comida.n}): ${EFECTOS_CRIPTA[DEF.comida.efecto]?.replace('En tu próxima cripta: ', '') || ''}`] : [])], [], { grave: .9 });
+  if (estado.racial?.id === 'rezo') await elegirLoa();
   H.bloqueado = false;
 }, 900);
 lienzo.addEventListener('pointerdown', () => sonido.arrancar(), { once: true });
