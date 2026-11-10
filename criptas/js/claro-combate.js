@@ -298,8 +298,35 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     sonido.golpe(); await ui.proyectil(a.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(e, 1), '#7fe0ff', .35);
     await atacar(a, e, { gesto: null, distanciaA: true });
   }
-  // El compañero de la sala (de momento juega solo): va a por el enemigo más cercano y le pega; el explorador dispara de lejos
+  // El compañero de la sala lleva a su héroe a mano: la foto de la pelea le dice qué casillas y blancos tiene
+  // y aquí se espera su orden (de su ficha de la sala, «orden»). Si no contesta en un rato, juega solo.
+  let esperaRemota = null, nEspera = 0;
+  C.ordenRemota = (uid, o) => { if (esperaRemota?.uid === uid && o?.n === esperaRemota.n) esperaRemota.resolver(o); };
+  function pedirOrden(a, fase, opciones, ms = 60000) {
+    return new Promise((res) => {
+      const fin = (o) => { clearTimeout(to); esperaRemota = null; res(o); }, to = setTimeout(() => fin(null), ms);
+      esperaRemota = { uid: a.uid, n: ++nEspera, fase, ...opciones, resolver: fin };
+    });
+  }
+  const cercana = (lista, x, z) => { let c = null, d = 1e9; for (const k of lista) { const e = Math.hypot(k.x - x, k.z - z); if (e < d) { d = e; c = k; } } return d < T ? c : null; };
   async function turnoCompanero(a) {
+    if (!a.vivo || !enemigos().length) return;
+    camara.mirarHacia(a.pj.grupo.position); hud.narrar(`Turno de ${a.nombre}: está pensando…`);
+    const cm = caminos(a.c, a.mover, a), celdas = [...cm.dist.keys()].filter((c) => c !== a.c);
+    let o = await pedirOrden(a, 'mover', { celdas });
+    if (!o) return turnoCompaneroSolo(a);   // se ha dormido o se ha caído la conexión
+    if (o.tipo === 'mover') { const c = cercana(celdas, o.x, o.z); if (c) await andar(a, cm.ruta(c), .24); }
+    if (!a.vivo || !enemigos().length) return;
+    const lejos = a.alcance > 1, blancos = enemigos().filter((e) => (lejos ? distancia(a, e) <= a.alcance : pegados(a, e)));
+    if (!blancos.length) return;
+    o = await pedirOrden(a, 'atacar', { blancos }, 40000);
+    const b = o?.tipo === 'atacar' ? blancos[o.k] : null;
+    if (!b?.vivo) return;
+    if (lejos && !pegados(a, b)) { a.pj.hacer('disparar', .5); await espera(300); await ui.proyectil(sobre(a, 1.2), sobre(b, 1.1), '#e8d0a0', .35); await atacar(a, b, { gesto: null, distanciaA: true }); }
+    else await atacar(a, b);
+  }
+  // Si el compañero no contesta: va a por el enemigo más cercano y le pega; el explorador dispara de lejos
+  async function turnoCompaneroSolo(a) {
     if (!a.vivo || !enemigos().length) return;
     camara.mirarHacia(a.pj.grupo.position);
     const lejos = a.alcance > 1, aTiro = enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => x.cuerpo - y.cuerpo);
@@ -394,7 +421,11 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // Foto de la pelea para los demás de la sala: dónde está el círculo, quién hay y cómo va cada uno
   C.instantanea = () => C.activo && tablero ? {
     id: C.idPelea, cx: +tablero.cx.toFixed(2), cz: +tablero.cz.toFixed(2), r: tablero.externo ? 6 : MEDIO * T + 1.5,
-    u: unidades.map((u) => ({ id: u.id ?? null, n: u.nombre, b: u.bando, uid: u.uid || null, t: u.tipo || null, j: !!u.jefe, x: +u.pj.grupo.position.x.toFixed(2), z: +u.pj.grupo.position.z.toFixed(2), ry: +u.pj.grupo.rotation.y.toFixed(2), c: u.cuerpo, v: u.vivo }))
+    u: unidades.map((u) => ({ id: u.id ?? null, n: u.nombre, b: u.bando, uid: u.uid || null, t: u.tipo || null, j: !!u.jefe, x: +u.pj.grupo.position.x.toFixed(2), z: +u.pj.grupo.position.z.toFixed(2), ry: +u.pj.grupo.rotation.y.toFixed(2), c: u.cuerpo, v: u.vivo })),
+    // si un compañero está decidiendo: qué puede hacer (casillas a las que llega, o a quién puede pegar)
+    turno: esperaRemota ? { uid: esperaRemota.uid, n: esperaRemota.n, fase: esperaRemota.fase, y: +(tablero.y0 || 0).toFixed(2),
+      celdas: (esperaRemota.celdas || []).map((c) => [+c.x.toFixed(2), +c.z.toFixed(2)]),
+      blancos: (esperaRemota.blancos || []).map((e) => ({ n: e.nombre, c: e.cuerpo })) } : null
   } : null;
   // Alguien de la sala pisa el círculo: su héroe entra en el tablero (pj es su muñeco, el que ya se ve paseando)
   C.unirRemoto = async ({ uid, nombre, pj, cuerpo, max, ataque, defensa, mover, alcance }) => {

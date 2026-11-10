@@ -273,6 +273,7 @@ function lanzar(x, y) { pt.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 
 function tocarEn(x, y) {
   lanzar(x, y);
   if (combate.activo) { const s = ray.intersectObject(suelo)[0]; return combate.tocar(s?.point); }
+  if (PJ?.dentro()) { const s = ray.intersectObject(suelo)[0]; return PJ.tocar(s?.point); }
   if (H.bloqueado || dlg.actual) return;
   // ¿Has tocado algo con lo que se puede interactuar?
   let mejor = null, md = 1e9;
@@ -642,4 +643,4 @@ PJ = crearPeleaJuntos({ escena, ui, hud, combate, H, heroe: () => heroe, estado,
     } else if (caiste) hud.narrar('Te levantas a duras penas. La próxima, más cerca de tu compañero.');
     hud.actualizar(); guardarAhora();
   } });
-window.claro = { bajarCripta, OTROS, get SALA() { return SALA; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };
+window.claro = { bajarCripta, OTROS, get SALA() { return SALA; }, get PJ() { return PJ; }, escena, estado, H, CAM, GRUPOS, combate, interactivos, empezarCombate, interactuar, hud, camara, get heroe() { return heroe; }, get def() { return DEF; }, ponerHeroe, aplicarHeroe, ganarExperiencia, abrirCreador };

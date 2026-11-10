@@ -384,6 +384,7 @@ function puntoSuelo(x, y) { pt.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 
 function tocarEn(x, y) {
   const p = puntoSuelo(x, y); if (!p) return;
   if (combate.activo) return combate.tocar(p);
+  if (PJ?.dentro()) return PJ.tocar(p);
   if (H.bloqueado || dlg.actual) return;
   // ¿una puerta?
   for (const q of cripta.puertas) if (!q.abierta && q.centro && Math.hypot(q.centro.x - p.x, q.centro.z - p.z) < .9) { H.destino = q.centro.clone(); H.interaccion = q; return; }

@@ -8,8 +8,9 @@
 //  Manda la pelea el móvil del que la empezó (los dados, los monstruos):
 //  publica una foto de la pelea en su ficha de la sala («pelea») y los que
 //  entran dejan dicho en la suya «unirse» y sus números («pjPelea»).
-//  De momento el compañero pelea solo (se acerca y pega); el control a mano
-//  llegará en la siguiente tanda.
+//  En su turno, el compañero lleva a su héroe a mano: la foto trae sus casillas
+//  y blancos («turno»), él toca dónde va y a quién pega, y lo deja en «orden».
+//  Si no contesta en un minuto, su héroe juega solo.
 // =============================================================
 import * as THREE from 'three';
 
@@ -21,6 +22,8 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
   const ajenas = new Map();
   let dentro = null;               // { de, id } si estoy metido en la pelea de otro
   let pedida = null;               // { id, t } si he pisado un anillo y espero a entrar
+  const ordenes = new Map();       // la última orden que he hecho caso de cada compañero (si la pelea es mía)
+  let miTurno = null;              // { clave, fase, celdas, marcas } si me toca decidir en la pelea de otro
 
   // ---------- si la pelea es mía: publicar la foto y meter a los que pisan ----------
   function publicar(dt) {
@@ -41,6 +44,11 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
   function mirarQuienEntra(gente) {
     if (!combate.activo || !combate.idPelea) return;
     for (const [id, g] of Object.entries(gente)) {
+      if (g.orden && g.orden !== ordenes.get(id)) {   // lo que ha decidido en su turno
+        ordenes.set(id, g.orden);
+        let o = null; try { o = JSON.parse(g.orden); } catch { /* orden rota */ }
+        if (o && o.id === combate.idPelea) combate.ordenRemota?.(id, o);
+      }
       if (id === sala()?.yo.id || g.unirse !== combate.idPelea || unidos.has(id)) continue;
       const o = otros().get(id); if (!o) continue;
       let d = null; try { d = JSON.parse(g.pjPelea || 'null'); } catch { /* sin datos */ }
@@ -95,9 +103,43 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
       H.pos.x = mio.x; H.pos.z = mio.z; heroe().grupo.rotation.y = mio.ry;
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
       heroe().caido = !mio.v;
-      if (f.texto) hud.narrar(f.texto);
+      if (f.turno?.uid === yo) verMiTurno(f);
+      else { quitarMiTurno(); if (f.texto) hud.narrar(f.texto); }
     }
   }
+  // ---------- mi turno en la pelea de otro: casillas para tocar y botones para pegar ----------
+  const ordenar = (o) => sala()?.cambiar({ orden: JSON.stringify({ id: dentro?.id, n: miTurno?.n, ...o }) });
+  function verMiTurno(f) {
+    const T = f.turno, clave = T.n + T.fase;
+    if (miTurno?.clave === clave) return;
+    quitarMiTurno();
+    miTurno = { clave, n: T.n, fase: T.fase, celdas: T.celdas || [], marcas: new THREE.Group() };
+    if (T.fase === 'mover') {
+      const geo = new THREE.CircleGeometry(.45, 20), mat = new THREE.MeshBasicMaterial({ color: '#8ad8ff', transparent: true, opacity: .55, depthWrite: false, blending: THREE.AdditiveBlending });
+      for (const [x, z] of miTurno.celdas) { const m = new THREE.Mesh(geo, mat); m.rotation.x = -Math.PI / 2; m.position.set(x, (T.y || H.pos.y) + .22, z); miTurno.marcas.add(m); }
+      escena.add(miTurno.marcas);
+      hud.banner('¡Te toca!', 'heroe'); hud.narrar('Tu turno: toca una casilla azul para moverte, o quédate quieto.');
+      hud.acciones([{ id: 'quieto', texto: 'No moverme', corto: 'Quieto', icono: '⏸', activo: true }], () => { ordenar({ tipo: 'quieto' }); quitarMiTurno(); });
+    } else {
+      hud.narrar('¿A quién le das?');
+      hud.acciones([...(T.blancos || []).map((b, k) => ({ id: 'k' + k, texto: `Atacar a ${b.n}`, corto: b.n, icono: '⚔️', activo: true })), { id: 'pasar', texto: 'Pasar', icono: '⏭', activo: true }],
+        (id) => { ordenar(id === 'pasar' ? { tipo: 'pasar' } : { tipo: 'atacar', k: +id.slice(1) }); quitarMiTurno(); });
+    }
+  }
+  function quitarMiTurno() {
+    if (!miTurno) return;
+    escena.remove(miTurno.marcas); hud.acciones([]);
+    miTurno = { clave: miTurno.clave };   // recuerda la clave: no vuelvas a mostrar el mismo turno
+  }
+  // Un toque en el suelo mientras estoy dentro de una pelea ajena (true: me lo quedo yo)
+  P.tocar = (p) => {
+    if (!dentro) return false;
+    if (miTurno?.fase !== 'mover' || !p) return true;
+    let c = null, d = 1e9; for (const [x, z] of miTurno.celdas) { const e = Math.hypot(x - p.x, z - p.z); if (e < d) { d = e; c = [x, z]; } }
+    if (!c || d > .9) return true;
+    ui.chispas(new THREE.Vector3(c[0], H.pos.y + .3, c[1]), '#8ad8ff', 10, 1.5);
+    ordenar({ tipo: 'mover', x: c[0], z: c[1] }); quitarMiTurno(); return true;
+  };
   function quitarAjena(id) {
     const A = ajenas.get(id); if (!A) return;
     escena.remove(A.anillo.g); ui.quitar(A.cartel);
@@ -110,8 +152,9 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, H, heroe, estado, d
     const yoDentro = dentro && dentro.de === id;
     quitarAjena(id);
     if (!yoDentro) return;
+    quitarMiTurno(); miTurno = null;
     dentro = null; heroe().caido = false; H.bloqueado = false;
-    sala()?.cambiar({ unirse: '', pjPelea: '' });
+    sala()?.cambiar({ unirse: '', pjPelea: '', orden: '' });
     const yo = (f.companeros || []).find((c) => c.uid === sala()?.yo.id);
     if (yo) { estado.cuerpo = Math.max(1, yo.c); hud.actualizar(); }
     hud.narrar('');
