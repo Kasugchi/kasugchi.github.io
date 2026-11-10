@@ -226,7 +226,11 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
         const pegadosA = enemigos().filter((u) => pegados(h, u));
         mirarse(h, pegadosA[0]); sonido.explosion(); await h.pj.hacer('lanzar', .6); camara.temblar(.3);
         hud.narrar('¡Aliento de dragón! Todo lo que tienes pegado se chamusca.');
-        for (const u of pegadosA) { ui.chispas(sobre(u, 1), '#ff8a3a', 40, 4); await herir(u, 1); }
+        for (const u of pegadosA) {   // cada uno tira su defensa: con un escudo negro, lo para
+          ui.chispas(sobre(u, 1), '#ff8a3a', 40, 4);
+          const mesa = mesaDados(h, u), r = await dados.tirar('combate', u.defensa, mesa.centro, mesa.desde);
+          if (r.includes('escudoN')) { sonido.bloqueo(); ui.numero(sobre(u, u.pj.altura), '¡Parado!', '#cfe8ff'); await espera(400); } else await herir(u, 1);
+        }
         if (await comprobarFin()) return;
       }
       await espera(600); return accionesHeroe();
@@ -262,7 +266,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (id === 'flecha') {
       h.pj.hacer('disparar', .6); await espera(350); sonido.dado(.6);
       await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1.1), '#e8d0a0', .4);
-      await atacar(h, objetivo, { gesto: null, distanciaA: true, dados: estado.ataque + 2 * (MJ().certera || 0) }); return;
+      await atacar(h, objetivo, { gesto: null, distanciaA: true, dados: estado.ataque + 2 + 2 * (MJ().certera || 0) }); return;
     }
     if (id === 'fuego') {
       mirarse(h, objetivo); sonido.hechizo(); h.pj.hacer('lanzar', .7); await espera(300);
@@ -349,7 +353,8 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
+    resolver = fin; C.activo = true; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; if (estado.racial?.id === 'rezo') estado.rezos = 1;   // un rezo por pelea (medido: con dos por cripta el trol quedaba el último)
+    C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);

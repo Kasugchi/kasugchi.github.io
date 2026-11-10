@@ -449,7 +449,7 @@ $('#hud').classList.add('ver');
 $('#fundido').classList.add('ver'); setTimeout(() => $('#fundido').classList.remove('ver'), 100);
 // El trol, antes de meterse en faena, elige a qué loa le reza (vale para toda la cripta)
 async function elegirLoa() {
-  await hablar('Rezo vudú', [`Antes de adentrarte, te arrodillas y trazas un círculo en el polvo. ¿A qué loa le pides que te acompañe? Podrás pedir su bendición ${REZOS_CRIPTA} veces aquí abajo.`],
+  await hablar('Rezo vudú', [`Antes de adentrarte, te arrodillas y trazas un círculo en el polvo. ¿A qué loa le pides que te acompañe? Podrás pedir su bendición una vez en cada pelea.`],
     Object.entries(LOAS).map(([id, l]) => [`${l.icono} ${l.nombre}${DEF.loa === id ? ' (el de la otra vez)' : ''}: ${l.texto}`, () => { DEF.loa = id; estado.loa = id; }]), { grave: .8 });
   const l = LOAS[estado.loa]; if (l) { ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.6, 0)), `${l.icono} ${l.nombre}`, '#d8b0ff'); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1, 0)), '#c08aff', 30, 3); sonido.hechizo(); }
   guardarAhora(); hud.actualizar();

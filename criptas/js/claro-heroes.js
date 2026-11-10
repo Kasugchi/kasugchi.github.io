@@ -10,9 +10,9 @@ import { ARMAS } from './datos.js';
 export const RAZAS = {
   humano: { nombre: 'Humano', icono: '🧑', rasgo: 'Versátil', texto: 'Un uso más de su habilidad en cada combate. Racial: «¡A por ellos!», un turno con dos acciones.', activa: { id: 'aporellos', nombre: '¡A por ellos!', icono: '📯' }, pieles: ['#f4c7a1', '#e0a77e', '#b97a52', '#7a4a2e'], pelos: ['#6b3a2a', '#2b1d16', '#d9a441', '#b8462a', '#e8e0d0'] },
   enano: { nombre: 'Enano', icono: '🧔', rasgo: 'Duro de pelar', texto: 'Dos puntos de cuerpo más. Racial: «Piel de piedra», hasta tu siguiente turno ningún golpe te quita más de 1. Bajito, ancho y testarudo.', activa: { id: 'piedra', nombre: 'Piel de piedra', icono: '🪨' }, pieles: ['#f0bf98', '#d99c74', '#a96e48', '#7a4a2e'], pelos: ['#b8462a', '#6b3a2a', '#2b1d16', '#d9d2c4', '#e3a13a'] },
-  elfo: { nombre: 'Elfo', icono: '🧝', rasgo: 'Pies ligeros', texto: 'Dos casillas más cada vez que se mueve. Racial: «Sombra del bosque», te escabulles hasta cuatro casillas sin gastar el movimiento.', activa: { id: 'sombra', nombre: 'Sombra del bosque', icono: '🍃' }, pieles: ['#f7dcc4', '#e8c1a0', '#c99a7a', '#9a7ab8'], pelos: ['#f1e3b0', '#e8e8f0', '#2b1d16', '#7a5ad9', '#3f8a6a'] },
-  escamado: { nombre: 'Escamado', icono: '🐲', rasgo: 'Escamas', activa: { id: 'aliento', nombre: 'Aliento de dragón', icono: '🔥' }, texto: 'El primer golpe de cada combate le hace uno menos. Racial: «Aliento de dragón», fuego a todos los enemigos pegados a ti. Gente dragón de Velmor.', pieles: ['#4fae7a', '#3f8fb0', '#c4553a', '#b08a3a'], pelos: ['#f2d48a', '#e8e0d0', '#2b1d16', '#ff9a4a', '#9ad0ff'] },
-  troll: { nombre: 'Trol', icono: '🧌', rasgo: 'Carne de trol', activa: { id: 'rezo', nombre: 'Rezo vudú', icono: '🗿' }, texto: 'Al ganar cada pelea recupera 1 de cuerpo más. Racial: «Rezo vudú», elige a qué loa rezas antes de bajar a la cripta y pide su bendición dos veces allí abajo. Alto, encorvado y con colmillos.', pieles: ['#5a8ac8', '#4a9a8a', '#7aa05a', '#8a6ab0'], pelos: ['#e84a3a', '#3ad0e0', '#f0f0f0', '#ff8a2a', '#2b1d16'] },
+  elfo: { nombre: 'Elfo', icono: '🧝', rasgo: 'Pies ligeros', texto: 'Dos casillas más al moverse y un dado más de defensa: es difícil de pillar. Racial: «Sombra del bosque», te escabulles hasta cuatro casillas sin gastar el movimiento.', activa: { id: 'sombra', nombre: 'Sombra del bosque', icono: '🍃' }, pieles: ['#f7dcc4', '#e8c1a0', '#c99a7a', '#9a7ab8'], pelos: ['#f1e3b0', '#e8e8f0', '#2b1d16', '#7a5ad9', '#3f8a6a'] },
+  escamado: { nombre: 'Escamado', icono: '🐲', rasgo: 'Escamas', activa: { id: 'aliento', nombre: 'Aliento de dragón', icono: '🔥' }, texto: 'El primer golpe de cada combate le hace uno menos. Racial: «Aliento de dragón», fuego a todos los enemigos pegados a ti (lo para quien saque un escudo). Gente dragón de Velmor.', pieles: ['#4fae7a', '#3f8fb0', '#c4553a', '#b08a3a'], pelos: ['#f2d48a', '#e8e0d0', '#2b1d16', '#ff9a4a', '#9ad0ff'] },
+  troll: { nombre: 'Trol', icono: '🧌', rasgo: 'Carne de trol', activa: { id: 'rezo', nombre: 'Rezo vudú', icono: '🗿' }, texto: 'Al ganar cada pelea recupera 1 de cuerpo más. Racial: «Rezo vudú», elige a qué loa rezas antes de bajar a la cripta y pide su bendición una vez en cada pelea. Alto, encorvado y con colmillos.', pieles: ['#5a8ac8', '#4a9a8a', '#7aa05a', '#8a6ab0'], pelos: ['#e84a3a', '#3ad0e0', '#f0f0f0', '#ff8a2a', '#2b1d16'] },
 };
 
 // Los loas del trol: se elige uno antes de bajar a la cripta; cada rezo da su bendición durante dos turnos
@@ -22,13 +22,13 @@ export const LOAS = {
   muerte: { nombre: 'Loa de la Muerte', icono: '💀', texto: 'Cada golpe que das te cura 1.' },
   raptor: { nombre: 'Loa del Raptor', icono: '🦖', texto: '+3 casillas al moverte y +1 dado de ataque.' }
 };
-export const REZOS_CRIPTA = 2;
+export const REZOS_CRIPTA = 1;   // por pelea
 
 export const CLASES = {
   barbaro: { nombre: 'Bárbaro', icono: '🪓', ataque: 3, defensa: 2, cuerpo: 9, habilidad: { id: 'brutal', nombre: 'Golpe brutal', icono: '💥', usos: 2, texto: 'Un hachazo con dos dados más.' }, texto: 'Pega fuerte y aguanta más. No le pidas sutileza.', ropa: ['#9a4a2e', '#5a6a3a', '#3d5bd9', '#7a3a6a', '#2f2f3a', '#c4553a'] },
-  mago: { nombre: 'Mago', icono: '🧙', ataque: 2, defensa: 2, cuerpo: 7, habilidad: { id: 'fuego', nombre: 'Bola de fuego', icono: '🔥', usos: 2, texto: 'Dos de daño a cualquier enemigo del tablero.' }, texto: 'Frágil de cerca, pero quema lo que mira.', ropa: ['#3d5bd9', '#7a3a9a', '#2f8a7a', '#c44a5a', '#2f2f3a', '#d9a441'] },
+  mago: { nombre: 'Mago', icono: '🧙', ataque: 2, defensa: 2, cuerpo: 8, habilidad: { id: 'fuego', nombre: 'Bola de fuego', icono: '🔥', usos: 3, texto: 'Dos de daño a cualquier enemigo del tablero.' }, texto: 'Frágil de cerca, pero quema lo que mira.', ropa: ['#3d5bd9', '#7a3a9a', '#2f8a7a', '#c44a5a', '#2f2f3a', '#d9a441'] },
   ingeniero: { nombre: 'Ingeniero', icono: '🔧', ataque: 2, defensa: 3, cuerpo: 8, habilidad: { id: 'torreta', nombre: 'Torreta', icono: '⚙️', usos: 1, texto: 'Monta una torreta al lado que dispara sola cada turno.' }, texto: 'Si no hay compañeros, se los fabrica.', ropa: ['#b07a3a', '#3f6a8a', '#6a4a3a', '#8a3a3a', '#4a5a4a', '#d9a441'] },
-  explorador: { nombre: 'Explorador', icono: '🏹', ataque: 2, defensa: 2, cuerpo: 7, habilidad: { id: 'flecha', nombre: 'Flecha', icono: '🏹', usos: 3, texto: 'Dispara a un enemigo a hasta cinco casillas.' }, texto: 'Ataca de lejos y no se deja pillar.', ropa: ['#4e8a4a', '#6a5a3a', '#3a5a7a', '#7a4a5a', '#2f3a2f', '#b0803a'] }
+  explorador: { nombre: 'Explorador', icono: '🏹', ataque: 2, defensa: 2, cuerpo: 8, habilidad: { id: 'flecha', nombre: 'Flecha', icono: '🏹', usos: 4, texto: 'Dispara a un enemigo a hasta cinco casillas, con dos dados más.' }, texto: 'Ataca de lejos y no se deja pillar.', ropa: ['#4e8a4a', '#6a5a3a', '#3a5a7a', '#7a4a5a', '#2f3a2f', '#b0803a'] }
 };
 
 // Experiencia necesaria para cada nivel (el 1 empieza en 0)
@@ -65,7 +65,7 @@ export function estadisticas(h, enCripta = false) {
   const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null, mj = mejorasDe(h);
   return {
     ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + mj.ataque + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
-    defensa: c.defensa + mj.defensa + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
+    defensa: c.defensa + (h.raza === 'elfo' ? 1 : 0) + mj.defensa + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
