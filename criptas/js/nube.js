@@ -240,6 +240,8 @@ export async function irseDelPueblo(pid) {
   await setDoc(docAjustes(), { pid: null });
 }
 export const echarDelPueblo = (pid, uid) => updateDoc(doc(db, 'pueblos', pid), { ['miembros.' + uid]: deleteField() });
+// Elegir parcela: se guarda dentro de tu ficha de miembro (se reescribe entera, igual que al mudarte)
+export const elegirParcela = (pid, uid, datos, parcela) => updateDoc(doc(db, 'pueblos', pid), { ['miembros.' + uid]: { ...datos, parcela } });
 export async function subirCasa(pid, datos) {
   if (!yoUid() || !pid) return;
   return setDoc(doc(db, 'pueblos', pid, 'casas', yoUid()), { ...datos, t: Date.now() }).catch((e) => console.warn('No se pudo subir la casa:', e.message));
