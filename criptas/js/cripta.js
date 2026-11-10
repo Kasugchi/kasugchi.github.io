@@ -85,7 +85,7 @@ let DEF = leerLocal() || { ...heroeAlAzar(), nombre: 'Viajero' };
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, pociones: 1, usos: 2, mision: 'cripta' };
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def, true);
-  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, regenera: s.regenera, rezo: s.rezo, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 aplicarHeroe(DEF);
 const heroe = crearHeroe(DEF); escena.add(heroe.grupo);

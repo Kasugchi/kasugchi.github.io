@@ -122,6 +122,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
 
   // ---------- ataque y defensa ----------
   async function atacar(a, d, { dados: nDados = a.ataque, gesto = 'golpe', distanciaA = false } = {}) {
+    if (a.heroe && C.rezo > 0) nDados += 2;                       // rezo vudú del trol
     mirarse(a, d); if (!distanciaA) mirarse(d, a);
     if (gesto) await a.pj.hacer(gesto, gesto === 'brutal' ? .8 : .55);
     const mesa = mesaDados(a, d);
@@ -130,7 +131,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!golpes) { hud.narrar(una(a.bando === 'enemigo' ? FRASES.falloEsq : FRASES.falloHeroe)); await espera(700); return; }
     hud.narrar(`¡${golpes} ${golpes === 1 ? 'calavera' : 'calaveras'}! ${d.heroe ? 'Te defiendes' : d.nombre + ' se defiende'}…`);
     await espera(450);
-    const r2 = await dados.tirar('combate', d.defensa, mesa.centro, mesa.desde), escudo = nuestro(d) ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
+    const r2 = await dados.tirar('combate', d.defensa + (d.heroe && C.rezo > 0 ? 1 : 0), mesa.centro, mesa.desde), escudo = nuestro(d) ? 'escudoB' : 'escudoN', paradas = r2.filter((x) => x === escudo).length;
     const dano = Math.max(0, golpes - paradas);
     if (!dano) { sonido.bloqueo(); ui.numero(sobre(d, d.pj.altura), '¡Parado!', '#cfe8ff'); hud.narrar(`${d.heroe ? 'Lo paras' : d.nombre + ' lo para'} todo con ${paradas === 1 ? 'un escudo' : 'los escudos'}.`); await espera(600); return; }
     await herir(d, dano);
@@ -164,9 +165,10 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       { id: 'mover', texto: 'Moverse', corto: 'Mover', icono: '🎲', activo: !t.movido && !modoEleccion },
       { id: 'atacar', texto: 'Atacar', icono: '⚔️', activo: !t.actuado && hayPegado && !modoEleccion },
       { id: 'habilidad', texto: `${hab.nombre} (${estado.usos})`, corto: `${hab.nombre.split(' ')[0]} (${estado.usos})`, icono: hab.icono, activo: puedeHab },
+      estado.rezo && { id: 'rezo', texto: C.rezo > 0 ? `Rezo (${C.rezo})` : 'Rezo vudú', corto: 'Rezo', icono: '🗿', activo: !C.rezoUsado && !modoEleccion },
       { id: 'pocion', texto: `Poción (${estado.pociones})`, icono: '🧪', activo: !t.actuado && estado.pociones > 0 && estado.cuerpo < estado.max && !modoEleccion },
       { id: 'fin', texto: modoEleccion ? 'Cancelar' : 'Terminar turno', corto: modoEleccion ? 'Cancelar' : 'Pasar', icono: modoEleccion ? '✖' : '⏭', activo: true }
-    ], elegirAccion);
+    ].filter(Boolean), elegirAccion);
   }
   async function elegirAccion(id) {
     const h = unidades[0], t = turnoHeroe;
@@ -191,6 +193,13 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       else if (hab.id === 'flecha') { const al = enemigos().filter((u) => distancia(h, u) <= 5); if (!al.length) { hud.narrar('No hay nadie a tiro (cinco casillas como mucho).'); return accionesHeroe(); } alcanzables = new Map(al.map((u) => [u.c, 'hechizo'])); hud.narrar('Flecha: toca a un enemigo a tiro.'); }
       else if (hab.id === 'torreta') { alcanzables = new Map(vecinos(h.c).filter((c) => libre(c)).map((c) => [c, 'mover'])); hud.narrar('Torreta: toca una casilla pegada a ti para montarla.'); }
       modoEleccion = { tipo: hab.id }; pintar(); return accionesHeroe();
+    }
+    if (id === 'rezo') {   // racial del trol: no gasta acción, una vez por pelea, dura dos turnos
+      if (C.rezoUsado) return accionesHeroe();
+      hud.acciones([]); C.rezoUsado = true; C.rezo = 2;
+      sonido.hechizo(); await h.pj.hacer('celebrar', .9); ui.chispas(sobre(h, 1.2), '#c08aff', 40, 4); ui.chispas(sobre(h, .4), '#7dffa0', 20, 3);
+      ui.numero(sobre(h, h.pj.altura + .3), '¡Rezo vudú! +2 ⚔️ +1 🛡️', '#d8b0ff'); hud.narrar('Invocas a tus loas con un baile muy serio. Durante dos turnos pegas con dos dados más y paras con uno más.');
+      await espera(700); return accionesHeroe();
     }
     if (id === 'pocion') {
       hud.acciones([]); t.actuado = true; estado.pociones--; const cura = Math.min(3, estado.max - estado.cuerpo); h.cuerpo += cura; estado.cuerpo = h.cuerpo; hud.actualizar();
@@ -283,6 +292,13 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function bucle() {
     while (C.activo) {
       hud.banner('Tu turno', 'heroe'); camara.mirarHacia(unidades[0].pj.grupo.position);
+      if (C.rezo > 0) C.rezo--;                                        // el rezo se va gastando
+      // rasgo de los troles: se regeneran al empezar su turno (hasta 3 veces por pelea)
+      const yo = unidades[0];
+      if (estado.regenera && yo.vivo && yo.cuerpo < estado.max && (C.regenerado || 0) < estado.regenera) {
+        C.regenerado = (C.regenerado || 0) + 1; yo.cuerpo++; estado.cuerpo = yo.cuerpo; hud.actualizar();
+        ui.numero(sobre(yo, yo.pj.altura), '+1 Regeneración', '#7dffa0'); ui.chispas(sobre(yo, 1), '#8affb0', 14, 2); await espera(500);
+      }
       await new Promise((fin) => { turnoHeroe = { movido: false, actuado: false, fin }; hud.narrar('Muévete, ataca o usa tu habilidad. En el orden que quieras.'); accionesHeroe(); });
       hud.acciones([]); modoEleccion = null; alcanzables.clear(); pintar();
       if (!C.activo || await comprobarFin()) return;
@@ -305,7 +321,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo) => new Promise(async (fin) => {
-    resolver = fin; C.activo = true; C.escamasUsadas = false; sonido.circulo(); sonido.musica('combate');
+    resolver = fin; C.activo = true; C.escamasUsadas = false; C.regenerado = 0; C.rezo = 0; C.rezoUsado = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);

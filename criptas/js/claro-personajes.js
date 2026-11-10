@@ -317,10 +317,10 @@ export function crearMomia({ escala = 1, ojo = '#5ad8ff', venda = '#e0d2a8' } = 
 
 // =============================================================
 //  HÉROE DEL MODO AVENTURA: raza (aspecto) × clase (ropa, arma y gestos).
-//  raza: humano | enano | elfo | escamado · clase: barbaro | mago | ingeniero | explorador
+//  raza: humano | enano | elfo | escamado | troll · clase: barbaro | mago | ingeniero | explorador
 //  colores: { ropa, piel, pelo }
 // =============================================================
-const FORMA = { humano: { alto: 1, ancho: 1 }, enano: { alto: .8, ancho: 1.2 }, elfo: { alto: 1.12, ancho: .9 }, escamado: { alto: 1.05, ancho: 1.05 } };
+const FORMA = { humano: { alto: 1, ancho: 1 }, enano: { alto: .8, ancho: 1.2 }, elfo: { alto: 1.12, ancho: .9 }, escamado: { alto: 1.05, ancho: 1.05 }, troll: { alto: 1.2, ancho: .95 } };
 export function crearHeroe({ raza = 'humano', clase = 'mago', colores = {} } = {}) {
   const { mats, mat, malla } = kit();
   const ropa = colores.ropa || '#3d5bd9', piel = colores.piel || P.piel, pelo = colores.pelo || '#6b3a2a';
@@ -380,6 +380,10 @@ export function crearHeroe({ raza = 'humano', clase = 'mago', colores = {} } = {
     const mano = malla(new THREE.SphereGeometry(clase === 'barbaro' ? .16 : .13, 12, 10), esc || clase === 'barbaro' ? piel : (clase === 'ingeniero' ? '#7a5a3a' : piel), { borde: .025 });
     mano.position.set(s * .6, .78, .1); cuerpo.add(mano); mano.userData.lado = s;
     if (raza === 'elfo') { const or = malla(new THREE.ConeGeometry(.07, .32, 6), piel, { borde: .015 }); or.position.set(s * .42, .08, -.02); or.rotation.z = -s * 1.15; or.rotation.x = -.2; cabeza.add(or); }
+    if (raza === 'troll') {                                            // orejas largas hacia los lados y colmillos hacia arriba
+      const or = malla(new THREE.ConeGeometry(.09, .5, 6), piel, { borde: .015 }); or.position.set(s * .5, .06, -.04); or.rotation.z = -s * 1.4; or.rotation.x = -.15; cabeza.add(or);
+      const col = malla(new THREE.ConeGeometry(.045, .2, 6), '#f4ecd8', { borde: .012 }); col.position.set(s * .13, -.13, .36); col.rotation.set(-.25, 0, s * .25); cabeza.add(col);
+    }
     if (raza === 'enano') { const ceja = malla(new THREE.BoxGeometry(.16, .05, .05), pelo, { borde: 0 }); ceja.position.set(s * .15, .18, .39); ceja.rotation.z = s * .2; cabeza.add(ceja); }
     if (esc) { const cuerno = malla(new THREE.ConeGeometry(.07, .38, 7), pelo, { borde: .015 }); cuerno.position.set(s * .22, .36, -.12); cuerno.rotation.set(-.9, 0, -s * .35); cabeza.add(cuerno); }
   }
@@ -390,8 +394,12 @@ export function crearHeroe({ raza = 'humano', clase = 'mago', colores = {} } = {
     for (let i = 0; i < 4; i++) { const p = malla(new THREE.ConeGeometry(.06, .2, 5), pelo, { borde: .01 }); p.position.set(0, .38 - i * .1, -.3 - i * .08); p.rotation.x = -.6 - i * .2; cabeza.add(p); }
   } else {
     const boca = new THREE.Mesh(new THREE.TorusGeometry(.06, .014, 4, 10, Math.PI), mat('#5a2a2a')); boca.position.set(0, -.12, .4); boca.rotation.z = Math.PI; cabeza.add(boca);
-    const nariz = malla(new THREE.SphereGeometry(raza === 'enano' ? .09 : .05, 8, 6), new THREE.Color(piel).multiplyScalar(.9).getStyle(), { borde: 0 }); nariz.position.set(0, -.03, .42); cabeza.add(nariz);
-    const melena = malla(new THREE.SphereGeometry(.445, 20, 12, Math.PI / 2 + .95, Math.PI * 2 - 1.9, 0, Math.PI * (raza === 'elfo' ? .8 : .66)), pelo, { borde: .02, side: THREE.DoubleSide }); cabeza.add(melena);
+    const nariz = malla(new THREE.SphereGeometry(raza === 'enano' ? .09 : raza === 'troll' ? .08 : .05, 8, 6), new THREE.Color(piel).multiplyScalar(.9).getStyle(), { borde: 0 }); nariz.position.set(0, -.03, .42); cabeza.add(nariz);
+    if (raza === 'troll') {                                            // cresta de pelo de punta, de la frente a la nuca
+      for (let i = 0; i < 6; i++) { const p = malla(new THREE.ConeGeometry(.09 - i * .006, .34 - i * .02, 6), pelo, { borde: .012 }); const a = -.5 + i * .38; p.position.set(0, Math.cos(a) * .44, Math.sin(-a) * .44 - .02); p.rotation.x = a * .9 - .2; cabeza.add(p); }
+    } else {
+      const melena = malla(new THREE.SphereGeometry(.445, 20, 12, Math.PI / 2 + .95, Math.PI * 2 - 1.9, 0, Math.PI * (raza === 'elfo' ? .8 : .66)), pelo, { borde: .02, side: THREE.DoubleSide }); cabeza.add(melena);
+    }
     if (raza === 'elfo') { const cola = malla(new THREE.CapsuleGeometry(.14, .5, 4, 8), pelo, { borde: .02 }); cola.position.set(0, -.45, -.3); cola.rotation.x = .3; cabeza.add(cola); }
     if (raza === 'enano') {                                            // barbaza
       const barba = malla(new THREE.SphereGeometry(.34, 16, 12), pelo, { borde: .02 }); barba.scale.set(1.05, 1.15, .7); barba.position.set(0, -.3, .2); cabeza.add(barba);

@@ -11,7 +11,8 @@ export const RAZAS = {
   humano: { nombre: 'Humano', icono: '🧑', rasgo: 'Versátil', texto: 'Un uso más de su habilidad en cada combate.', pieles: ['#f4c7a1', '#e0a77e', '#b97a52', '#7a4a2e'], pelos: ['#6b3a2a', '#2b1d16', '#d9a441', '#b8462a', '#e8e0d0'] },
   enano: { nombre: 'Enano', icono: '🧔', rasgo: 'Duro de pelar', texto: 'Dos puntos de cuerpo más. Bajito, ancho y testarudo.', pieles: ['#f0bf98', '#d99c74', '#a96e48', '#7a4a2e'], pelos: ['#b8462a', '#6b3a2a', '#2b1d16', '#d9d2c4', '#e3a13a'] },
   elfo: { nombre: 'Elfo', icono: '🧝', rasgo: 'Pies ligeros', texto: 'Dos casillas más cada vez que se mueve.', pieles: ['#f7dcc4', '#e8c1a0', '#c99a7a', '#9a7ab8'], pelos: ['#f1e3b0', '#e8e8f0', '#2b1d16', '#7a5ad9', '#3f8a6a'] },
-  escamado: { nombre: 'Escamado', icono: '🐲', rasgo: 'Escamas', texto: 'El primer golpe de cada combate le hace uno menos. Gente dragón de Velmor.', pieles: ['#4fae7a', '#3f8fb0', '#c4553a', '#b08a3a'], pelos: ['#f2d48a', '#e8e0d0', '#2b1d16', '#ff9a4a', '#9ad0ff'] }
+  escamado: { nombre: 'Escamado', icono: '🐲', rasgo: 'Escamas', texto: 'El primer golpe de cada combate le hace uno menos. Gente dragón de Velmor.', pieles: ['#4fae7a', '#3f8fb0', '#c4553a', '#b08a3a'], pelos: ['#f2d48a', '#e8e0d0', '#2b1d16', '#ff9a4a', '#9ad0ff'] },
+  troll: { nombre: 'Trol', icono: '🧌', rasgo: 'Rezo vudú', texto: 'Una vez por pelea reza a sus loas: +2 dados de ataque y +1 de defensa durante dos turnos, sin gastar acción. Además se regenera un poco. Alto, encorvado y con colmillos.', pieles: ['#5a8ac8', '#4a9a8a', '#7aa05a', '#8a6ab0'], pelos: ['#e84a3a', '#3ad0e0', '#f0f0f0', '#ff8a2a', '#2b1d16'] },
 };
 
 export const CLASES = {
@@ -60,7 +61,9 @@ export function estadisticas(h, enCripta = false) {
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0 },   // mejoras propias de la clase
-    escamas: h.raza === 'escamado'
+    escamas: h.raza === 'escamado',
+    regenera: h.raza === 'troll' ? 2 : 0,
+    rezo: h.raza === 'troll'
   };
 }
 // Lo que elegiste al subir de nivel. Los héroes de antes (sin elección) tienen las mejoras fijas de siempre.
@@ -94,7 +97,7 @@ export function elegirMejora(h, id) { prepararSubida(h); h.mejoras[id] = (h.mejo
 // Qué se gana en cada nivel (para contarlo al subir)
 export function mejoraDeNivel() { return '+1 de cuerpo y una mejora a tu elección'; }
 
-const nombres = { humano: ['Aldo', 'Nerea', 'Bruno', 'Lucía', 'Tomás', 'Irene'], enano: ['Gruñón Barbarroja', 'Brunilda', 'Thorvo', 'Grisa Martillo', 'Dorm', 'Bolva'], elfo: ['Lirael', 'Eldrin', 'Sylva', 'Thalion', 'Aelis', 'Fëanra'], escamado: ['Zarkh', 'Sssandra', 'Kraz', 'Ithra', 'Vorn', 'Sali'] };
+const nombres = { humano: ['Aldo', 'Nerea', 'Bruno', 'Lucía', 'Tomás', 'Irene'], enano: ['Gruñón Barbarroja', 'Brunilda', 'Thorvo', 'Grisa Martillo', 'Dorm', 'Bolva'], elfo: ['Lirael', 'Eldrin', 'Sylva', 'Thalion', 'Aelis', 'Fëanra'], escamado: ['Zarkh', 'Sssandra', 'Kraz', 'Ithra', 'Vorn', 'Sali'], troll: ['Zanjo', 'Rakazi', 'Tumbo', 'Zekka', 'Mabuku', 'Sazrá'] };
 const al = (l) => l[Math.floor(Math.random() * l.length)];
 export function heroeAlAzar() {
   const raza = al(Object.keys(RAZAS)), clase = al(Object.keys(CLASES)), R = RAZAS[raza];

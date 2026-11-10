@@ -70,7 +70,7 @@ let DEF = leerLocal(), nuevo = !DEF;
 if (!DEF) DEF = heroeAlAzar();
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def);
-  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
+  Object.assign(estado, { ataque: s.ataque, defensa: s.defensa, max: s.max, cuerpo: s.max, usos: s.usos, usosMax: s.usos, pasosExtra: s.pasosExtra, escamas: s.escamas, regenera: s.regenera, rezo: s.rezo, hab: s.hab, habilidad: CLASES[def.clase].habilidad, oro: def.oro || 0, pociones: def.pociones ?? 1 });
 }
 function guardarAhora() {
   DEF.oro = estado.oro; DEF.pociones = estado.pociones;
