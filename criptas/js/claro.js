@@ -455,7 +455,7 @@ function moverHeroe(dt) {
   H.pos.y += ((tR != null ? alturaRampa(tR) : mundo.alturaEn(H.pos.x, H.pos.z)) - H.pos.y) * Math.min(1, dt * 15);
   if (tR != null && tR > .2 && !H.subiendo) subirAMorrandar();   // un cachito de pasarela y, si sigues, para arriba
   // ¿estás pisando el círculo de algún grupo de esqueletos?
-  for (const g of GRUPOS) if (g.vivo && g.miembros.some((m) => !m.pj.restos && m.pj.grupo.position.distanceTo(H.pos) < 3.6)) { empezarCombate(g); break; }
+  for (const g of GRUPOS) if (g.vivo && !PJ?.hayPeleaEn(g.ancla) && g.miembros.some((m) => !m.pj.restos && m.pj.grupo.position.distanceTo(H.pos) < 3.6)) { empezarCombate(g); break; }   // si ya pelea otro con ellos, se entra en la suya pisando el anillo
 }
 // ---------- la pasarela de Morrandar se puede subir andando ----------
 // Baja en línea recta de (−6, 22.5, −66) al pie, en SITIOS.llegada, con una pequeña panza en medio (igual que se dibuja en claro-mundo.js)

@@ -237,5 +237,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
     }
   };
   P.dentro = () => !!dentro;
+  // ¿Hay ya una pelea de otro de la sala en este sitio? (entonces no se empieza otra con los mismos bichos: se entra en la suya)
+  P.hayPeleaEn = (p) => { for (const A of ajenas.values()) if (Math.hypot(p.x - A.foto.cx, p.z - A.foto.cz) < A.foto.r + 2.5) return true; return false; };
   return P;
 }
