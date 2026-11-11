@@ -90,7 +90,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
       A.anillo = anilloDe(f);
       A.cartel = ui.rotulo(A.anillo.g, `⚔️ Pelea de ${nombre}: pisa el anillo para entrar`, { altura: 3.2 });
       // los monstruos de mi mundo que están en esa pelea se esconden: los muestra la foto
-      for (const pj of enemigosLocales()) { const p = pj.grupo.position; if (pj.grupo.visible && Math.hypot(p.x - f.cx, p.z - f.cz) < f.r + 3) { pj.grupo.visible = false; A.ocultos.push(pj); } }
+      /* si estoy en una pelea mía, mis bichos no se tocan */ if (!combate.activo) for (const pj of enemigosLocales()) { const p = pj.grupo.position; if (pj.grupo.visible && Math.hypot(p.x - f.cx, p.z - f.cz) < f.r + 3) { pj.grupo.visible = false; A.ocultos.push(pj); } }
       ajenas.set(id, A);
     }
     A.foto = f;
@@ -114,7 +114,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
     // ¿estoy yo dentro?
     const mio = f.u.find((u) => u.uid && u.uid === yo);
     if (mio) {
-      if (!dentro) { dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); cam?.enfocarCombate(new THREE.Vector3(f.cx, H.pos.y, f.cz), H.pos.clone()); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
+      if (!dentro) { A.tirada = f.dd?.n ?? A.tirada; dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); cam?.enfocarCombate(new THREE.Vector3(f.cx, H.pos.y, f.cz), H.pos.clone()); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
       dentro.ir = { x: mio.x, z: mio.z, ry: mio.ry };   // se anda hasta allí poco a poco (cada fotograma), sin saltitos
       gestos(heroe(), mio);
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
@@ -123,7 +123,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
       else { quitarMiTurno(); hud.narrar(f.de === 'heroe' ? `Turno de ${A.nombre}. Luego te toca a ti.` : f.de && f.de !== 'enemigos' ? `Turno de ${f.de}…` : f.texto || ''); }
     }
     // los dados: la misma tirada, con las mismas caras, en el mismo sitio
-    if (f.dd && dados) {
+    if (f.dd && dados && dentro?.de === id && !combate.activo) {   // solo si estoy dentro de esa pelea (y no en una mía: me pisaría mis dados)
       if (f.dd.n > A.tirada) { P.tiradas = (P.tiradas || 0) + 1; A.tirada = f.dd.n; const v = (a) => a && new THREE.Vector3(a[0], a[1], a[2]); dados.tirar(f.dd.tipo, f.dd.res.length, v(f.dd.c), v(f.dd.d), f.dd.res); }
     }
   }

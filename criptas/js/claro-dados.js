@@ -60,6 +60,8 @@ export function crearDados(escena, { alSonar, escala: E = 1 } = {}) {   // escal
     // Tira n dados alrededor de «centro». Devuelve los resultados cuando han parado.
     // «forzado»: las caras que tienen que salir (para repetir en otra pantalla la tirada de un compañero)
     tirar(tipo, n, centro, desde, forzado = null) {
+      // si había otra tirada a medias, se da por acabada (su promesa se cumple): si no, quien la esperaba se quedaría colgado
+      if (this._listo) { const f = this._listo; this._listo = null; f(); }
       this.limpiar();
       const res = [], anims = [];
       for (let k = 0; k < n; k++) {
