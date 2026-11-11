@@ -232,7 +232,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, mundo, 
       else if (d > .03) { const v = Math.min(d, dt * 4.5); H.pos.x += dx / d * v; H.pos.z += dz / d * v; heroe().mirarA(Math.atan2(dx, dz)); heroe().vel = .75; }
       else heroe().mirarA(o.ry);
     }
-    for (const A of ajenas.values()) {
+    for (const [id, A] of ajenas) {
       A.anillo.aro.rotation.z += dt * .4; A.anillo.aro.material.opacity = .6 + Math.sin(t * 3) * .2;
       for (const pj of A.fantasmas.values()) {
         const o = pj.objetivo; if (!o) { pj.animar?.(dt, t); continue; }   // el que ha caído sigue su animación de caer
