@@ -468,11 +468,27 @@ async function crearSala(modo) {
     app.modo = 'anfitrion';
     app.sala = salaNueva(modo);
     app.red = await (await Red()).crearSala(miId, eventosAnfitrion());
-    app.sala.codigo = app.red.codigo;
+    app.sala.codigo = app.red.codigo; anotarSalaMenu(app.red.codigo);
     avisoPortada('');
     pintarSala(); mostrar('sala');
   } catch (e) { app.modo = null; avisoPortada(e.message); }
 }
+// Tus salas de antes (las apunta reunion.js al entrar; misma clave), para no tener que acordarse del código
+function pintarSalasRecientes() {
+  const d = $('#salas-recientes'); if (!d) return;
+  let l = []; try { l = JSON.parse(localStorage.getItem('criptas_salasRecientes') || '[]') || []; } catch { l = []; }
+  l = l.filter((x) => x?.c?.length === 4 && Date.now() - (x.t || 0) < 14 * 864e5).slice(0, 4);
+  d.hidden = !l.length;
+  d.innerHTML = l.length ? `<span>Tus salas de antes:</span>${l.map((x) => `<button type="button" data-sala="${esc(x.c)}">🔑 ${esc(x.c)}${x.con?.length ? `<small>con ${esc(x.con.join(', '))}</small>` : ''}</button>`).join('')}` : '';
+}
+function anotarSalaMenu(c) {   // las partidas del libro también (las de Morrandar ya las apunta reunion.js)
+  try { const l = JSON.parse(localStorage.getItem('criptas_salasRecientes') || '[]') || [], v = l.find((x) => x.c === c); localStorage.setItem('criptas_salasRecientes', JSON.stringify([{ c, t: Date.now(), con: v?.con || [] }, ...l.filter((x) => x.c !== c)].slice(0, 4))); } catch { /* sin almacenamiento */ }
+}
+pintarSalasRecientes();
+$('#salas-recientes')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-sala]'); if (!b) return;
+  $('#codigo').value = b.dataset.sala; $('#f-unirse').requestSubmit();
+});
 $('#f-unirse').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   if (app.acceso !== 'ok') return;
@@ -484,7 +500,7 @@ $('#f-unirse').addEventListener('submit', async (ev) => {
   if (reu?.tardado) { avisoPortada('La conexión va lenta… seguimos intentándolo.'); reu = null; }
   if (reu && !reu.enJuego) { avisoPortada(''); return elegirVistaReunion(codigo); }
   if (reu) ponerReunion(codigo);
-  try { await unirseComoInvitado(codigo); avisoPortada(''); }
+  try { await unirseComoInvitado(codigo); avisoPortada(''); anotarSalaMenu(codigo); }
   catch (e) { app.modo = null; avisoPortada(e.message); }
 });
 

@@ -55,6 +55,23 @@ export const ponerVista = (v) => guardar('criptas_vistaReunion', v);
 export const paginaDeVista = (v) => (v === 'ligera' ? 'reunion.html' : 'pueblo.html');
 // La reunión en la que está esta pestaña (para volver a ella tras la partida).
 export const reunionActual = () => leerS('criptas_reunion');
+// Las últimas salas en las que has estado (para no tener que acordarse del código): [{ c, t, con: [nombres] }]
+// Lo mismo lo lee ui.js (menú) sin cargar este módulo: misma clave, mismo formato.
+export const CLAVE_RECIENTES = 'criptas_salasRecientes';
+export function salasRecientes() {
+  let l = []; try { l = JSON.parse(leer(CLAVE_RECIENTES, '[]')) || []; } catch { l = []; }
+  return l.filter((x) => x?.c?.length === 4 && Date.now() - (x.t || 0) < 14 * 864e5).slice(0, 4);
+}
+export function anotarSala(c, con = null) {
+  const antes = salasRecientes(), viejo = antes.find((x) => x.c === c);
+  const nueva = { c, t: Date.now(), con: (con || viejo?.con || []).slice(0, 3) };
+  guardar(CLAVE_RECIENTES, JSON.stringify([nueva, ...antes.filter((x) => x.c !== c)].slice(0, 4)));
+}
+// Botones para volver a una sala reciente (data-sala="CÓDIGO")
+export const chipsRecientes = (esc = (t) => t) => {
+  const l = salasRecientes(); if (!l.length) return '';
+  return `<div class="salas-recientes"><small>Tus salas de antes:</small>${l.map((x) => `<button type="button" data-sala="${x.c}" title="Entrar en la sala ${x.c}">🔑 ${x.c}${x.con.length ? ` <small>con ${esc(x.con.join(', '))}</small>` : ''}</button>`).join('')}</div>`;
+};
 export const olvidarReunion = () => guardarS('criptas_reunion', null);
 export const recordarReunion = (c) => guardarS('criptas_reunion', c);
 
@@ -133,7 +150,8 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
       }
     }
   } catch (e) { throw traducir(e); }
-  recordarReunion(codigo);
+  recordarReunion(codigo); anotarSala(codigo);
+  let conVisto = '';
 
   const oyentes = {};
   const emitir = (t, ...a) => (oyentes[t] || []).forEach((f) => { try { f(...a); } catch (e) { console.error(e); } });
@@ -187,6 +205,8 @@ export async function conectar({ codigo = null, crear = false, donde = 'tortuga'
       if (g.frase && g.frase.n > v.frase) { v.frase = g.frase.n; if (String(g.frase.texto).startsWith(PREFIJO_PODER)) emitir('poder', id, g.frase.texto.slice(PREFIJO_PODER.length), g); else emitir('frase', id, g.frase.texto, g); }
     }
     emitir('gente', R.gente());
+    const con = Object.entries(R.gente()).filter(([id]) => id !== yo.id).map(([, g]) => g.nombre).filter(Boolean).sort().join('|');
+    if (con && con !== conVisto) { conVisto = con; anotarSala(codigo, con.split('|')); }
     comprobarVotos();
   });
   escuchar('reunion/propuesta', (s) => { propuesta = s.val(); emitir('propuesta', propuesta); comprobarVotos(); });
@@ -311,6 +331,10 @@ const CSS = `
 .reu-panel .chat-in { flex: 1; min-width: 0; width: auto; font: 16px 'IM Fell English', Georgia, serif; letter-spacing: 0; text-transform: none; }
 .reu-panel .registro div { padding: 1px 0; }
 .reu-panel .error { color: #ff9a80; }
+.reu-panel .salas-recientes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 6px 0; }
+.reu-panel .salas-recientes > small { width: 100%; opacity: .7; }
+.reu-panel .salas-recientes button { background: transparent; border-color: rgba(214,160,100,.45); letter-spacing: .08em; }
+.reu-panel .salas-recientes button small { letter-spacing: 0; opacity: .75; }
 .reu-panel hr { border: 0; border-top: 1px solid rgba(214,160,100,.25); margin: 10px 0; }
 .reu-banda { position: fixed; z-index: 42; left: 50%; top: calc(max(10px, env(safe-area-inset-top)) + 54px); transform: translateX(-50%); width: min(520px, calc(100vw - 20px));
   background: radial-gradient(ellipse at 50% 40%, #efdcb2, #c2a87c); color: #1c120b; border: 1px solid #1c120b; padding: 8px 12px; box-shadow: 0 10px 26px rgba(0,0,0,.7);
@@ -387,7 +411,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
     if (!R) {
       panel.innerHTML = `<h3>Jugar juntos</h3><p>Abre una sala y pasa el código. Los demás os veréis aquí y bajaréis juntos al libro.</p>
         <div class="fila"><button data-r="abrir" ${ocupado ? 'disabled' : ''}>Abrir sala</button></div>
-        <hr><form class="fila" data-r="form"><input maxlength="4" placeholder="CÓDIGO" aria-label="Código de sala" autocomplete="off"><button ${ocupado ? 'disabled' : ''}>Unirse</button></form>${err}
+        <hr><form class="fila" data-r="form"><input maxlength="4" placeholder="CÓDIGO" aria-label="Código de sala" autocomplete="off"><button ${ocupado ? 'disabled' : ''}>Unirse</button></form>${chipsRecientes(esc)}${err}
         ${ocupado ? '<p class="nota">Conectando…</p>' : ''}`;
       const inp = panel.querySelector('input');
       inp.addEventListener('input', () => { inp.value = inp.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
@@ -408,6 +432,7 @@ export function crearPanel({ donde, boton = null, fijo = null, datos = () => ({}
   }
 
   function accion(e) {
+    const sr = e.target.closest('[data-sala]'); if (sr && !R) { e.preventDefault(); return entrar({ codigo: sr.dataset.sala }); }
     const b = e.target.closest('[data-r]'); if (!b) return;
     const a = b.dataset.r;
     if (a === 'form' || a === 'chat') return;
