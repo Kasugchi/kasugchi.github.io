@@ -28,7 +28,7 @@ import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA } from './menu-aventura.js';
-import { CLASES, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin, LOAS, REZOS_CRIPTA } from './claro-heroes.js';
+import { CLASES, estadisticas, fichaHeroe, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, leerLocal, guardarHeroe, heroeAlAzar, botinDe, sumarBotin, textoBotin, LOAS, REZOS_CRIPTA } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -186,12 +186,14 @@ async function muertoFuera(id) {
 const bSala = document.createElement('button');
 sonido.silenciar(leerMudo());
 const MENU = crearMenu({ boton: $('#menuB'), apps: () => [
+    { ico: '📜', titulo: 'Tu héroe', sub: 'Ataque, defensa…', hacer: (M) => { M.pagina('Tu héroe', fichaHeroe(DEF, estado)); return 'seguir'; } },
   { ico: '👥', titulo: 'Jugar juntos', sub: J?.SALA ? 'Sala ' + J.SALA.codigo : 'Con código', hacer: () => { setTimeout(() => bSala.click(), 0); } },
   { ico: sonido.mudo() ? '🔇' : '🔊', titulo: 'Sonido', sub: sonido.mudo() ? 'Apagado' : 'Encendido', hacer: (M) => { sonido.arrancar(); sonido.silenciar(!sonido.mudo()); guardarMudo(sonido.mudo()); M.pintar(); return 'seguir'; } },
   appPantalla(),
   { ico: '❔', titulo: 'Cómo se juega', sub: 'Controles', hacer: (M) => { M.pagina('Cómo se juega', AYUDA_AVENTURA + '<p class="texto">Para salir de la cripta, vuelve a la escalera por la que bajaste.</p>'); return 'seguir'; } },
   appMenu()
 ] });
+  { const f = document.getElementById('ficha'); if (f) { f.style.pointerEvents = 'auto'; f.style.cursor = 'pointer'; f.title = 'Ver tu héroe'; f.addEventListener('click', (e) => { e.stopPropagation(); MENU.pagina('Tu héroe', fichaHeroe(DEF, estado)); }); f.addEventListener('pointerdown', (e) => e.stopPropagation()); } }   // tocar tu tarjeta abre la ficha
 J = crearJuntos({ botonSala: bSala, escena, ui, cripta, clave: `${PID}|${SEMILLA}|${NIVEL}|${DEL_PUEBLO ? 'p' : 'a'}`, heroe, H, def: () => DEF, combate, al: {
   puerta: async (id) => { const p = cripta.puertas.find((x) => x.id === id); if (p && !p.abierta) { p.bloqueada = false; if (p.candado) { p.g.remove(p.candado); p.candado = null; } await abrir(p); } },
   muerto: muertoFuera,

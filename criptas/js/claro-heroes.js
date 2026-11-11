@@ -132,3 +132,33 @@ export function guardarHeroe(h, ya = false) {
   try { localStorage.setItem(CLAVE, JSON.stringify(h)); } catch { /* sin almacenamiento */ }
   try { subirAventura(h, ya); } catch { /* sin nube */ }
 }
+
+// ---------- La ficha del héroe (☰ → Tu héroe, o tocando su tarjeta): qué tiene y cuánto pega ----------
+// «est» es el estado de ahora (vida y usos que le quedan, la comida de la cripta…); si no, los de siempre.
+export function fichaHeroe(h, est = null) {
+  const c = CLASES[h.clase], r = RAZAS[h.raza], base = estadisticas(h), e = { ...base, cuerpo: base.max, ...(est || {}) };
+  const fila = (ico, nombre, valor, nota = '') => `<div class="fh-fila"><span class="fh-ico">${ico}</span><b>${nombre}</b><span class="fh-val">${valor}</span>${nota ? `<small>${nota}</small>` : ''}</div>`;
+  const dados = (n, cara) => `${n} ${cara.repeat(Math.min(n, 6))}`;
+  const mj = h.mejoras || {}, mc = (MEJORAS_CLASE[h.clase] || []).filter((m) => (e.hab?.[m.id] || 0) > 0);
+  const elegidas = [mj.ataque && `⚔️ +${mj.ataque} de ataque`, mj.defensa && `🛡️ +${mj.defensa} de defensa`, mj.cuerpo && `❤️ +${mj.cuerpo * 2} de cuerpo`, mj.usos && `✨ +${mj.usos} usos`, ...mc.map((m) => `${m.texto.split(':')[0]}${(e.hab[m.id] || 0) > 1 ? ` ×${e.hab[m.id]}` : ''}`)].filter(Boolean);
+  const forja = h.forja ? [h.forja.arma && `arma +${h.forja.arma}`, h.forja.armadura && `armadura +${h.forja.armadura}`, h.forja.amuleto && `amuleto +${h.forja.amuleto}`].filter(Boolean) : [];
+  const loa = h.raza === 'troll' && (est?.loa || h.loa) ? LOAS[est?.loa || h.loa] : null;
+  return `<style>
+    .libreta-av { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; }
+    .fh-cab { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; } .fh-cab .r { font-size: 40px; } .fh-cab small { display: block; opacity: .7; }
+    .fh-fila { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 12px; background: #fff3d6; margin-bottom: 6px; }
+    .fh-fila small { grid-column: 2 / 4; opacity: .7; font-size: 12px; line-height: 1.25; } .fh-ico { font-size: 20px; text-align: center; } .fh-val { font-weight: 800; font-size: 17px; white-space: nowrap; }
+    .fh-sec { margin: 12px 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; } .fh-txt { font-size: 13px; line-height: 1.35; margin: 0 0 6px; }
+  </style>
+  <div class="fh-cab"><span class="r">${c.icono}</span><div><b>${h.nombre || 'Tu héroe'}</b> · nivel ${h.nivel || 1}<small>${r?.nombre || ''} ${c.nombre.toLowerCase()} · ${h.xp || 0} de experiencia</small></div></div>
+  ${fila('❤️', 'Cuerpo', `${e.cuerpo} / ${e.max}`, 'Lo que aguantas. A cero, caes.')}
+  ${fila('⚔️', 'Ataque', dados(e.ataque, '🎲'), 'Dados que tiras al pegar: cada calavera es un golpe.')}
+  ${fila('🛡️', 'Defensa', dados(e.defensa, '🎲'), 'Dados que tiras cuando te pegan: cada escudo para un golpe.')}
+  ${fila('👣', 'Movimiento', `2 🎲${e.pasosExtra ? ` + ${e.pasosExtra}` : ''}`, 'Casillas que andas en tu turno.')}
+  ${fila(c.habilidad.icono, c.habilidad.nombre, `${est?.usos ?? e.usos} / ${base.usos}`, c.habilidad.texto)}
+  <div class="fh-sec">${r?.icono || ''} ${r?.nombre || 'Raza'}: ${r?.rasgo || ''}</div><p class="fh-txt">${r?.texto || ''}</p>
+  ${loa ? `<p class="fh-txt"><b>${loa.icono} ${loa.nombre}:</b> ${loa.texto}</p>` : ''}
+  ${elegidas.length ? `<div class="fh-sec">Mejoras de nivel</div><p class="fh-txt">${elegidas.join(' · ')}</p>` : ''}
+  ${forja.length ? `<div class="fh-sec">De la forja</div><p class="fh-txt">${forja.join(' · ')}</p>` : ''}
+  ${h.arma && ARMAS[h.arma] ? `<p class="fh-txt">Llevas: <b>${ARMAS[h.arma].nombre || h.arma}</b></p>` : ''}`;
+}

@@ -22,7 +22,7 @@ import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS, usarMapa } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe, crearZombi, crearMomia } from './claro-personajes.js';
-import { RAZAS, CLASES, NIVELES, XP, estadisticas, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, fichaHeroe, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
@@ -592,6 +592,7 @@ const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase
   const bSala = document.createElement('button');   // el panel de la sala se abre desde la libreta
   sonido.silenciar(leerMudo());
   const MENU = crearMenu({ boton: $('#menuB'), apps: () => [
+    { ico: '📜', titulo: 'Tu héroe', sub: 'Ataque, defensa…', hacer: (M) => { M.pagina('Tu héroe', fichaHeroe(DEF, estado)); return 'seguir'; } },
     { ico: '👥', titulo: 'Jugar juntos', sub: SALA ? 'Sala ' + SALA.codigo : 'Con código', hacer: () => { setTimeout(() => bSala.click(), 0); } },
     { ico: sonido.mudo() ? '🔇' : '🔊', titulo: 'Sonido', sub: sonido.mudo() ? 'Apagado' : 'Encendido', hacer: (M) => { sonido.arrancar(); sonido.silenciar(!sonido.mudo()); guardarMudo(sonido.mudo()); M.pintar(); return 'seguir'; } },
     appPantalla(),
@@ -599,6 +600,7 @@ const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase
     { ico: '🐢', titulo: 'Morrandar', sub: 'Subir al pueblo', apagada: combate.activo, hacer: () => { if (combate.activo) return; guardarAhora(); guardarHeroe(DEF, true); location.href = 'pueblo.html?desde=escala'; } },
     appMenu()
   ] });
+  { const f = document.getElementById('ficha'); if (f) { f.style.pointerEvents = 'auto'; f.style.cursor = 'pointer'; f.title = 'Ver tu héroe'; f.addEventListener('click', (e) => { e.stopPropagation(); MENU.pagina('Tu héroe', fichaHeroe(DEF, estado)); }); f.addEventListener('pointerdown', (e) => e.stopPropagation()); } }   // tocar tu tarjeta abre la ficha
   import('./reunion.js').then((RED) => RED.crearPanel({
     donde: DONDE, boton: bSala, proponer: false, datos: () => ({ clase: DEF.clase, x: H.pos.x, z: H.pos.z }),
     alConectar: (R) => { SALA = R; MENU.marca(R.codigo); R.cambiar({ heroe: JSON.stringify(datosHeroe()) }); R.on('gente', pintarOtros).on('frase', decirOtro); pintarOtros(R.gente()); },
