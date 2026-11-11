@@ -176,8 +176,12 @@ function pantallaLiga() {
   firmaSala = firmaDeSala();
   mostrar(`<h2>🥊 La liga del ring</h2><p class="nota">Gana a uno y se abre el siguiente. Al ganar te llevas una de sus piezas (si ya las tienes todas, monedas).</p>
     <div class="liga">${RIVALES.map((r, i) => { const abierto = i <= (R.liga || 0), N = NUCLEOS[r.nucleo]; return `<button data-r="${i}" ${abierto ? '' : 'disabled'}><span>${abierto ? N.e : '🔒'}</span><b>${r.quien} y ${r.robot}</b><small>${abierto ? `nivel ${r.nivel} · ${Object.values(r.equipo).map((id) => PIEZAS[id].n).join(', ')}${i < (R.liga || 0) ? ' · ✓ vencido' : ''}` : 'Gana al anterior'}</small></button>`; }).join('')}</div>
+    ${(R.liga || 0) >= RIVALES.length
+      ? `<button class="desguace" id="bDesguace"><span>♾️</span><b>El Desguace</b><small>Rondas sin fin contra robots al azar, cada vez más duros y con reglas raras. Lo que aguantes${R.recordDesguace ? ` · tu récord: ronda ${R.recordDesguace}` : ''}.</small></button>`
+      : '<p class="nota">♾️ Gana a toda la liga y se abre El Desguace: rondas sin fin contra robots al azar.</p>'}
     ${seccionSala()}
     <div class="fila-botones"><button id="bTaller">🔧 Al taller</button></div>`, 'liga');
+  $('#bDesguace')?.addEventListener('click', () => empezarDesguace([{ spec: miEspec(), ctrl: MI() }], Date.now()));
   panel.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => empezarPelea(+b.dataset.r));
   panel.querySelectorAll('[data-reto]').forEach((b) => b.onclick = () => retar(b.dataset.reto, 'duelo'));
   panel.querySelectorAll('[data-juntos]').forEach((b) => b.onclick = () => elegirRivalJuntos(b.dataset.juntos));
@@ -187,7 +191,9 @@ function elegirRivalJuntos(id) {
   const R = ROBOT(), g = GENTE[id], suyo = leerJSON(g?.robot);
   mostrar(`<h2>🤝 Juntos contra la liga</h2><p class="nota">${esc(suyo?.nombre || 'Su robot')} y ${esc(R.nombre)} contra dos de la liga a la vez. Elegid contra quién (los que tengas abiertos tú). Cada uno se lleva su premio.</p>
     <div class="liga">${RIVALES.map((r, i) => { const abierto = i <= (R.liga || 0), o = RIVALES[pareja(i)]; return `<button data-r="${i}" ${abierto ? '' : 'disabled'}><span>${abierto ? NUCLEOS[r.nucleo].e + NUCLEOS[o.nucleo].e : '🔒'}</span><b>${r.robot} y ${o.robot}</b><small>${abierto ? `de ${r.quien} y ${o.quien} · nivel ${r.nivel} y ${o.nivel}` : 'Gana antes al anterior tú solo'}</small></button>`; }).join('')}</div>
+    ${(R.liga || 0) >= RIVALES.length ? '<button class="desguace" id="bDesguaceJ"><span>♾️</span><b>Al Desguace, juntos</b><small>Rondas sin fin, de dos en dos. El daño se arrastra de una ronda a otra.</small></button>' : ''}
     <div class="fila-botones"><button id="bVolver">← Volver</button></div>`, 'juntos');
+  $('#bDesguaceJ')?.addEventListener('click', () => retar(id, 'desguace'));
   panel.querySelectorAll('[data-r]').forEach((b) => b.onclick = () => retar(id, 'juntos', +b.dataset.r));
   $('#bVolver').onclick = pantallaLiga;
 }
@@ -208,8 +214,9 @@ function mostrarReto(id, g, reto) {
   const r = leerJSON(g.robot), quien = esc(r?.piloto || g.nombre || 'Alguien');
   const texto = reto.tipo === 'duelo'
     ? `<b>${quien}</b> te reta a un duelo con ${esc(r?.nombre || 'su robot')}. <small>Os jugáis una pieza: el que pierde se la deja al otro (las de serie no se pierden).</small>`
+    : reto.tipo === 'desguace' ? `<b>${quien}</b> quiere ir juntos al <b>♾️ Desguace</b>. <small>Rondas sin fin contra robots al azar: hasta dónde llegáis.</small>`
     : `<b>${quien}</b> quiere ir juntos contra <b>${RIVALES[reto.rival]?.robot} y ${RIVALES[pareja(reto.rival)]?.robot}</b>. <small>Cada uno se lleva su premio.</small>`;
-  avisoReto.innerHTML = `<p>${texto}</p><div class="fila-botones"><button id="bSi" class="grande">${reto.tipo === 'duelo' ? '🥊 ¡Acepto!' : '🤝 ¡Vamos!'}</button><button id="bNo">Ahora no</button></div>`;
+  avisoReto.innerHTML = `<p>${texto}</p><div class="fila-botones"><button id="bSi" class="grande">${reto.tipo === 'duelo' ? '🥊 ¡Acepto!' : reto.tipo === 'desguace' ? '♾️ ¡Vamos!' : '🤝 ¡Vamos!'}</button><button id="bNo">Ahora no</button></div>`;
   avisoReto.hidden = false; sonido.circulo?.();
   $('#bSi').onclick = () => { avisoReto.hidden = true; if (peleando || !ROBOT()) return; ACEPTADO = { de: id, n: reto.n }; publicarRobot(); SALA?.cambiar({ ringSi: reto.n }); mostrar('<h2>¡Al ring!</h2><p>Preparando la pelea…</p>', 'espera'); setTimeout(() => { if (ACEPTADO?.n === reto.n && !peleando) { ACEPTADO = null; pantallaLiga(); } }, 20000); };
   $('#bNo').onclick = () => { avisoReto.hidden = true; SALA?.cambiar({ ringNo: reto.n }); };
@@ -235,6 +242,12 @@ function alGente(gente) {
     // la pelea que he aceptado: la lleva el otro
     if (ACEPTADO && id === ACEPTADO.de && !peleando) { const ring = leerJSON(g.ring); if (ring?.id === ACEPTADO.n) { ACEPTADO = null; unirme(id, ring); } }
     if (PELEA && !PELEA.anfitrion && id === PELEA.de) { const ring = leerJSON(g.ring); if (ring?.id === PELEA.id) encolar(ring); }
+    // en el Desguace en pareja: la siguiente ronda (o que el otro se ha retirado)
+    if (SERIE_G && id === SERIE_G.de && !peleando) {
+      const ring = leerJSON(g.ring);
+      if (ring?.serie === SERIE_G.serie && ring.fin) { const t = TOT; SERIE_G = null; finDesguace(t, 'retirada'); }
+      else if (ring?.serie === SERIE_G.serie && ring.id !== SERIE_G.ultimo && ring.F) unirme(id, ring);
+    }
   }
   if (pantalla === 'liga' && firmaDeSala() !== firmaSala) pantallaLiga();
 }
@@ -248,14 +261,17 @@ function narrarUn(t) { narrar(t); clearTimeout(tNarrarUn); tNarrarUn = setTimeou
 let modoCamara = 'taller', peleando = false, PELEA = null;
 function luchador(spec, i, lado, ctrl) {
   const piezas = {};
-  for (const h of HUECOS) { const id = spec.equipo[h]; piezas[h] = { id, P: PIEZAS[id], vida: vidaPieza(id, spec.nucleo), max: vidaPieza(id, spec.nucleo) }; }
+  for (const h of HUECOS) {
+    const id = spec.equipo[h], max = vidaPieza(id, spec.nucleo) + (spec.vidaExtra || 0);
+    piezas[h] = { id, P: PIEZAS[id], max, vida: spec.vidas?.[h] != null ? Math.max(1, Math.min(max, spec.vidas[h])) : max };   // en el Desguace, como acabó la ronda anterior
+  }
   const usos = {}; for (const h of HUECOS) if (piezas[h].P.acc?.usos) usos[h] = piezas[h].P.acc.usos;
-  return { ...spec, piezas, usos, extra: extraNivel(spec.nivel), escudo: 0, apunta: 0, i, lado, ctrl, robot: null };
+  return { ...spec, piezas, usos, extra: spec.dados ?? extraNivel(spec.nivel), escudo: 0, apunta: 0, i, lado, ctrl, robot: null };
 }
 const viva = (L, h) => L.piezas[h].vida > 0;
 const fuera = (L) => !viva(L, 'cabeza');
 const velocidad = (L) => (viva(L, 'piernas') ? L.piezas.piernas.P.vel : 0);
-const esquiva = (L) => (viva(L, 'piernas') ? L.piezas.piernas.P.def : 0);
+const esquiva = (L) => (viva(L, 'piernas') ? Math.max(0, L.piezas.piernas.P.def - (PELEA?.regla === 'aceite' ? 1 : 0)) : 0);
 const enemigos = (L) => PELEA.F.filter((x) => x.lado !== L.lado && !fuera(x));
 const CABEZAZO = { tipo: 'golpe', n: 'Cabezazo', e: '🤕', v: 1 };
 function acciones(L) {
@@ -268,6 +284,7 @@ const buscarAccion = (L, h) => acciones(L).find((x) => (x.h ?? '-') === (h ?? '-
 const esApoyo = (a) => ['cura', 'escudo', 'apuntar'].includes(a.tipo);
 function dadosDe(A, a, objetivo) {
   let n = a.v + A.extra + (A.nucleo === 'escarabajo' && a.tipo === 'disparo' ? 1 : 0) + (A.nucleo === 'mantis' && a.tipo === 'golpe' ? 1 : 0) + A.apunta;
+  if ((PELEA?.regla === 'tormenta' && a.tipo === 'disparo') || (PELEA?.regla === 'furia' && a.tipo === 'golpe')) n++;
   if (objetivo === 'cabeza' && !a.certero && A.nucleo !== 'buho' && !A.apunta) n -= 1;   // la cabeza es pequeña: cuesta más darle
   return Math.max(1, n);
 }
@@ -275,10 +292,11 @@ const CARAS = ['calavera', 'calavera', 'calavera', 'escudoB', 'escudoB', 'escudo
 const caras = (n) => Array.from({ length: n }, () => CARAS[Math.floor(Math.random() * CARAS.length)]);
 const centroMesa = () => new THREE.Vector3(0, .1, 1.6);
 
-function montarPelea({ id, tipo, rival = 0, F, anfitrion, de }) {
+function montarPelea({ id, tipo, rival = 0, F, anfitrion, de, regla = null, ronda = 0, serie = 0 }) {
   const yo = MI();
   const Fs = F.map((x, i) => luchador(x.spec, i, x.lado, x.ctrl));
-  PELEA = { id, tipo, rival, desc: F, F: Fs, ev: [], anfitrion, de, yo, miLado: Fs.find((L) => L.ctrl === yo)?.lado ?? 0, turno: -1, cola: Promise.resolve() };
+  if (regla === 'oxido') for (const L of Fs) for (const h of HUECOS) L.piezas[h].vida = Math.max(1, L.piezas[h].vida - 1);
+  PELEA = { id, tipo, rival, regla, ronda, serie, desc: F, F: Fs, ev: [], anfitrion, de, yo, miLado: Fs.find((L) => L.ctrl === yo)?.lado ?? 0, turno: -1, cola: Promise.resolve() };
   ocultar(); avisoReto.hidden = true; limpiarRobots();
   // cada bando a un lado (el tuyo, a la izquierda); de dos en dos, uno delante y otro detrás
   for (const L of Fs) {
@@ -292,6 +310,11 @@ function montarPelea({ id, tipo, rival = 0, F, anfitrion, de }) {
 async function presentar() {
   const P = PELEA; sonido.circulo?.(); sonido.musica?.('combate');
   if (P.tipo === 'duelo') { const [a, b] = P.F; narrar(`¡Duelo! ${a.nombre} contra ${b.nombre}. El que pierda se deja una pieza.`); await espera(2600); }
+  else if (P.tipo === 'desguace') {
+    narrar(`♾️ El Desguace · ronda ${P.ronda}${P.ronda % 5 === 0 ? ' · ¡JEFE!' : ''}`); await espera(1600);
+    const Rg = REGLAS[P.regla]; if (Rg) { narrar(`${Rg.e} ${Rg.n}: ${Rg.t}`); await espera(2400); }
+    for (const L of P.F.filter((x) => x.ctrl === 'npc')) { narrar(`${L.piloto}: «${L.frase}»`); await espera(1900); }
+  }
   else {
     const npc = P.F.filter((L) => L.ctrl === 'npc');
     for (const L of npc) { narrar(`${L.piloto}: «${L.frase}»`); await espera(npc.length > 1 ? 2000 : 2200); }
@@ -306,6 +329,7 @@ async function empezarPelea(r) {
 // El otro ha aceptado mi reto: monto la pelea y la llevo yo
 async function arrancarComoAnfitrion(id, g, e) {
   const suyo = leerJSON(g.robot); if (!suyo || !ROBOT()) return pantallaLiga();
+  if (e.tipo === 'desguace') return empezarDesguace([{ spec: miEspec(), ctrl: MI() }, { spec: suyo, ctrl: id }], e.n);
   const F = e.tipo === 'duelo'
     ? [{ spec: miEspec(), lado: 0, ctrl: MI() }, { spec: suyo, lado: 1, ctrl: id }]
     : [{ spec: miEspec(), lado: 0, ctrl: MI() }, { spec: suyo, lado: 0, ctrl: id }, { spec: especRival(e.rival), lado: 1, ctrl: 'npc' }, { spec: especRival(pareja(e.rival)), lado: 1, ctrl: 'npc' }];
@@ -314,7 +338,8 @@ async function arrancarComoAnfitrion(id, g, e) {
 }
 // He aceptado: me uno a la pelea que lleva el otro
 async function unirme(id, ring) {
-  montarPelea({ id: ring.id, tipo: ring.tipo, rival: ring.rival, F: ring.F, anfitrion: false, de: id });
+  montarPelea({ id: ring.id, tipo: ring.tipo, rival: ring.rival, regla: ring.regla, ronda: ring.ronda, serie: ring.serie, F: ring.F, anfitrion: false, de: id });
+  if (ring.serie) SERIE_G = { de: id, serie: ring.serie, ultimo: ring.id };
   const P = PELEA; P.tVisto = Date.now();
   P.cola = presentar(); encolar(ring);
 }
@@ -331,7 +356,7 @@ async function repetir(ev) {
   const P = PELEA;
   if (ev.k === 'turno' && P.F[ev.f].ctrl === P.yo) elegir(P.F[ev.f]).then((d) => { if (PELEA === P && P.ev.length === ev.n + 1) { SALA?.cambiar({ ringOrden: JSON.stringify({ id: P.id, n: ev.n, ...d }) }); narrar('…'); } });
 }
-function publicarPelea() { const P = PELEA; if (!SALA || P.tipo === 'solo' || !P.anfitrion) return; SALA.cambiar({ ring: JSON.stringify({ id: P.id, tipo: P.tipo, rival: P.rival, F: P.desc, ev: P.ev }) }); }
+function publicarPelea() { const P = PELEA; if (!SALA || !P.anfitrion || !P.F.some((L) => L.ctrl !== P.yo && L.ctrl !== 'npc')) return; SALA.cambiar({ ring: JSON.stringify({ id: P.id, tipo: P.tipo, rival: P.rival, regla: P.regla, ronda: P.ronda, serie: P.serie, F: P.desc, ev: P.ev }) }); }
 async function emitir(ev) { const P = PELEA; ev.n = P.ev.length; P.ev.push(ev); publicarPelea(); await aplicar(ev); }
 const ladoGanador = () => { for (const l of [0, 1]) if (PELEA.F.filter((L) => L.lado === l).every(fuera)) return 1 - l; return null; };
 
@@ -508,11 +533,12 @@ async function terminar(ev) {
   peleando = false; $('#botones').hidden = true; subirNarrar(); dados.limpiar?.();
   const R = ROBOT(), antes = nivelNucleo(R.xp), yo = P.F.find((L) => L.ctrl === P.yo);
   if (ev.anulada) {
-    narrar(''); $('#barras').hidden = true;
+    narrar(''); $('#barras').hidden = true; SERIE_H = null; SERIE_G = null; TOT = null;
     mostrar(`<h2>🔌 Combate suspendido</h2><p>${esc(P.F[ev.quien]?.piloto || 'El otro')} se ha ido del ring. Nadie gana ni pierde nada.</p><div class="fila-botones"><button id="bTaller" class="grande">🔧 Al taller</button></div>`, 'fin');
     $('#bTaller').onclick = pantallaTaller; PELEA = null; return;
   }
   const gano = ev.gana === P.miLado;
+  if (P.tipo === 'desguace') return rondaAcabada(P, gano);
   let xp, titulo, texto, premio = '';
   if (P.tipo === 'duelo') {
     const otro = P.F.find((L) => L !== yo);
@@ -567,6 +593,104 @@ setInterval(() => {
   P.tFuera ||= Date.now();
   if (Date.now() - P.tFuera > 25000) { const q = P.F.findIndex((L) => L.ctrl === P.de); P.cola = P.cola.then(() => (PELEA === P ? terminar({ k: 'fin', anulada: true, quien: q }) : null)); }
 }, 1000);
+
+// ---------- ♾️ EL DESGUACE: rondas sin fin contra robots al azar (solo o en pareja) ----------
+// Cada ronda, robots hechos con piezas al azar, más duros cuanto más lejos llegas (cada 5, un jefe)
+// y con una regla rara. El daño se arrastra (Rufo repara 2 a cada pieza entre ronda y ronda).
+// Lo lleva el que lo empieza; en pareja, el otro sigue la serie (ring.serie) ronda a ronda.
+const REGLAS = {
+  tormenta: { e: '⛈️', n: 'Tormenta eléctrica', t: 'los disparos tiran 1 dado más.' },
+  furia: { e: '😤', n: 'Público con ganas de sangre', t: 'los golpes tiran 1 dado más.' },
+  aceite: { e: '🛢️', n: 'Suelo con aceite', t: 'todos esquivan con 1 dado menos.' },
+  oxido: { e: '🟫', n: 'Lluvia ácida', t: 'todas las piezas empiezan con 1 menos.' }
+};
+const azar = (l) => l[Math.floor(Math.random() * l.length)];
+const NOMBRE_A = ['Tuerca', 'Chispa', 'Botijo', 'Cazo', 'Grifo', 'Zumbador', 'Sartén', 'Tostón', 'Cafetera', 'Petardo', 'Cacerola', 'Molinillo', 'Ventilador', 'Bisagra', 'Farolillo'];
+const NOMBRE_B = ['Loco', 'III', 'Oxidado', 'Turbo', 'de Hojalata', 'Mk 2', 'el Breve', 'Furioso', 'de Feria', 'Sin Frenos', 'Deluxe', 'de Segunda Mano', 'Pocholo', 'el Terrible'];
+const PILOTOS = ['Un forastero', 'La Tía Bisagra', 'El Hermano Engranaje', 'Doña Remache', 'El Niño del Taller', 'Paco Pistones', 'La Señora Voltio', 'El Afilador', 'Un tipo con gafas de soldar', 'La Sobrina de Rufo'];
+const FRASES_D = ['¡Lo hice con una lavadora y mucha fe!', 'Bip. Bup. Prepárate.', 'Mi robot no tiene frenos. Ni ganas de tenerlos.', '¿Eso es un robot o una tostadora con ambición?', 'He venido desde muy lejos para perder… ¡digo, para ganar!', 'Si gano, me quedo tus tornillos.', 'No lo mires a los ojos. Bueno, al ojo.', 'Funciona con pilas. Y con rencor.'];
+const JEFES = [['El Compactador', 'El dueño del desguace', 'Todo lo que entra aquí sale cuadradito.'], ['Mamá Grúa', 'La gruista', 'Os voy a levantar… del suelo, y luego no.'], ['La Trituradora', 'El encargado', 'Ñam. Ñam. Chatarra.']];
+function robotAzar(ronda, jefe) {
+  // al principio, piezas de andar por casa; las de Rufo (las mejores), a partir de la cuarta
+  const fuertes = ['br_remache', 'cab_antena', 'pi_arana'], deRufo = Object.keys(RUFO_HACE);
+  const de = (hueco) => Object.keys(PIEZAS).filter((id) => PIEZAS[id].hueco === hueco && (ronda >= 4 || !deRufo.includes(id)) && (ronda >= 3 || !fuertes.includes(id)));
+  const ataques = de('brazo').filter((id) => ['golpe', 'disparo'].includes(PIEZAS[id].acc?.tipo));
+  const [jn, jp, jf] = jefe ? azar(JEFES) : [];
+  return {
+    nombre: jefe ? jn : `${azar(NOMBRE_A)} ${azar(NOMBRE_B)}`, piloto: jefe ? jp : azar(PILOTOS), frase: jefe ? jf : azar(FRASES_D),
+    nucleo: azar(Object.keys(NUCLEOS)), nivel: ronda,
+    equipo: { cabeza: azar(de('cabeza')), brazoI: azar(de('brazo')), brazoD: azar(ataques), piernas: azar(de('piernas')) },
+    vidaExtra: Math.floor((ronda - 1) / 2) + (jefe ? 2 : 0), dados: Math.floor((ronda - 1) / 3) + (jefe ? 1 : 0)
+  };
+}
+let SERIE_H = null, SERIE_G = null, TOT = null;   // la serie que llevo / la que sigo / lo que llevo ganado
+function empezarDesguace(jugadores, serie) {
+  SERIE_H = { serie, ronda: 1, jugadores, vidas: {} };
+  TOT = { serie, chatarra: 0, xp: 0, piezas: [], ronda: 0 };
+  siguienteRonda();
+}
+async function siguienteRonda() {
+  const S = SERIE_H; if (!S) return;
+  // si el compañero se ha retirado (o se ha ido), sigues tú solo
+  S.jugadores = S.jugadores.filter((j) => j.ctrl === MI() || (GENTE[j.ctrl] && GENTE[j.ctrl].online !== false && GENTE[j.ctrl].ringFuera !== S.serie));
+  const n = S.ronda, jefe = n % 5 === 0, regla = n === 1 ? null : azar(['tormenta', 'furia', 'aceite', 'oxido', null]);
+  const F = [...S.jugadores.map((j) => ({ spec: { ...j.spec, vidas: S.vidas[j.ctrl] }, lado: 0, ctrl: j.ctrl })), ...S.jugadores.map((_, k) => ({ spec: robotAzar(n, jefe && k === 0), lado: 1, ctrl: 'npc' }))];
+  montarPelea({ id: S.serie + n - 1, tipo: 'desguace', F, anfitrion: true, de: MI(), regla, ronda: n, serie: S.serie });
+  publicarPelea(); await presentar(); dirigir();
+}
+async function rondaAcabada(P, gano) {
+  const R = ROBOT(); DEF.materiales ||= {};
+  if (!TOT || TOT.serie !== P.serie) TOT = { serie: P.serie, chatarra: 0, xp: 0, piezas: [], ronda: 0 };
+  if (!gano) {
+    sonido.derrota?.(); await espera(1400); if (PELEA !== P) return;
+    PELEA = null; $('#barras').hidden = true; narrar('');
+    if (P.anfitrion) SERIE_H = null; else SERIE_G = null;
+    return finDesguace(TOT, 'derrota', P.ronda);
+  }
+  sonido.victoria?.();
+  const yo = P.F.find((L) => L.ctrl === P.yo); if (yo?.robot) ui.chispas(yo.robot.grupo.position.clone().add(new THREE.Vector3(0, 2, 0)), '#ffe08a', 50, 5);
+  const ch = 1 + Math.floor(P.ronda / 2), xp = 8 + P.ronda * 2;
+  DEF.materiales.chatarra = (DEF.materiales.chatarra || 0) + ch; R.xp += xp;
+  TOT.chatarra += ch; TOT.xp += xp; TOT.ronda = P.ronda;
+  let pieza = '';
+  if (P.ronda % 3 === 0) {   // cada tres rondas, una pieza de los vencidos
+    const suyas = [...new Set(P.F.filter((L) => L.ctrl === 'npc').flatMap((L) => Object.values(L.equipo)))];
+    const nuevas = suyas.filter((id) => !R.piezas.includes(id)), brazos = suyas.filter((id) => PIEZAS[id].hueco === 'brazo' && cuantas(R, id) < 2);
+    const l = nuevas.length ? nuevas : brazos;
+    if (l.length) { const id = azar(l); R.piezas.push(id); TOT.piezas.push(id); pieza = `, y te llevas <b>${PIEZAS[id].n}</b>`; }
+    else { DEF.materiales.chatarra += 2; TOT.chatarra += 2; pieza = ', y 2 de chatarra más (ya tenías sus piezas)'; }
+  }
+  R.recordDesguace = Math.max(R.recordDesguace || 0, P.ronda);
+  guardar();
+  // cómo quedan los robots para la siguiente: lo que tenían + el repaso de Rufo
+  if (P.anfitrion && SERIE_H?.serie === P.serie) {
+    for (const L of P.F.filter((x) => x.ctrl !== 'npc')) SERIE_H.vidas[L.ctrl] = Object.fromEntries(HUECOS.map((h) => [h, Math.min(L.piezas[h].max, L.piezas[h].vida + 2)]));
+    SERIE_H.ronda = P.ronda + 1;
+  }
+  await espera(1400); if (PELEA !== P) return;
+  PELEA = null; $('#barras').hidden = true; narrar('');
+  const sig = P.ronda + 1;
+  mostrar(`<h2>✅ Ronda ${P.ronda} superada</h2><p>+⚙️ ${ch} de chatarra y +${xp} de experiencia${pieza}.</p>
+    <p class="nota">Entre ronda y ronda, Rufo os da un repaso: cada pieza recupera 2 (las rotas vuelven con 2). Lo demás se arrastra.</p>
+    <p class="nota">En esta tanda llevas: ⚙️ ${TOT.chatarra} · ${TOT.xp} exp${TOT.piezas.length ? ' · ' + TOT.piezas.map((id) => PIEZAS[id].n).join(', ') : ''}</p>
+    ${P.anfitrion ? `<div class="fila-botones"><button id="bRetirarse">🏳️ Retirarse</button><button id="bSigue" class="grande">▶ Ronda ${sig}${sig % 5 === 0 ? ' · ¡jefe!' : ''}</button></div>`
+      : `<p>Esperando a que ${esc(P.F.find((L) => L.ctrl === P.de)?.piloto || 'el otro')} empiece la siguiente…</p><div class="fila-botones"><button id="bMeVoy">🏳️ Me retiro</button></div>`}`, 'ronda');
+  $('#bSigue')?.addEventListener('click', siguienteRonda);
+  $('#bRetirarse')?.addEventListener('click', () => {
+    if (SALA && SERIE_H?.jugadores.length > 1) SALA.cambiar({ ring: JSON.stringify({ serie: SERIE_H.serie, fin: true }) });
+    const t = TOT; SERIE_H = null; finDesguace(t, 'retirada');
+  });
+  $('#bMeVoy')?.addEventListener('click', () => { SALA?.cambiar({ ringFuera: P.serie }); const t = TOT; SERIE_G = null; finDesguace(t, 'retirada'); });
+}
+function finDesguace(t, motivo, ronda) {
+  const R = ROBOT(), hechas = t?.ronda || 0;
+  mostrar(`<h2>${motivo === 'derrota' ? `💥 Chatarra en la ronda ${ronda}` : '🏳️ Retirada a tiempo'}</h2>
+    <p>${hechas ? `${hechas} ${hechas === 1 ? 'ronda superada' : 'rondas superadas'}.` : 'Ni una ronda… el Desguace no perdona.'} Tu récord: ${R.recordDesguace || 0}.</p>
+    <p class="nota">Te llevas: ⚙️ ${t?.chatarra || 0} de chatarra · ${t?.xp || 0} de experiencia${t?.piezas?.length ? ' · ' + t.piezas.map((id) => PIEZAS[id].n).join(', ') : ''}</p>
+    <div class="fila-botones"><button id="bOtra">🥊 A la liga</button><button id="bTaller" class="grande">🔧 Al taller</button></div>`, 'fin');
+  TOT = null;
+  $('#bOtra').onclick = pantallaLiga; $('#bTaller').onclick = pantallaTaller;
+}
 
 // ---------- bucle ----------
 const reloj = new THREE.Clock(); let t = 0;
