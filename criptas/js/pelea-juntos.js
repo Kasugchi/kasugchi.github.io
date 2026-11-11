@@ -13,17 +13,18 @@
 //  muñeco («a»); sus toques vuelven en «orden». Si no hace nada en un minuto, pasa.
 // =============================================================
 import * as THREE from 'three';
-import { toon } from './claro-estilo.js';
+import { toon, lienzo } from './claro-estilo.js';
 import { crearTorreta } from './claro-personajes.js';
 
-export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe, estado, def, sala, otros, fabricar, enemigosLocales, donde, alAcabar }) {
+export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, mundo, alVencer, H, heroe, estado, def, sala, otros, fabricar, enemigosLocales, donde, alAcabar }) {
   const P = {};
   let ultimaFoto = '', tFoto = 0, publicando = false, finPublicado = null;
   const unidos = new Set();
   // lo que veo de las peleas de los demás: id del que pelea → { foto, anillo, fantasmas, ocultos }
   const ajenas = new Map();
   let dentro = null;               // { de, id } si estoy metido en la pelea de otro
-  let pedida = null;               // { id, t } si he pisado un anillo y espero a entrar
+  let pedida = null;               // { id, t } si he pedido entrar y espero
+  let ofrecida = null;             // de quién es la pelea cuyo botón «Entrar» estoy enseñando
   const ordenes = new Map();       // la última orden que he hecho caso de cada compañero (si la pelea es mía)
   let miTurno = null;              // { clave, fase, celdas, marcas } si me toca decidir en la pelea de otro
 
@@ -78,7 +79,16 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
         losas.setColorAt(k, new THREE.Color((Math.round(x / T) + Math.round(z / T)) % 2 ? '#d9cdb2' : '#bfb196'));
       });
       losas.receiveShadow = true; escena.add(losas, marco);
-      return { g, aro, cupula, losas: [losas, marco] };
+      // el aro de runas, igual que el del que pelea (y la hierba, aplastada, para que no salga entre las losas)
+      const tx = lienzo(1024, 64, (x, w, h) => { x.clearRect(0, 0, w, h); x.font = '44px serif'; x.fillStyle = '#e2c8ff'; x.textBaseline = 'middle'; const s_ = 'ᚠᚢᚦᚨᚱᚲᚷᚹᚺᚾᛁᛃᛇᛈᛉᛊᛏᛒᛖᛗᛚᛜᛞᛟ'; for (let i = 0; i < 26; i++) x.fillText(s_[i % s_.length], i * 39 + 4, h / 2); });
+      tx.wrapS = THREE.RepeatWrapping; tx.repeat.x = 3;
+      const r0 = f.r - 1.5, runas = new THREE.Mesh(new THREE.RingGeometry(r0 + 1, r0 + 1.9, 96, 1), new THREE.MeshBasicMaterial({ map: tx, transparent: true, side: THREE.DoubleSide, depthWrite: false, blending: THREE.AdditiveBlending, color: '#c9a2ff' }));
+      const uv = runas.geometry.attributes.uv, pa = runas.geometry.attributes.position;
+      for (let i = 0; i < uv.count; i++) { const a = Math.atan2(pa.getY(i), pa.getX(i)); uv.setXY(i, a / Math.PI / 2 + .5, Math.hypot(pa.getX(i), pa.getY(i)) > r0 + 1.45 ? 1 : 0); }
+      runas.rotation.x = -Math.PI / 2; runas.position.set(f.cx, (f.t[0]?.[1] ?? H.pos.y) + .25, f.cz); escena.add(runas);
+      aro.visible = false;   // con las runas ya se ve el círculo
+      mundo?.aplastarHierba?.(f.cx, f.cz, r0 + 1.2, 1);
+      return { g, aro: runas, cupula, losas: [losas, marco, runas], hierba: r0 + 1.2 };
     }
     return { g, aro, cupula, losas: [] };
   }
@@ -114,7 +124,7 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
     // ¿estoy yo dentro?
     const mio = f.u.find((u) => u.uid && u.uid === yo);
     if (mio) {
-      if (!dentro) { A.tirada = f.dd?.n ?? A.tirada; dentro = { de: id, id: f.id }; pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); cam?.enfocarCombate(new THREE.Vector3(f.cx, H.pos.y, f.cz), H.pos.clone()); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
+      if (!dentro) { A.tirada = f.dd?.n ?? A.tirada; dentro = { de: id, id: f.id }; ofrecida = null; hud.acciones([]); document.getElementById('hud')?.classList.add('combate'); pedida = null; H.bloqueado = true; H.destino = null; hud.banner('¡Entras en la pelea!', 'heroe'); cam?.enfocarCombate(new THREE.Vector3(f.cx, H.pos.y, f.cz), H.pos.clone()); ui.quitar(A.cartel); A.cartel = null; /* el «pisa el anillo» ya no hace falta */ }
       dentro.ir = { x: mio.x, z: mio.z, ry: mio.ry };   // se anda hasta allí poco a poco (cada fotograma), sin saltitos
       gestos(heroe(), mio);
       if (estado.cuerpo !== Math.max(0, mio.c)) { estado.cuerpo = Math.max(0, mio.c); hud.actualizar(); }
@@ -173,19 +183,22 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
     ui.chispas(new THREE.Vector3(c[0], H.pos.y + .3, c[1]), '#ffffff', 10, 1.5);
     miTurno.enviado = true; ordenar({ tipo: 'tocar', x: c[0], z: c[1] }); return true;
   };
-  function quitarAjena(id) {
+  function quitarAjena(id, fin = null) {
     const A = ajenas.get(id); if (!A) return;
     escena.remove(A.anillo.g, ...A.anillo.losas); if (A.cartel) ui.quitar(A.cartel);
+    if (A.anillo.hierba) mundo?.aplastarHierba?.(A.foto.cx, A.foto.cz, A.anillo.hierba, 0);
+    if (ofrecida === id) { ofrecida = null; if (!dentro) hud.acciones([]); }
     for (const pj of A.fantasmas.values()) escena.remove(pj.grupo);
-    for (const pj of A.ocultos) pj.grupo.visible = true;
+    if (fin === 'victoria') { const dentroAro = A.ocultos.filter((pj) => Math.hypot(pj.grupo.position.x - A.foto.cx, pj.grupo.position.z - A.foto.cz) < A.foto.r); alVencer?.(dentroAro); for (const pj of A.ocultos) if (!dentroAro.includes(pj)) pj.grupo.visible = true; }   // los vencieron: en mi mundo también se quedan muertos (y escondidos)
+    else for (const pj of A.ocultos) pj.grupo.visible = true;
     for (const o of otros().values()) { o.pj.enPelea = false; o.pj.caido = false; }
     ajenas.delete(id);
   }
   async function acabarAjena(id, f) {
     const yoDentro = dentro && dentro.de === id;
-    quitarAjena(id);
+    quitarAjena(id, f.fin);
     if (!yoDentro) return;
-    quitarMiTurno(); miTurno = null; dados?.limpiar?.(); cam?.soltar?.();
+    quitarMiTurno(); miTurno = null; dados?.limpiar?.(); cam?.soltar?.(); document.getElementById('hud')?.classList.remove('combate');
     dentro = null; heroe().caido = false; H.bloqueado = false;
     sala()?.cambiar({ unirse: '', pjPelea: '', orden: '' });
     const yo = (f.companeros || []).find((c) => c.uid === sala()?.yo.id);
@@ -209,8 +222,9 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
   };
 
   // ---------- cada fotograma ----------
+  let tUlt = 0;
   P.actualizar = (dt, t) => {
-    publicar(dt);
+    tUlt = t; publicar(dt);
     if (miTurno?.mats) for (const m of miTurno.mats) m.opacity = .6 + Math.sin(t * 5) * .25;
     if (dentro?.ir) {   // mi héroe va hacia donde le pone la pelea, andando
       const o = dentro.ir, dx = o.x - H.pos.x, dz = o.z - H.pos.z, d = Math.hypot(dx, dz);
@@ -226,14 +240,17 @@ export function crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, hero
         if (d > .03) { const v = Math.min(d, dt * 5); p.x += dx / d * v; p.z += dz / d * v; }
         pj.vel = d > .1 ? .8 : 0; if (pj.mirarA) pj.mirarA(o.ry); else pj.grupo.rotation.y = o.ry; p.y = H.pos.y; pj.animar?.(dt, t);
       }
-      // pisar el anillo: pedir entrar
-      const f = A.foto, dd = Math.hypot(H.pos.x - f.cx, H.pos.z - f.cz);
-      if (!dentro && !combate.activo && !H.bloqueado && dd < f.r && estado.cuerpo > 0 && (!pedida || pedida.id !== f.id || t - pedida.t > 4)) {
-        pedida = { id: f.id, t };
-        sala()?.cambiar({ unirse: f.id, pjPelea: JSON.stringify({ nombre: def().nombre || 'Compañero', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, mover: 6 + (estado.pasosExtra || 0), alcance: def().clase === 'explorador' ? 5 : 1,
-          est: { habilidad: estado.habilidad, usos: estado.usos, pociones: estado.pociones, pasosExtra: estado.pasosExtra || 0, hab: estado.hab || {} } }) });
-        hud.narrar(`Entras en el círculo de ${A.nombre}…`);
-      }
+      // dentro del anillo: se ofrece un botón para entrar (pisarlo sin querer ya no te mete)
+      const f = A.foto, dd = Math.hypot(H.pos.x - f.cx, H.pos.z - f.cz), puede = !dentro && !combate.activo && !H.bloqueado && estado.cuerpo > 0;
+      if (puede && dd < f.r && ofrecida !== id && !(pedida && pedida.id === f.id && t - pedida.t < 4)) {
+        ofrecida = id;
+        hud.acciones([{ id: 'entrar', texto: `Entrar en la pelea de ${A.nombre}`, corto: 'Entrar', icono: '⚔️', activo: true }], () => {
+          ofrecida = null; hud.acciones([]); pedida = { id: f.id, t: tUlt };
+          sala()?.cambiar({ unirse: f.id, pjPelea: JSON.stringify({ nombre: def().nombre || 'Compañero', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, mover: 6 + (estado.pasosExtra || 0), alcance: def().clase === 'explorador' ? 5 : 1,
+            est: { habilidad: estado.habilidad, usos: estado.usos, pociones: estado.pociones, pasosExtra: estado.pasosExtra || 0, hab: estado.hab || {}, racial: estado.racial || null, rezos: estado.rezos ?? 1, loa: estado.loa || null } }) });
+          hud.narrar(`Entras en el círculo de ${A.nombre}…`);
+        });
+      } else if (ofrecida === id && (!puede || dd >= f.r + .5)) { ofrecida = null; if (!dentro && !combate.activo) hud.acciones([]); }
     }
   };
   P.dentro = () => !!dentro;

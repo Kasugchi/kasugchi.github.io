@@ -181,7 +181,9 @@ if (AFIJO) combate.afijo = AFIJO;   // el afijo de la semana (solo heroica)
 let ganarLuego = false, PJ = null;
 // Pelear juntos: ver los círculos de los demás y entrar pisándolos (js/pelea-juntos.js); se monta tras J
 function montarPeleaJuntos() {
-  PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H, heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
+  PJ = crearPeleaJuntos({ escena, ui, hud, combate, dados, cam, H,
+    alVencer: (pjs) => { for (const m of monstruos) if (m.vivo && pjs.includes(m.pj)) { m.vivo = false; m.pj.grupo.visible = false; } }, /* los venció otro de la sala */
+  heroe: () => heroe, estado, def: () => DEF, sala: () => J.SALA, otros: () => J.OTROS, donde: () => 'cripta|' + PID + '|' + SEMILLA + '|' + NIVEL,
     fabricar: (t, jefe) => modelo(t, jefe),
     enemigosLocales: () => monstruos.filter((m) => m.vivo).map((m) => m.pj),
     alAcabar: async ({ fin, caidos, ids }) => {
@@ -393,8 +395,20 @@ async function interactuar() {
 function vigilar() {
   if (combate.activo || H.bloqueado || dlg.actual) return;
   const [hx, hy] = cripta.deMundo(H.pos), hr = TB.region(hx, hy);
+  // a dónde se puede llegar andando desde aquí (sin cruzar puertas cerradas): un bicho al otro lado de una puerta no empieza pelea
+  const llega = new Set([hx + ',' + hy]); let borde = [[hx, hy]];
+  for (let paso = 0; paso < 12 && borde.length; paso++) {
+    const sig = [];
+    for (const [x, y] of borde) for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
+      if (nx < 0 || ny < 0 || nx >= cripta.W || ny >= cripta.H || llega.has(k) || !cripta.pasa([x, y], [nx, ny])) continue;
+      llega.add(k); sig.push([nx, ny]);
+    }
+    borde = sig;
+  }
+  const alcanzable = (m) => llega.has(cripta.deMundo(m.pj.grupo.position).join(','));
   const ven = monstruos.filter((m) => {
-    if (!m.vivo || !m.visto || J?.ocupado(m.id)) return false;   // lo que no has visto aún no te ve; y si pelea con otro, está a lo suyo
+    if (!m.vivo || !m.visto || J?.ocupado(m.id) || !alcanzable(m)) return false;   // lo que no has visto aún no te ve; y si pelea con otro, está a lo suyo
     const [mx, my] = cripta.deMundo(m.pj.grupo.position), d = Math.abs(mx - hx) + Math.abs(my - hy);
     return (m.region === hr && hr !== '.') || (m.region === '.' && hr === '.' && d <= 5) || (m.alerta && d <= 7);
   });
@@ -402,7 +416,7 @@ function vigilar() {
   const [ax, ay] = cripta.deMundo(ven[0].pj.grupo.position);
   const dist = (m) => Math.abs(cripta.deMundo(m.pj.grupo.position)[0] - ax) + Math.abs(cripta.deMundo(m.pj.grupo.position)[1] - ay);
   // como mucho tres a la vez (el jefe siempre entra si está cerca): uno solo contra media cripta no es una pelea
-  const grupo = monstruos.filter((m) => m.vivo && m.visto && !J?.ocupado(m.id) && dist(m) <= 7).sort((a, b) => (b.def.jefe ? 1 : 0) - (a.def.jefe ? 1 : 0) || dist(a) - dist(b)).slice(0, 3);
+  const grupo = monstruos.filter((m) => m.vivo && m.visto && !J?.ocupado(m.id) && dist(m) <= 7 && alcanzable(m)).sort((a, b) => (b.def.jefe ? 1 : 0) - (a.def.jefe ? 1 : 0) || dist(a) - dist(b)).slice(0, 3);
   empezarCombate(grupo);
 }
 
