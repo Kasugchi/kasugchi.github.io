@@ -43,8 +43,16 @@ export const PIEZAS = {
   pi_ruedas: { hueco: 'piernas', n: 'Ruedas de carrito', vida: 3, forma: 'ruedas', color: '#3a3a42', def: 1, vel: 4 },
   pi_orugas: { hueco: 'piernas', n: 'Orugas', vida: 6, forma: 'orugas', color: '#4a5a3a', def: 2, vel: 1 },
   pi_arana: { hueco: 'piernas', n: 'Patas de araña', vida: 4, forma: 'arana', color: '#5a3a5a', def: 3, vel: 3 },
-  pi_muelle: { hueco: 'piernas', n: 'Muelle saltarín', vida: 3, forma: 'muelle', color: '#c8c03a', def: 4, vel: 3 }
+  pi_muelle: { hueco: 'piernas', n: 'Muelle saltarín', vida: 3, forma: 'muelle', color: '#c8c03a', def: 4, vel: 3 },
+  // Las de Rufo: no las lleva nadie de la liga; se hacen con chatarra de las criptas (RUFO_HACE)
+  cab_olla: { hueco: 'cabeza', n: 'Olla exprés', vida: 7, forma: 'casco', color: '#b84a3a' },
+  cab_faro: { hueco: 'cabeza', n: 'Faro del puerto', vida: 4, forma: 'radar', color: '#e8d24a', acc: { tipo: 'apuntar', n: 'Fogonazo', e: '🔦', v: 3 } },
+  br_taladro: { hueco: 'brazo', n: 'Taladro', vida: 4, forma: 'taladro', color: '#c8c8d0', acc: { tipo: 'golpe', n: 'Taladrazo', e: '🌀', v: 3, certero: true } },
+  br_iman: { hueco: 'brazo', n: 'Imán gordo', vida: 5, forma: 'iman', color: '#d83a3a', acc: { tipo: 'escudo', n: 'Imantar', e: '🧲', v: 3 } },
+  pi_patin: { hueco: 'piernas', n: 'Patines de hielo', vida: 3, forma: 'ruedas', color: '#8ad0ff', def: 3, vel: 5 }
 };
+// El banco de Rufo (en el taller del ring): lo que cuesta cada pieza suya, en chatarra (⚙️, cae en las criptas) y monedas
+export const RUFO_HACE = { cab_olla: { chatarra: 6, oro: 50 }, pi_patin: { chatarra: 7, oro: 60 }, br_iman: { chatarra: 8, oro: 70 }, cab_faro: { chatarra: 9, oro: 80 }, br_taladro: { chatarra: 12, oro: 100 } };
 export const KIT_INICIAL = ['cab_lata', 'br_puno', 'br_canon', 'pi_patas'];
 
 // La liga del ring: vecinos del pueblo con sus cacharros. Ganar a uno abre el siguiente.
@@ -81,6 +89,8 @@ function brazo(P, lado) {
   else if (P.forma === 'pinza') { for (const s of [-1, 1]) { const p = new THREE.Mesh(new THREE.ConeGeometry(.08, .32, 6), toon(c)); contorno(p, .02); p.position.set(s * .08, -.12, 0); p.rotation.z = s * .35 + Math.PI; fin.add(p); } }
   else if (P.forma === 'escudo') { const e = cil(.34, .34, .06, c, 20); e.rotation.z = Math.PI / 2; e.position.x = lado * .1; fin.add(e); const a = bola(.05, '#5a5a62', 0); a.position.x = lado * .14; fin.add(a); }
   else if (P.forma === 'soplete') { const t = cil(.1, .1, .3, c); t.rotation.x = Math.PI / 2; t.position.z = .1; const b = new THREE.Mesh(new THREE.ConeGeometry(.09, .2, 10), toon('#3a3a3a')); b.rotation.x = Math.PI / 2; b.position.z = .32; fin.add(t, b); }
+  else if (P.forma === 'taladro') { const t = new THREE.Mesh(new THREE.ConeGeometry(.13, .45, 12), toon(c)); contorno(t, .02); t.rotation.x = -Math.PI / 2; t.position.z = .25; fin.add(cil(.12, .12, .16, '#5a5a62'), t); g.userData.taladro = t; }
+  else if (P.forma === 'iman') { const u = new THREE.Mesh(new THREE.TorusGeometry(.16, .07, 8, 16, Math.PI), toon(c)); contorno(u, .02); u.rotation.z = Math.PI; u.position.y = -.06; fin.add(u); for (const sx of [-1, 1]) { const pu = cil(.07, .07, .1, '#d8d8e0', 8, 0); pu.position.set(sx * .16, -.08, 0); fin.add(pu); } }
   else if (P.forma === 'remache') { fin.add(caja(.24, .24, .24, c)); for (let i = 0; i < 3; i++) { const t = cil(.035, .035, .35, '#2a2a2a', 6, 0); t.rotation.x = Math.PI / 2; t.position.set((i - 1) * .07, 0, .25); fin.add(t); } }
   g.userData.fin = fin;
   return g;
@@ -113,6 +123,7 @@ export function crearRobot({ nucleo = 'escarabajo', equipo }) {
     const salto = partes.piernas.userData.muelle && !R.rotas.has('piernas') ? Math.abs(Math.sin(t * 4)) * .06 : 0;
     cuerpo.position.y = (R.rotas.has('piernas') ? -.55 : alto) + Math.sin(t * 2.2) * .03 + salto;
     for (const r of partes.piernas.userData.ruedas || []) r.rotation.x += dt * 2;
+    for (const h of ['brazoI', 'brazoD']) { const tl = partes[h].userData.taladro; if (tl) tl.rotation.y += dt * (R.golpeH === h ? 30 : 3); }
     if (partes.cabeza.userData.gira) partes.cabeza.userData.gira.rotation.z += dt * 1.5;
     if (partes.cabeza.userData.chispa) partes.cabeza.userData.chispa.scale.setScalar(1 + Math.sin(t * 9) * .25);
     // el brazo que golpea: se echa hacia delante y vuelve

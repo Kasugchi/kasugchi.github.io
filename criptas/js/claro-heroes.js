@@ -43,6 +43,7 @@ export const MATERIALES = {
   hueso: { n: 'Hueso pulido', e: '🦴' }, polvo: { n: 'Polvo de tumba', e: '⚱️' }, venda: { n: 'Venda de momia', e: '🧻' },
   ectoplasma: { n: 'Ectoplasma', e: '👻' }, piedra: { n: 'Piedra rúnica', e: '🪨' }, trofeo: { n: 'Trofeo de jefe', e: '🏆' },
   esencia: { n: 'Esencia heroica', e: '✨' },
+  chatarra: { n: 'Chatarra', e: '⚙️' },   // para las piezas de robot que hace Rufo (el Ring de Chatarra)
   femur: { n: 'Fémur de capitán', e: '🦴' }, salitre: { n: 'Hueso salado', e: '🧂' }, perla: { n: 'Perla negra', e: '⚫' }   // de las zonas (equipo)   // solo la sueltan los jefes de las heroicas (más cuanto más alto el rango)
 };
 export const BOTIN = { esqueleto: 'hueso', guerrero: 'hueso', orco: 'hueso', sacerdotisa: 'hueso', zombi: 'polvo', trasgo: 'polvo', bruja: 'polvo', momia: 'venda', fantasma: 'ectoplasma', hechicero: 'ectoplasma', ilusionista: 'ectoplasma', gargola: 'piedra', golem: 'piedra' };
@@ -51,6 +52,8 @@ export const BOTIN = { esqueleto: 'hueso', guerrero: 'hueso', orco: 'hueso', sac
 export function botinDe(tipo, jefe, { zona = null, heroica = false } = {}) {
   const m = BOTIN[tipo] || 'polvo', r = {};
   if (jefe) { r.trofeo = 1; r[m] = 2; } else if (Math.random() < .65) r[m] = 1;
+  // chatarra (tornillos, hebillas, cacharros): de vez en cuando los pequeños; los jefes, siempre
+  if (jefe) r.chatarra = 2 + (heroica ? 1 : 0); else if (Math.random() < .25) r.chatarra = 1;
   const J = Object.values(JUEGOS).find((j) => j.zona === zona);
   if (J) {
     if (!jefe && J.comun !== m && Math.random() < .5) r[J.comun] = (r[J.comun] || 0) + 1;

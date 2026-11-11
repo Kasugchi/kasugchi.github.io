@@ -14,7 +14,7 @@ import { crearDados } from './claro-dados.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearSonido } from './claro-sonido.js';
 import { leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
-import { NUCLEOS, PIEZAS, HUECOS_ROBOT, KIT_INICIAL, RIVALES, crearRobot, nivelNucleo, extraNivel, NIVELES_NUCLEO } from './robots.js';
+import { NUCLEOS, PIEZAS, HUECOS_ROBOT, KIT_INICIAL, RIVALES, RUFO_HACE, crearRobot, nivelNucleo, extraNivel, NIVELES_NUCLEO } from './robots.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -110,16 +110,34 @@ function pantallaTaller() {
   mostrar(`<h2>${N.e} ${esc(R.nombre)} <small>núcleo ${N.n.toLowerCase()} · nivel ${nv}${sig ? ` · ${R.xp}/${sig} exp` : ''}</small></h2>
     <p class="nota">${N.t}${extraNivel(nv) ? ` Por su nivel, +${extraNivel(nv)} ${extraNivel(nv) === 1 ? 'dado' : 'dados'} en todo.` : ' En el nivel 4 y en el 8, un dado más en todo.'}</p>
     ${HUECOS.map(fila).join('')}
-    <div class="fila-botones"><button id="bNombre">✏️ Nombre</button><button id="bLiga" class="grande">🥊 Al ring</button></div>`, 'taller');
+    <div class="fila-botones"><button id="bNombre">✏️ Nombre</button><button id="bLiga" class="grande">🥊 Al ring</button></div>
+    ${bancoRufo()}`, 'taller');
+  panel.querySelectorAll('[data-hacer]').forEach((b) => b.onclick = () => hacerPieza(b.dataset.hacer));
   panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { R.equipo[b.dataset.h] = b.dataset.p; guardar(); sonido.recoger?.(); pantallaTaller(); });
   $('#bNombre').onclick = () => { const n = prompt('¿Cómo se llama tu robot?', R.nombre); if (n) { R.nombre = n.replace(/[<>&"'`]/g, '').slice(0, 18) || R.nombre; guardar(); pantallaTaller(); } };
   $('#bLiga').onclick = pantallaLiga;
+}
+// El banco de Rufo: piezas que no lleva nadie de la liga, hechas con la chatarra de las criptas
+const chatarra = () => DEF.materiales?.chatarra || 0;
+function bancoRufo() {
+  const R = ROBOT();
+  return `<h3 class="sala">🛠️ El banco de Rufo</h3>
+    <p class="nota">«Dame chatarra y te hago cosas que no tiene nadie en el pueblo.» La chatarra ⚙️ la sueltan los bichos de las criptas y del claro (los jefes, siempre). Tienes ⚙️ ${chatarra()} y 🪙 ${DEF.oro || 0}.</p>
+    <div class="piezas">${Object.entries(RUFO_HACE).map(([id, c]) => { const P = PIEZAS[id], tengo = R.piezas.includes(id), puedo = chatarra() >= c.chatarra && (DEF.oro || 0) >= c.oro;
+      return `<button data-hacer="${id}" ${tengo || !puedo ? 'disabled' : ''}>${HUECOS_ROBOT[P.hueco === 'brazo' ? 'brazoD' : P.hueco].e} ${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>${tengo ? '✓ Ya la tienes' : `⚙️ ${c.chatarra} · 🪙 ${c.oro}`}</small></button>`; }).join('')}</div>`;
+}
+function hacerPieza(id) {
+  const R = ROBOT(), c = RUFO_HACE[id];
+  if (!c || R.piezas.includes(id) || chatarra() < c.chatarra || (DEF.oro || 0) < c.oro) return;
+  DEF.materiales.chatarra -= c.chatarra; DEF.oro -= c.oro; R.piezas.push(id);
+  guardar(); sonido.victoria?.();
+  pantallaTaller(); narrarUn(`Rufo: «¡${PIEZAS[id].n}! Recién salida del horno. Bueno, del cubo.»`);
 }
 function textoPieza(P, nucleo) {
   const v = `❤ ${P.vida + (nucleo === 'tortuga' ? 1 : 0)}`;
   if (P.hueco === 'piernas') return `${v} · esquiva ${P.def} · rapidez ${P.vel}`;
   if (!P.acc) return `${v} · aguanta más`;
-  const a = P.acc, q = { golpe: `${a.v} dados de golpe`, disparo: `${a.v} dados de disparo${a.certero ? ', no se esquiva' : ''}`, cura: `repara ${a.v}`, escudo: `para ${a.v}`, apuntar: `+${a.v} dados al siguiente` }[a.tipo];
+  const a = P.acc, q = { golpe: `${a.v} dados de golpe${a.certero ? ', no se esquiva' : ''}`, disparo: `${a.v} dados de disparo${a.certero ? ', no se esquiva' : ''}`, cura: `repara ${a.v}`, escudo: `para ${a.v}`, apuntar: `+${a.v} dados al siguiente` }[a.tipo];
   return `${v} · ${a.e} ${q}${a.usos ? ` (${a.usos} veces)` : ''}${a.piernas ? ', +1 a las piernas' : ''}`;
 }
 const esc = (t) => String(t || '').replace(/[<>&"]/g, '');
