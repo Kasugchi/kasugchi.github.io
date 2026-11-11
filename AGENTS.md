@@ -66,6 +66,7 @@ A lo Monster Hunter: el nivel se congela en el 8 y desde ahí te hace fuerte el 
 ### El Ring de Chatarra (`ring.html` + `js/ring.js`, `js/robots.js`)
 
 Robots a lo «medabots», hechos a nuestra manera: núcleo (su alma, con forma de bicho, sube de nivel) y cuatro piezas (cabeza, brazos, piernas) con vida y acción. Pelea por turnos con dados apuntando a piezas; si te rompen la cabeza, pierdes. Liga de cinco vecinos (`RIVALES`); al ganar te llevas una de sus piezas. Se guarda en el héroe de aventura (`robot`). Se llega desde la cantina (Rufo o el cartel del ring) y desde la portada.
+Con la sala (👥 en el ring) se pelea entre jugadores: **duelo** (1 contra 1; el que pierde se deja una pieza, nunca las de serie `KIT_INICIAL`) o **juntos** (2 contra una pareja de la liga, cada uno con su premio). Lo lleva el que reta: decide orden, dados e IA y lo publica en su ficha de la sala (`ring`: los luchadores y la lista de sucesos `ev`); el otro la repite con los mismos dados y manda lo que elige en `ringOrden`. Cada uno guarda solo lo suyo (la pieza la quita el que pierde en su pantalla). Retos: `ringReto` / `ringSi` / `ringNo`.
 
 ### Mercenarios (`js/mercenarios.js`)
 

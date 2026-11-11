@@ -47,7 +47,7 @@ export const GESTOS = [
   { id: 'sentarse', icono: '🪑', nombre: 'Sentarse' }
 ];
 export const MODOS = { infinita: 'la Mazmorra Infinita', historia: 'el Modo Historia', limbo: 'el Limbo, a rescatar a un caído' };
-export const LUGARES = { pueblo: '🏘 en el pueblo', tortuga: '🐢 en Morrandar', ligera: '📖 esperando', cabana: '🏠 en la cabaña', juego: '⚔ en la mazmorra', 'aventura-claro': '🌲 en el claro', 'aventura-pantano': '🐸 en el pantano', cripta: '💀 en una cripta' };
+export const LUGARES = { pueblo: '🏘 en el pueblo', tortuga: '🐢 en Morrandar', ligera: '📖 esperando', cabana: '🏠 en la cabaña', juego: '⚔ en la mazmorra', 'aventura-claro': '🌲 en el claro', 'aventura-pantano': '🐸 en el pantano', cripta: '💀 en una cripta', ring: '🤖 en el ring' };
 
 // Recuerda en este dispositivo si se prefiere la tortuga o la pantalla ligera.
 export const vistaPreferida = () => leer('criptas_vistaReunion', '');
