@@ -12,10 +12,20 @@
 export const escalonZona = (par) => Math.max(0, (par?.fuerza || 1) - 1) * 1.7;
 
 // Para qué nivel de héroe está pensada cada zona (lo que se enseña en la portada y en el atril)
-export const NIVEL_ZONA = { 1: '1 a 3', 2: '4 a 6', 3: '7 y 8' };
+export const NIVEL_ZONA = { 1: '1 a 3', 2: '4 a 6', 3: '7 a 10' };
 export const textoNivelZona = (par) => `Nivel ${NIVEL_ZONA[par?.fuerza || 1] || '1 a 3'}`;
 // Los encargos del tablón ya traen su nivel (más alto cuanto más difícil): de ahí sale lo duros que son sus bichos
 export const escalonEncargo = (nivel) => Math.max(0, (nivel - 2) / 2.2);
+
+// La experiencia: las zonas altas dan más, y los bichos que ya te quedan pequeños, poca
+// (como los «grises» de otros juegos: farmear el claro a nivel 8 no sube nada). La heroica y los encargos van a tu medida.
+const TOPE_ZONA = { 1: 3, 2: 6, 3: 10 };
+export function factorXP({ par, nivel = 1, heroica = false, encargo = false }) {
+  const f = par?.fuerza || 1, extra = 1 + (f - 1) * .5;
+  if (heroica || encargo) return extra;
+  const sobra = nivel - (TOPE_ZONA[f] ?? 8);
+  return extra * (sobra > 0 ? Math.max(.1, 1 - sobra * .25) : 1);
+}
 
 // Lo duro que es una pelea: en normal, la zona; en heroica, el nivel del héroe (y nunca menos que la zona + 1)
 export function escalon({ par, heroica = false, nivel = 1 }) {

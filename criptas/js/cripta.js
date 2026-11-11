@@ -24,7 +24,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
-import { escalon, escalonEncargo, reforzar, PREMIO_HEROICA } from './dificultad.js';
+import { escalon, escalonEncargo, reforzar, factorXP, PREMIO_HEROICA } from './dificultad.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
@@ -238,6 +238,7 @@ async function empezarCombate(grupo) {
 }
 async function ganarExperiencia(xp) {
   if (!xp) return;
+  xp = Math.max(1, Math.round(xp * factorXP({ par: PAR, nivel: DEF.nivel || 1, heroica: HEROICA, encargo: DEL_PUEBLO })));
   DEF.xp = (DEF.xp || 0) + xp; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.6, 0)), `+${xp} exp`, '#b9a2ff');
   const n = nivelDe(DEF.xp);
   if (n > (DEF.nivel || 1)) {

@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { decorarIsla } from './decor-isla.js';
-import { escalon, reforzar } from './dificultad.js';
+import { escalon, reforzar, factorXP } from './dificultad.js';
 import { entradaCine } from './decor-entradas.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
@@ -361,6 +361,7 @@ function ponerHeroe(def) {
 }
 async function ganarExperiencia(xp) {
   if (!xp) return;
+  xp = Math.max(1, Math.round(xp * factorXP({ par: PAR, nivel: DEF.nivel || 1 })));   // las zonas que te quedan pequeñas dan poca
   DEF.xp = (DEF.xp || 0) + xp; ui.numero(H.pos.clone().add(new THREE.Vector3(0, 3.6, 0)), `+${xp} exp`, '#b9a2ff');
   const n = nivelDe(DEF.xp);
   if (n > (DEF.nivel || 1)) {

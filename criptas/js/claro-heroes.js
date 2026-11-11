@@ -32,7 +32,8 @@ export const CLASES = {
 };
 
 // Experiencia necesaria para cada nivel (el 1 empieza en 0)
-export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740];
+// Hasta el 8 como siempre (nadie pierde niveles); desde ahí, cada nivel cuesta bastante más que el anterior
+export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740, 1000, 1350, 1820, 2460, 3320, 4480, 6050];
 export const nivelDe = (xp) => { let n = 1; for (let i = 1; i < NIVELES.length; i++) if (xp >= NIVELES[i]) n = i + 1; return n; };
 export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 
@@ -66,7 +67,7 @@ export function estadisticas(h, enCripta = false) {
   return {
     ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + mj.ataque + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
     defensa: c.defensa + (h.raza === 'elfo' ? 1 : 0) + mj.defensa + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
-    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
+    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (Math.min(n, 8) - 1) + Math.floor(Math.max(0, n - 8) / 2) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
     hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0, pl: Math.floor((n - 1) / 3) },   // mejoras propias de la clase; pl: la bola de fuego y la torreta crecen con el nivel
