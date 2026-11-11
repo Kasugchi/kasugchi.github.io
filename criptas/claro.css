@@ -53,13 +53,14 @@
   /* En el móvil, la interfaz se encoge para dejar ver el mundo */
   @media (pointer: coarse), (max-width: 560px) {
     .caja { border-width: 2px; border-radius: 16px; box-shadow: 0 3px 0 rgba(74,54,38,.18), 0 6px 14px rgba(40,20,40,.2); }
-    #ficha { top: max(8px, env(safe-area-inset-top)); left: 8px; gap: 6px; padding: 4px 9px 4px 4px; }
+    #ficha { top: max(8px, env(safe-area-inset-top)); left: 8px; gap: 6px; padding: 4px 9px 4px 4px; max-width: 212px; box-sizing: border-box; }
     #retrato { width: 34px; height: 34px; font-size: 19px; border-width: 2px; }
     #ficha b { font-size: 11.5px; }
     #corazones { gap: 2px; margin: 2px 0; }
     #corazones i { width: 10px; height: 9px; clip-path: path('M5 9 C5 9 0 5.6 0 2.8 C0 1 1.4 0 2.8 0 C3.9 0 4.6 .7 5 1.4 C5.4 .7 6.1 0 7.2 0 C8.6 0 10 1 10 2.8 C10 5.6 5 9 5 9Z'); }
     .stats { font-size: 11.5px; gap: 7px; }
-    #mision { top: max(8px, env(safe-area-inset-top)); right: 48px; left: auto; width: auto; max-width: calc(100vw - 232px); padding: 5px 9px; font-size: 11px; gap: 1px; line-height: 1.25; }
+    /* la misión, debajo del botón ☰ (que con el código de la sala se ensancha) y sin pisar tu tarjeta */
+    #mision { top: calc(max(8px, env(safe-area-inset-top)) + 42px); right: 8px; left: auto; width: auto; max-width: calc(100vw - 230px); box-sizing: border-box; padding: 5px 9px; font-size: 11px; gap: 1px; line-height: 1.25; }
     #mision b { font-size: 11.5px; }
     #sonido { top: max(8px, env(safe-area-inset-top)); right: 8px; width: 34px; height: 34px; font-size: 15px; }
     #sala { top: calc(max(8px, env(safe-area-inset-top)) + 40px); right: 8px; min-width: 34px; height: 34px; font-size: 12px; padding: 0 8px; }
