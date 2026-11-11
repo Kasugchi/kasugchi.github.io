@@ -262,9 +262,37 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     accionesHeroe();
   }
   // Toque sobre el tablero mientras eliges casilla
+  // La ficha de un bicho: un cartelito arriba unos segundos con su vida, ataque y defensa
+  let tFicha = null;
+  function verFicha(u) {
+    let el = document.getElementById('ficha-bicho');
+    if (!el) {
+      el = document.createElement('div'); el.id = 'ficha-bicho';
+      el.style.cssText = 'position:fixed;left:50%;top:max(96px,calc(env(safe-area-inset-top) + 96px));transform:translateX(-50%);z-index:30;background:#fff8e6;color:#3a2a20;border-radius:16px;padding:10px 16px;box-shadow:0 6px 20px #0004;font:600 15px Nunito,system-ui,sans-serif;text-align:center;pointer-events:none;transition:opacity .25s;max-width:86vw';
+      document.body.appendChild(el);
+    }
+    const max = Math.max(u.max ?? u.cuerpo, u.cuerpo), vida = '❤️'.repeat(Math.max(0, Math.min(u.cuerpo, 12))) + '🤍'.repeat(Math.max(0, Math.min(max, 12) - Math.min(u.cuerpo, 12)));
+    const quien = u.bando === 'enemigo' ? (u.jefe ? '👑 ' : '💀 ') : '🛡️ ';
+    el.innerHTML = `<b style="font-size:16px">${quien}${u.nombre}</b><div style="margin:4px 0;letter-spacing:1px">${vida}</div><div>❤️ ${u.cuerpo}/${max} · ⚔️ ${u.ataque} dados · 🛡️ ${u.defensa} dados${u.alcance > 1 ? ' · 🏹 a distancia' : ''}</div>`;
+    el.style.opacity = 1; clearTimeout(tFicha); tFicha = setTimeout(() => { el.style.opacity = 0; }, 3200);
+    ui.chispas(sobre(u, u.pj.altura || 1.6), u.bando === 'enemigo' ? '#ff8a7a' : '#8ad8ff', 8, 1.2);
+  }
+  // Un toque con el rayo de la cámara: si da en un muñeco (en el cuerpo, no en el suelo de detrás), su ficha; o atacarle si es tu blanco
+  C.tocarRayo = (ray) => {
+    if (!C.activo || actorR) return false;
+    let mejor = null, dm = 1e9;
+    for (const u of unidades) { if (!u.vivo || u === actor()) continue; const hit = ray.intersectObject(u.pj.grupo, true)[0]; if (hit && hit.distance < dm) { dm = hit.distance; mejor = u; } }
+    if (!mejor) return false;
+    if (modoEleccion && alcanzables.has(mejor.c)) C.tocar(mejor.pj.grupo.position); else verFicha(mejor);
+    return true;
+  };
   C.tocar = async (punto, remoto = false) => {
     if (!!actorR !== remoto) return !!actorR;   // en el turno del compañero, tus toques no cuentan (y los suyos solo en el suyo)
-    if (!C.activo || !modoEleccion || !punto) return false;
+    if (!C.activo || !punto) return false;
+    // tocar a un bicho (o a una torreta, o al compañero) enseña su ficha; si es a quien estabas apuntando, el toque vale para atacarle
+    const tocado = unidades.find((u) => u.vivo && u !== actor() && Math.hypot(u.pj.grupo.position.x - punto.x, u.pj.grupo.position.z - punto.z) < T * .6);
+    if (tocado && !(modoEleccion && alcanzables.has(tocado.c))) { verFicha(tocado); return true; }
+    if (!modoEleccion) return false;
     let c = null, d = 1e9; for (const x of casillas) { const e = Math.hypot(x.x - punto.x, x.z - punto.z); if (e < d) { d = e; c = x; } }
     if (!c || d > T * .75 || !alcanzables.has(c)) return true;
     const h = actor(), t = turnoHeroe, modo = modoEleccion; modoEleccion = null; alcanzables.clear(); pintar(); HUD.acciones([]);
@@ -412,7 +440,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);
-    unidades = [h, ...grupo.map((e) => ({ ...e, bando: 'enemigo', vivo: true }))];
+    unidades = [h, ...grupo.map((e) => ({ ...e, max: e.max ?? e.cuerpo, bando: 'enemigo', vivo: true }))];
     for (const u of unidades) u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u);
     hud.banner('¡Círculo de combate!', 'enemigo');
     camara.enfocarCombate(new THREE.Vector3(tablero.cx, tablero.y0, tablero.cz), heroe.grupo.position);

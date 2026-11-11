@@ -274,7 +274,7 @@ const suelo = escena.getObjectByName('suelo');
 function lanzar(x, y) { pt.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(pt, camara); }
 function tocarEn(x, y) {
   lanzar(x, y);
-  if (combate.activo) { const s = ray.intersectObject(suelo)[0]; return combate.tocar(s?.point); }
+  if (combate.activo) { if (combate.tocarRayo(ray)) return; const s = ray.intersectObject(suelo)[0]; return combate.tocar(s?.point); }
   if (PJ?.dentro()) { const s = ray.intersectObject(suelo)[0]; return PJ.tocar(s?.point); }
   if (H.bloqueado || dlg.actual) return;
   // ¿Has tocado algo con lo que se puede interactuar?

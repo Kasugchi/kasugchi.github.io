@@ -386,7 +386,7 @@ const ray = new THREE.Raycaster(), pt = new THREE.Vector2(), suelo = new THREE.P
 function puntoSuelo(x, y) { pt.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(pt, camara); const v = new THREE.Vector3(); return ray.ray.intersectPlane(suelo, v) ? v : null; }
 function tocarEn(x, y) {
   const p = puntoSuelo(x, y); if (!p) return;
-  if (combate.activo) return combate.tocar(p);
+  if (combate.activo) { if (combate.tocarRayo(ray)) return; return combate.tocar(p); }
   if (PJ?.dentro()) return PJ.tocar(p);
   if (H.bloqueado || dlg.actual) return;
   // ¿una puerta?
