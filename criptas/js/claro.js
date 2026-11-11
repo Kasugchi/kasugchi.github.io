@@ -599,7 +599,7 @@ function ofrecerBajada() {
   const { nombre, url } = bajadaPendiente; bajadaPendiente = null;
   hablar('Jugar juntos', [`${nombre} acaba de bajar a la cripta. Si bajas ahora, entraréis en la misma: lo que abra uno se abre para los dos.`], [[`Bajar con ${nombre}`, () => bajarCripta(url)], ['Me quedo aquí', null]]);
 }
-const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase, colores: DEF.colores });
+const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase, colores: DEF.colores, titulo: DEF.titulo || '' });
 {
   // El botón ☰: jugar juntos, sonido, pantalla completa, controles y volver (igual en todo el juego)
   const bSala = document.createElement('button');   // el panel de la sala se abre desde la libreta
@@ -632,7 +632,7 @@ function pintarOtros(gente) {
       let h = {}; try { h = JSON.parse(g.heroe || '{}'); } catch { /* sin datos: uno genérico */ }
       const pj = crearHeroe({ raza: h.raza || 'humano', clase: h.clase || g.clase || 'mago', colores: h.colores || {} });
       const x = g.x ?? 0, z = g.z ?? 0; pj.grupo.position.set(x, mundo.alturaEn(x, z), z); escena.add(pj.grupo);
-      o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: g.nombre }), tx: x, tz: z }; OTROS.set(id, o);
+      o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: h.titulo || g.nombre }), tx: x, tz: z }; OTROS.set(id, o);
     }
     if (!o.pj.enPelea) { o.tx = g.x ?? o.tx; o.tz = g.z ?? o.tz; }   /* en una pelea lo coloca la foto de la pelea, no su sitio de la sala */
   }

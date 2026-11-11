@@ -24,7 +24,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
-import { escalon, escalonEncargo, reforzar, factorXP, premioHeroica, RANGOS, MAX_RANGO, AFIJOS, afijoDeLaSemana, numeroSemana } from './dificultad.js';
+import { escalon, escalonEncargo, reforzar, factorXP, premioHeroica, RANGOS, MAX_RANGO, AFIJOS, afijoDeLaSemana, numeroSemana, TITULOS, RANGO_TITULO } from './dificultad.js';
 import { MERCENARIOS } from './mercenarios.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
@@ -348,6 +348,8 @@ async function ganar() {
     sumarBotin(DEF, { trofeo: 1, esencia: PREMIO_HEROICA.esencia * (doble ? 2 : 1) });
     DEF.heroicas ||= {}; const antes = DEF.heroicas[PID] || 0; DEF.heroicas[PID] = Math.max(antes, RANGO);
     if (RANGO > antes && RANGO < MAX_RANGO) setTimeout(() => hud.banner(`¡Heroica ${RANGOS[RANGO]} desbloqueada!`, 'heroe'), 2600);
+    const tit = TITULOS[PID];   // el título de la zona, al superar su Heroica III
+    if (tit && RANGO >= RANGO_TITULO && !(DEF.titulos || []).includes(tit)) { DEF.titulos = [...(DEF.titulos || []), tit]; DEF.titulo = tit; setTimeout(() => hud.banner(`🏅 Nuevo título: ${DEF.nombre}, ${tit}`, 'heroe'), 7000); }
   }
   if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else if (PID === 'claro') DEF.criptaHecha = true; else { DEF.paradas ||= {}; (DEF.paradas[PID] ||= {}).criptaHecha = true; }
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);

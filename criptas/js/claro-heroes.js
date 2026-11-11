@@ -153,7 +153,7 @@ export function fichaHeroe(h, est = null) {
     .fh-fila small { grid-column: 2 / 4; opacity: .7; font-size: 12px; line-height: 1.25; } .fh-ico { font-size: 20px; text-align: center; } .fh-val { font-weight: 800; font-size: 17px; white-space: nowrap; }
     .fh-sec { margin: 12px 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; } .fh-txt { font-size: 13px; line-height: 1.35; margin: 0 0 6px; }
   </style>
-  <div class="fh-cab"><span class="r">${c.icono}</span><div><b>${h.nombre || 'Tu héroe'}</b> · nivel ${h.nivel || 1}<small>${r?.nombre || ''} ${c.nombre.toLowerCase()} · ${h.xp || 0} de experiencia</small></div></div>
+  <div class="fh-cab"><span class="r">${c.icono}</span><div><b>${h.nombre || 'Tu héroe'}</b>${h.titulo ? `, <i>${h.titulo}</i>` : ''} · nivel ${h.nivel || 1}<small>${r?.nombre || ''} ${c.nombre.toLowerCase()} · ${h.xp || 0} de experiencia</small></div></div>
   ${fila('❤️', 'Cuerpo', `${e.cuerpo} / ${e.max}`, 'Lo que aguantas. A cero, caes.')}
   ${fila('⚔️', 'Ataque', dados(e.ataque, '🎲'), 'Dados que tiras al pegar: cada calavera es un golpe.')}
   ${fila('🛡️', 'Defensa', dados(e.defensa, '🎲'), 'Dados que tiras cuando te pegan: cada escudo para un golpe.')}
@@ -162,6 +162,7 @@ export function fichaHeroe(h, est = null) {
   <div class="fh-sec">${r?.icono || ''} ${r?.nombre || 'Raza'}: ${r?.rasgo || ''}</div><p class="fh-txt">${r?.texto || ''}</p>
   ${loa ? `<p class="fh-txt"><b>${loa.icono} ${loa.nombre}:</b> ${loa.texto}</p>` : ''}
   ${elegidas.length ? `<div class="fh-sec">Mejoras de nivel</div><p class="fh-txt">${elegidas.join(' · ')}</p>` : ''}
+  ${(h.titulos || []).length ? `<div class="fh-sec">Títulos</div><p class="fh-txt">🏅 ${h.titulos.join(' · ')}</p>` : ''}
   ${forja.length ? `<div class="fh-sec">De la forja</div><p class="fh-txt">${forja.join(' · ')}</p>` : ''}
   ${h.arma && ARMAS[h.arma] ? `<p class="fh-txt">Llevas: <b>${ARMAS[h.arma].nombre || h.arma}</b></p>` : ''}`;
 }

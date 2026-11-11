@@ -69,3 +69,7 @@ export function afijoDeLaSemana(fecha = new Date()) {
 }
 // Semana (para la esencia doble de la primera heroica de cada semana)
 export const numeroSemana = (fecha = new Date()) => Math.floor((fecha - new Date(2026, 0, 5)) / (7 * 864e5));
+
+// ---------- Títulos: superar la Heroica III de una zona te da su título (se ve en tu nombre y en tu casa) ----------
+export const TITULOS = { claro: 'Azote de los Huesos', pantano: 'Terror del Pantano', cine: 'Estrella del Cine Mudo', isla: 'Terror de la Isla', celdas: 'Rompecadenas' };
+export const RANGO_TITULO = 3;

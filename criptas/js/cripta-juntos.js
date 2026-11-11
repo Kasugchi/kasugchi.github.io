@@ -19,7 +19,7 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
   let SALA = null, tPub = null, luchando = [];
 
   // ---------- lo mío ----------
-  const datosHeroe = () => { const d = def(); return { nombre: d.nombre, raza: d.raza, clase: d.clase, colores: d.colores }; };
+  const datosHeroe = () => { const d = def(); return { nombre: d.nombre, raza: d.raza, clase: d.clase, colores: d.colores, titulo: d.titulo || '' }; };
   function publicar() {
     if (!SALA || tPub) return;
     tPub = setTimeout(() => {
@@ -59,7 +59,7 @@ export function crearJuntos({ escena, ui, cripta, clave, heroe, H, def, combate,
         const pj = crearHeroe({ raza: h.raza || 'humano', clase: h.clase || g.clase || 'mago', colores: h.colores || {} });
         pj.grupo.position.set(g.x ?? H.pos.x, 0, g.z ?? H.pos.z); escena.add(pj.grupo);
         const luz = new THREE.PointLight('#ffcf8a', 4, 9, 1.5); luz.position.y = 2.2; pj.grupo.add(luz);   // cada uno lleva su antorcha
-        o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: g.nombre }), tx: pj.grupo.position.x, tz: pj.grupo.position.z, lucha: [], celda: '' };
+        o = { pj, heroe: g.heroe, rot: ui.rotulo(pj.grupo, h.nombre || g.nombre || 'Viajero', { altura: pj.altura + .25, sub: h.titulo || g.nombre }), tx: pj.grupo.position.x, tz: pj.grupo.position.z, lucha: [], celda: '' };
         OTROS.set(id, o);
         if (OTROS.size === 1) al.llega?.(h.nombre || g.nombre || 'Alguien');
       }
