@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { decorarIsla } from './decor-isla.js';
+import { entradaCine } from './decor-entradas.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
 import { crearCalidad } from './calidad.js';
@@ -62,7 +63,7 @@ addEventListener('resize', () => { camara.aspect = innerWidth / innerHeight; cam
 usarMapa(PAR.mapa);   // cada parada, su sitio para cada cosa
 const MAPA = PAR.mapa || {};
 const mundo = crearMundo(escena, { movil: MOVIL, tema: PAR.tema });
-const DECOR = PAR.decor === 'isla' ? decorarIsla(escena, mundo) : null;   // el decorado propio de algunas paradas
+const DECOR = PAR.decor === 'isla' ? decorarIsla(escena, mundo) : PAR.decor === 'cine' ? entradaCine(escena, mundo) : null;   // el decorado propio de algunas paradas
 const ui = crearUI3D(escena, camara);
 const sonido = crearSonido({ entorno: PAR.tema?.sonido || 'bosque' });
 if (PAR.tema?.cine) ponerCine();   // la parada de las películas antiguas
@@ -160,7 +161,7 @@ interactivo({ tipo: 'estanque', nombre: 'Estanque', verbo: 'Mirar', obj: null, p
 const FRENTE = new THREE.Vector3(Math.sin(SITIOS.criptaGiro), 0, Math.cos(SITIOS.criptaGiro));   // hacia donde mira la puerta de la cripta
 { const p = SITIOS.cripta.clone().addScaledVector(FRENTE, 1.8); interactivo({ tipo: 'cripta', nombre: PAR.cripta.nombre, corto: 'Cripta', verbo: 'Entrar', obj: mundo.cripta, pos: p.setY(mundo.alturaEn(p.x, p.z)), r: 2.2, color: '#c9a2ff' }); }
 interactivo({ tipo: 'pasarela', nombre: 'Pasarela de Morrandar', corto: 'Morrandar', verbo: 'Subir', obj: null, pos: SITIOS.llegada.clone().add(new THREE.Vector3(0, 0, -1.5)), r: 1.8 });
-const rotCripta = ui.rotulo(mundo.cripta, PAR.cripta.nombre, { tipo: 'cosa', altura: 5.6 });
+const rotCripta = ui.rotulo(mundo.cripta, PAR.cripta.nombre, { tipo: 'cosa', altura: PAR.decor === 'cine' ? 9.8 : PAR.decor === 'isla' ? 11.2 : 5.6 });
 
 // ---------- cámara en tercera persona ----------
 const CAM = { yaw: 3.93, pitch: .38, dist: 9, objetivo: new THREE.Vector3(), temblor: 0, modo: 'intro', foco: null, mirar: null, introT: 0 };

@@ -75,6 +75,8 @@ export const PARADAS = {
     nombre: 'El muelle de los dibujos', corto: 'El muelle', icono: '🎞️',
     descripcion: 'Un muelle de río donde todo es en blanco y negro, como en las películas de antes. Suena un piano y los esqueletos bailan a saltitos.',
     requiere: 'claro',                           // se abre al vencer la cripta del claro
+    decor: 'cine',                               // la fachada del cine en la entrada de la cripta (js/decor-entradas.js)
+    mapa: { sitios: { colina: [39, 7] } },       // la colina, más atrás: si no, tapa la fachada
     tema: {
       cine: true,                                // blanco y negro, grano, parpadeo y carteles de cine mudo (js/cine.js)
       colores: { cieloAlto: '#3a3a40', cieloMedio: '#9a9aa0', horizonte: '#f0f0e8', niebla: '#d8d8d0', hierba: '#8a9a7a', hierbaOscura: '#4a5a4a', hierbaClara: '#c8d0b8', camino: '#b8a890', tierra: '#5a4a3a', tronco: '#3a2a20', copa: '#5a7a5a', copa2: '#7a9a6a', copa3: '#3a5a3a', agua: '#8aa0b0', aguaHonda: '#3a4a5a', roca: '#9a9a90', roca2: '#6a6a60' },
