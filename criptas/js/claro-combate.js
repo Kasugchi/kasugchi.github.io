@@ -5,6 +5,7 @@
 //  con las reglas de siempre: dados rojos para moverse, calaveras para
 //  pegar, escudos blancos (héroe) o negros (monstruos) para parar.
 // =============================================================
+import { extraPorCompanero } from './dificultad.js';
 import * as THREE from 'three';
 import { toon, lienzo } from './claro-estilo.js';
 import { crearTorreta } from './claro-personajes.js';
@@ -313,7 +314,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (id === 'fuego') {
       mirarse(h, objetivo); sonido.hechizo(); h.pj.hacer('lanzar', .7); await espera(300);
       await ui.proyectil(h.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(objetivo, 1)); sonido.explosion(); ui.chispas(sobre(objetivo, 1), '#ff9a4a', 40, 5);
-      const fuerza = 2 + (MJ().gorda || 0), mesa = mesaDados(h, objetivo); HUD.narrar(`¡Bola de fuego${fuerza > 2 ? ' gorda' : ''}! ${objetivo.nombre} tira 2 dados: cada calavera le quita 1 de los ${fuerza} de daño.`);
+      const fuerza = 2 + (MJ().gorda || 0) + (MJ().pl || 0), mesa = mesaDados(h, objetivo); HUD.narrar(`¡Bola de fuego${fuerza > 2 ? ' gorda' : ''}! ${objetivo.nombre} tira 2 dados: cada calavera le quita 1 de los ${fuerza} de daño.`);
       const r = await dados.tirar('combate', 2, mesa.centro, mesa.desde), dano = Math.max(0, fuerza - r.filter((x) => x === 'calavera').length);
       if (dano) await herir(objetivo, dano); else { ui.numero(sobre(objetivo, objetivo.pj.altura), '¡Esquiva!', '#ffe08a'); HUD.narrar('Se aparta chamuscado, pero entero.'); await espera(600); }
       return;
@@ -323,8 +324,8 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       await h.pj.hacer('construir', 1.1);
       const pj = crearTorreta(); pj.grupo.position.set(c.x, c.y + .17, c.z); escena.add(pj.grupo);
       const e0 = enemigos()[0]; if (e0) pj.mirarA(Math.atan2(e0.pj.grupo.position.x - c.x, e0.pj.grupo.position.z - c.z));
-      const rf = MJ().reforzada || 0; if (rf) pj.grupo.scale.setScalar(1 + rf * .12);   // reforzada: más grande y más bruta
-      unidades.push({ bando: 'aliado', pj, nombre: rf ? 'La torreta reforzada' : 'La torreta', cuerpo: 2 + rf, ataque: 2 + rf, defensa: 1, alcance: 6, vivo: true, c });
+      const rf = (MJ().reforzada || 0) + (MJ().pl || 0); if (MJ().reforzada) pj.grupo.scale.setScalar(1 + MJ().reforzada * .12);   // reforzada: más grande y más bruta
+      unidades.push({ bando: 'aliado', pj, nombre: MJ().reforzada ? 'La torreta reforzada' : 'La torreta', cuerpo: 2 + rf, ataque: 2 + rf, defensa: 1, alcance: 6, vivo: true, c });
       camara.mirarHacia(pj.grupo.position); sonido.abrir(); ui.chispas(sobre({ pj }, .8), '#ffd27a', 24, 3); HUD.narrar(MJ().rapida && E().usos ? `¡Clonc, chas! Torreta montada en un plis. Te quedan ${E().usos}: ¿otra?` : '¡Clonc, clonc, chas! Torreta montada. Disparará sola al final de tu turno.');
       await espera(700);
     }
@@ -481,7 +482,9 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     u.est = { cuerpo, max, ataque, defensa, habilidad: est?.habilidad || { id: 'brutal', nombre: 'Golpe brutal', icono: '💥' }, usos: est?.usos ?? 0, pociones: est?.pociones ?? 0, pasosExtra: est?.pasosExtra || 0, hab: est?.hab || {}, racial: null };
     u.c = masCercana(pj.grupo.position.x, pj.grupo.position.z, u); if (!u.c) return false;
     unidades.push(u); sonido.circulo(); ui.chispas(sobre(u, 1), '#c9a2ff', 30, 3);
-    hud.narrar(`¡${nombre} entra en el círculo! Peleará a tu lado.`); andar(u, [u.c], .3);
+    // con un héroe más, los bichos se crecen (si no, en compañía todo es un paseo)
+    for (const e of enemigos()) { const x = extraPorCompanero(e); e.max = (e.max ?? e.cuerpo) + x; e.cuerpo += x; ui.numero(sobre(e, e.pj.altura || 1.6), `+${x} ❤`, '#ff8a7a'); }
+    hud.narrar(`¡${nombre} entra en el círculo! Peleará a tu lado… y los bichos se crecen.`); andar(u, [u.c], .3);
     return true;
   };
   // Para las pruebas: qué casillas están iluminadas y dónde está cada uno

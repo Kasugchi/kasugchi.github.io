@@ -1,0 +1,41 @@
+// =============================================================
+//  DIFICULTAD: cada zona tiene su fuerza, y las criptas tienen versión heroica
+//  - Normal: los monstruos son como los de la zona (el claro, flojos; las minas, duros).
+//    Si vuelves al claro con nivel 8, te paseas: se nota lo que has crecido.
+//  - Heroica (se elige al bajar): se ajusta al nivel de los héroes, para que ni con
+//    un montón de dados se limpie un campamento de un golpe. Da mejor botín.
+//  - En compañía: cada héroe que entra en una pelea hace a los bichos más duros.
+//  Los números salen de herramientas/simulacion.py (si los tocas, cópialos allí).
+// =============================================================
+
+// Escalón de la zona: 0 en la de inicio y uno más por cada tramo del viaje
+export const escalonZona = (par) => Math.max(0, (par?.fuerza || 1) - 1) * 1.7;
+
+// Para qué nivel de héroe está pensada cada zona (lo que se enseña en la portada y en el atril)
+export const NIVEL_ZONA = { 1: '1 a 3', 2: '4 a 6', 3: '7 y 8' };
+export const textoNivelZona = (par) => `Nivel ${NIVEL_ZONA[par?.fuerza || 1] || '1 a 3'}`;
+// Los encargos del tablón ya traen su nivel (más alto cuanto más difícil): de ahí sale lo duros que son sus bichos
+export const escalonEncargo = (nivel) => Math.max(0, (nivel - 2) / 2.2);
+
+// Lo duro que es una pelea: en normal, la zona; en heroica, el nivel del héroe (y nunca menos que la zona + 1)
+export function escalon({ par, heroica = false, nivel = 1 }) {
+  const z = escalonZona(par);
+  return heroica ? Math.max(z + 1, (nivel - 1) / 2.2 + .6) : z;
+}
+
+// Los números de un monstruo, reforzados según el escalón (el jefe crece más en vida)
+export function reforzar(m, t, jefe = false) {
+  if (!t) return m;
+  return {
+    ...m,
+    cuerpo: m.cuerpo + Math.round(t * (jefe ? 2.6 : 1.4)),
+    ataque: Math.min(8, m.ataque + Math.round(t * .9)),
+    defensa: Math.min(6, m.defensa + Math.round(t * .4))   // poca defensa: si no, el mago y el ingeniero (2 dados) no hacen nada
+  };
+}
+
+// Lo que gana de más quien baja en heroica
+export const PREMIO_HEROICA = { xp: 1.5, oro: 2, botin: 2 };
+
+// Cada héroe de más en la pelea: un poco más de vida a cada bicho (el jefe, más)
+export const extraPorCompanero = (u) => (u.jefe ? 3 : 1);

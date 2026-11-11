@@ -4,6 +4,7 @@
 //  de Morrandar con su cripta, la tortuga, la cabaña, la sala y los
 //  prototipos. Las paradas cerradas dicen qué falta para abrirlas.
 // =============================================================
+import { textoNivelZona } from './dificultad.js';
 import { PARADAS, paradaAbierta, criptaHechaEn } from './paradas.js';
 import { leerLocal, cargarHeroe } from './claro-heroes.js';
 
@@ -40,7 +41,7 @@ function pintar(caja, h) {
   const paradas = lista.map(([id, p]) => {
     const abierta = paradaAbierta(id, h), hecha = criptaHechaEn(id, h);
     return tarjeta({
-      ico: p.icono, titulo: p.nombre, sub: `${p.descripcion.split('. ')[0]}. Cripta: ${p.cripta.nombre}.`,
+      ico: p.icono, titulo: p.nombre, sub: `<b>${textoNivelZona(p)}.</b> ${p.descripcion.split('. ')[0]}. Cripta: ${p.cripta.nombre}.`,
       href: id === 'claro' ? 'claro.html' : `claro.html?p=${id}`,
       marca: hecha ? ['✓ superada'] : abierta && h && id !== 'claro' ? ['nueva', 'nueva'] : null,
       cerrado: abierta ? null : `Vence antes la cripta de${nombreDe(p.requiere).startsWith('l ') ? '' : ' '}${nombreDe(p.requiere)}`

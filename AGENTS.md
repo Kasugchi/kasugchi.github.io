@@ -54,9 +54,13 @@ Juego de mazmorras por turnos estilo juego de mesa, multijugador con código de 
 - **Botón ☰** (`js/menu-aventura.js`): la libreta común de la aventura (sala, sonido, pantalla completa con `js/pantalla.js`, controles). El pueblo tiene la suya con las mismas opciones.
 - **Portada**: `js/sitios.js` pinta en el menú las tarjetas de cada sitio (pueblo, tortuga, paradas, cabaña…).
 
+### Dificultad (`js/dificultad.js`)
+
+Cada parada tiene `fuerza` (claro 1; pantano, cine e isla 2; minas 3) y un nivel recomendado que se enseña en la portada y en el atril. Los bichos se refuerzan según la zona (`reforzar`). Al bajar a una cripta se elige **normal** o **heroica** (`?modo=heroica`): la heroica se ajusta al nivel del héroe y da más experiencia, oro, botín y un trofeo. Los encargos del tablón usan su propio nivel. En compañía, cada héroe que entra en una pelea da vida extra a los bichos. La bola de fuego y la torreta crecen con el nivel (`hab.pl`).
+
 ### Equilibrio (`herramientas/simulacion.py`)
 
-Simula miles de criptas enteras con las reglas del combate y saca el ranking raza × clase. **Si tocas números de combate** (clases, razas, loas, monstruos), cópialos también allí y vuelve a pasarlo: `python3 criptas/herramientas/simulacion.py`. Objetivo: todas las combinaciones entre un 75 % y un 95 % a nivel 3.
+Simula miles de criptas enteras con las reglas del combate y saca el ranking raza × clase. **Si tocas números de combate** (clases, razas, loas, monstruos), cópialos también allí y vuelve a pasarlo: `python3 criptas/herramientas/simulacion.py`. Objetivo: todas las combinaciones entre un 75 % y un 95 % a nivel 3. Con `simulacion.py zonas` se mide cada clase a nivel 3, 5 y 8 contra cada zona y en heroica.
 
 ### La gramola de Rufo (`js/midi.js` y `midi/`)
 

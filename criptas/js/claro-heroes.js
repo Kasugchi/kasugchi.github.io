@@ -69,7 +69,7 @@ export function estadisticas(h, enCripta = false) {
     max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (n - 1) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
     pasosExtra: h.raza === 'elfo' ? 2 : 0,
-    hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0 },   // mejoras propias de la clase
+    hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0, pl: Math.floor((n - 1) / 3) },   // mejoras propias de la clase; pl: la bola de fuego y la torreta crecen con el nivel
     escamas: h.raza === 'escamado',
     oroExtra: 0,
     carneTrol: h.raza === 'troll',                                           // carne de trol: +1 de cuerpo extra al ganar cada pelea

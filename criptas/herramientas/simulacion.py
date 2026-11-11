@@ -5,6 +5,7 @@
 #
 #    python3 criptas/herramientas/simulacion.py        # ranking a nivel 3
 #    python3 criptas/herramientas/simulacion.py 1      # a nivel 1
+#    python3 criptas/herramientas/simulacion.py zonas  # cada clase a nivel 3, 5 y 8 contra cada zona y en heroica
 #
 #  OJO: los números de héroes y monstruos están copiados a mano de
 #  js/claro-heroes.js (CLASES, RAZAS, LOAS) y js/datos.js (MONSTRUOS).
@@ -32,6 +33,20 @@ class U:
 dist = lambda a, b: abs(a.x - b.x) + abs(a.y - b.y)
 pegados = lambda a, b: dist(a, b) == 1
 
+# js/dificultad.js: los bichos, reforzados según el escalón (la zona, o el nivel del héroe en heroica)
+import os
+FA, FD, FH, FJ, FZ = (float(os.environ.get(k, v)) for k, v in (('FA', .9), ('FD', .4), ('FH', 1.4), ('FJ', 2.6), ('FZ', 1.7)))
+def reforzar(a, d, hp, t, jefe=False):
+    if not t: return a, d, hp
+    return min(8, a + round(t * FA)), min(6, d + round(t * FD)), hp + round(t * (FJ if jefe else FH))
+def escalon(fuerza, heroica=False, nivel=1):
+    z = max(0, fuerza - 1) * FZ
+    return max(z + 1, (nivel - 1) / 2.2 + .6) if heroica else z
+# Un héroe «normal» de nivel L: mejoras repartidas entre ataque y defensa, y lo que va dando la forja
+def montar(L):
+    atk = min(3, (L - 1 + 1) // 2); dfn = min(3, (L - 1) // 2); forja_a = 0 if L < 4 else 1 if L < 7 else 2; forja_d = 0 if L < 5 else 1
+    return {'atk+': atk + forja_a, 'def+': dfn + forja_d}
+
 def pelea(heroe, grupo, cfg, est):
     """est: dict persistente de la cripta (hp, poc, rezos). Devuelve False si el héroe cae."""
     raza, clase = cfg['raza'], cfg['clase']
@@ -41,6 +56,7 @@ def pelea(heroe, grupo, cfg, est):
     ene = []
     for k, t in enumerate(grupo):
         a, d, hp, mv = MON[t]
+        a, d, hp = reforzar(a, d, hp, cfg.get('t', 0), t == 'jefe')
         ene.append(U('e', min(W - 1, max(0, W // 2 + (k * 2 - (len(grupo) - 1)))), random.randint(0, 1), a, d, hp, mv, t))
     tur = []
     usos = usos0 + (1 if raza == 'humano' else 0) + cfg.get('usos+', 0)
@@ -105,9 +121,9 @@ def pelea(heroe, grupo, cfg, est):
             if h.hp <= 3 and est['poc']: est['poc'] -= 1; h.hp = min(est['max'], h.hp + 3); continue
             if hab == 'torreta' and usos and not any(t.vivo for t in tur):
                 c = libres_alrededor(h)
-                if c: usos -= 1; tur.append(U('t', c[0][0], c[0][1], 2, 1, 2)); continue
+                if c: usos -= 1; pl = (cfg.get('L', 1) - 1) // 3; tur.append(U('t', c[0][0], c[0][1], 2 + pl, 1, 2 + pl)); continue
             if hab == 'fuego' and usos:
-                t = max(vivos(), key=lambda e: (e.dfn, e.hp)); usos -= 1; t.hp -= max(0, 2 - tira(2, SK)); continue
+                t = max(vivos(), key=lambda e: (e.dfn, e.hp)); usos -= 1; t.hp -= max(0, 2 + (cfg.get('L', 1) - 1) // 3 - tira(2, SK)); continue
             if hab == 'flecha' and usos and min(dist(h, e) for e in vivos()) <= 5:
                 t = min([e for e in vivos() if dist(h, e) <= 5], key=lambda e: e.hp); usos -= 1; golpe(h, t, h.atk + cfg.get('flecha+', 0)); continue
             # cuerpo a cuerpo: acercarse si hace falta
@@ -150,6 +166,17 @@ def medir(cfg, N=3000, nivel=3):
         if ok: v += 1; s += hp
     return v / N, s / max(1, v)
 
+if __name__ == '__main__' and len(sys.argv) > 1 and sys.argv[1] == 'zonas':
+    # python3 simulacion.py zonas: cada clase a nivel 3, 5 y 8 contra cada zona, en normal y en heroica
+    print('                  nivel   zona1   zona2   zona3   heroica   (victorias, vida que queda)')
+    for r, c in [('humano', 'barbaro'), ('humano', 'mago'), ('humano', 'ingeniero'), ('humano', 'explorador'), ('troll', 'barbaro')]:
+        for L in (3, 5, 8):
+            base = {'raza': r, 'clase': c, 'aliento': 'defensa', 'flecha+': 2, 'elfo_def': 1, 'rezos': 99, 'por_pelea': 1, 'rezo_siempre': 1, 'loa': 'tigre', 'L': L, **montar(L)}
+            fila = []
+            for t in (escalon(1), escalon(2), escalon(3), escalon(2, True, L)):
+                w, hp = medir({**base, 't': t}, 800, L); fila.append(f'{w*100:4.0f}% {hp:4.1f}')
+            print(f'{r[:5]} {c:11} {L:3}   ' + '  '.join(fila))
+    sys.exit()
 if __name__ == '__main__':
     nivel = int(sys.argv[1]) if len(sys.argv) > 1 else 3
     res = []

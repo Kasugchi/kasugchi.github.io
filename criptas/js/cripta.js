@@ -24,6 +24,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
+import { escalon, escalonEncargo, reforzar, PREMIO_HEROICA } from './dificultad.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
@@ -56,6 +57,7 @@ const DEL_PUEBLO = params.get('vuelta') === 'pueblo';
 const PID = params.get('p') || 'claro', PAR = paradaDe(PID);
 const SEMILLA = params.get('semilla') || PAR.cripta.semilla;
 const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || PAR.cripta.nivel));
+const HEROICA = params.get('modo') === 'heroica';   // la versión dura: se ajusta a tu nivel y da mejor botín (js/dificultad.js)
 const AL_SITIO = PAR.corto.replace(/^El /, 'al ').replace(/^La /, 'a la ');
 const ESCENARIO = PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}&`;
 const VOLVER = DEL_PUEBLO ? 'pueblo.html?desde=escala' : (PID === 'claro' ? 'claro.html?desde=cripta' : `${ESCENARIO}desde=cripta`);
@@ -143,6 +145,7 @@ function nacer(mo, alerta = false) {
     // los monstruos paran con el escudo negro (1 de cada 6), y con 5 dados el Rey Momia parecía inmortal.
     // el jefe, uno menos de cuerpo: está hecho para cuatro héroes
     cuerpo: mo.jefe ? Math.max(4, (mo.cuerpo || st.cuerpo + 2) - 1) : (mo.cuerpo || st.cuerpo), ataque: mo.ataque || st.ataque, defensa: Math.min(mo.jefe ? 4 : 9, mo.defensa || st.defensa), mover: Math.min(8, st.mov || 6) };
+  Object.assign(x, reforzar({ cuerpo: x.cuerpo, ataque: x.ataque, defensa: x.defensa }, (DEL_PUEBLO ? escalonEncargo(NIVEL) : escalon({ par: PAR, heroica: HEROICA, nivel: DEF.nivel || 1 })), !!mo.jefe));   // la zona, o tu nivel en heroica
   x.rotulo = ui.rotulo(pj.grupo, nombre, { tipo: 'enemigo', altura: pj.altura + .2 });
   monstruos.push(x);
   if (J?.muertoFuera(x.id)) { x.vivo = false; pj.grupo.visible = false; }   // otro de la sala ya lo tumbó
@@ -194,7 +197,7 @@ const MENU = crearMenu({ boton: $('#menuB'), apps: () => [
   appMenu()
 ] });
   { const f = document.getElementById('ficha'); if (f) { f.style.pointerEvents = 'auto'; f.style.cursor = 'pointer'; f.title = 'Ver tu héroe'; f.addEventListener('click', (e) => { e.stopPropagation(); MENU.pagina('Tu héroe', fichaHeroe(DEF, estado)); }); f.addEventListener('pointerdown', (e) => e.stopPropagation()); } }   // tocar tu tarjeta abre la ficha
-J = crearJuntos({ botonSala: bSala, escena, ui, cripta, clave: `${PID}|${SEMILLA}|${NIVEL}|${DEL_PUEBLO ? 'p' : 'a'}`, heroe, H, def: () => DEF, combate, al: {
+J = crearJuntos({ botonSala: bSala, escena, ui, cripta, clave: `${PID}|${SEMILLA}|${NIVEL}|${DEL_PUEBLO ? 'p' : 'a'}${HEROICA ? '|h' : ''}`, heroe, H, def: () => DEF, combate, al: {
   puerta: async (id) => { const p = cripta.puertas.find((x) => x.id === id); if (p && !p.abierta) { p.bloqueada = false; if (p.candado) { p.g.remove(p.candado); p.candado = null; } await abrir(p); } },
   muerto: muertoFuera,
   buscada: (r) => buscadas.add(r),
@@ -217,11 +220,12 @@ async function empezarCombate(grupo) {
   let xp = 0;
   const botin = {};
   for (const id of caidosIds) { const mo = monstruos.find((m) => m.id === id); if (!mo) continue; mo.vivo = false; xp += (XP_TIPO[mo.tipo] || 10) + (mo.def.jefe ? 40 : 0); for (const [k, n] of Object.entries(botinDe(mo.tipo, mo.def.jefe))) botin[k] = (botin[k] || 0) + n; }
+  if (HEROICA) { xp = Math.round(xp * PREMIO_HEROICA.xp); for (const k in botin) botin[k] *= PREMIO_HEROICA.botin; }
   sumarBotin(DEF, botin); BOTIN_TOTAL.push(botin);
   for (const g of grupo) { const u = monstruos.find((m) => m.id === g.id); if (u?.vivo) { u.def.x = cripta.deMundo(u.pj.grupo.position)[0]; u.def.y = cripta.deMundo(u.pj.grupo.position)[1]; } }
   if (resultado === 'derrota') return expulsado();
   hud.banner('¡Victoria!', 'heroe'); sonido.victoria(); heroe.hacer('celebrar', 1.2);
-  const oro = Math.round(caidosIds.length * 5 * (1 + (estado.oroExtra || 0))); estado.oro += oro; estado.usos = estado.usosMax;
+  const oro = Math.round(caidosIds.length * 5 * (1 + (estado.oroExtra || 0)) * (HEROICA ? PREMIO_HEROICA.oro : 1)); estado.oro += oro; estado.usos = estado.usosMax;
   // respiras hondo: +1 de cuerpo tras cada pelea ganada (yendo solo, sin esto la cripta se gana a base de suerte)
   const recupera = Math.min(estado.max - estado.cuerpo, 1 + (estado.carneTrol ? 1 : 0));   // carne de trol: uno más
   if (recupera > 0) { estado.cuerpo += recupera; setTimeout(() => ui.numero(H.pos.clone().add(new THREE.Vector3(0, 2.1, 0)), `+${recupera} ❤ ${estado.carneTrol ? 'Carne de trol' : 'Respiras hondo'}`, '#ff9aa8'), 1600); }
@@ -322,7 +326,8 @@ function revisarTrampas() {
 }
 async function ganar() {
   H.bloqueado = true;
-  const oro = Math.round((mision.recompensa || 100) / 2); estado.oro += oro;
+  const oro = Math.round((mision.recompensa || 100) / 2 * (HEROICA ? PREMIO_HEROICA.oro : 1)); estado.oro += oro;
+  if (HEROICA) sumarBotin(DEF, { trofeo: 1 });   // la heroica, con trofeo de regalo para la forja
   if (DEL_PUEBLO) DEF.criptasHechas = [...new Set([...(DEF.criptasHechas || []), SEMILLA])].slice(-40); else if (PID === 'claro') DEF.criptaHecha = true; else { DEF.paradas ||= {}; (DEF.paradas[PID] ||= {}).criptaHecha = true; }
   sonido.victoria(); hud.banner('¡Cripta superada!', 'heroe'); heroe.hacer('celebrar', 1.5); ui.chispas(H.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), '#ffe08a', 70, 6);
   await ganarExperiencia(60);

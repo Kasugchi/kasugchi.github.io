@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { decorarIsla } from './decor-isla.js';
+import { escalon, reforzar } from './dificultad.js';
 import { entradaCine } from './decor-entradas.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
@@ -255,7 +256,7 @@ async function interactuarYa(it) {
   else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: ' + GUIA + '.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
   else if (t === 'cripta') {
     if (estado.mision !== 'hecha') await hablar(PAR.cripta.nombre, [TX.cerrada]);
-    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['Bajar a la cripta', () => bajarCripta(PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`)], ['Ahora no', null]]);
+    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['🗝️ Bajar (normal)', () => bajarCripta(PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`)], ['💀 Bajar en heroica: más dura, mejor botín', () => bajarCripta(`cripta.html?p=${PID}&modo=heroica`)], ['Ahora no', null]]);
   } else if (t === 'pasarela') {
     await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html?desde=escala'; }], ['Quedarme', null]]);
   }
@@ -320,7 +321,8 @@ $('#accion').addEventListener('click', () => { if (H.cerca && !dlg.actual && !co
 const combate = crearCombate({ escena, mundo, ui, dados, sonido, camara: cam, hud, heroe, estado });
 async function empezarCombate(g) {
   H.destino = null; H.interaccion = null; heroe.vel = 0; H.bloqueado = true;   // nada de pasear (ni de volver a pisar el círculo) hasta que acabe todo
-  const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => ({ pj: m.pj, nombre: m.n, tipo: PAR.enemigo.tipo, jefe: !!m.jefe, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }));
+  const t = escalon({ par: PAR });   // la fuerza de la zona
+  const grupo = g.miembros.filter((m) => !m.pj.restos).map((m) => reforzar({ pj: m.pj, nombre: m.n, tipo: PAR.enemigo.tipo, jefe: !!m.jefe, cuerpo: m.jefe ? 2 : 1, ataque: m.jefe ? 3 : 2, defensa: 2, mover: m.jefe ? 5 : 6, rotulo: m.rotulo }, t, !!m.jefe));
   for (const m of g.miembros) m.pj.vel = 0;
   $('#hud').classList.add('combate');
   const { resultado, caidos } = await combate.empezar(grupo);

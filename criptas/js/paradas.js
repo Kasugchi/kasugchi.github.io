@@ -8,6 +8,7 @@
 
 export const PARADAS = {
   claro: {
+    fuerza: 1,                                   // lo duro de la zona (js/dificultad.js)
     nombre: 'El claro de los huesos', corto: 'El claro', icono: '🌲',
     descripcion: 'Un claro del bosque al atardecer. Esqueletos en el sendero y una cripta con runas.',
     tema: null,                                   // el aspecto de siempre
@@ -32,6 +33,7 @@ export const PARADAS = {
     }
   },
   pantano: {
+    fuerza: 2,                                   // lo duro de la zona (js/dificultad.js)
     nombre: 'El pantano de las brujas', corto: 'El pantano', icono: '🐸',
     descripcion: 'Agua verde, niebla baja y ranas que opinan. Los zombis salen del barro y una bruja vieja guarda la Ciénaga Hundida.',
     requiere: 'claro',                          // se abre al vencer la cripta del claro
@@ -72,6 +74,7 @@ export const PARADAS = {
     }
   },
   cine: {
+    fuerza: 2,                                   // lo duro de la zona (js/dificultad.js)
     nombre: 'El muelle de los dibujos', corto: 'El muelle', icono: '🎞️',
     descripcion: 'Un muelle de río donde todo es en blanco y negro, como en las películas de antes. Suena un piano y los esqueletos bailan a saltitos.',
     requiere: 'claro',                           // se abre al vencer la cripta del claro
@@ -103,6 +106,7 @@ export const PARADAS = {
     }
   },
   isla: {
+    fuerza: 2,                                   // lo duro de la zona (js/dificultad.js)
     nombre: 'La isla de los Tres Garfios', corto: 'La isla', icono: '🏝️',
     descripcion: 'Una isla pirata con palmeras, un barco varado y una feria abandonada que aún gira sola. Bajo la cabeza de mono de piedra está la gruta.',
     requiere: 'claro',                           // se abre al vencer la cripta del claro
@@ -144,6 +148,7 @@ export const PARADAS = {
     }
   },
   celdas: {
+    fuerza: 3,                                   // lo duro de la zona (js/dificultad.js)
     nombre: 'Las minas de Hierroviejo', corto: 'Las minas', icono: '⛓️',
     descripcion: 'Una cantera de piedra rojiza y vagonetas oxidadas. Debajo están las Celdas de Hierro, donde dicen que tienen presa a Bruna, la herrera de Morrandar.',
     requiere: 'pantano',                         // se abre al vencer la Ciénaga Hundida
