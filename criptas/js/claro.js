@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { decorarIsla } from './decor-isla.js';
-import { escalon, reforzar, factorXP, RANGOS, MAX_RANGO } from './dificultad.js';
+import { escalon, reforzar, factorXP, RANGOS, MAX_RANGO, AFIJOS, afijoDeLaSemana } from './dificultad.js';
 import { entradaCine } from './decor-entradas.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
@@ -361,7 +361,8 @@ function ponerHeroe(def) {
 }
 // Los rangos de heroica de esta cripta: el I siempre; cada uno superado abre el siguiente (el III, para ir en grupo)
 function opcionesHeroica() {
-  const hecho = DEF.heroicas?.[PID] || 0, ops = [];
+  const hecho = DEF.heroicas?.[PID] || 0, ops = [], A = AFIJOS[afijoDeLaSemana()];
+  ops.push([`${A.e} Afijo de la semana en heroica: ${A.n}`, () => hablar('Afijo de la semana', [A.t, 'Solo cuenta en las heroicas. El lunes cambia.'], [['Entendido', null]])]);
   for (let r = 1; r <= Math.min(MAX_RANGO, hecho + 1); r++) {
     const nota = r === 1 ? 'más dura, mejor botín' : r >= 3 ? 'para ir en grupo' : 'aún más dura';
     ops.push([`💀 Heroica ${RANGOS[r - 1]}${r <= hecho ? ' ✓' : ''}: ${nota}`, () => bajarCripta(`cripta.html?p=${PID}&modo=heroica&rango=${r}`)]);

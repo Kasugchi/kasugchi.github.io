@@ -54,3 +54,18 @@ export const PREMIO_HEROICA = premioHeroica(1);
 
 // Cada héroe de más en la pelea: un poco más de vida a cada bicho (el jefe, más)
 export const extraPorCompanero = (u) => (u.jefe ? 3 : 1);
+
+// ---------- Afijos de la semana (solo en las heroicas): cada semana, la misma cripta se juega distinto ----------
+export const AFIJOS = {
+  explosivos: { n: 'Explosivos', e: '💥', t: 'Los bichos revientan al morir: quitan 1 a quien esté pegado. No te quedes al lado.' },
+  regeneran: { n: 'Duros de pelar', e: '🩸', t: 'Al final de su turno, cada bicho herido se cura 1. Remata antes de cambiar de blanco.' },
+  furia: { n: 'Furia', e: '😡', t: 'Los bichos por debajo de la mitad de vida tiran 2 dados más al atacar.' },
+  blindados: { n: 'Blindados', e: '🛡️', t: 'Todos los bichos tienen un dado más de defensa.' }
+};
+// La semana del año decide el afijo (el mismo para todos: así la familia juega la misma semana)
+export function afijoDeLaSemana(fecha = new Date()) {
+  const semana = Math.floor((fecha - new Date(2026, 0, 5)) / (7 * 864e5));
+  const ids = Object.keys(AFIJOS); return ids[((semana % ids.length) + ids.length) % ids.length];
+}
+// Semana (para la esencia doble de la primera heroica de cada semana)
+export const numeroSemana = (fecha = new Date()) => Math.floor((fecha - new Date(2026, 0, 5)) / (7 * 864e5));

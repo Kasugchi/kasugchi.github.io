@@ -24,7 +24,7 @@ import { crearDados } from './claro-dados.js';
 import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
-import { escalon, escalonEncargo, reforzar, factorXP, premioHeroica, RANGOS, MAX_RANGO } from './dificultad.js';
+import { escalon, escalonEncargo, reforzar, factorXP, premioHeroica, RANGOS, MAX_RANGO, AFIJOS, afijoDeLaSemana, numeroSemana } from './dificultad.js';
 import { MERCENARIOS } from './mercenarios.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
@@ -59,6 +59,7 @@ const PID = params.get('p') || 'claro', PAR = paradaDe(PID);
 const SEMILLA = params.get('semilla') || PAR.cripta.semilla;
 const NIVEL = Math.max(1, Math.min(10, +params.get('nivel') || PAR.cripta.nivel));
 const HEROICA = params.get('modo') === 'heroica';   // la versión dura: se ajusta a tu nivel y da mejor botín (js/dificultad.js)
+const AFIJO = HEROICA ? afijoDeLaSemana() : null;   // el afijo de la semana (solo en heroica)
 const RANGO = HEROICA ? Math.max(1, Math.min(MAX_RANGO, +params.get('rango') || 1)) : 0, PREMIO_HEROICA = premioHeroica(RANGO || 1);
 const AL_SITIO = PAR.corto.replace(/^El /, 'al ').replace(/^La /, 'a la ');
 const ESCENARIO = PID === 'claro' ? 'claro.html' : `claro.html?p=${PID}&`;
@@ -126,7 +127,7 @@ const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloquea
 const flags = new Set(), hechos = new Set(), buscadas = new Set(), BOTIN_TOTAL = [];
 function textoMision() {
   const tareas = (mision.tareas || []).map((t) => `<span class="${t.flag && flags.has(t.flag) ? 'hecho' : ''}">${t.texto}</span>`).join('');
-  return `<b>${mision.titulo}${HEROICA ? ` · 💀 Heroica ${RANGOS[RANGO - 1]}` : ""}</b>${tareas || `<span>${mision.objetivo?.texto || 'Explora la cripta'}</span>`}`;
+  return `<b>${mision.titulo}${HEROICA ? ` · 💀 Heroica ${RANGOS[RANGO - 1]} · ${AFIJOS[AFIJO].e} ${AFIJOS[AFIJO].n}` : ""}</b>${tareas || `<span>${mision.objetivo?.texto || 'Explora la cripta'}</span>`}`;
 }
 const { hud, hablar, dlg } = crearHud({ estado, def: () => DEF, sonido, movil: MOVIL, mision: textoMision });
 function guardarAhora() { DEF.oro = estado.oro; DEF.pociones = estado.pociones; guardarHeroe(DEF); }
@@ -174,6 +175,7 @@ const cam = {
   mirarHacia(p) { CAM.mirar = p.clone(); }
 };
 const combate = crearCombate({ escena, mundo: cripta, ui, dados, sonido, camara: cam, hud, heroe, estado });
+if (AFIJO) combate.afijo = AFIJO;   // el afijo de la semana (solo heroica)
 
 // ---------- jugar juntos: la misma cripta para todos los de la sala ----------
 let ganarLuego = false, PJ = null;
@@ -341,7 +343,9 @@ async function ganar() {
   H.bloqueado = true;
   const oro = Math.round((mision.recompensa || 100) / 2 * (HEROICA ? PREMIO_HEROICA.oro : 1)); estado.oro += oro;
   if (HEROICA) {   // la heroica: trofeo y esencia para la forja, y se abre el rango siguiente de esta cripta
-    sumarBotin(DEF, { trofeo: 1, esencia: PREMIO_HEROICA.esencia });
+    const doble = DEF.semanaEsencia !== numeroSemana();   // la primera heroica de cada semana, esencia doble
+    if (doble) { DEF.semanaEsencia = numeroSemana(); setTimeout(() => hud.banner('✨ Primera heroica de la semana: ¡esencia doble!', 'heroe'), 4600); }
+    sumarBotin(DEF, { trofeo: 1, esencia: PREMIO_HEROICA.esencia * (doble ? 2 : 1) });
     DEF.heroicas ||= {}; const antes = DEF.heroicas[PID] || 0; DEF.heroicas[PID] = Math.max(antes, RANGO);
     if (RANGO > antes && RANGO < MAX_RANGO) setTimeout(() => hud.banner(`¡Heroica ${RANGOS[RANGO]} desbloqueada!`, 'heroe'), 2600);
   }

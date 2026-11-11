@@ -126,6 +126,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function atacar(a, d, { dados: nDados = a.ataque, gesto = 'golpe', distanciaA = false } = {}) {
     const loa = C.rezo > 0 ? estado.loa : null;                    // la bendición del loa del trol, si está rezando
     if (a.heroe && loa) nDados += loa === 'tigre' ? 2 : loa === 'raptor' ? 1 : 0;
+    if (C.afijo === 'furia' && a.bando === 'enemigo' && a.cuerpo <= (a.max ?? a.cuerpo) / 2) { nDados += 2; ui.numero(sobre(a, a.pj.altura + .4), '¡Furia!', '#ff6a4a'); }   // afijo de la semana
     mirarse(a, d); if (!distanciaA) mirarse(d, a);
     if (gesto) await a.pj.hacer(gesto, gesto === 'brutal' ? .8 : .55);
     const mesa = mesaDados(a, d);
@@ -154,8 +155,13 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   }
   async function morir(u) {
     u.vivo = false;
+    if (C.afijo === 'explosivos' && u.bando === 'enemigo') {   // afijo: revientan al morir y dañan a los de al lado
+      sonido.explosion(); ui.chispas(sobre(u, .8), '#ff8a3a', 40, 5); camara.temblar?.(.25);
+      for (const v of [unidades[0], ...aliados()].filter((v) => v.vivo && pegados(v, u))) { hud.narrar(`¡${u.nombre} revienta al caer!`); await herir(v, 1); }
+    }
     if (u.heroe) { u.pj.caido = true; hud.narrar('Caes al suelo… La guardabosques tendrá que venir a por ti.'); sonido.derrota(); await espera(1400); return; }
     if (u.remoto) { u.pj.caido = true; sonido.derrota(); hud.narrar(`¡${u.nombre} cae! Se levantará cuando acabe la pelea.`); await espera(900); return; }
+    if (u.merc) { u.pj.caido = true; sonido.derrota(); hud.narrar(`¡${u.nombre} cae! Ya no puede seguir en esta cripta.`); await espera(900); return; }
     if (u.bando === 'aliado') { sonido.explosion(); ui.chispas(sobre(u, .8), '#ffb36a', 30, 4); escena.remove(u.pj.grupo); hud.narrar('¡La torreta salta en pedazos! Tendrás que montar otra.'); await espera(700); return; }
     sonido.huesos(); if (u.pj.desmontar) u.pj.desmontar(u.c.y); else { u.pj.caido = true; setTimeout(() => escena.remove(u.pj.grupo), 1600); } ui.chispas(sobre(u, .8), '#e7dcff', 16, 3); hud.narrar(una(FRASES.muereEsq)); u.rotulo && ui.quitar(u.rotulo); await espera(800);
   }
@@ -444,6 +450,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       for (const a of aliados()) { if (!C.activo) return; turnoDe = a.remoto ? a.nombre : 'heroe'; await turnoAliado(a); if (await comprobarFin()) return; }
       turnoDe = 'enemigos'; hud.banner('Turno de los esqueletos', 'enemigo'); await espera(700);
       for (const e of enemigos()) { if (!C.activo) return; await turnoEnemigo(e); if (await comprobarFin()) return; }
+      if (C.afijo === 'regeneran') for (const e of enemigos()) if (e.cuerpo < (e.max ?? e.cuerpo)) { e.cuerpo++; ui.numero(sobre(e, e.pj.altura || 1.6), '+1 ❤', '#8affb0'); }   // afijo: se curan si los dejas
     }
   }
   function terminar(res) {
@@ -469,6 +476,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     montar(centro);
     unidades = [h, ...grupo.map((e) => ({ ...e, max: e.max ?? e.cuerpo, bando: 'enemigo', vivo: true })), ...extra.filter((u) => u.cuerpo > 0).map((u) => Object.assign(u, { bando: 'aliado', vivo: true }))];   // extra: los mercenarios
     for (const u of unidades) u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u);
+    if (C.afijo === 'blindados') for (const e of enemigos()) e.defensa = Math.min(7, e.defensa + 1);   // afijo: un dado más de defensa
     hud.banner('¡Círculo de combate!', 'enemigo');
     camara.enfocarCombate(new THREE.Vector3(tablero.cx, tablero.y0, tablero.cz), heroe.grupo.position);
     await espera(900);
