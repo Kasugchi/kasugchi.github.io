@@ -791,7 +791,7 @@ async function irAlVertedero() {
   const llegando = VERT.llegada();
   narrarUn('Rufo: «¡Agárrate, que vamos marcha atrás!»');
   await llegando;
-  pintarVert(); narrarUn(matchMedia('(pointer: coarse)').matches ? 'Rufo: «Muévete con el joystick (o tocando el suelo). Y ojo, que muerden.»' : 'Rufo: «Muévete con WASD (o pinchando en el suelo). Y ojo, que muerden.»');
+  pintarVert(); narrarUn(matchMedia('(pointer: coarse)').matches ? 'Rufo: «Muévete con el joystick y arrastra para mirar alrededor. Y ojo, que muerden.»' : 'Rufo: «Muévete con WASD y arrastra el ratón para girar la cámara. Y ojo, que muerden.»');
 }
 // Volver con Rufo: te subes al camión y se marcha (y luego, al taller)
 async function volverConRufo() {
@@ -872,7 +872,7 @@ function bucle() {
   VERT?.actualizar(dt, t);
   if (modoCamara === 'vertedero' && VERT?.cineCam) { if (VERT.cineCam.corte) { camara.position.copy(VERT.cineCam.pos); VERT.cineCam.corte = false; } camara.position.lerp(VERT.cineCam.pos, Math.min(1, dt * 2.5)); camara.lookAt(VERT.cineCam.mira); }
   else if (modoCamara === 'vertedero' && VERT) {   // detrás y por encima de tu robot
-    const p = VERT.dondeEstoy(); camara.position.lerp(p.clone().add(new THREE.Vector3(0, 3.9 * lejos, 7.6 * lejos)), Math.min(1, dt * 3)); camara.lookAt(p.x, p.y + 2.2, p.z - 6);   // bajita y mirando lejos: se ve el atardecer
+    const c = VERT.camaraPaseo(lejos); camara.position.lerp(c.pos, Math.min(1, dt * 5)); camara.lookAt(c.mira);   // arrastrando se gira y se sube o se baja
   } else {
     const obj = modoCamara === 'taller' ? new THREE.Vector3(MOVIL ? 0 : 1.2, 2.5, 6.4) : new THREE.Vector3(Math.sin(t * .15) * .8, (grupo ? 5.6 : 4.2) * lejos, (grupo ? 9.4 : 8.4) * lejos).add(ORIGEN);
     camara.position.lerp(obj, Math.min(1, dt * 2));

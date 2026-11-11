@@ -257,12 +257,24 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
   pad.addEventListener('pointerup', soltarJoy); pad.addEventListener('pointercancel', soltarJoy);
   const TACTIL = matchMedia('(pointer: coarse)').matches;
   const ray = new THREE.Raycaster(), plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v2 = new THREE.Vector2();
+  // La cámara, como en el claro: arrastrar la gira alrededor de tu robot (y sube o baja); pellizco o rueda, más cerca o más lejos
+  const CAMV = { giro: 0, alto: .25, dist: 1 };   // giro 0: detrás de ti mirando al fondo
+  const dedos = new Map(); let pellizco = null;
   lienzoDom.addEventListener('pointerdown', (e) => {
     if (cine && cine.t > .4) { terminarCine(); return; }   // tocar: saltarse la escena
     if (!V.activo || V.pausa || !yo) return;
-    v2.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(v2, camara);
-    const p = new THREE.Vector3(); if (ray.ray.intersectPlane(plano, p)) { destino.copy(p).sub(CENTRO); hayDestino = true; }
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2) { const [a, b] = [...dedos.values()]; pellizco = { d: Math.hypot(a.x - b.x, a.y - b.y), dist: CAMV.dist }; }
   });
+  lienzoDom.addEventListener('pointermove', (e) => {
+    const d = dedos.get(e.pointerId); if (!d || !V.activo || V.pausa) return;
+    if (dedos.size === 2 && pellizco) { d.x = e.clientX; d.y = e.clientY; const [a, b] = [...dedos.values()]; CAMV.dist = Math.max(.6, Math.min(1.8, pellizco.dist * pellizco.d / Math.max(20, Math.hypot(a.x - b.x, a.y - b.y)))); return; }
+    CAMV.giro -= (e.clientX - d.x) * .008; CAMV.alto = Math.max(0, Math.min(1, CAMV.alto + (e.clientY - d.y) * .004));
+    d.x = e.clientX; d.y = e.clientY;
+  });
+  const soltar_ = (e) => { dedos.delete(e.pointerId); if (dedos.size < 2) pellizco = null; };
+  lienzoDom.addEventListener('pointerup', soltar_); lienzoDom.addEventListener('pointercancel', soltar_);
+  lienzoDom.addEventListener('wheel', (e) => { if (!V.activo) return; CAMV.dist = Math.max(.6, Math.min(1.8, CAMV.dist * (1 + Math.sign(e.deltaY) * .1))); }, { passive: true });
 
   // ---------- los salvajes ----------
   const salvajes = [];
@@ -299,9 +311,15 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
     salir() { V.activo = false; G.visible = false; for (const [l, i] of lucesRing) l.intensity = i; lucesRing = []; },
     // Vuelves al camión (después de perder, por ejemplo)
     alCamion() { if (yo) { yo.grupo.position.copy(SALTO); hayDestino = false; } },
-    cineCam: null,
+    cineCam: null, cam: CAMV,
+    // Dónde va la cámara al pasear: detrás de ti según el giro, más alta o más baja según hayas arrastrado
+    camaraPaseo(lejos = 1) {
+      const p = V.dondeEstoy(), k = CAMV.dist * lejos, alto = 2.6 + CAMV.alto * 5, atras = 8.2 - CAMV.alto * 2;
+      const sx = Math.sin(CAMV.giro), cz = Math.cos(CAMV.giro);
+      return { pos: p.clone().add(new THREE.Vector3(sx * atras * k, alto * k, cz * atras * k)), mira: p.clone().add(new THREE.Vector3(-sx * (6 - CAMV.alto * 5), 2.2 - CAMV.alto * 1.2, -cz * (6 - CAMV.alto * 5))) };
+    },
     // Llegas: el camión entra marcha atrás y tu robot salta de atrás (se puede saltar tocando)
-    llegada() { return new Promise((ok) => { V.pausa = true; camion.position.copy(LEJOS); abrir(0); yo.grupo.visible = false; cine = { tipo: 'llega', t: 0, ok, pi: -1 }; V.cineCam = { pos: mundo(APARCADO.clone().add(new THREE.Vector3(5.5, 3, -9.5))), mira: mundo(LEJOS.clone().setY(1)), corte: true }; }); },
+    llegada() { return new Promise((ok) => { V.pausa = true; Object.assign(CAMV, { giro: .45, alto: .25, dist: 1 }); camion.position.copy(LEJOS); abrir(0); yo.grupo.visible = false; cine = { tipo: 'llega', t: 0, ok, pi: -1 }; V.cineCam = { pos: mundo(APARCADO.clone().add(new THREE.Vector3(5.5, 3, -9.5))), mira: mundo(LEJOS.clone().setY(1)), corte: true }; }); },
     // Te vas: tu robot se sube atrás y el camión se marcha
     salida() { return new Promise((ok) => { V.pausa = true; hayDestino = false; yo.grupo.position.copy(SALTO); camion.position.copy(APARCADO); cine = { tipo: 'va', t: 0, ok }; V.cineCam = { pos: mundo(APARCADO.clone().add(new THREE.Vector3(5.5, 3, -9.5))), mira: mundo(APARCADO.clone().setY(1.2)), corte: true }; }); },
     ocultarPelea(s, si) { if (yo) yo.grupo.visible = !si; if (s) s.r.grupo.visible = !si; for (const x of salvajes) if (x.rot) x.rot.visible = !si; },
@@ -319,7 +337,8 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
       // moverte: con el dedo (a donde toques) o con WASD / flechas
       const p = pos(), dir = new THREE.Vector3((teclas.d || teclas.arrowright ? 1 : 0) - (teclas.a || teclas.arrowleft ? 1 : 0), 0, (teclas.s || teclas.arrowdown ? 1 : 0) - (teclas.w || teclas.arrowup ? 1 : 0));
       let rapidez = 1;
-      if (joy && Math.hypot(joy.x, joy.y) > .15) { dir.set(joy.x, 0, joy.y); rapidez = Math.min(1, Math.hypot(joy.x, joy.y) * 1.2); }   // la cámara mira siempre al fondo: arriba es adelante
+      if (joy && Math.hypot(joy.x, joy.y) > .15) { dir.set(joy.x, 0, joy.y); rapidez = Math.min(1, Math.hypot(joy.x, joy.y) * 1.2); }
+      if (dir.lengthSq()) { const c = Math.cos(CAMV.giro), s_ = Math.sin(CAMV.giro); dir.set(dir.x * c + dir.z * s_, 0, -dir.x * s_ + dir.z * c); }   // adelante es hacia donde mira la cámara
       if (dir.lengthSq()) hayDestino = false; else if (hayDestino) { dir.set(destino.x - p.x, 0, destino.z - p.z); if (dir.length() < .2) { hayDestino = false; dir.set(0, 0, 0); } }
       if (dir.lengthSq()) { dir.normalize(); p.addScaledVector(dir, dt * 4.2 * rapidez); yo.grupo.rotation.y = Math.atan2(dir.x, dir.z); p.y = Math.abs(Math.sin(t * 12)) * .06; } else p.y = 0;
       chocar(p);
