@@ -9,11 +9,13 @@ import * as THREE from 'three';
 import { toon, contorno, lienzo } from './claro-estilo.js';
 
 export const NUCLEOS = {
-  escarabajo: { n: 'Escarabajo', e: '🪲', color: '#e0a020', t: 'Pura pólvora: sus disparos tiran 1 dado más.' },
-  mantis: { n: 'Mantis', e: '🦗', color: '#4fae5a', t: 'Cuerpo a cuerpo: sus golpes tiran 1 dado más.' },
-  tortuga: { n: 'Tortuga', e: '🐢', color: '#3a8a8a', t: 'Lenta pero dura: cada pieza aguanta 1 más.' },
-  buho: { n: 'Búho', e: '🦉', color: '#8a6ac8', t: 'Ojo fino: apunta a la cabeza sin perder dados, y sus curas curan 1 más.' }
+  escarabajo: { n: 'Escarabajo', e: '🪲', color: '#e0a020', debil: 'rayo', t: 'Pura pólvora: sus disparos tiran 1 dado más. Su punto débil: la electricidad ⚡ (es todo metal).' },
+  mantis: { n: 'Mantis', e: '🦗', color: '#4fae5a', debil: 'impacto', t: 'Cuerpo a cuerpo: sus golpes tiran 1 dado más. Su punto débil: los golpes contundentes 👊 (es finita, se dobla).' },
+  tortuga: { n: 'Tortuga', e: '🐢', color: '#3a8a8a', debil: 'perforar', t: 'Lenta pero dura: cada pieza aguanta 1 más. Su punto débil: lo que perfora 🌀 (atraviesa el caparazón).' },
+  buho: { n: 'Búho', e: '🦉', color: '#8a6ac8', debil: 'fuego', t: 'Ojo fino: apunta a la cabeza sin perder dados, y sus curas curan 1 más. Su punto débil: el fuego 🔥 (se le chamuscan las plumas).' }
 };
+// Los tipos de ataque: contra el alma que no lo aguanta, 1 dado más («le pilla de lleno»)
+export const ELEMENTOS = { impacto: { n: 'contundente', e: '👊' }, perforar: { n: 'perforante', e: '🌀' }, fuego: { n: 'de fuego', e: '🔥' }, rayo: { n: 'eléctrico', e: '⚡' } };
 // Experiencia del núcleo: en el 4 y en el 8, un dado más en todo
 export const NIVELES_NUCLEO = [0, 40, 100, 180, 280, 400, 550, 720, 920, 1150];
 export const nivelNucleo = (xp) => { let n = 1; for (let i = 1; i < NIVELES_NUCLEO.length; i++) if (xp >= NIVELES_NUCLEO[i]) n = i + 1; return n; };
@@ -31,13 +33,13 @@ export const PIEZAS = {
   cab_casco: { hueco: 'cabeza', n: 'Casco de buzo', vida: 6, forma: 'casco', color: '#c8903a' },
   cab_radar: { hueco: 'cabeza', n: 'Radar', vida: 3, forma: 'radar', color: '#5a7ab0', acc: { tipo: 'apuntar', n: 'Apuntar', e: '🎯', v: 2 } },
   cab_cruz: { hueco: 'cabeza', n: 'Botiquín', vida: 3, forma: 'cruz', color: '#e8e2d6', acc: { tipo: 'cura', n: 'Reparar', e: '🔧', v: 3, usos: 2 } },
-  cab_antena: { hueco: 'cabeza', n: 'Antena chispa', vida: 3, forma: 'antena', color: '#6a5a9a', acc: { tipo: 'disparo', n: 'Chispazo', e: '⚡', v: 2, certero: true } },
-  br_puno: { hueco: 'brazo', n: 'Puño de muelle', vida: 4, forma: 'puno', color: '#c85a3a', acc: { tipo: 'golpe', n: 'Puñetazo', e: '👊', v: 2 } },
+  cab_antena: { hueco: 'cabeza', n: 'Antena chispa', vida: 3, forma: 'antena', color: '#6a5a9a', acc: { tipo: 'disparo', n: 'Chispazo', e: '⚡', v: 2, certero: true , el: 'rayo' } },
+  br_puno: { hueco: 'brazo', n: 'Puño de muelle', vida: 4, forma: 'puno', color: '#c85a3a', acc: { tipo: 'golpe', n: 'Puñetazo', e: '👊', v: 2 , el: 'impacto' } },
   br_canon: { hueco: 'brazo', n: 'Cañoncito', vida: 3, forma: 'canon', color: '#5a6a5a', acc: { tipo: 'disparo', n: 'Cañonazo', e: '💥', v: 2 } },
-  br_martillo: { hueco: 'brazo', n: 'Martillo', vida: 4, forma: 'martillo', color: '#7a6a5a', acc: { tipo: 'golpe', n: 'Martillazo', e: '🔨', v: 3 } },
-  br_pinza: { hueco: 'brazo', n: 'Pinza', vida: 4, forma: 'pinza', color: '#c8a03a', acc: { tipo: 'golpe', n: 'Pellizco', e: '🦀', v: 2, piernas: true } },
+  br_martillo: { hueco: 'brazo', n: 'Martillo', vida: 4, forma: 'martillo', color: '#7a6a5a', acc: { tipo: 'golpe', n: 'Martillazo', e: '🔨', v: 3 , el: 'impacto' } },
+  br_pinza: { hueco: 'brazo', n: 'Pinza', vida: 4, forma: 'pinza', color: '#c8a03a', acc: { tipo: 'golpe', n: 'Pellizco', e: '🦀', v: 2, piernas: true , el: 'perforar' } },
   br_escudo: { hueco: 'brazo', n: 'Tapa de olla', vida: 6, forma: 'escudo', color: '#a8b0b8', acc: { tipo: 'escudo', n: 'Cubrirse', e: '🛡️', v: 2 } },
-  br_soplete: { hueco: 'brazo', n: 'Soplete', vida: 3, forma: 'soplete', color: '#d8703a', acc: { tipo: 'disparo', n: 'Llamarada', e: '🔥', v: 3 } },
+  br_soplete: { hueco: 'brazo', n: 'Soplete', vida: 3, forma: 'soplete', color: '#d8703a', acc: { tipo: 'disparo', n: 'Llamarada', e: '🔥', v: 3 , el: 'fuego' } },
   br_remache: { hueco: 'brazo', n: 'Remachadora', vida: 3, forma: 'remache', color: '#4a4a5a', acc: { tipo: 'disparo', n: 'Ráfaga', e: '🔩', v: 4, usos: 2 } },
   pi_patas: { hueco: 'piernas', n: 'Patas de lata', vida: 4, forma: 'patas', color: '#8a94a0', def: 2, vel: 2 },
   pi_ruedas: { hueco: 'piernas', n: 'Ruedas de carrito', vida: 3, forma: 'ruedas', color: '#3a3a42', def: 1, vel: 4 },
@@ -47,13 +49,83 @@ export const PIEZAS = {
   // Las de Rufo: no las lleva nadie de la liga; se hacen con chatarra de las criptas (RUFO_HACE)
   cab_olla: { hueco: 'cabeza', n: 'Olla exprés', vida: 7, forma: 'casco', color: '#b84a3a' },
   cab_faro: { hueco: 'cabeza', n: 'Faro del puerto', vida: 4, forma: 'radar', color: '#e8d24a', acc: { tipo: 'apuntar', n: 'Fogonazo', e: '🔦', v: 3 } },
-  br_taladro: { hueco: 'brazo', n: 'Taladro', vida: 4, forma: 'taladro', color: '#c8c8d0', acc: { tipo: 'golpe', n: 'Taladrazo', e: '🌀', v: 3, certero: true } },
+  br_taladro: { hueco: 'brazo', n: 'Taladro', vida: 4, forma: 'taladro', color: '#c8c8d0', acc: { tipo: 'golpe', n: 'Taladrazo', e: '🌀', v: 3, certero: true , el: 'perforar' } },
   br_iman: { hueco: 'brazo', n: 'Imán gordo', vida: 5, forma: 'iman', color: '#d83a3a', acc: { tipo: 'escudo', n: 'Imantar', e: '🧲', v: 3 } },
   pi_patin: { hueco: 'piernas', n: 'Patines de hielo', vida: 3, forma: 'ruedas', color: '#8ad0ff', def: 3, vel: 5 }
 };
 // El banco de Rufo (en el taller del ring): lo que cuesta cada pieza suya, en chatarra (⚙️, cae en las criptas) y monedas
 export const RUFO_HACE = { cab_olla: { chatarra: 6, oro: 50 }, pi_patin: { chatarra: 7, oro: 60 }, br_iman: { chatarra: 8, oro: 70 }, cab_faro: { chatarra: 9, oro: 80 }, br_taladro: { chatarra: 12, oro: 100 } };
 export const KIT_INICIAL = ['cab_lata', 'br_puno', 'br_canon', 'pi_patas'];
+
+// ---------- Los modelos salvajes (viven en el vertedero): cada uno con sus cuatro piezas ----------
+// Con las cuatro de un mismo modelo puestas, su juego completo da un extra (juego).
+// juego: vida (+N a cada pieza), esquiva, rapidez, cura, golpe, disparo (+N dados)
+export const MODELOS = {
+  pinzon: { n: 'Pinzón', e: '🦀', t: 'Un cangrejo de lata que pellizca todo lo que brilla.', color: '#d8603a', juego: { esquiva: 1 }, jt: '+1 dado al esquivar', piezas: {
+    cabeza: ['Caparazón de lata', { vida: 5, forma: 'casco' }],
+    brazoI: ['Pinza grande', { vida: 4, forma: 'pinza', acc: { tipo: 'golpe', n: 'Tenaza', e: '🦀', v: 3, el: 'perforar' } }],
+    brazoD: ['Pinza chica', { vida: 3, forma: 'pinza', acc: { tipo: 'golpe', n: 'Pellizquito', e: '🦀', v: 2, piernas: true, el: 'perforar' } }],
+    piernas: ['Patitas de cangrejo', { vida: 4, forma: 'arana', def: 3, vel: 2 }] } },
+  zumbona: { n: 'Zumbona', e: '🐝', t: 'Avispa mecánica. Zumba, pica y se va.', color: '#e8c02a', juego: { rapidez: 2 }, jt: '+2 de rapidez', piezas: {
+    cabeza: ['Ojos de avispa', { vida: 3, forma: 'radar', acc: { tipo: 'apuntar', n: 'Fijar', e: '👁️', v: 2 } }],
+    brazoI: ['Aguijón', { vida: 3, forma: 'taladro', acc: { tipo: 'disparo', n: 'Picotazo', e: '🐝', v: 2, certero: true, el: 'perforar' } }],
+    brazoD: ['Zumbador', { vida: 3, forma: 'canon', acc: { tipo: 'disparo', n: 'Zumbido', e: '⚡', v: 2, el: 'rayo' } }],
+    piernas: ['Alas de avispa', { vida: 2, forma: 'alas', def: 4, vel: 4 }] } },
+  cavador: { n: 'Cavador', e: '⛏️', t: 'Un topo de hierro que excava túneles bajo la chatarra.', color: '#8a6a4a', juego: { vida: 1 }, jt: '+1 de vida en cada pieza', piezas: {
+    cabeza: ['Casco minero', { vida: 5, forma: 'lata' }],
+    brazoI: ['Garra excavadora', { vida: 4, forma: 'pinza', acc: { tipo: 'golpe', n: 'Zarpazo', e: '⛏️', v: 3, el: 'perforar' } }],
+    brazoD: ['Pala', { vida: 5, forma: 'escudo', acc: { tipo: 'escudo', n: 'Palada', e: '🛡️', v: 2 } }],
+    piernas: ['Orugas de topo', { vida: 7, forma: 'orugas', def: 1, vel: 1 }] } },
+  tintero: { n: 'Tintero', e: '🐙', t: 'Pulpo de cañerías. Si lo rompes, se arregla solo… a veces.', color: '#9a4ab0', juego: { cura: 1 }, jt: 'sus reparaciones curan 1 más', piezas: {
+    cabeza: ['Cabezón de pulpo', { vida: 4, forma: 'cruz', acc: { tipo: 'cura', n: 'Regenerar', e: '🐙', v: 2, usos: 3 } }],
+    brazoI: ['Tentáculo', { vida: 4, forma: 'puno', acc: { tipo: 'golpe', n: 'Latigazo', e: '🐙', v: 2, el: 'impacto' } }],
+    brazoD: ['Chorro de tinta', { vida: 3, forma: 'canon', acc: { tipo: 'disparo', n: 'Tinta', e: '🫧', v: 2, certero: true } }],
+    piernas: ['Ventosas', { vida: 5, forma: 'patas', def: 3, vel: 2 }] } },
+  embestidor: { n: 'Embestidor', e: '🦏', t: 'Rinoceronte de calderas. No frena: embiste.', color: '#6a7a8a', juego: { golpe: 1 }, jt: 'sus golpes tiran 1 dado más', piezas: {
+    cabeza: ['Cuerno de rino', { vida: 5, forma: 'cuerno', acc: { tipo: 'golpe', n: 'Cornada', e: '🦏', v: 2, el: 'perforar' } }],
+    brazoI: ['Puño de yunque', { vida: 4, forma: 'martillo', acc: { tipo: 'golpe', n: 'Yunquetazo', e: '🔨', v: 4, usos: 2, el: 'impacto' } }],
+    brazoD: ['Placa de rino', { vida: 6, forma: 'escudo', acc: { tipo: 'escudo', n: 'Agacharse', e: '🛡️', v: 2 } }],
+    piernas: ['Patas de rino', { vida: 5, forma: 'patas', def: 1, vel: 3 }] } },
+  farolera: { n: 'Farolera', e: '✨', t: 'Luciérnaga de feria. De noche se ve desde el pueblo.', color: '#e8e06a', juego: { disparo: 1 }, jt: 'sus disparos tiran 1 dado más', piezas: {
+    cabeza: ['Bombilla', { vida: 3, forma: 'antena', acc: { tipo: 'apuntar', n: 'Iluminar', e: '💡', v: 2 } }],
+    brazoI: ['Rayo de luz', { vida: 3, forma: 'soplete', acc: { tipo: 'disparo', n: 'Rayo', e: '⚡', v: 3, el: 'rayo' } }],
+    brazoD: ['Farolillo', { vida: 3, forma: 'canon', acc: { tipo: 'disparo', n: 'Bengala', e: '🔥', v: 2, el: 'fuego' } }],
+    piernas: ['Alitas de luciérnaga', { vida: 2, forma: 'alas', def: 3, vel: 4 }] } },
+  pinchos: { n: 'Pinchos', e: '🦔', t: 'Erizo de clavos. No lo acaricies.', color: '#7a5a3a', juego: { vida: 1 }, jt: '+1 de vida en cada pieza', piezas: {
+    cabeza: ['Bola de púas', { vida: 5, forma: 'casco' }],
+    brazoI: ['Lanzapúas', { vida: 3, forma: 'remache', acc: { tipo: 'disparo', n: 'Púas', e: '📍', v: 3, usos: 3, el: 'perforar' } }],
+    brazoD: ['Hocico', { vida: 4, forma: 'puno', acc: { tipo: 'golpe', n: 'Hocicazo', e: '👊', v: 2, el: 'impacto' } }],
+    piernas: ['Bola rodante', { vida: 4, forma: 'ruedas', def: 2, vel: 4 }] } },
+  babosin: { n: 'Babosín', e: '🐌', t: 'Caracol de calefacción. Lento, pero no hay quien lo rompa.', color: '#8ab05a', juego: { vida: 2 }, jt: '+2 de vida en cada pieza', piezas: {
+    cabeza: ['Concha', { vida: 8, forma: 'concha' }],
+    brazoI: ['Ojo saltón', { vida: 3, forma: 'puno', acc: { tipo: 'apuntar', n: 'Asomarse', e: '👀', v: 2 } }],
+    brazoD: ['Babero pegajoso', { vida: 4, forma: 'canon', acc: { tipo: 'disparo', n: 'Babazo', e: '🫧', v: 2, piernas: true } }],
+    piernas: ['Pie de caracol', { vida: 8, forma: 'orugas', def: 0, vel: 0 }] } },
+  salamandra: { n: 'Salamandra', e: '🦎', t: 'Lagartija de estufa. Escupe brasas.', color: '#c83a2a', juego: { disparo: 1 }, jt: 'sus disparos tiran 1 dado más', piezas: {
+    cabeza: ['Hocico de estufa', { vida: 4, forma: 'lata' }],
+    brazoI: ['Escupebrasas', { vida: 3, forma: 'soplete', acc: { tipo: 'disparo', n: 'Brasas', e: '🔥', v: 3, el: 'fuego' } }],
+    brazoD: ['Zarpa caliente', { vida: 4, forma: 'pinza', acc: { tipo: 'golpe', n: 'Zarpazo', e: '🔥', v: 2, el: 'fuego' } }],
+    piernas: ['Patas de lagartija', { vida: 4, forma: 'arana', def: 3, vel: 3 }] } },
+  dinamo: { n: 'Dínamo', e: '🐹', t: 'Hámster de rueda. Corre y corre, y suelta chispazos.', color: '#e8a86a', juego: { rapidez: 2 }, jt: '+2 de rapidez', piezas: {
+    cabeza: ['Orejas de antena', { vida: 4, forma: 'antena', acc: { tipo: 'disparo', n: 'Chispa', e: '⚡', v: 2, el: 'rayo' } }],
+    brazoI: ['Puñito', { vida: 3, forma: 'puno', acc: { tipo: 'golpe', n: 'Puñito', e: '👊', v: 2, el: 'impacto' } }],
+    brazoD: ['Bobina', { vida: 3, forma: 'iman', acc: { tipo: 'disparo', n: 'Descarga', e: '⚡', v: 3, el: 'rayo' } }],
+    piernas: ['Rueda de hámster', { vida: 3, forma: 'ruedas', def: 2, vel: 5 }] } }
+};
+// Las piezas de los modelos van con las demás: id = m_<modelo>_<hueco>
+for (const [m, M] of Object.entries(MODELOS)) for (const [h, [n, d]] of Object.entries(M.piezas)) {
+  PIEZAS[`m_${m}_${h}`] = { hueco: h.startsWith('brazo') ? 'brazo' : h, n, color: M.color, modelo: m, ...d };
+}
+// El juego completo de un robot (las cuatro del mismo modelo), o null
+export function juegoDe(equipo) {
+  const m = PIEZAS[equipo?.cabeza]?.modelo;
+  return m && ['brazoI', 'brazoD', 'piernas'].every((h) => PIEZAS[equipo[h]]?.modelo === m) ? MODELOS[m] : null;
+}
+// Un robot salvaje del vertedero: su modelo entero (a veces con una pieza cambiada)
+export function salvaje(modelo, nivel) {
+  const equipo = { cabeza: `m_${modelo}_cabeza`, brazoI: `m_${modelo}_brazoI`, brazoD: `m_${modelo}_brazoD`, piernas: `m_${modelo}_piernas` };
+  return { equipo, nucleo: Object.keys(NUCLEOS)[Math.floor(Math.random() * 4)], nivel };
+}
 
 // La liga del ring: vecinos del pueblo con sus cacharros. Ganar a uno abre el siguiente.
 export const RIVALES = [
@@ -76,6 +148,8 @@ function cabeza(P) {
   else if (P.forma === 'casco') { g.add(bola(.38, c)); const v = cil(.2, .2, .08, '#1a2a3a', 16, .02); v.rotation.x = Math.PI / 2; v.position.z = .34; g.add(v); for (let i = 0; i < 6; i++) { const r = bola(.035, '#6a4a2a', 0); const a = i / 6 * Math.PI * 2; r.position.set(Math.cos(a) * .22, Math.sin(a) * .22, .33); g.add(r); } }
   else if (P.forma === 'radar') { g.add(caja(.5, .36, .44, c)); const d = new THREE.Mesh(new THREE.SphereGeometry(.28, 16, 8, 0, Math.PI * 2, 0, Math.PI / 3), toon('#d8dde2', { side: THREE.DoubleSide })); d.position.y = .32; d.rotation.x = .5; g.add(d); g.userData.gira = d; const o = brilla(.06, '#ff5a4a'); o.position.set(0, 0, .23); g.add(o); }
   else if (P.forma === 'cruz') { g.add(caja(.5, .44, .44, c)); const tx = lienzo(64, 64, (x, w) => { x.fillStyle = '#d83a3a'; x.fillRect(w * .4, w * .15, w * .2, w * .7); x.fillRect(w * .15, w * .4, w * .7, w * .2); }); const cr = new THREE.Mesh(new THREE.PlaneGeometry(.34, .34), new THREE.MeshBasicMaterial({ map: tx, transparent: true })); cr.position.z = .225; g.add(cr); }
+  else if (P.forma === 'cuerno') { g.add(caja(.5, .4, .5, c)); const k = new THREE.Mesh(new THREE.ConeGeometry(.1, .4, 10), toon('#e8e0c8')); contorno(k, .02); k.rotation.x = Math.PI / 2.6; k.position.set(0, .12, .35); g.add(k); const o = brilla(.05, '#ff6a3a'); o.position.set(-.13, .05, .26); const o2 = o.clone(); o2.position.x = .13; g.add(o, o2); }
+  else if (P.forma === 'concha') { const t = new THREE.Mesh(new THREE.TorusGeometry(.24, .14, 10, 18), toon(c)); contorno(t, .03); t.rotation.y = Math.PI / 2; g.add(t, bola(.2, '#c8b07a')); const o = brilla(.05, '#1a1a1a'); o.position.set(-.1, .1, .3); const o2 = o.clone(); o2.position.x = .1; g.add(o, o2); }
   else if (P.forma === 'antena') { g.add(caja(.46, .38, .4, c)); const a = cil(.02, .02, .5, '#2a2a2a', 6, 0); a.position.y = .42; g.add(a); const p = brilla(.08, '#ffe04a'); p.position.y = .7; g.add(p); g.userData.chispa = p; const o = brilla(.06, '#7ff0ff'); o.position.set(0, 0, .21); g.add(o); }
   return g;
 }
@@ -101,6 +175,7 @@ function piernas(P) {
   else if (P.forma === 'ruedas') { const eje = cil(.05, .05, .7, '#5a5a62', 6, 0); eje.rotation.z = Math.PI / 2; eje.position.y = -.42; g.add(eje); for (const s of [-1, 1]) { const r = cil(.24, .24, .14, c, 18); r.rotation.z = Math.PI / 2; r.position.set(s * .36, -.42, 0); g.add(r); g.userData.ruedas = (g.userData.ruedas || []).concat(r); } const p = cil(.08, .08, .3, '#6a6a72', 8); p.position.y = -.18; g.add(p); }
   else if (P.forma === 'orugas') for (const s of [-1, 1]) { const o = caja(.22, .3, .8, c); o.position.set(s * .26, -.48, 0); g.add(o); for (const z of [-.3, 0, .3]) { const r = cil(.1, .1, .24, '#2a2a2a', 10, 0); r.rotation.z = Math.PI / 2; r.position.set(s * .26, -.48, z); g.add(r); } }
   else if (P.forma === 'arana') for (let i = 0; i < 4; i++) { const s = i < 2 ? -1 : 1, z = i % 2 ? .2 : -.2, a = cil(.04, .05, .5, c, 6); a.position.set(s * .32, -.32, z); a.rotation.z = s * .7; const b = cil(.03, .04, .4, c, 6); b.position.set(s * .5, -.58, z); g.add(a, b); }
+  else if (P.forma === 'alas') { const p = cil(.08, .08, .4, '#6a6a72', 8); p.position.y = -.25; const pie = cil(.18, .2, .08, '#5a5a62', 12); pie.position.y = -.5; g.add(p, pie); for (const s of [-1, 1]) { const a = new THREE.Mesh(new THREE.CircleGeometry(.4, 12), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: .55, side: THREE.DoubleSide })); a.scale.set(1, .5, 1); a.position.set(s * .45, .35, -.3); a.rotation.set(0, s * .5, s * .3); g.add(a); g.userData.alas = (g.userData.alas || []).concat(a); } g.userData.muelle = true; }
   else if (P.forma === 'muelle') { for (let i = 0; i < 5; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(.16, .035, 6, 16), toon(c)); t.rotation.x = Math.PI / 2; t.position.y = -.12 - i * .1; g.add(t); } const pie = cil(.24, .26, .08, '#5a5a62', 16); pie.position.y = -.64; g.add(pie); g.userData.muelle = true; }
   return g;
 }
@@ -123,6 +198,7 @@ export function crearRobot({ nucleo = 'escarabajo', equipo }) {
     const salto = partes.piernas.userData.muelle && !R.rotas.has('piernas') ? Math.abs(Math.sin(t * 4)) * .06 : 0;
     cuerpo.position.y = (R.rotas.has('piernas') ? -.55 : alto) + Math.sin(t * 2.2) * .03 + salto;
     for (const r of partes.piernas.userData.ruedas || []) r.rotation.x += dt * 2;
+    for (const [k, a] of (partes.piernas.userData.alas || []).entries()) a.rotation.y = (k ? -1 : 1) * (.5 + Math.sin(t * 40) * .4);   // las alas zumban
     for (const h of ['brazoI', 'brazoD']) { const tl = partes[h].userData.taladro; if (tl) tl.rotation.y += dt * (R.golpeH === h ? 30 : 3); }
     if (partes.cabeza.userData.gira) partes.cabeza.userData.gira.rotation.z += dt * 1.5;
     if (partes.cabeza.userData.chispa) partes.cabeza.userData.chispa.scale.setScalar(1 + Math.sin(t * 9) * .25);

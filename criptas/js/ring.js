@@ -14,7 +14,8 @@ import { crearDados } from './claro-dados.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearSonido } from './claro-sonido.js';
 import { leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
-import { NUCLEOS, PIEZAS, HUECOS_ROBOT, KIT_INICIAL, RIVALES, RUFO_HACE, crearRobot, nivelNucleo, extraNivel, NIVELES_NUCLEO } from './robots.js';
+import { crearVertedero, CENTRO } from './vertedero.js';
+import { NUCLEOS, PIEZAS, HUECOS_ROBOT, KIT_INICIAL, RIVALES, RUFO_HACE, MODELOS, ELEMENTOS, juegoDe, salvaje, crearRobot, nivelNucleo, extraNivel, NIVELES_NUCLEO } from './robots.js';
 
 const $ = (s) => document.querySelector(s);
 const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760;
@@ -130,12 +131,17 @@ function pantallaTaller() {
   mostrar(`<h2>${N.e} ${esc(R.nombre)} <small>núcleo ${N.n.toLowerCase()} · nivel ${nv}${sig ? ` · ${R.xp}/${sig} exp` : ''}</small></h2>
     <p class="nota">${N.t}${extraNivel(nv) ? ` Por su nivel, +${extraNivel(nv)} ${extraNivel(nv) === 1 ? 'dado' : 'dados'} en todo.` : ' En el nivel 4 y en el 8, un dado más en todo.'}</p>
     ${HUECOS.map(fila).join('')}
+    ${juegoDe(R.equipo) ? `<p class="nota">✨ Juego completo de ${juegoDe(R.equipo).e} ${juegoDe(R.equipo).n}: ${juegoDe(R.equipo).jt}.</p>` : ''}
     <div class="fila-botones"><button id="bNombre">✏️ Nombre</button><button id="bLiga" class="grande">🥊 Al ring</button></div>
-    ${bancoRufo()}`, 'taller');
+    <button class="desguace" id="bVertedero"><span>🚚</span><b>Al vertedero con Rufo</b><small>Robots salvajes entre la chatarra: atrápalos con redes y quédate sus piezas. El viaje: ${VIAJE_PRECIO} 🪙 (tienes ${DEF.oro || 0}). Redes: ${Object.entries(R.redes || {}).filter(([, n]) => n > 0).map(([id, n]) => `${REDES[id].e}×${n}`).join(' ') || 'ninguna'}.</small></button>
+    ${bancoRufo()}${tiendaVertedero()}`, 'taller');
   panel.querySelectorAll('[data-hacer]').forEach((b) => b.onclick = () => hacerPieza(b.dataset.hacer));
+  panel.querySelectorAll('[data-red]').forEach((b) => b.onclick = () => comprarRed(b.dataset.red));
+  panel.querySelectorAll('[data-arreglar]').forEach((b) => b.onclick = () => arreglar(+b.dataset.arreglar));
   panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { const h = b.dataset.h, id = b.dataset.p; if (R.equipo[h] !== id && usadas(R, id, h) >= cuantas(R, id)) return; R.equipo[h] = id; guardar(); sonido.recoger?.(); pantallaTaller(); });
   $('#bNombre').onclick = () => { const n = prompt('¿Cómo se llama tu robot?', R.nombre); if (n) { R.nombre = n.replace(/[<>&"'`]/g, '').slice(0, 18) || R.nombre; guardar(); pantallaTaller(); } };
   $('#bLiga').onclick = pantallaLiga;
+  $('#bVertedero').onclick = irAlVertedero;
 }
 // El banco de Rufo: piezas que no lleva nadie de la liga, hechas con la chatarra de las criptas
 const chatarra = () => DEF.materiales?.chatarra || 0;
@@ -155,10 +161,11 @@ function hacerPieza(id) {
 }
 function textoPieza(P, nucleo) {
   const v = `❤ ${P.vida + (nucleo === 'tortuga' ? 1 : 0)}`;
-  if (P.hueco === 'piernas') return `${v} · esquiva ${P.def} · rapidez ${P.vel}`;
-  if (!P.acc) return `${v} · aguanta más`;
+  const m = P.modelo ? ` · ${MODELOS[P.modelo].e}` : '';
+  if (P.hueco === 'piernas') return `${v} · esquiva ${P.def} · rapidez ${P.vel}${m}`;
+  if (!P.acc) return `${v} · aguanta más${m}`;
   const a = P.acc, q = { golpe: `${a.v} dados de golpe${a.certero ? ', no se esquiva' : ''}`, disparo: `${a.v} dados de disparo${a.certero ? ', no se esquiva' : ''}`, cura: `repara ${a.v}`, escudo: `para ${a.v}`, apuntar: `+${a.v} dados al siguiente` }[a.tipo];
-  return `${v} · ${a.e} ${q}${a.usos ? ` (${a.usos} veces)` : ''}${a.piernas ? ', +1 a las piernas' : ''}`;
+  return `${v} · ${a.e} ${q}${a.usos ? ` (${a.usos} veces)` : ''}${a.piernas ? ', +1 a las piernas' : ''}${a.el ? ` · ${ELEMENTOS[a.el].e} ${ELEMENTOS[a.el].n}` : ''}${P.modelo ? ` · ${MODELOS[P.modelo].e}` : ''}`;
 }
 const esc = (t) => String(t || '').replace(/[<>&"]/g, '');
 // Los de tu sala que están en el ring: retarles o ir juntos
@@ -260,18 +267,21 @@ function narrarUn(t) { narrar(t); clearTimeout(tNarrarUn); tNarrarUn = setTimeou
 // y la repite en su pantalla (los mismos dados), y cuando le toca manda lo que elige.
 let modoCamara = 'taller', peleando = false, PELEA = null;
 function luchador(spec, i, lado, ctrl) {
-  const piezas = {};
+  const piezas = {}, juego = juegoDe(spec.equipo)?.juego || {};
   for (const h of HUECOS) {
-    const id = spec.equipo[h], max = vidaPieza(id, spec.nucleo) + (spec.vidaExtra || 0);
+    const id = spec.equipo[h], max = vidaPieza(id, spec.nucleo) + (spec.vidaExtra || 0) + (juego.vida || 0);
     piezas[h] = { id, P: PIEZAS[id], max, vida: spec.vidas?.[h] != null ? Math.max(1, Math.min(max, spec.vidas[h])) : max };   // en el Desguace, como acabó la ronda anterior
   }
   const usos = {}; for (const h of HUECOS) if (piezas[h].P.acc?.usos) usos[h] = piezas[h].P.acc.usos;
-  return { ...spec, piezas, usos, extra: spec.dados ?? extraNivel(spec.nivel), escudo: 0, apunta: 0, i, lado, ctrl, robot: null };
+  return { ...spec, piezas, usos, juego, extra: spec.dados ?? extraNivel(spec.nivel), escudo: 0, apunta: 0, i, lado, ctrl, robot: null };
 }
 const viva = (L, h) => L.piezas[h].vida > 0;
 const fuera = (L) => !viva(L, 'cabeza');
-const velocidad = (L) => (viva(L, 'piernas') ? L.piezas.piernas.P.vel : 0);
-const esquiva = (L) => (viva(L, 'piernas') ? Math.max(0, L.piezas.piernas.P.def - (PELEA?.regla === 'aceite' ? 1 : 0)) : 0);
+const velocidad = (L) => (viva(L, 'piernas') ? L.piezas.piernas.P.vel + (L.juego?.rapidez || 0) : 0);
+// La esquiva sale de las piernas; la cabeza, además, se aparta con el cuello (+1)
+const esquiva = (L, obj = null) => Math.max(0, (viva(L, 'piernas') ? L.piezas.piernas.P.def + (L.juego?.esquiva || 0) : 0) + (obj === 'cabeza' ? 1 : 0) - (PELEA?.regla === 'aceite' ? 1 : 0));
+// ¿Le pilla de lleno? (el ataque es del tipo que el alma del otro no aguanta)
+const eficaz = (a, D) => !!(a?.el && D && NUCLEOS[D.nucleo]?.debil === a.el);
 const enemigos = (L) => PELEA.F.filter((x) => x.lado !== L.lado && !fuera(x));
 const CABEZAZO = { tipo: 'golpe', n: 'Cabezazo', e: '🤕', v: 1 };
 function acciones(L) {
@@ -282,15 +292,17 @@ function acciones(L) {
 }
 const buscarAccion = (L, h) => acciones(L).find((x) => (x.h ?? '-') === (h ?? '-'));
 const esApoyo = (a) => ['cura', 'escudo', 'apuntar'].includes(a.tipo);
-function dadosDe(A, a, objetivo) {
+function dadosDe(A, a, objetivo, D = null) {
   let n = a.v + A.extra + (A.nucleo === 'escarabajo' && a.tipo === 'disparo' ? 1 : 0) + (A.nucleo === 'mantis' && a.tipo === 'golpe' ? 1 : 0) + A.apunta;
   if ((PELEA?.regla === 'tormenta' && a.tipo === 'disparo') || (PELEA?.regla === 'furia' && a.tipo === 'golpe')) n++;
+  if (a.tipo === 'golpe' || a.tipo === 'disparo') n += (A.juego?.[a.tipo] || 0) + (eficaz(a, D) ? 1 : 0);
   if (objetivo === 'cabeza' && !a.certero && A.nucleo !== 'buho' && !A.apunta) n -= 1;   // la cabeza es pequeña: cuesta más darle
   return Math.max(1, n);
 }
 const CARAS = ['calavera', 'calavera', 'calavera', 'escudoB', 'escudoB', 'escudoN'];   // las del dado de combate
 const caras = (n) => Array.from({ length: n }, () => CARAS[Math.floor(Math.random() * CARAS.length)]);
-const centroMesa = () => new THREE.Vector3(0, .1, 1.6);
+let ORIGEN = new THREE.Vector3();   // dónde se pelea: el ring (0,0,0) o el sitio del vertedero donde os encontráis
+const centroMesa = () => ORIGEN.clone().add(new THREE.Vector3(0, .1, 1.6));
 
 function montarPelea({ id, tipo, rival = 0, F, anfitrion, de, regla = null, ronda = 0, serie = 0 }) {
   const yo = MI();
@@ -302,7 +314,7 @@ function montarPelea({ id, tipo, rival = 0, F, anfitrion, de, regla = null, rond
   for (const L of Fs) {
     const mios = Fs.filter((x) => x.lado === L.lado), j = mios.indexOf(L), izq = L.lado === PELEA.miLado;
     const r = crearRobot({ nucleo: L.nucleo, equipo: L.equipo });
-    r.grupo.position.set((izq ? -1 : 1) * (mios.length > 1 ? (j ? 2.5 : 1.5) : 1.7), 0, mios.length > 1 ? (j ? .9 : -1.3) : 0);   // el de delante, más abierto: no tapa al de detrás
+    r.grupo.position.set((izq ? -1 : 1) * (mios.length > 1 ? (j ? 2.5 : 1.5) : 1.7), 0, mios.length > 1 ? (j ? .9 : -1.3) : 0).add(ORIGEN);   // el de delante, más abierto: no tapa al de detrás
     r.grupo.rotation.y = izq ? Math.PI / 2 : -Math.PI / 2; escena.add(r.grupo); L.robot = r; enEscena['f' + L.i] = r;
   }
   modoCamara = 'pelea'; peleando = true; pintarBarras(); $('#barras').hidden = false;
@@ -310,6 +322,11 @@ function montarPelea({ id, tipo, rival = 0, F, anfitrion, de, regla = null, rond
 async function presentar() {
   const P = PELEA; sonido.circulo?.(); sonido.musica?.('combate');
   if (P.tipo === 'duelo') { const [a, b] = P.F; narrar(`¡Duelo! ${a.nombre} contra ${b.nombre}. El que pierda se deja una pieza.`); await espera(2600); }
+  else if (P.tipo === 'salvaje') {
+    const L = P.F.find((x) => x.ctrl === 'npc');
+    narrar(`¡Un ${L.nombre} de nivel ${L.nivel} sale de entre la chatarra!`); await espera(2000);
+    narrar('Pégale para dejarlo tocado y échale la red 🕸️: cuanto peor esté su cabeza, más fácil. Si le rompes la cabeza, se hace chatarra.'); await espera(2800);
+  }
   else if (P.tipo === 'desguace') {
     narrar(`♾️ El Desguace · ronda ${P.ronda}${P.ronda % 5 === 0 ? ' · ¡JEFE!' : ''}`); await espera(1600);
     const Rg = REGLAS[P.regla]; if (Rg) { narrar(`${Rg.e} ${Rg.n}: ${Rg.t}`); await espera(2400); }
@@ -372,7 +389,10 @@ async function dirigir() {
       const d = await decidir(L);
       if (PELEA !== P || P.acabada) return;
       if (d?.abandona) { await emitir({ k: 'fin', anulada: true, quien: k }); return; }
-      await emitir(construir(L, d));
+      const hecho = construir(L, d);
+      await emitir(hecho);
+      if (hecho.k === 'red' && hecho.exito) { await emitir({ k: 'fin', gana: L.lado, captura: true }); return; }
+      if (hecho.k === 'huir' && hecho.exito) { await emitir({ k: 'fin', huida: true, gana: -1 }); return; }
       const gana = ladoGanador();
       if (gana != null) { await emitir(finDe(gana)); return; }
     }
@@ -407,11 +427,13 @@ function validar(L, o) {
 }
 // La decisión ya tomada, con sus dados echados (así las dos pantallas ven lo mismo)
 function construir(A, d) {
+  if (d?.red) { const D = enemigos(A)[0]; return { k: 'red', f: A.i, d: D.i, red: d.red, exito: Math.random() < probCaptura(D, d.red) }; }
+  if (d?.huir) return { k: 'huir', f: A.i, exito: Math.random() < probHuir(A) };
   const x = buscarAccion(A, d?.h) || acciones(A)[0];
   if (esApoyo(x.a)) return { k: 'apoyo', f: A.i, h: x.h };
   let D = PELEA.F[d?.d]; if (!D || fuera(D) || D.lado === A.lado) D = enemigos(A)[0];
   const obj = viva(D, d?.obj) ? d.obj : 'cabeza';
-  return { k: 'ataque', f: A.i, h: x.h, d: D.i, obj, r: caras(dadosDe(A, x.a, obj)), r2: caras(esquiva(D)) };
+  return { k: 'ataque', f: A.i, h: x.h, d: D.i, obj, r: caras(dadosDe(A, x.a, obj, D)), r2: caras(esquiva(D, obj)) };
 }
 function finDe(gana) {
   const ev = { k: 'fin', gana };
@@ -437,7 +459,7 @@ function decisionIA(A) {
   const ene = enemigos(A).sort((x, y) => x.piezas.cabeza.vida - y.piezas.cabeza.vida), D = Math.random() < .7 ? ene[0] : ene[Math.floor(Math.random() * ene.length)];
   // a por la cabeza si está tocada; si no, a desarmarte (el brazo que más pega); y a veces, lo que le da la gana
   const vivas = HUECOS.filter((h) => viva(D, h));
-  let obj = D.piezas.cabeza.vida <= dadosDe(A, acc.a, 'cabeza') * .5 ? 'cabeza' : ['brazoD', 'brazoI'].filter((h) => viva(D, h) && D.piezas[h].P.acc).sort((x, y) => (D.piezas[y].P.acc?.v || 0) - (D.piezas[x].P.acc?.v || 0))[0] || 'cabeza';
+  let obj = D.piezas.cabeza.vida <= dadosDe(A, acc.a, 'cabeza', D) * .5 ? 'cabeza' : ['brazoD', 'brazoI'].filter((h) => viva(D, h) && D.piezas[h].P.acc).sort((x, y) => (D.piezas[y].P.acc?.v || 0) - (D.piezas[x].P.acc?.v || 0))[0] || 'cabeza';
   if (Math.random() < .25) obj = vivas[Math.floor(Math.random() * vivas.length)];
   return { h: acc.h, d: D.i, obj };
 }
@@ -460,17 +482,27 @@ function subirNarrar() { const b = $('#botones'); $('#narrar').style.bottom = b.
 async function elegir(A) {
   while (true) {
     narrar(`Tu turno (${A.nombre}): ¿qué haces?`);
-    const acc = await botones(acciones(A).map((x) => ({ e: x.a.e, t: `${x.a.n}${A.usos[x.h] != null ? ` (${A.usos[x.h]})` : ''}`, v: x })));
+    const salv = PELEA.tipo === 'salvaje' && A.ctrl === PELEA.yo, redes = salv ? Object.entries(ROBOT().redes || {}).filter(([, n]) => n > 0) : [];
+    const acc = await botones([...acciones(A).map((x) => ({ e: x.a.e, t: `${x.a.n}${A.usos[x.h] != null ? ` (${A.usos[x.h]})` : ''}${enemigos(A).some((E) => eficaz(x.a, E)) ? ' · ¡eficaz!' : ''}`, v: x })),
+      ...(salv ? [{ e: '🕸️', t: redes.length ? `Red (${redes.reduce((a, [, n]) => a + n, 0)})` : 'Sin redes', v: { red: true }, no: !redes.length }, { e: '🏃', t: `Huir · ${Math.round(probHuir(A) * 100)}%`, v: { huir: true } }] : [])]);
+    if (acc.huir) return { huir: true };
+    if (acc.red) {
+      const D = enemigos(A)[0];
+      narrar('¿Qué red le echas?');
+      const red = await botones([...redes.map(([id, n]) => ({ e: REDES[id].e, t: `${REDES[id].n} ×${n} · ${Math.round(probCaptura(D, id) * 100)}%`, v: id })), { e: '←', t: 'Otra cosa', v: null }]);
+      if (!red) continue;
+      return { red };
+    }
     if (esApoyo(acc.a)) return { h: acc.h };
     const ene = enemigos(A);
     let D = ene[0];
     if (ene.length > 1) {
       narrar('¿A quién?');
-      D = await botones([...ene.map((E) => ({ e: NUCLEOS[E.nucleo].e, t: esc(E.nombre), v: E })), { e: '←', t: 'Otra cosa', v: null }]);
+      D = await botones([...ene.map((E) => ({ e: NUCLEOS[E.nucleo].e, t: `${esc(E.nombre)}${eficaz(acc.a, E) ? ' · ¡eficaz!' : ''}`, v: E })), { e: '←', t: 'Otra cosa', v: null }]);
       if (!D) continue;
     }
     narrar('¿A qué pieza le apuntas?');
-    const obj = await botones([...HUECOS.filter((h) => viva(D, h)).map((h) => ({ e: HUECOS_ROBOT[h].e, t: `${HUECOS_ROBOT[h].n} (${D.piezas[h].vida}) · ${dadosDe(A, acc.a, h)} 🎲`, v: h })), { e: '←', t: 'Otra cosa', v: null }]);
+    const obj = await botones([...HUECOS.filter((h) => viva(D, h)).map((h) => ({ e: HUECOS_ROBOT[h].e, t: `${HUECOS_ROBOT[h].n} (${D.piezas[h].vida}) · ${dadosDe(A, acc.a, h, D)} 🎲${esquiva(D, h) ? ` · esquiva ${esquiva(D, h)}` : ''}`, v: h })), { e: '←', t: 'Otra cosa', v: null }]);
     if (!obj) continue;
     return { h: acc.h, d: D.i, obj };
   }
@@ -482,6 +514,22 @@ async function aplicar(ev) {
   if (ev.k === 'turno') { P.turno = ev.f; pintarBarras(); const L = P.F[ev.f]; narrar(L.ctrl === P.yo ? `Tu turno (${L.nombre})` : `Turno de ${L.nombre}…`); return; }
   if (ev.k === 'apoyo') { const A = P.F[ev.f], x = buscarAccion(A, ev.h); if (x) await usarApoyo(A, x); return; }
   if (ev.k === 'ataque') { const A = P.F[ev.f]; await atacar(A, P.F[ev.d], buscarAccion(A, ev.h) || { h: ev.h, a: CABEZAZO }, ev); return; }
+  if (ev.k === 'red') {
+    const A = P.F[ev.f], D = P.F[ev.d], Rb = ROBOT();
+    if (A.ctrl === P.yo && Rb.redes?.[ev.red]) { Rb.redes[ev.red]--; guardar(); }
+    narrar(`${A.nombre} lanza la ${REDES[ev.red].n.toLowerCase()}…`); sonido.hechizo?.();
+    const desde = A.robot.grupo.position.clone().add(new THREE.Vector3(0, 1.6, 0)), hasta = D.robot.grupo.position.clone().add(new THREE.Vector3(0, 1.2, 0));
+    await ui.proyectil(desde, hasta, ev.red === 'rayo' ? '#ffe04a' : '#f4ecd8', .5);
+    ui.chispas(hasta, '#f4ecd8', 30, 3); await espera(500);
+    for (let k = 0; k < 3; k++) { D.robot.herido(); await espera(450); }   // se revuelve dentro de la red
+    if (ev.exito) { sonido.victoria?.(); ui.numero(hasta.clone().add(new THREE.Vector3(0, .6, 0)), '¡Atrapado!', '#8affb0'); narrar(`¡${D.nombre} se queda quieto en la red! ¡Atrapado!`); }
+    else { sonido.bloqueo?.(); ui.numero(hasta.clone().add(new THREE.Vector3(0, .6, 0)), '¡Se suelta!', '#ffb0a0'); narrar(`¡${D.nombre} rompe la red y se suelta!`); }
+    await espera(1200); return;
+  }
+  if (ev.k === 'huir') {
+    const A = P.F[ev.f]; narrar(ev.exito ? `${A.nombre} sale por patas entre la chatarra…` : `${A.nombre} intenta huir… ¡pero tropieza con una lavadora!`);
+    if (!ev.exito) A.robot.herido(); await espera(1400); return;
+  }
   if (ev.k === 'fin') return terminar(ev);
 }
 async function usarApoyo(A, { h, a }) {
@@ -491,7 +539,7 @@ async function usarApoyo(A, { h, a }) {
   if (a.tipo === 'apuntar') { A.apunta = a.v; sonido.hechizo?.(); narrar(`${A.nombre} apunta con calma: +${a.v} dados al siguiente ataque.`); }
   if (a.tipo === 'cura') {
     const h2 = HUECOS.filter((x) => viva(A, x) && A.piezas[x].vida < A.piezas[x].max).sort((x, y) => A.piezas[x].vida / A.piezas[x].max - A.piezas[y].vida / A.piezas[y].max)[0];
-    if (h2) { const p = A.piezas[h2], c = Math.min(p.max - p.vida, a.v + (A.nucleo === 'buho' ? 1 : 0)); p.vida += c; ui.numero(A.robot.partes[h2].getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .4, 0)), `+${c}`, '#8affb0'); narrar(`${A.nombre} se repara ${HUECOS_ROBOT[h2].n.toLowerCase()}: +${c}.`); }
+    if (h2) { const p = A.piezas[h2], c = Math.min(p.max - p.vida, a.v + (A.nucleo === 'buho' ? 1 : 0) + (A.juego?.cura || 0)); p.vida += c; ui.numero(A.robot.partes[h2].getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0, .4, 0)), `+${c}`, '#8affb0'); narrar(`${A.nombre} se repara ${HUECOS_ROBOT[h2].n.toLowerCase()}: +${c}.`); }
     else narrar(`${A.nombre} saca la llave inglesa… y no tiene nada que arreglar.`);
     sonido.recoger?.();
   }
@@ -505,12 +553,13 @@ async function atacar(A, D, { h, a }, ev) {
   narrar(`${A.nombre}: ¡${a.n}! ${n} ${n === 1 ? 'dado' : 'dados'} a ${HUECOS_ROBOT[obj].n.toLowerCase()}${PELEA.F.length > 2 ? ` de ${D.nombre}` : ''}…`);
   A.robot.golpe(h === 'cabeza' || !h ? 'brazoD' : h);
   const destino = D.robot.partes[obj].getWorldPosition(new THREE.Vector3());
+  if (eficaz(a, D)) ui.numero(destino.clone().add(new THREE.Vector3(0, 1, 0)), `${ELEMENTOS[a.el].e} ¡Le pilla de lleno!`, '#ffd27a');
   if (a.tipo === 'disparo') { const desde = A.robot.partes[h && h !== 'cabeza' ? h : 'cabeza'].getWorldPosition(new THREE.Vector3()); sonido.hechizo?.(); await ui.proyectil(desde, destino, a.e === '🔥' ? '#ff8a3a' : a.e === '⚡' ? '#ffe04a' : '#cfd8e0', .4); }
   else await espera(350);
   const desdeDados = camara.position.clone().setY(1.2);
   await dados.tirar('combate', n, centroMesa(), desdeDados, ev.r);
   let dano = ev.r.filter((x) => x === 'calavera').length;
-  const nEsq = esquiva(D);
+  const nEsq = esquiva(D, obj);
   if (dano && !a.certero && nEsq > 0) {
     narrar(`¡${dano} ${dano === 1 ? 'golpe' : 'golpes'}! ${D.nombre} intenta esquivar…`); await espera(500);
     const r2 = (ev.r2 || []).slice(0, nEsq);
@@ -539,6 +588,7 @@ async function terminar(ev) {
   }
   const gano = ev.gana === P.miLado;
   if (P.tipo === 'desguace') return rondaAcabada(P, gano);
+  if (P.tipo === 'salvaje') return finSalvaje(P, ev);
   let xp, titulo, texto, premio = '';
   if (P.tipo === 'duelo') {
     const otro = P.F.find((L) => L !== yo);
@@ -692,6 +742,115 @@ function finDesguace(t, motivo, ronda) {
   $('#bOtra').onclick = pantallaLiga; $('#bTaller').onclick = pantallaTaller;
 }
 
+// ---------- 🚚 EL VERTEDERO: robots salvajes, redes y piezas por arreglar ----------
+// Rufo te lleva (el viaje se paga), le compras las redes y te arregla lo que traes roto.
+// Cazar: les pegas para dejarlos tocados y les echas la red (cuanto peor tengan la cabeza, más fácil).
+// Si lo atrapas, te quedas sus cuatro piezas, pero alguna viene rota y hay que llevársela a Rufo.
+const VIAJE_PRECIO = 20;
+const REDES = {
+  cuerda: { n: 'Red de cuerda', e: '🕸️', b: 0, oro: 10 },
+  acero: { n: 'Red de acero', e: '⛓️', b: .15, oro: 25 },
+  rayo: { n: 'Red eléctrica', e: '⚡', b: .3, oro: 50 }
+};
+function probCaptura(D, red) {
+  const c = D.piezas.cabeza, rotas = HUECOS.filter((h) => h !== 'cabeza' && !viva(D, h)).length;
+  return Math.max(.05, Math.min(.95, .15 + (REDES[red]?.b || 0) + .55 * (1 - c.vida / c.max) + .08 * rotas - .02 * ((D.nivel || 1) - 1)));
+}
+const probHuir = (A) => Math.min(.9, .45 + .08 * velocidad(A));
+const costeArreglo = (id) => { const P = PIEZAS[id]; return { oro: 8 + 3 * P.vida + 4 * (P.acc?.v || 0) + 3 * (P.def || 0), chatarra: 1 + (P.acc ? 1 : 0) }; };
+// En el banco de Rufo: redes y piezas por arreglar
+function tiendaVertedero() {
+  const R = ROBOT(), rotas = R.arreglar || [];
+  return `<h3 class="sala">🕸️ Redes para el vertedero</h3>
+    <div class="piezas">${Object.entries(REDES).map(([id, X]) => `<button data-red="${id}" ${(DEF.oro || 0) < X.oro ? 'disabled' : ''}>${X.e} ${X.n} ×${R.redes?.[id] || 0}<small>${X.b ? `+${Math.round(X.b * 100)}% de atrapar` : 'la de siempre'}</small><small>🪙 ${X.oro}</small></button>`).join('')}</div>
+    ${rotas.length ? `<h3 class="sala">🔧 Por arreglar</h3><p class="nota">Lo que trajiste roto del vertedero. Rufo lo deja como nuevo… previo pago.</p>
+    <div class="piezas">${rotas.map((id, k) => { const P = PIEZAS[id], c = costeArreglo(id), puedo = (DEF.oro || 0) >= c.oro && chatarra() >= c.chatarra; return `<button data-arreglar="${k}" ${puedo ? '' : 'disabled'}>${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>🪙 ${c.oro} · ⚙️ ${c.chatarra}</small></button>`; }).join('')}</div>` : ''}`;
+}
+function comprarRed(id) {
+  const R = ROBOT(), X = REDES[id]; if (!X || (DEF.oro || 0) < X.oro) return;
+  DEF.oro -= X.oro; R.redes ||= {}; R.redes[id] = (R.redes[id] || 0) + 1; guardar(); sonido.recoger?.(); pantallaTaller();
+}
+function arreglar(k) {
+  const R = ROBOT(), id = R.arreglar?.[k]; if (!id) return;
+  const c = costeArreglo(id); if ((DEF.oro || 0) < c.oro || chatarra() < c.chatarra) return;
+  DEF.oro -= c.oro; DEF.materiales.chatarra -= c.chatarra; R.arreglar.splice(k, 1); R.piezas.push(id);
+  guardar(); sonido.victoria?.(); pantallaTaller(); narrarUn(`Rufo: «${PIEZAS[id].n}, como recién salida de fábrica. Bueno, de mi fábrica.»`);
+}
+
+let VERT = null, VIAJE = null, SALV = null;
+const CIELO_RING = { fondo: escena.background.clone(), niebla: escena.fog };
+function irAlVertedero() {
+  const R = ROBOT();
+  if ((DEF.oro || 0) < VIAJE_PRECIO) return narrarUn(`Rufo: «El viaje son ${VIAJE_PRECIO} monedas. Gasolina, bocadillo… lo normal.»`);
+  DEF.oro -= VIAJE_PRECIO; guardar();
+  VERT ||= crearVertedero({ escena, camara, lienzoDom: render.domElement, ui, alEncontrar: empezarSalvaje, alCamion: repararEnCamion });
+  VIAJE = { vidas: null };
+  ocultar(); limpiarRobots(); ORIGEN = new THREE.Vector3();
+  escena.background = new THREE.Color('#d8b088'); escena.fog = new THREE.Fog('#d8b088', 22, 62);
+  VERT.entrar({ nucleo: R.nucleo, equipo: R.equipo }); VERT.pausa = false; modoCamara = 'vertedero';
+  camara.position.copy(VERT.dondeEstoy()).add(new THREE.Vector3(0, 8, 9));
+  pintarVert(); narrarUn('Rufo: «Toca el suelo para moverte (o WASD). Y ojo, que muerden.»');
+}
+function salirDelVertedero() {
+  VERT?.salir(); VIAJE = null; $('#vert').hidden = true;
+  escena.background = CIELO_RING.fondo; escena.fog = CIELO_RING.niebla; ORIGEN = new THREE.Vector3();
+  pantallaTaller();
+}
+function pintarVert() {
+  const R = ROBOT(), v = $('#vert'); v.hidden = false;
+  const vida = (h) => { const max = vidaPieza(R.equipo[h], R.nucleo) + (juegoDe(R.equipo)?.juego?.vida || 0), x = VIAJE?.vidas?.[h] ?? max; return `${HUECOS_ROBOT[h].e}${Math.max(0, x)}/${max}`; };
+  v.innerHTML = `<b>🚚 El vertedero</b><small>${HUECOS.map(vida).join(' ')}</small><small>Redes: ${Object.entries(R.redes || {}).filter(([, n]) => n > 0).map(([id, n]) => `${REDES[id].e}×${n}`).join(' ') || 'ninguna (cómpralas en el taller)'} · 🪙 ${DEF.oro || 0}</small><small>Al fondo, más duros. El camión de Rufo te repara gratis.</small><button id="bIrse">🚚 Volver con Rufo</button>`;
+  $('#bIrse').onclick = salirDelVertedero;
+}
+function repararEnCamion() {
+  if (!VIAJE?.vidas) return;
+  VIAJE.vidas = null; sonido.recoger?.(); pintarVert(); narrarUn('Rufo te da un repaso con la llave inglesa: robot como nuevo.');
+}
+async function empezarSalvaje(s) {
+  if (peleando) return;
+  const M = MODELOS[s.modelo], yoW = VERT.yo.grupo.getWorldPosition(new THREE.Vector3()), elW = s.r.grupo.getWorldPosition(new THREE.Vector3());
+  VERT.pausa = true; SALV = s; $('#vert').hidden = true;
+  ORIGEN = yoW.add(elW).multiplyScalar(.5).setY(0);
+  VERT.ocultarPelea(s, true);
+  const spec = { nombre: `${M.n} salvaje`, piloto: '', nucleo: s.spec.nucleo, nivel: s.nivel, equipo: s.spec.equipo, vidaExtra: Math.floor((s.nivel - 1) / 2), dados: Math.floor((s.nivel - 1) / 3), frase: M.t };
+  montarPelea({ id: Date.now(), tipo: 'salvaje', anfitrion: true, de: MI(), F: [{ spec: { ...miEspec(), vidas: VIAJE?.vidas }, lado: 0, ctrl: MI() }, { spec, lado: 1, ctrl: 'npc' }] });
+  await presentar(); dirigir();
+}
+async function finSalvaje(P, ev) {
+  const R = ROBOT(), s = SALV, yo = P.F.find((L) => L.ctrl === P.yo), el = P.F.find((L) => L.ctrl === 'npc'), M = MODELOS[s?.modelo] || {};
+  DEF.materiales ||= {};
+  if (VIAJE) VIAJE.vidas = Object.fromEntries(HUECOS.map((h) => [h, yo.piezas[h].vida]));
+  let titulo, texto, fuera_ = false;
+  if (ev.huida) { titulo = '🏃 ¡Por los pelos!'; texto = `Te escabulles entre la chatarra. El ${el.nombre} se queda refunfuñando.`; }
+  else if (ev.gana !== P.miLado) {
+    sonido.derrota?.(); const multa = Math.min(10, DEF.oro || 0); DEF.oro = (DEF.oro || 0) - multa;
+    titulo = '💥 Te han desguazado'; texto = `Rufo te saca a rastras con la grúa y te deja junto al camión, como nuevo${multa ? ` (te cobra ${multa} monedas por la grúa)` : ''}.`;
+    if (VIAJE) VIAJE.vidas = null; VERT.alCamion();
+  } else if (ev.captura) {
+    fuera_ = true; const sanas = [], rotas = [];
+    for (const h of HUECOS) { const id = el.piezas[h].id; if (!viva(el, h) || Math.random() < .4) { (R.arreglar ||= []).push(id); rotas.push(id); } else { R.piezas.push(id); sanas.push(id); } }
+    const xp = 10 + 4 * el.nivel; R.xp += xp; R.capturas = (R.capturas || 0) + 1;
+    titulo = `🕸️ ¡Atrapado! ${M.e} ${M.n}`;
+    texto = `Lo desmontas allí mismo: ${sanas.length ? `<br>✅ Enteras: <b>${sanas.map((id) => PIEZAS[id].n).join(', ')}</b> (ya están en tu taller).` : ''}${rotas.length ? `<br>🔧 Rotas: <b>${rotas.map((id) => PIEZAS[id].n).join(', ')}</b> (llévaselas a Rufo para que te las arregle).` : ''}<br><small>+${xp} de experiencia. ${M.n}: ${M.jt} si llevas sus cuatro piezas.</small>`;
+  } else {
+    fuera_ = true; const ch = 1 + Math.floor(el.nivel / 3); DEF.materiales.chatarra = (DEF.materiales.chatarra || 0) + ch;
+    const xp = 6 + 2 * el.nivel; R.xp += xp; let extra = '';
+    if (Math.random() < .3) { const id = el.piezas[azar(HUECOS)].id; (R.arreglar ||= []).push(id); extra = ` Entre los restos rescatas <b>${PIEZAS[id].n}</b>, rota (para Rufo).`; }
+    titulo = '💥 Hecho chatarra'; texto = `Le has roto la cabeza: el ${el.nombre} ya no sirve para atraparlo. Te llevas ⚙️ ${ch} de chatarra y ${xp} de experiencia.${extra}`;
+  }
+  guardar();
+  await espera(1300); if (PELEA !== P) return;
+  PELEA = null; $('#barras').hidden = true; narrar('');
+  if (s) { if (fuera_) VERT.quitarSalvaje(s); else { s.calma = 5; const q = s.r.grupo.position; q.x += (Math.random() - .5) * 8; q.z -= 5; } }
+  mostrar(`<h2>${titulo}</h2><p>${texto}</p><div class="fila-botones"><button id="bVolverV">🚚 Volver con Rufo</button><button id="bSeguir" class="grande">▶ Seguir rebuscando</button></div>`, 'salvaje');
+  $('#bSeguir').onclick = volverAlVertedero;
+  $('#bVolverV').onclick = () => { ocultar(); limpiarRobots(); SALV = null; salirDelVertedero(); };
+}
+function volverAlVertedero() {
+  ocultar(); limpiarRobots(); VERT.ocultarPelea(SALV, false); SALV = null;
+  ORIGEN = new THREE.Vector3(); VERT.pausa = false; modoCamara = 'vertedero'; pintarVert();
+}
+
 // ---------- bucle ----------
 const reloj = new THREE.Clock(); let t = 0;
 function bucle() {
@@ -702,8 +861,14 @@ function bucle() {
   sitios.forEach(([x, y, z, f], k) => pub.setMatrixAt(k, m4.makeTranslation(x, y + Math.abs(Math.sin(t * (peleando ? 6 : 2) + f)) * (peleando ? .25 : .08), z))); pub.instanceMatrix.needsUpdate = true;
   const grupo = PELEA && PELEA.F.length > 2;
   const lejos = camara.aspect < 1 ? 1 + (1 - camara.aspect) * .5 : 1;   // en el móvil de pie, más atrás para que quepan todos
-  const obj = modoCamara === 'taller' ? new THREE.Vector3(MOVIL ? 0 : 1.2, 2.5, 6.4) : new THREE.Vector3(Math.sin(t * .15) * .8, (grupo ? 5.6 : 4.2) * lejos, (grupo ? 9.4 : 8.4) * lejos);
-  camara.position.lerp(obj, Math.min(1, dt * 2)); camara.lookAt(modoCamara === 'taller' ? (MOVIL ? 0 : 1.6) : 0, modoCamara === 'taller' ? (MOVIL ? .6 : 1.2) : 1, 0);
+  VERT?.actualizar(dt, t);
+  if (modoCamara === 'vertedero' && VERT) {   // detrás y por encima de tu robot
+    const p = VERT.dondeEstoy(); camara.position.lerp(p.clone().add(new THREE.Vector3(0, 5.2 * lejos, 8.6 * lejos)), Math.min(1, dt * 3)); camara.lookAt(p.x, p.y + 1.4, p.z - 2);
+  } else {
+    const obj = modoCamara === 'taller' ? new THREE.Vector3(MOVIL ? 0 : 1.2, 2.5, 6.4) : new THREE.Vector3(Math.sin(t * .15) * .8, (grupo ? 5.6 : 4.2) * lejos, (grupo ? 9.4 : 8.4) * lejos).add(ORIGEN);
+    camara.position.lerp(obj, Math.min(1, dt * 2));
+    if (modoCamara === 'taller') camara.lookAt(MOVIL ? 0 : 1.6, MOVIL ? .6 : 1.2, 0); else camara.lookAt(ORIGEN.x, ORIGEN.y + 1, ORIGEN.z);
+  }
   dados.actualizar(dt); ui.actualizar(dt, t); sonido.actualizar?.(dt);
   render.render(escena, camara); requestAnimationFrame(bucle);
 }
@@ -723,4 +888,4 @@ import('./reunion.js').then((RED) => RED.crearPanel({
   alConectar: (R) => { SALA = R; publicarRobot(); R.cambiar({ ringReto: null }); R.on('gente', alGente); alGente(R.gente()); if (pantalla === 'liga') pantallaLiga(); },
   alSalir: () => { SALA = null; GENTE = {}; if (pantalla === 'liga') pantallaLiga(); }
 })).catch((e) => console.warn('Sin sala:', e?.message));
-window.ring = { get DEF() { return DEF; }, empezarPelea, get PELEA() { return PELEA; }, get SALA() { return SALA; }, escena, retar };
+window.ring = { get DEF() { return DEF; }, get VERT() { return VERT; }, irAlVertedero, empezarPelea, get PELEA() { return PELEA; }, get SALA() { return SALA; }, escena, retar };
