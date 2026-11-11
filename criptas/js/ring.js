@@ -67,6 +67,24 @@ function nuevoRobot(nucleo) {
   DEF.robot = { nucleo, nombre: 'Chatarrín', xp: 0, piezas: [...KIT_INICIAL], equipo: { cabeza: 'cab_lata', brazoI: 'br_puno', brazoD: 'br_canon', piernas: 'pi_patas' }, liga: 0, victorias: 0 };
   guardar();
 }
+// Las piezas se pueden tener repetidas (R.piezas lleva una entrada por copia): para llevar la misma
+// en los dos brazos hacen falta dos. Una de cada pieza de serie no se pierde nunca.
+const cuantas = (R, id) => R.piezas.filter((x) => x === id).length;
+const usadas = (R, id, sin = null) => HUECOS.filter((h) => h !== sin && R.equipo[h] === id).length;
+const DE_SERIE = { cabeza: 'cab_lata', brazoI: 'br_puno', brazoD: 'br_canon', piernas: 'pi_patas' };
+// Deja el equipo bien: nada puesto más veces de las que lo tienes (arregla también los robots de antes de este cambio)
+function arreglarEquipo(R) {
+  for (const id of Object.values(DE_SERIE)) if (!R.piezas.includes(id)) R.piezas.push(id);
+  let cambio = false;
+  for (const h of HUECOS) {
+    const id = R.equipo[h], tipo = HUECOS_ROBOT[h].tipo;
+    if (PIEZAS[id]?.hueco === tipo && usadas(R, id, h) < cuantas(R, id)) continue;
+    R.equipo[h] = [...new Set(R.piezas)].find((x) => PIEZAS[x]?.hueco === tipo && usadas(R, x, h) < cuantas(R, x)) || DE_SERIE[h];
+    cambio = true;
+  }
+  return cambio;
+}
+function quitarUna(R, id) { const k = R.piezas.indexOf(id); if (k >= 0) R.piezas.splice(k, 1); arreglarEquipo(R); }
 // Lo que los demás ven de tu robot (y con lo que pelea en su pantalla)
 const miEspec = () => { const R = ROBOT(); return { nombre: R.nombre, piloto: DEF.nombre || '', nucleo: R.nucleo, nivel: nivelNucleo(R.xp), equipo: { ...R.equipo }, piezas: [...R.piezas] }; };
 const especRival = (i) => { const r = RIVALES[i]; return { nombre: r.robot, piloto: r.quien, nucleo: r.nucleo, nivel: r.nivel, equipo: { ...r.equipo }, frase: r.frase }; };
@@ -104,8 +122,10 @@ function pantallaTaller() {
   const R = ROBOT(); modoCamara = 'taller'; ponerRobots({ nucleo: R.nucleo, equipo: R.equipo });
   const N = NUCLEOS[R.nucleo], nv = nivelNucleo(R.xp), sig = NIVELES_NUCLEO[nv];
   const fila = (hueco) => {
-    const H_ = HUECOS_ROBOT[hueco], opciones = R.piezas.filter((id) => PIEZAS[id]?.hueco === H_.tipo);
-    return `<div class="hueco"><b>${H_.e} ${H_.n}</b><div class="piezas">${opciones.map((id) => { const P = PIEZAS[id]; return `<button class="${R.equipo[hueco] === id ? 'puesta' : ''}" data-h="${hueco}" data-p="${id}">${P.n}<small>${textoPieza(P, R.nucleo)}</small></button>`; }).join('')}</div></div>`;
+    const H_ = HUECOS_ROBOT[hueco], opciones = [...new Set(R.piezas)].filter((id) => PIEZAS[id]?.hueco === H_.tipo);
+    return `<div class="hueco"><b>${H_.e} ${H_.n}</b><div class="piezas">${opciones.map((id) => {
+      const P = PIEZAS[id], n = cuantas(R, id), puesta = R.equipo[hueco] === id, libre = puesta || usadas(R, id, hueco) < n;
+      return `<button class="${puesta ? 'puesta' : ''}" data-h="${hueco}" data-p="${id}" ${libre ? '' : 'disabled'}>${P.n}${n > 1 ? ` ×${n}` : ''}<small>${textoPieza(P, R.nucleo)}</small>${libre ? '' : '<small>La lleva el otro brazo (solo tienes una)</small>'}</button>`; }).join('')}</div></div>`;
   };
   mostrar(`<h2>${N.e} ${esc(R.nombre)} <small>núcleo ${N.n.toLowerCase()} · nivel ${nv}${sig ? ` · ${R.xp}/${sig} exp` : ''}</small></h2>
     <p class="nota">${N.t}${extraNivel(nv) ? ` Por su nivel, +${extraNivel(nv)} ${extraNivel(nv) === 1 ? 'dado' : 'dados'} en todo.` : ' En el nivel 4 y en el 8, un dado más en todo.'}</p>
@@ -113,7 +133,7 @@ function pantallaTaller() {
     <div class="fila-botones"><button id="bNombre">✏️ Nombre</button><button id="bLiga" class="grande">🥊 Al ring</button></div>
     ${bancoRufo()}`, 'taller');
   panel.querySelectorAll('[data-hacer]').forEach((b) => b.onclick = () => hacerPieza(b.dataset.hacer));
-  panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { R.equipo[b.dataset.h] = b.dataset.p; guardar(); sonido.recoger?.(); pantallaTaller(); });
+  panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { const h = b.dataset.h, id = b.dataset.p; if (R.equipo[h] !== id && usadas(R, id, h) >= cuantas(R, id)) return; R.equipo[h] = id; guardar(); sonido.recoger?.(); pantallaTaller(); });
   $('#bNombre').onclick = () => { const n = prompt('¿Cómo se llama tu robot?', R.nombre); if (n) { R.nombre = n.replace(/[<>&"'`]/g, '').slice(0, 18) || R.nombre; guardar(); pantallaTaller(); } };
   $('#bLiga').onclick = pantallaLiga;
 }
@@ -123,12 +143,12 @@ function bancoRufo() {
   const R = ROBOT();
   return `<h3 class="sala">🛠️ El banco de Rufo</h3>
     <p class="nota">«Dame chatarra y te hago cosas que no tiene nadie en el pueblo.» La chatarra ⚙️ la sueltan los bichos de las criptas y del claro (los jefes, siempre). Tienes ⚙️ ${chatarra()} y 🪙 ${DEF.oro || 0}.</p>
-    <div class="piezas">${Object.entries(RUFO_HACE).map(([id, c]) => { const P = PIEZAS[id], tengo = R.piezas.includes(id), puedo = chatarra() >= c.chatarra && (DEF.oro || 0) >= c.oro;
-      return `<button data-hacer="${id}" ${tengo || !puedo ? 'disabled' : ''}>${HUECOS_ROBOT[P.hueco === 'brazo' ? 'brazoD' : P.hueco].e} ${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>${tengo ? '✓ Ya la tienes' : `⚙️ ${c.chatarra} · 🪙 ${c.oro}`}</small></button>`; }).join('')}</div>`;
+    <div class="piezas">${Object.entries(RUFO_HACE).map(([id, c]) => { const P = PIEZAS[id], tengo = cuantas(R, id) >= (P.hueco === 'brazo' ? 2 : 1), puedo = chatarra() >= c.chatarra && (DEF.oro || 0) >= c.oro;
+      return `<button data-hacer="${id}" ${tengo || !puedo ? 'disabled' : ''}>${HUECOS_ROBOT[P.hueco === 'brazo' ? 'brazoD' : P.hueco].e} ${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>${tengo ? (P.hueco === 'brazo' ? '✓ Ya tienes las dos' : '✓ Ya la tienes') : `${cuantas(R, id) ? 'Otra más (para el otro brazo): ' : ''}⚙️ ${c.chatarra} · 🪙 ${c.oro}`}</small></button>`; }).join('')}</div>`;
 }
 function hacerPieza(id) {
   const R = ROBOT(), c = RUFO_HACE[id];
-  if (!c || R.piezas.includes(id) || chatarra() < c.chatarra || (DEF.oro || 0) < c.oro) return;
+  if (!c || cuantas(R, id) >= (PIEZAS[id].hueco === 'brazo' ? 2 : 1) || chatarra() < c.chatarra || (DEF.oro || 0) < c.oro) return;
   DEF.materiales.chatarra -= c.chatarra; DEF.oro -= c.oro; R.piezas.push(id);
   guardar(); sonido.victoria?.();
   pantallaTaller(); narrarUn(`Rufo: «¡${PIEZAS[id].n}! Recién salida del horno. Bueno, del cubo.»`);
@@ -373,10 +393,11 @@ function finDe(gana) {
   if (PELEA.tipo !== 'duelo') return ev;
   // el que gana se lleva una pieza del que pierde: mejor una de las que llevaba puestas y que él no tenga
   const W = PELEA.F.find((L) => L.lado === gana), Lo = PELEA.F.find((L) => L.lado !== gana);
-  const suyas = (PELEA.desc[Lo.i].spec.piezas || Object.values(Lo.equipo)).filter((id) => PIEZAS[id] && !KIT_INICIAL.includes(id));
+  const suyas = [...(PELEA.desc[Lo.i].spec.piezas || Object.values(Lo.equipo))].filter((id) => PIEZAS[id]);
+  for (const id of KIT_INICIAL) { const k = suyas.indexOf(id); if (k >= 0) suyas.splice(k, 1); }   // una de cada de serie, intocable
   const tengo = PELEA.desc[W.i].spec.piezas || [], puestas = Object.values(Lo.equipo);
-  const nuevas = suyas.filter((id) => !tengo.includes(id)), l = [nuevas.filter((id) => puestas.includes(id)), nuevas, suyas].find((x) => x.length);
-  if (l) { ev.pieza = l[Math.floor(Math.random() * l.length)]; if (!nuevas.length) ev.monedas = 25; }
+  const nuevas = suyas.filter((id) => !tengo.includes(id)), l = [nuevas.filter((id) => puestas.includes(id)), nuevas, suyas.filter((id) => puestas.includes(id)), suyas].find((x) => x.length);
+  if (l) ev.pieza = l[Math.floor(Math.random() * l.length)];
   ev.de = Lo.ctrl; ev.para = W.ctrl;
   return ev;
 }
@@ -482,8 +503,6 @@ async function atacar(A, D, { h, a }, ev) {
   } else narrar(`¡${dano} de daño ${obj === 'cabeza' ? 'en la cabeza' : 'en ' + HUECOS_ROBOT[obj].n.toLowerCase()}${PELEA.F.length > 2 ? ` de ${D.nombre}` : ''}!`);
   pintarBarras(); await espera(1200);
 }
-// La pieza de serie que se pone en un hueco si te quitan la que llevabas
-const DE_SERIE = { cabeza: 'cab_lata', brazoI: 'br_puno', brazoD: 'br_canon', piernas: 'pi_patas' };
 async function terminar(ev) {
   const P = PELEA; P.acabada = true;
   peleando = false; $('#botones').hidden = true; subirNarrar(); dados.limpiar?.();
@@ -502,11 +521,9 @@ async function terminar(ev) {
       const nom = PIEZAS[ev.pieza].n;
       if (gano) {
         if (ev.monedas) { DEF.oro = (DEF.oro || 0) + ev.monedas; premio = `Le quitas <b>${nom}</b>, pero ya la tenías: Rufo te la cambia por ${ev.monedas} monedas.`; }
-        else { if (!R.piezas.includes(ev.pieza)) R.piezas.push(ev.pieza); premio = `Le quitas <b>${nom}</b>. ¡Ya es tuya! Póntela en el taller.`; }
+        else { R.piezas.push(ev.pieza); premio = `Le quitas <b>${nom}</b>${cuantas(R, ev.pieza) > 1 ? ` (ya tienes ${cuantas(R, ev.pieza)})` : ''}. ¡Ya es tuya! Póntela en el taller.`; }
       } else {
-        R.piezas = R.piezas.filter((id) => id !== ev.pieza);
-        for (const h of HUECOS) if (R.equipo[h] === ev.pieza) R.equipo[h] = DE_SERIE[h];
-        for (const id of Object.values(DE_SERIE)) if (!R.piezas.includes(id)) R.piezas.push(id);
+        quitarUna(R, ev.pieza);
         premio = `Te quita <b>${nom}</b>. Tendrás que recuperarla en la revancha…`;
       }
     } else premio = gano ? 'Solo llevaba piezas de serie: no hay nada que quitarle. ¡Pero la gloria es tuya!' : 'Solo tenías piezas de serie: no te quita nada.';
@@ -519,7 +536,11 @@ async function terminar(ev) {
       R.victorias = (R.victorias || 0) + 1; R.liga = Math.max(R.liga || 0, Math.min(RIVALES.length, r + 1));
       const faltan = [...new Set(rivales.flatMap((L) => Object.values(L.equipo)))].filter((id) => !R.piezas.includes(id));
       if (faltan.length) { const id = faltan[Math.floor(Math.random() * faltan.length)]; R.piezas.push(id); premio = `Te llevas ${rivales.length > 1 ? 'una de sus piezas' : 'su pieza'}: <b>${PIEZAS[id].n}</b>. Póntela en el taller.`; }
-      else { const oro = 15 + r * 10; DEF.oro = (DEF.oro || 0) + oro; premio = `Ya tenías todas sus piezas: te dan ${oro} monedas.`; }
+      else {
+        const brazos = [...new Set(rivales.flatMap((L) => Object.values(L.equipo)))].filter((id) => PIEZAS[id]?.hueco === 'brazo' && cuantas(R, id) < 2);
+        if (brazos.length) { const id = brazos[Math.floor(Math.random() * brazos.length)]; R.piezas.push(id); premio = `Te llevas otro <b>${PIEZAS[id].n}</b>: ahora tienes dos y puedes llevarlo en los dos brazos.`; }
+        else { const oro = 15 + r * 10; DEF.oro = (DEF.oro || 0) + oro; premio = `Ya tenías todas sus piezas: te dan ${oro} monedas.`; }
+      }
     }
     const nombres = rivales.map((L) => L.nombre).join(' y ');
     titulo = gano ? '🏆 ¡Victoria!' : P.tipo === 'juntos' ? '💥 Os han dejado sin cabeza' : '💥 Te han dejado sin cabeza';
@@ -568,10 +589,10 @@ camara.position.set(0, 5, 10); bucle();
 async function arrancar() {
   if (!DEF) DEF = await cargarHeroe();
   if (!DEF) return mostrar('<h2>Sin héroe</h2><p>Para tener robot, primero hazte un héroe de aventura: baja al claro desde el pueblo.</p><div class="fila-botones"><a class="boton" href="claro.html">Ir al claro</a></div>');
-  if (!DEF.robot) pantallaNucleo(); else pantallaTaller();
+  if (!DEF.robot) pantallaNucleo(); else { if (arreglarEquipo(DEF.robot)) guardar(); pantallaTaller(); }
 }
 arrancar();
-cargarHeroe().then((h) => { if (h && !peleando && JSON.stringify(h.robot) !== JSON.stringify(DEF?.robot) && h.robot) { DEF = h; if (pantalla === 'taller') pantallaTaller(); publicarRobot(); } }).catch(() => {});
+cargarHeroe().then((h) => { if (h && !peleando && JSON.stringify(h.robot) !== JSON.stringify(DEF?.robot) && h.robot) { DEF = h; arreglarEquipo(DEF.robot); if (pantalla === 'taller') pantallaTaller(); publicarRobot(); } }).catch(() => {});
 // La sala de siempre (la del pueblo): con ella os veis en el ring y podéis retaros
 import('./reunion.js').then((RED) => RED.crearPanel({
   donde: 'ring', boton: $('#bSala'), proponer: false, datos: () => ({ clase: DEF?.clase || 'barbaro', x: 0, z: 0 }),
