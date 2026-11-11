@@ -28,10 +28,14 @@ export function factorXP({ par, nivel = 1, heroica = false, encargo = false }) {
 }
 
 // Lo duro que es una pelea: en normal, la zona; en heroica, el nivel del héroe (y nunca menos que la zona + 1)
-export function escalon({ par, heroica = false, nivel = 1 }) {
+// Cada rango de heroica (I, II, III…) sube un escalón y medio: el III está pensado para ir en grupo
+// (dos héroes bien forjados y algún mercenario que cure)
+export function escalon({ par, heroica = false, nivel = 1, rango = 1 }) {
   const z = escalonZona(par);
-  return heroica ? Math.max(z + 1, (nivel - 1) / 2.2 + .6) : z;
+  return heroica ? Math.max(z + 1, (nivel - 1) / 2.2 + .6) + (rango - 1) * 1.6 : z;
 }
+export const RANGOS = ['I', 'II', 'III', 'IV', 'V'];
+export const MAX_RANGO = 5;
 
 // Los números de un monstruo, reforzados según el escalón (el jefe crece más en vida)
 export function reforzar(m, t, jefe = false) {
@@ -39,13 +43,14 @@ export function reforzar(m, t, jefe = false) {
   return {
     ...m,
     cuerpo: m.cuerpo + Math.round(t * (jefe ? 2.6 : 1.4)),
-    ataque: Math.min(8, m.ataque + Math.round(t * .9)),
+    ataque: Math.min(10, m.ataque + Math.round(t * .9)),
     defensa: Math.min(6, m.defensa + Math.round(t * .4))   // poca defensa: si no, el mago y el ingeniero (2 dados) no hacen nada
   };
 }
 
-// Lo que gana de más quien baja en heroica
-export const PREMIO_HEROICA = { xp: 1.5, oro: 2, botin: 2 };
+// Lo que gana de más quien baja en heroica (más cuanto más alto el rango); la esencia heroica solo sale aquí
+export const premioHeroica = (r = 1) => ({ xp: 1.5 + (r - 1) * .25, oro: 2 + (r - 1) * .5, botin: 1 + r, esencia: r });
+export const PREMIO_HEROICA = premioHeroica(1);
 
 // Cada héroe de más en la pelea: un poco más de vida a cada bicho (el jefe, más)
 export const extraPorCompanero = (u) => (u.jefe ? 3 : 1);

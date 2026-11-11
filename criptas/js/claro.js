@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { avisarBajada } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { decorarIsla } from './decor-isla.js';
-import { escalon, reforzar, factorXP } from './dificultad.js';
+import { escalon, reforzar, factorXP, RANGOS, MAX_RANGO } from './dificultad.js';
 import { entradaCine } from './decor-entradas.js';
 import { ponerCine } from './cine.js';
 import { crearMenu, appPantalla, appMenu, leerMudo, guardarMudo, AYUDA_AVENTURA as AYUDA } from './menu-aventura.js';
@@ -256,7 +256,7 @@ async function interactuarYa(it) {
   else if (t === 'parcela') await hablar('Parcela en venta', ['«Se vende parcela con vistas al estanque. Ideal para magos con gusto. Razón: ' + GUIA + '.»', '(Algún día aquí podrás construir tu casa, como en Wizard101. Por ahora solo hay hierba y buenas intenciones.)']);
   else if (t === 'cripta') {
     if (estado.mision !== 'hecha') await hablar(PAR.cripta.nombre, [TX.cerrada]);
-    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['🗝️ Bajar (normal)', () => bajarCripta(PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`)], ['💀 Bajar en heroica: más dura, mejor botín', () => bajarCripta(`cripta.html?p=${PID}&modo=heroica`)], ['Ahora no', null]]);
+    else await hablar(PAR.cripta.nombre, [criptaHechaEn(PID, DEF) ? 'La escalera sigue ahí, oscura como siempre. Abajo, todo se ha vuelto a llenar de monstruos.' : 'La entrada se abre y una escalera baja a la oscuridad. Huele a tiempo y a cosas viejas.'], [['🗝️ Bajar (normal)', () => bajarCripta(PID === 'claro' ? 'cripta.html' : `cripta.html?p=${PID}`)], ...opcionesHeroica(), ['Ahora no', null]]);
   } else if (t === 'pasarela') {
     await hablar('Pasarela de Morrandar', ['¿Subir de vuelta al pueblo?'], [['Volver al pueblo', () => { location.href = 'pueblo.html?desde=escala'; }], ['Quedarme', null]]);
   }
@@ -358,6 +358,15 @@ function ponerHeroe(def) {
   escena.remove(viejo.grupo); viejo.desechar?.();
   heroe = crearHeroe(def); heroe.grupo.position.copy(pos); heroe.grupo.rotation.y = rot; heroe.mirarA(rot); escena.add(heroe.grupo);
   H.pos = heroe.grupo.position; combate.ponerHeroe(heroe);
+}
+// Los rangos de heroica de esta cripta: el I siempre; cada uno superado abre el siguiente (el III, para ir en grupo)
+function opcionesHeroica() {
+  const hecho = DEF.heroicas?.[PID] || 0, ops = [];
+  for (let r = 1; r <= Math.min(MAX_RANGO, hecho + 1); r++) {
+    const nota = r === 1 ? 'más dura, mejor botín' : r >= 3 ? 'para ir en grupo' : 'aún más dura';
+    ops.push([`💀 Heroica ${RANGOS[r - 1]}${r <= hecho ? ' ✓' : ''}: ${nota}`, () => bajarCripta(`cripta.html?p=${PID}&modo=heroica&rango=${r}`)]);
+  }
+  return ops;
 }
 async function ganarExperiencia(xp) {
   if (!xp) return;

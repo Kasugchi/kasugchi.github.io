@@ -40,7 +40,8 @@ export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 // Lo que sueltan los monstruos de las criptas (como en una cacería: se lleva a la forja)
 export const MATERIALES = {
   hueso: { n: 'Hueso pulido', e: '🦴' }, polvo: { n: 'Polvo de tumba', e: '⚱️' }, venda: { n: 'Venda de momia', e: '🧻' },
-  ectoplasma: { n: 'Ectoplasma', e: '👻' }, piedra: { n: 'Piedra rúnica', e: '🪨' }, trofeo: { n: 'Trofeo de jefe', e: '🏆' }
+  ectoplasma: { n: 'Ectoplasma', e: '👻' }, piedra: { n: 'Piedra rúnica', e: '🪨' }, trofeo: { n: 'Trofeo de jefe', e: '🏆' },
+  esencia: { n: 'Esencia heroica', e: '✨' }   // solo la sueltan los jefes de las heroicas (más cuanto más alto el rango)
 };
 export const BOTIN = { esqueleto: 'hueso', guerrero: 'hueso', orco: 'hueso', sacerdotisa: 'hueso', zombi: 'polvo', trasgo: 'polvo', bruja: 'polvo', momia: 'venda', fantasma: 'ectoplasma', hechicero: 'ectoplasma', ilusionista: 'ectoplasma', gargola: 'piedra', golem: 'piedra' };
 // Qué cae al vencer a un monstruo: su material (no siempre) y, si era jefe, su trofeo y dos más
@@ -54,8 +55,9 @@ export const textoBotin = (b) => Object.entries(b).filter(([, n]) => n > 0).map(
 
 // La forja de Brasa (en Morrandar): lo que cuesta cada mejora, en oro y materiales; cada nivel, un dado (o un uso) más
 export const FORJA = {
-  arma: [{ oro: 60, hueso: 3 }, { oro: 150, hueso: 5, polvo: 2 }, { oro: 300, trofeo: 1, piedra: 2 }],
-  armadura: [{ oro: 50, hueso: 2 }, { oro: 130, venda: 2, polvo: 2 }, { oro: 260, trofeo: 1, ectoplasma: 2 }],
+  // del +3 en adelante, solo Bruna; el +4 y el +5 piden esencia heroica (hay que ir a las heroicas, y el +5, a las de rango alto)
+  arma: [{ oro: 60, hueso: 3 }, { oro: 150, hueso: 5, polvo: 2 }, { oro: 300, trofeo: 1, piedra: 2 }, { oro: 700, trofeo: 2, esencia: 4, piedra: 3 }, { oro: 1400, trofeo: 4, esencia: 12, piedra: 5 }],
+  armadura: [{ oro: 50, hueso: 2 }, { oro: 130, venda: 2, polvo: 2 }, { oro: 260, trofeo: 1, ectoplasma: 2 }, { oro: 600, trofeo: 2, esencia: 4, ectoplasma: 3 }, { oro: 1200, trofeo: 4, esencia: 12, ectoplasma: 5 }],
   amuleto: [{ oro: 80, ectoplasma: 2 }, { oro: 200, trofeo: 1, piedra: 1 }],
   pocion: 25
 };
