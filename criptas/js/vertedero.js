@@ -87,7 +87,7 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
   const malla = new THREE.MeshBasicMaterial({ color: '#c8c8d0', transparent: true, opacity: .25, side: THREE.DoubleSide, map: lienzo(64, 64, (x, w) => { x.strokeStyle = '#fff'; x.lineWidth = 3; for (let k = -w; k < w * 2; k += 16) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k + w, w); x.moveTo(k + w, 0); x.lineTo(k, w); x.stroke(); } }) });
   malla.map.wrapS = malla.map.wrapT = THREE.RepeatWrapping; malla.map.repeat.set(3, 2);
   for (let k = -MEDIO; k <= MEDIO; k += 3) for (const [x, z, r] of [[k, -MEDIO - 1, 0], [k, MEDIO + 3, 0], [-MEDIO - 1, k, Math.PI / 2], [MEDIO + 1, k, Math.PI / 2]]) {
-    if (z === MEDIO + 3 && Math.abs(x) < 5) continue;   // la puerta, junto al camión
+    if (z === MEDIO + 3 && Math.abs(x + 7) < 4) continue;   // la puerta, por donde entra el camión
     const p = new THREE.Mesh(new THREE.PlaneGeometry(3, 1.8), malla); p.position.set(x, .9, z); p.rotation.y = r; G.add(p);
     const poste = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, 2, 6), toon('#6a6a72')); poste.position.set(x + (r ? 0 : 1.5), 1, z + (r ? 1.5 : 0)); G.add(poste);
   }
@@ -175,24 +175,71 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
     animables.push((t) => { const a = t * .08; bandada.position.set(Math.cos(a) * 18, 14 + Math.sin(t * .4) * 1.5, Math.sin(a) * 18 - 6); bandada.rotation.y = -a; for (const [w, sd, i] of alas) w.rotation.z = sd * Math.sin(t * 5 + i) * .5; });
   }
   // el camión de Rufo, a la entrada (y su cartel)
+  const ruedas = [], puertas = [];
   const camion = new THREE.Group(); camion.position.set(-7, 0, ENTRADA + .5); G.add(camion);   // a un lado: que no tape la vista al llegar
   { const caja = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 3.4), toon('#c84a3a')); caja.position.set(0, 1.25, -.4); contorno(caja, .04);
     const cab = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.3, 1.3), toon('#e8d8b0')); cab.position.set(0, 1.05, 1.9); contorno(cab, .04);
     const cristal = new THREE.Mesh(new THREE.PlaneGeometry(1.8, .55), toon('#7ab0d0')); cristal.position.set(0, 1.35, 2.56);
     camion.add(caja, cab, cristal);
-    for (const [x, z] of [[-1.1, -1.4], [1.1, -1.4], [-1.1, 1.6], [1.1, 1.6]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 14), toon('#2a2a2a')); r.rotation.z = Math.PI / 2; r.position.set(x, .42, z); camion.add(r); }
+    for (const [x, z] of [[-1.1, -1.4], [1.1, -1.4], [-1.1, 1.6], [1.1, 1.6]]) { const r = new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .3, 14), toon('#2a2a2a')); r.rotation.z = Math.PI / 2; r.position.set(x, .42, z); camion.add(r); ruedas.push(r); }
+    // las puertas de atrás (bisagra en cada lado): se abren para que salte tu robot
+    for (const sx of [-1, 1]) { const b = new THREE.Group(); b.position.set(sx * 1.2, 1.25, -2.12); const h = new THREE.Mesh(new THREE.BoxGeometry(1.18, 1.5, .06), toon('#a83a2e')); h.position.x = -sx * .59; contorno(h, .03); const asa = new THREE.Mesh(new THREE.BoxGeometry(.06, .3, .06), toon('#e8d8b0')); asa.position.set(-sx * 1.05, 0, -.05); b.add(h, asa); camion.add(b); puertas.push([b, sx]); }
+    const faro = new THREE.Mesh(new THREE.BoxGeometry(.3, .18, .05), new THREE.MeshBasicMaterial({ color: '#fff4c0' })); faro.position.set(-.7, .75, 2.56); const faro2 = faro.clone(); faro2.position.x = .7; camion.add(faro, faro2);
     const tx = lienzo(512, 160, (x, w, h) => { x.fillStyle = '#fff2c8'; x.fillRect(0, 0, w, h); x.fillStyle = '#8a1c1c'; x.font = 'bold 54px Georgia, serif'; x.textAlign = 'center'; x.fillText('RUFO · CHATARRAS', w / 2, 70); x.font = 'bold 34px Georgia, serif'; x.fillStyle = '#3a2a20'; x.fillText('Aquí te reparo gratis', w / 2, 128); });
-    const cartel = new THREE.Mesh(new THREE.PlaneGeometry(2.3, .72), new THREE.MeshBasicMaterial({ map: tx, side: THREE.DoubleSide })); cartel.position.set(0, 2.5, -2.15); camion.add(cartel);
+    const cartel = new THREE.Mesh(new THREE.PlaneGeometry(2.3, .72), new THREE.MeshBasicMaterial({ map: tx })); cartel.position.set(0, 2.5, -2.15); cartel.rotation.y = Math.PI; camion.add(cartel);   // de cara al vertedero
     const corro = new THREE.Mesh(new THREE.RingGeometry(2.6, 2.9, 32), new THREE.MeshBasicMaterial({ color: '#ffd27a', transparent: true, opacity: .6 })); corro.rotation.x = -Math.PI / 2; corro.position.set(0, .02, -3.5); camion.add(corro);
   }
   const SITIO_REPARAR = new THREE.Vector3(-7, 0, ENTRADA - 3);
+  const APARCADO = camion.position.clone(), LEJOS = APARCADO.clone().setZ(ENTRADA + 30), SALTO = new THREE.Vector3(-3.6, 0, ENTRADA - 4.6);
+
+  // ---------- La llegada (y la vuelta) en el camión de Rufo, como el autobús de los juegos de islas ----------
+  // El camión entra marcha atrás pitando, abre las puertas de atrás y tu robot salta al suelo. Al irte, al revés.
+  let cine = null; const mundo = (v) => v.clone().add(CENTRO);
+  const ac = (() => { try { return new (window.AudioContext || window.webkitAudioContext)(); } catch { return null; } })();
+  function pitar(f = 1400, d = .12, vol = .08, tipo = 'square') {
+    if (!ac) return; try { ac.resume?.(); const o = ac.createOscillator(), g = ac.createGain(); o.type = tipo; o.frequency.value = f; g.gain.setValueAtTime(vol, ac.currentTime); g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d + .02); } catch { /* sin sonido */ }
+  }
+  const bocina = () => { pitar(330, .35, .1, 'sawtooth'); setTimeout(() => pitar(392, .45, .1, 'sawtooth'), 380); };
+  const suave = (k) => 1 - Math.pow(1 - Math.max(0, Math.min(1, k)), 3);
+  const arco = (a, b, k, alto) => a.clone().lerp(b, k).setY(a.y + (b.y - a.y) * k + Math.sin(Math.PI * k) * alto);
+  function abrir(k) { for (const [b, sx] of puertas) b.rotation.y = sx * 1.9 * k; }
+  function pasoCine(dt) {
+    const c = cine; c.t += dt; const t = c.t, cam = new THREE.Vector3(), mira = new THREE.Vector3();
+    const atras = APARCADO.clone().add(new THREE.Vector3(0, 1, -2));   // el hueco de atrás del camión
+    if (c.tipo === 'llega') {
+      const k = suave(t / 3.2); camion.position.copy(LEJOS).lerp(APARCADO, k); camion.position.y = t < 3.2 ? Math.abs(Math.sin(t * 18)) * .04 : 0;
+      for (const r of ruedas) r.rotation.x += dt * (t < 3.2 ? (1 - k) * 9 + .5 : 0);
+      if (t < 3.1 && Math.floor(t / .45) !== c.pi) { c.pi = Math.floor(t / .45); pitar(); }   // pi… pi… pi… (marcha atrás)
+      if (t > 3.2 && !c.bocina) { c.bocina = true; bocina(); }
+      abrir(suave((t - 3.4) / .5));
+      if (t > 3.9) { const j = Math.min(1, (t - 3.9) / .8); yo.grupo.visible = true; yo.grupo.position.copy(arco(atras, SALTO, j, 1.3)); yo.grupo.rotation.y = Math.PI; if (j >= 1 && !c.polvo) { c.polvo = true; ui?.chispas(mundo(SALTO).add(new THREE.Vector3(0, .2, 0)), '#e8d8b8', 24, 2.2); pitar(180, .12, .08, 'triangle'); } }
+      cam.copy(APARCADO).add(new THREE.Vector3(5.5, 3, -9.5)); mira.copy(t < 3.9 ? camion.position.clone().add(new THREE.Vector3(0, 1.2, -1)) : yo.grupo.position.clone().add(new THREE.Vector3(0, 1, 0)));
+      if (t > 5.2) return terminarCine();
+    } else {   // se va
+      if (t < .9) { const j = t / .9; abrir(1); yo.grupo.position.copy(arco(SALTO, atras, j, 1.3)); yo.grupo.rotation.y = 0; if (j > .95) yo.grupo.visible = false; }
+      else yo.grupo.visible = false;
+      abrir(1 - suave((t - 1) / .5));
+      if (t > 1.6 && !c.bocina) { c.bocina = true; bocina(); }
+      const k = Math.pow(Math.max(0, Math.min(1, (t - 2) / 2.6)), 2); camion.position.copy(APARCADO).lerp(LEJOS, k); camion.position.y = k > 0 ? Math.abs(Math.sin(t * 18)) * .04 : 0;
+      for (const r of ruedas) r.rotation.x -= dt * k * 12;
+      cam.copy(APARCADO).add(new THREE.Vector3(5.5, 3, -9.5)); mira.copy(camion.position).add(new THREE.Vector3(0, 1.2, 0));
+      if (t > 4.4) return terminarCine();
+    }
+    V.cineCam = { pos: mundo(cam), mira: mundo(mira) };
+  }
+  function terminarCine() {
+    const c = cine; cine = null; V.cineCam = null;
+    if (c.tipo === 'llega') { camion.position.copy(APARCADO); abrir(1); yo.grupo.visible = true; yo.grupo.position.copy(SALTO); yo.grupo.rotation.y = Math.PI; V.pausa = false; }
+    else { camion.position.copy(LEJOS); abrir(0); }
+    c.ok();
+  }
 
   // ---------- tú (tu robot) ----------
   let yo = null; const destino = new THREE.Vector3(); let hayDestino = false; const teclas = {};
   const pos = () => yo.grupo.position;
   function ponerme(spec) {
     if (yo) yo.desechar(G);
-    yo = crearRobot(spec); yo.grupo.scale.setScalar(.8); G.add(yo.grupo); yo.grupo.position.set(0, 0, ENTRADA - 3); yo.grupo.rotation.y = Math.PI; hayDestino = false;
+    yo = crearRobot(spec); yo.grupo.scale.setScalar(.8); G.add(yo.grupo); yo.grupo.position.copy(SALTO); yo.grupo.rotation.y = Math.PI; hayDestino = false;
   }
   addEventListener('keydown', (e) => { teclas[e.key.toLowerCase()] = true; });
   addEventListener('keyup', (e) => { teclas[e.key.toLowerCase()] = false; });
@@ -211,6 +258,7 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
   const TACTIL = matchMedia('(pointer: coarse)').matches;
   const ray = new THREE.Raycaster(), plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v2 = new THREE.Vector2();
   lienzoDom.addEventListener('pointerdown', (e) => {
+    if (cine && cine.t > .4) { terminarCine(); return; }   // tocar: saltarse la escena
     if (!V.activo || V.pausa || !yo) return;
     v2.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(v2, camara);
     const p = new THREE.Vector3(); if (ray.ray.intersectPlane(plano, p)) { destino.copy(p).sub(CENTRO); hayDestino = true; }
@@ -250,12 +298,18 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
     },
     salir() { V.activo = false; G.visible = false; for (const [l, i] of lucesRing) l.intensity = i; lucesRing = []; },
     // Vuelves al camión (después de perder, por ejemplo)
-    alCamion() { if (yo) { yo.grupo.position.set(0, 0, ENTRADA - 3); hayDestino = false; } },
+    alCamion() { if (yo) { yo.grupo.position.copy(SALTO); hayDestino = false; } },
+    cineCam: null,
+    // Llegas: el camión entra marcha atrás y tu robot salta de atrás (se puede saltar tocando)
+    llegada() { return new Promise((ok) => { V.pausa = true; camion.position.copy(LEJOS); abrir(0); yo.grupo.visible = false; cine = { tipo: 'llega', t: 0, ok, pi: -1 }; V.cineCam = { pos: mundo(APARCADO.clone().add(new THREE.Vector3(5.5, 3, -9.5))), mira: mundo(LEJOS.clone().setY(1)), corte: true }; }); },
+    // Te vas: tu robot se sube atrás y el camión se marcha
+    salida() { return new Promise((ok) => { V.pausa = true; hayDestino = false; yo.grupo.position.copy(SALTO); camion.position.copy(APARCADO); cine = { tipo: 'va', t: 0, ok }; V.cineCam = { pos: mundo(APARCADO.clone().add(new THREE.Vector3(5.5, 3, -9.5))), mira: mundo(APARCADO.clone().setY(1.2)), corte: true }; }); },
     ocultarPelea(s, si) { if (yo) yo.grupo.visible = !si; if (s) s.r.grupo.visible = !si; for (const x of salvajes) if (x.rot) x.rot.visible = !si; },
     actualizar(dt, t) {
       pad.hidden = !(TACTIL && V.activo && !V.pausa);
       if (!V.activo || !yo) return;
       for (const f of animables) f(t, dt);
+      if (cine) { pasoCine(dt); yo.animar(dt, t); for (const s of salvajes) s.r.animar(dt, t); return; }
       // los montones que se ponen entre la cámara y tu robot se apartan (si no, te pierdes de vista)
       { const c = camara.position.clone().sub(CENTRO), q = yo.grupo.position, dx = q.x - c.x, dz = q.z - c.z, L2 = dx * dx + dz * dz || 1;
         for (const m of montones) { const k = Math.max(0, Math.min(1, ((m.x - c.x) * dx + (m.z - c.z) * dz) / L2)); m.g.visible = !(k > .05 && k < .97 && Math.hypot(c.x + dx * k - m.x, c.z + dz * k - m.z) < m.r * .9); } }

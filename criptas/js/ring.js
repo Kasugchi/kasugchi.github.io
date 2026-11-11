@@ -779,7 +779,7 @@ function arreglar(k) {
 
 let VERT = null, VIAJE = null, SALV = null;
 const CIELO_RING = { fondo: escena.background.clone(), niebla: escena.fog };
-function irAlVertedero() {
+async function irAlVertedero() {
   const R = ROBOT();
   if ((DEF.oro || 0) < VIAJE_PRECIO) return narrarUn(`Rufo: «El viaje son ${VIAJE_PRECIO} monedas. Gasolina, bocadillo… lo normal.»`);
   DEF.oro -= VIAJE_PRECIO; guardar();
@@ -787,9 +787,17 @@ function irAlVertedero() {
   VIAJE = { vidas: null };
   ocultar(); limpiarRobots(); ORIGEN = new THREE.Vector3();
   escena.background = new THREE.Color('#e8a088'); escena.fog = new THREE.Fog('#e3a08c', 24, 95);
-  VERT.entrar({ nucleo: R.nucleo, equipo: R.equipo }); VERT.pausa = false; modoCamara = 'vertedero';
-  camara.position.copy(VERT.dondeEstoy()).add(new THREE.Vector3(0, 8, 9));
+  VERT.entrar({ nucleo: R.nucleo, equipo: R.equipo }); modoCamara = 'vertedero';
+  const llegando = VERT.llegada();
+  narrarUn('Rufo: «¡Agárrate, que vamos marcha atrás!»');
+  await llegando;
   pintarVert(); narrarUn(matchMedia('(pointer: coarse)').matches ? 'Rufo: «Muévete con el joystick (o tocando el suelo). Y ojo, que muerden.»' : 'Rufo: «Muévete con WASD (o pinchando en el suelo). Y ojo, que muerden.»');
+}
+// Volver con Rufo: te subes al camión y se marcha (y luego, al taller)
+async function volverConRufo() {
+  $('#vert').hidden = true; narrarUn('Rufo: «¿Ya? Venga, sube, que se enfría el bocadillo.»');
+  if (VERT) await VERT.salida();
+  salirDelVertedero();
 }
 function salirDelVertedero() {
   VERT?.salir(); VIAJE = null; $('#vert').hidden = true;
@@ -800,7 +808,7 @@ function pintarVert() {
   const R = ROBOT(), v = $('#vert'); v.hidden = false;
   const vida = (h) => { const max = vidaPieza(R.equipo[h], R.nucleo) + (juegoDe(R.equipo)?.juego?.vida || 0), x = VIAJE?.vidas?.[h] ?? max; return `${HUECOS_ROBOT[h].e}${Math.max(0, x)}/${max}`; };
   v.innerHTML = `<b>🚚 El vertedero</b><small>${HUECOS.map(vida).join(' ')}</small><small>Redes: ${Object.entries(R.redes || {}).filter(([, n]) => n > 0).map(([id, n]) => `${REDES[id].e}×${n}`).join(' ') || 'ninguna (cómpralas en el taller)'} · 🪙 ${DEF.oro || 0}</small><small class="largo">Al fondo, más duros. El camión de Rufo te repara gratis.</small><button id="bIrse">🚚 Volver con Rufo</button>`;
-  $('#bIrse').onclick = salirDelVertedero;
+  $('#bIrse').onclick = volverConRufo;
 }
 function repararEnCamion() {
   if (!VIAJE?.vidas) return;
@@ -844,7 +852,7 @@ async function finSalvaje(P, ev) {
   if (s) { if (fuera_) VERT.quitarSalvaje(s); else { s.calma = 5; const q = s.r.grupo.position; q.x += (Math.random() - .5) * 8; q.z -= 5; } }
   mostrar(`<h2>${titulo}</h2><p>${texto}</p><div class="fila-botones"><button id="bVolverV">🚚 Volver con Rufo</button><button id="bSeguir" class="grande">▶ Seguir rebuscando</button></div>`, 'salvaje');
   $('#bSeguir').onclick = volverAlVertedero;
-  $('#bVolverV').onclick = () => { ocultar(); limpiarRobots(); SALV = null; salirDelVertedero(); };
+  $('#bVolverV').onclick = () => { ocultar(); limpiarRobots(); VERT.ocultarPelea(SALV, false); SALV = null; ORIGEN = new THREE.Vector3(); modoCamara = 'vertedero'; volverConRufo(); };
 }
 function volverAlVertedero() {
   ocultar(); limpiarRobots(); VERT.ocultarPelea(SALV, false); SALV = null;
@@ -862,7 +870,8 @@ function bucle() {
   const grupo = PELEA && PELEA.F.length > 2;
   const lejos = camara.aspect < 1 ? 1 + (1 - camara.aspect) * .5 : 1;   // en el móvil de pie, más atrás para que quepan todos
   VERT?.actualizar(dt, t);
-  if (modoCamara === 'vertedero' && VERT) {   // detrás y por encima de tu robot
+  if (modoCamara === 'vertedero' && VERT?.cineCam) { if (VERT.cineCam.corte) { camara.position.copy(VERT.cineCam.pos); VERT.cineCam.corte = false; } camara.position.lerp(VERT.cineCam.pos, Math.min(1, dt * 2.5)); camara.lookAt(VERT.cineCam.mira); }
+  else if (modoCamara === 'vertedero' && VERT) {   // detrás y por encima de tu robot
     const p = VERT.dondeEstoy(); camara.position.lerp(p.clone().add(new THREE.Vector3(0, 3.9 * lejos, 7.6 * lejos)), Math.min(1, dt * 3)); camara.lookAt(p.x, p.y + 2.2, p.z - 6);   // bajita y mirando lejos: se ve el atardecer
   } else {
     const obj = modoCamara === 'taller' ? new THREE.Vector3(MOVIL ? 0 : 1.2, 2.5, 6.4) : new THREE.Vector3(Math.sin(t * .15) * .8, (grupo ? 5.6 : 4.2) * lejos, (grupo ? 9.4 : 8.4) * lejos).add(ORIGEN);
