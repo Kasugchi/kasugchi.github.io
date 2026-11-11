@@ -23,7 +23,7 @@ import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS, usarMapa } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe, crearZombi, crearMomia } from './claro-personajes.js';
-import { RAZAS, CLASES, NIVELES, XP, estadisticas, fichaHeroe, ESTILO_FICHA, MAX_HEROES, listaHeroes, cambiarDeHeroe, heroeNuevo, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, fichaHeroe, ESTILO_FICHA, MAX_HEROES, listaHeroes, cambiarDeHeroe, heroeNuevo, cambiarClase, nivelConClase, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
@@ -403,7 +403,7 @@ function abrirHeroes() {
   const fila = (h) => `<button class="fh-fila" data-heroe="${h.id}" style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer;${h.id === DEF.id ? 'box-shadow:inset 0 0 0 2px #c9a24a' : ''}"><span class="fh-ico">${CLASES[h.clase]?.icono || '🧙'}</span><b>${esc(h.nombre) || 'Sin nombre'}</b><span class="fh-val">nivel ${h.nivel || 1}</span><small>${RAZAS[h.raza]?.nombre || ''} ${(CLASES[h.clase]?.nombre || '').toLowerCase()} · 🪙 ${h.oro || 0}${h.id === DEF.id ? ' · el que llevas' : ''}</small></button>`;
   MENU_AV.pagina('Tus héroes', `${ESTILO_FICHA}<p class="fh-txt">Cada héroe va por su cuenta: su nivel, su oro, su forja y sus criptas. El pueblo es de todos.</p>${todos.map(fila).join('')}
     ${todos.length < MAX_HEROES ? '<button class="fh-fila" data-nuevo style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer"><span class="fh-ico">➕</span><b>Héroe nuevo</b><span class="fh-val"></span><small>Empieza en el nivel 1, con la raza y la clase que quieras</small></button>' : `<p class="fh-txt">Como mucho ${MAX_HEROES} héroes.</p>`}
-    <button class="fh-fila" data-retocar style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer"><span class="fh-ico">✏️</span><b>Retocar a ${esc(DEF.nombre)}</b><span class="fh-val"></span><small>Nombre y colores${(DEF.nivel || 1) > 1 ? '' : ', raza y clase'}</small></button>`);
+    <button class="fh-fila" data-retocar style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer"><span class="fh-ico">✏️</span><b>Retocar a ${esc(DEF.nombre)}</b><span class="fh-val"></span><small>Nombre, colores y clase (cada clase con su propio nivel)</small></button>`);
   const L = document.querySelector('.libreta-av'); if (!L) return;
   const cambiar = (h) => { guardarAhora(); guardarHeroe(h, true); hud.banner(`Llamando a ${h.nombre || 'tu héroe nuevo'}…`, 'heroe'); setTimeout(() => location.reload(), 1600); };
   L.querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => { if (b.dataset.heroe !== DEF.id) { MENU_AV.cerrar(); cambiar(cambiarDeHeroe(DEF, b.dataset.heroe)); } }));
@@ -423,14 +423,14 @@ function pintarCreador(rehacer) {
   if (rehacer) { ponerHeroe(b); heroe.mirarA(heroe.grupo.rotation.y); heroe.hacer('girar', .7); }
   $('#cNombre').value = b.nombre || '';
   $('#cNombre').placeholder = 'Ponle nombre…';
+  const fijo = !nuevo && (Object.keys(DEF.clases || {}).length > 0 || (DEF.nivel || 1) > 1 || (DEF.xp || 0) > 0);   // con camino hecho: la raza, fija; la clase cambia de estilo
+  for (const id of ['#cRazas', '#cAzar']) { $(id).hidden = fijo; if (id !== '#cAzar') $(id).previousElementSibling.hidden = fijo; }
   const tarjetas = (sel, lista, actual, al) => { const d = $(sel); d.innerHTML = ''; for (const [id, x] of Object.entries(lista)) { const t = document.createElement('button'); t.className = id === actual ? 'sel' : ''; t.innerHTML = `<span>${x.icono}</span>${x.nombre}`; t.onclick = () => { sonido.dado(.4); al(id); }; d.appendChild(t); } };
   tarjetas('#cRazas', RAZAS, b.raza, (id) => { b.raza = id; const R = RAZAS[id]; if (!R.pieles.includes(b.colores.piel)) b.colores.piel = R.pieles[0]; if (!R.pelos.includes(b.colores.pelo)) b.colores.pelo = R.pelos[0]; pintarCreador(true); });
-  tarjetas('#cClases', CLASES, b.clase, (id) => { b.clase = id; if (!CLASES[id].ropa.includes(b.colores.ropa)) b.colores.ropa = CLASES[id].ropa[0]; pintarCreador(true); });
-  const fijo = !nuevo && ((DEF.nivel || 1) > 1 || (DEF.xp || 0) > 0);   // ya tiene camino hecho: raza y clase, fijas
-  for (const id of ['#cRazas', '#cClases', '#cAzar']) { $(id).hidden = fijo; if (id !== '#cAzar') $(id).previousElementSibling.hidden = fijo; }
+  tarjetas('#cClases', CLASES, b.clase, (id) => { if (fijo) cambiarClase(b, id); else b.clase = id; if (!CLASES[id].ropa.includes(b.colores.ropa)) b.colores.ropa = CLASES[id].ropa[0]; pintarCreador(true); });   // con camino hecho, cada clase con su progreso
   $('#cRasgo').innerHTML = `<b>${R0.rasgo}.</b> ${R0.texto}`;
   $('#cHab').innerHTML = `${C0.texto} <b>${C0.habilidad.icono} ${C0.habilidad.nombre}:</b> ${C0.habilidad.texto}`;
-  if (fijo) $('#cHab').innerHTML += '<br><i>La raza y la clase ya no se cambian: para probar otras, crea un héroe nuevo en «Cambiar de héroe».</i>';
+  if (fijo) $('#cHab').innerHTML += `<br><b>Con ${C0.nombre.toLowerCase()}: nivel ${b.nivel || 1}.</b> <i>Cada clase lleva su nivel, sus mejoras y su arma (como las armas del Monster Hunter). La armadura, el oro, los materiales y los títulos son tuyos con cualquiera.</i>`;
   const muestras = (sel, lista, clave) => { const d = $(sel); d.innerHTML = ''; for (const c of lista) { const m = document.createElement('button'); m.style.background = c; m.className = b.colores[clave] === c ? 'sel' : ''; m.setAttribute('aria-label', c); m.onclick = () => { b.colores[clave] = c; sonido.dado(.3); pintarCreador(true); }; d.appendChild(m); } };
   muestras('#cRopa', C0.ropa, 'ropa'); muestras('#cPiel', R0.pieles, 'piel'); muestras('#cPelo', R0.pelos, 'pelo');
   $('#lPiel').textContent = b.raza === 'escamado' ? 'Escamas' : 'Piel'; $('#lPelo').textContent = b.raza === 'escamado' ? 'Cuernos' : 'Pelo';

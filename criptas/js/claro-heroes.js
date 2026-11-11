@@ -184,3 +184,18 @@ export function heroeNuevo(h) {
   const todos = listaHeroes(h); if (todos.length >= MAX_HEROES) return null;
   return asegurarId({ ...heroeAlAzar(), nuevo: true, _otros: todos });
 }
+
+// ---------- Estilos de clase (como las armas del Monster Hunter) ----------
+// El mismo héroe puede cambiar de clase, pero cada clase lleva su propio nivel, su experiencia, sus mejoras
+// y su arma (lo forjado en el arma y el arma encontrada). La armadura, el amuleto, el oro, los materiales,
+// los títulos y las criptas superadas son del héroe. Lo de las clases que no llevas se guarda en «clases».
+export function cambiarClase(h, nueva) {
+  if (!h || !CLASES[nueva] || h.clase === nueva) return h;
+  h.clases ||= {};
+  h.clases[h.clase] = { nivel: h.nivel || 1, xp: h.xp || 0, mejoras: mejorasDe(h), arma: h.forja?.arma || 0, hallada: h.arma || null };
+  const g = h.clases[nueva] || { nivel: 1, xp: 0, mejoras: {}, arma: 0, hallada: null };
+  h.clase = nueva; h.nivel = g.nivel; h.xp = g.xp; h.mejoras = { ...g.mejoras }; h.forja = { ...(h.forja || {}), arma: g.arma }; h.arma = g.hallada;
+  return h;
+}
+// El nivel que tiene el héroe con cada clase (para enseñarlo en el creador)
+export const nivelConClase = (h, clase) => (clase === h.clase ? h.nivel || 1 : h.clases?.[clase]?.nivel || 1);
