@@ -57,6 +57,7 @@ function pintar(caja, h) {
     <div class="sitios">${paradas}</div>
     <div class="grupo">Más sitios</div>
     <div class="sitios">
+      ${tarjeta({ ico: '🤖', titulo: 'El Ring de Chatarra', sub: 'Fabrícate un robot con piezas y gánale las suyas a los del pueblo.', href: 'ring.html' })}
       ${tarjeta({ ico: '🏆', titulo: 'Tu cabaña', sub: 'Los trofeos de tus héroes.', href: 'cabana.html' })}
       ${tarjeta({ ico: '👥', titulo: 'Sala de espera', sub: 'Para juntaros con código sin 3D, gastando poco.', href: 'reunion.html' })}
       ${tarjeta({ ico: '🏴‍☠️', titulo: 'Duelo de insultos', sub: 'El duelo al estilo pirata que lanza Rufo.', href: 'duelo.html' })}

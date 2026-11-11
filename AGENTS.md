@@ -63,6 +63,10 @@ Cada parada tiene `fuerza` (claro 1; pantano, cine e isla 2; minas 3) y un nivel
 
 A lo Monster Hunter: el nivel se congela en el 8 y desde ahí te hace fuerte el equipo. Casco, peto y botas de cada zona (`JUEGOS`: de momento hueso del claro y pirata de la isla); cada pieza da una habilidad (no más dados) y se mejora hasta +3 (el +3, con Bruna y esencia). Con las 3 de un juego, su extra. Se hacen en la forja del pueblo («Equipo de las zonas») con el material común de la zona (los bichos pequeños, la mitad de las veces) y el raro (los jefes; en heroica, siempre): `botinDe(tipo, jefe, { zona, heroica })`. Lo que tienes va en `HEROE.piezas`, lo que llevas en `HEROE.equipo`; `efectosEquipo` lo suma y el combate lo lee en `estado.eq`.
 
+### El Ring de Chatarra (`ring.html` + `js/ring.js`, `js/robots.js`)
+
+Robots a lo «medabots», hechos a nuestra manera: núcleo (su alma, con forma de bicho, sube de nivel) y cuatro piezas (cabeza, brazos, piernas) con vida y acción. Pelea por turnos con dados apuntando a piezas; si te rompen la cabeza, pierdes. Liga de cinco vecinos (`RIVALES`); al ganar te llevas una de sus piezas. Se guarda en el héroe de aventura (`robot`). Se llega desde la cantina (Rufo o el cartel del ring) y desde la portada.
+
 ### Mercenarios (`js/mercenarios.js`)
 
 Se alquilan a Rufo (cantina) con el oro del héroe de aventura: `HEROE.mercenario` guarda cuál, y se gasta al bajar a la siguiente cripta. Allí te sigue y entra en cada pelea como aliado con cabeza propia (`turnoMercenario` en el combate): la curandera cura al que baje de la mitad; el escudero provoca a los bichos de al lado. Sus números crecen con tu nivel.
