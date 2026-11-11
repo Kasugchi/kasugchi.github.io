@@ -789,7 +789,7 @@ function irAlVertedero() {
   escena.background = new THREE.Color('#e8a088'); escena.fog = new THREE.Fog('#e3a08c', 24, 95);
   VERT.entrar({ nucleo: R.nucleo, equipo: R.equipo }); VERT.pausa = false; modoCamara = 'vertedero';
   camara.position.copy(VERT.dondeEstoy()).add(new THREE.Vector3(0, 8, 9));
-  pintarVert(); narrarUn('Rufo: «Toca el suelo para moverte (o WASD). Y ojo, que muerden.»');
+  pintarVert(); narrarUn(matchMedia('(pointer: coarse)').matches ? 'Rufo: «Muévete con el joystick (o tocando el suelo). Y ojo, que muerden.»' : 'Rufo: «Muévete con WASD (o pinchando en el suelo). Y ojo, que muerden.»');
 }
 function salirDelVertedero() {
   VERT?.salir(); VIAJE = null; $('#vert').hidden = true;

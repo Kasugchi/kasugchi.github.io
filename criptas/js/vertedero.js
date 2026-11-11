@@ -196,6 +196,19 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
   }
   addEventListener('keydown', (e) => { teclas[e.key.toLowerCase()] = true; });
   addEventListener('keyup', (e) => { teclas[e.key.toLowerCase()] = false; });
+  // el joystick (en táctil, como el del claro): abajo a la izquierda
+  let joy = null;
+  const pad = document.createElement('div'); pad.id = 'joyVert'; pad.innerHTML = '<i></i>'; pad.hidden = true; document.body.appendChild(pad);
+  const bola = pad.firstChild;
+  if (!document.getElementById('css-joyVert')) { const st = document.createElement('style'); st.id = 'css-joyVert'; st.textContent = `
+    #joyVert { position: fixed; z-index: 4; left: 18px; bottom: calc(max(18px, env(safe-area-inset-bottom)) + 8px); width: 104px; height: 104px; border-radius: 50%; background: rgba(255,248,230,.28); border: 3px solid rgba(255,248,230,.65); touch-action: none; }
+    #joyVert[hidden] { display: none; }
+    #joyVert i { position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px; border-radius: 50%; background: #fff8e6; box-shadow: 0 4px 0 #c9a06a; }`; document.head.appendChild(st); }
+  pad.addEventListener('pointerdown', (e) => { const r = pad.getBoundingClientRect(); joy = { id: e.pointerId, cx: r.left + r.width / 2, cy: r.top + r.height / 2, x: 0, y: 0 }; pad.setPointerCapture(e.pointerId); hayDestino = false; e.stopPropagation(); });
+  pad.addEventListener('pointermove', (e) => { if (!joy || e.pointerId !== joy.id) return; let x = (e.clientX - joy.cx) / 42, y = (e.clientY - joy.cy) / 42; const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } joy.x = x; joy.y = y; bola.style.transform = `translate(${x * 32}px, ${y * 32}px)`; });
+  const soltarJoy = () => { joy = null; bola.style.transform = ''; };
+  pad.addEventListener('pointerup', soltarJoy); pad.addEventListener('pointercancel', soltarJoy);
+  const TACTIL = matchMedia('(pointer: coarse)').matches;
   const ray = new THREE.Raycaster(), plano = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), v2 = new THREE.Vector2();
   lienzoDom.addEventListener('pointerdown', (e) => {
     if (!V.activo || V.pausa || !yo) return;
@@ -240,6 +253,7 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
     alCamion() { if (yo) { yo.grupo.position.set(0, 0, ENTRADA - 3); hayDestino = false; } },
     ocultarPelea(s, si) { if (yo) yo.grupo.visible = !si; if (s) s.r.grupo.visible = !si; for (const x of salvajes) if (x.rot) x.rot.visible = !si; },
     actualizar(dt, t) {
+      pad.hidden = !(TACTIL && V.activo && !V.pausa);
       if (!V.activo || !yo) return;
       for (const f of animables) f(t, dt);
       // los montones que se ponen entre la cámara y tu robot se apartan (si no, te pierdes de vista)
@@ -250,8 +264,10 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
       if (V.pausa) return;
       // moverte: con el dedo (a donde toques) o con WASD / flechas
       const p = pos(), dir = new THREE.Vector3((teclas.d || teclas.arrowright ? 1 : 0) - (teclas.a || teclas.arrowleft ? 1 : 0), 0, (teclas.s || teclas.arrowdown ? 1 : 0) - (teclas.w || teclas.arrowup ? 1 : 0));
+      let rapidez = 1;
+      if (joy && Math.hypot(joy.x, joy.y) > .15) { dir.set(joy.x, 0, joy.y); rapidez = Math.min(1, Math.hypot(joy.x, joy.y) * 1.2); }   // la cámara mira siempre al fondo: arriba es adelante
       if (dir.lengthSq()) hayDestino = false; else if (hayDestino) { dir.set(destino.x - p.x, 0, destino.z - p.z); if (dir.length() < .2) { hayDestino = false; dir.set(0, 0, 0); } }
-      if (dir.lengthSq()) { dir.normalize(); p.addScaledVector(dir, dt * 4.2); yo.grupo.rotation.y = Math.atan2(dir.x, dir.z); p.y = Math.abs(Math.sin(t * 12)) * .06; } else p.y = 0;
+      if (dir.lengthSq()) { dir.normalize(); p.addScaledVector(dir, dt * 4.2 * rapidez); yo.grupo.rotation.y = Math.atan2(dir.x, dir.z); p.y = Math.abs(Math.sin(t * 12)) * .06; } else p.y = 0;
       chocar(p);
       // el camión de Rufo: te repara
       if (p.distanceTo(SITIO_REPARAR) < 2.8) alCamion?.();
