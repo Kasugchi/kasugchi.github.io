@@ -254,7 +254,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
         for (const u of pegadosA) {   // cada uno tira su defensa: con un escudo negro, lo para
           ui.chispas(sobre(u, 1), '#ff8a3a', 40, 4);
           const mesa = mesaDados(h, u), r = await dados.tirar('combate', u.defensa, mesa.centro, mesa.desde);
-          if (r.includes('escudoN')) { sonido.bloqueo(); ui.numero(sobre(u, u.pj.altura), '¡Parado!', '#cfe8ff'); await espera(400); } else await herir(u, 1);
+          if (r.includes('escudoN')) { sonido.bloqueo(); ui.numero(sobre(u, u.pj.altura), '¡Parado!', '#cfe8ff'); await espera(400); } else await herir(u, 1 + (MJ().pl || 0));   // crece con el nivel, como la bola de fuego
         }
         if (await comprobarFin()) return;
       }
