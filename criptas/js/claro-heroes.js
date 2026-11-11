@@ -136,6 +136,14 @@ export function guardarHeroe(h, ya = false) {
   try { subirAventura(h, ya); } catch { /* sin nube */ }
 }
 
+export const ESTILO_FICHA = `<style>
+    .libreta-av { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; }
+    .fh-cab { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; } .fh-cab .r { font-size: 40px; } .fh-cab small { display: block; opacity: .7; }
+    .fh-fila { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 12px; background: #fff3d6; margin-bottom: 6px; }
+    .fh-fila small { grid-column: 2 / 4; opacity: .7; font-size: 12px; line-height: 1.25; } .fh-ico { font-size: 20px; text-align: center; } .fh-val { font-weight: 800; font-size: 17px; white-space: nowrap; }
+    .fh-sec { margin: 12px 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; } .fh-txt { font-size: 13px; line-height: 1.35; margin: 0 0 6px; }
+  </style>`;
+
 // ---------- La ficha del héroe (☰ → Tu héroe, o tocando su tarjeta): qué tiene y cuánto pega ----------
 // «est» es el estado de ahora (vida y usos que le quedan, la comida de la cripta…); si no, los de siempre.
 export function fichaHeroe(h, est = null) {
@@ -146,13 +154,7 @@ export function fichaHeroe(h, est = null) {
   const elegidas = [mj.ataque && `⚔️ +${mj.ataque} de ataque`, mj.defensa && `🛡️ +${mj.defensa} de defensa`, mj.cuerpo && `❤️ +${mj.cuerpo * 2} de cuerpo`, mj.usos && `✨ +${mj.usos} usos`, ...mc.map((m) => `${m.texto.split(':')[0]}${(e.hab[m.id] || 0) > 1 ? ` ×${e.hab[m.id]}` : ''}`)].filter(Boolean);
   const forja = h.forja ? [h.forja.arma && `arma +${h.forja.arma}`, h.forja.armadura && `armadura +${h.forja.armadura}`, h.forja.amuleto && `amuleto +${h.forja.amuleto}`].filter(Boolean) : [];
   const loa = h.raza === 'troll' && (est?.loa || h.loa) ? LOAS[est?.loa || h.loa] : null;
-  return `<style>
-    .libreta-av { max-height: calc(100vh - 40px); max-height: calc(100dvh - 40px); overflow-y: auto; overscroll-behavior: contain; }
-    .fh-cab { display: flex; gap: 12px; align-items: center; margin: 4px 0 12px; } .fh-cab .r { font-size: 40px; } .fh-cab small { display: block; opacity: .7; }
-    .fh-fila { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 2px 8px; padding: 8px 10px; border-radius: 12px; background: #fff3d6; margin-bottom: 6px; }
-    .fh-fila small { grid-column: 2 / 4; opacity: .7; font-size: 12px; line-height: 1.25; } .fh-ico { font-size: 20px; text-align: center; } .fh-val { font-weight: 800; font-size: 17px; white-space: nowrap; }
-    .fh-sec { margin: 12px 0 4px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; opacity: .6; } .fh-txt { font-size: 13px; line-height: 1.35; margin: 0 0 6px; }
-  </style>
+  return `${ESTILO_FICHA}
   <div class="fh-cab"><span class="r">${c.icono}</span><div><b>${h.nombre || 'Tu héroe'}</b>${h.titulo ? `, <i>${h.titulo}</i>` : ''} · nivel ${h.nivel || 1}<small>${r?.nombre || ''} ${c.nombre.toLowerCase()} · ${h.xp || 0} de experiencia</small></div></div>
   ${fila('❤️', 'Cuerpo', `${e.cuerpo} / ${e.max}`, 'Lo que aguantas. A cero, caes.')}
   ${fila('⚔️', 'Ataque', dados(e.ataque, '🎲'), 'Dados que tiras al pegar: cada calavera es un golpe.')}
@@ -165,4 +167,20 @@ export function fichaHeroe(h, est = null) {
   ${(h.titulos || []).length ? `<div class="fh-sec">Títulos</div><p class="fh-txt">🏅 ${h.titulos.join(' · ')}</p>` : ''}
   ${forja.length ? `<div class="fh-sec">De la forja</div><p class="fh-txt">${forja.join(' · ')}</p>` : ''}
   ${h.arma && ARMAS[h.arma] ? `<p class="fh-txt">Llevas: <b>${ARMAS[h.arma].nombre || h.arma}</b></p>` : ''}`;
+}
+
+// ---------- Varios héroes por cuenta (como los personajes del WoW) ----------
+// Cada uno con su nivel, su oro, su forja y sus criptas. El que llevas va guardado como siempre y
+// lleva a los demás en «_otros» (así no hace falta ningún sitio nuevo en la nube, y nada se pierde).
+export const MAX_HEROES = 4;
+const sinOtros = (h) => { const { _otros, ...x } = h; return x; };
+export const asegurarId = (h) => { if (h && !h.id) h.id = 'h' + Date.now().toString(36) + Math.floor(Math.random() * 1e4); return h; };
+export const listaHeroes = (h) => (h ? [sinOtros(asegurarId(h)), ...(h._otros || [])] : []);
+export function cambiarDeHeroe(h, id) {
+  const todos = listaHeroes(h), elegido = todos.find((x) => x.id === id);
+  return elegido ? { ...elegido, _otros: todos.filter((x) => x.id !== id) } : h;
+}
+export function heroeNuevo(h) {
+  const todos = listaHeroes(h); if (todos.length >= MAX_HEROES) return null;
+  return asegurarId({ ...heroeAlAzar(), nuevo: true, _otros: todos });
 }

@@ -23,7 +23,7 @@ import { toon, pieza, P, lienzo as lienzoTx } from './claro-estilo.js';
 import { mergeGeometries } from './vendor/addons/utils/BufferGeometryUtils.js';
 import { crearMundo, SITIOS, usarMapa } from './claro-mundo.js';
 import { crearMago, crearEsqueleto, crearHeroe, crearZombi, crearMomia } from './claro-personajes.js';
-import { RAZAS, CLASES, NIVELES, XP, estadisticas, fichaHeroe, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
+import { RAZAS, CLASES, NIVELES, XP, estadisticas, fichaHeroe, ESTILO_FICHA, MAX_HEROES, listaHeroes, cambiarDeHeroe, heroeNuevo, nivelDe, mejoraDeNivel, prepararSubida, elegirMejora, mejorasDisponibles, heroeAlAzar, leerLocal, cargarHeroe, guardarHeroe, botinDe, sumarBotin, textoBotin } from './claro-heroes.js';
 import { crearHud } from './claro-hud.js';
 import { crearUI3D } from './claro-ui3d.js';
 import { crearDados } from './claro-dados.js';
@@ -73,7 +73,8 @@ const dados = crearDados(escena, { alSonar: (f) => sonido.dado(f), escala: MOVIL
 // ---------- estado del héroe ----------
 const estado = { cuerpo: 8, max: 8, ataque: 2, defensa: 2, oro: 0, setas: 0, pociones: 1, usos: 2, mision: 'nueva', caidos: 0, cofre: false };
 // El héroe guardado (raza, clase, colores, nivel, experiencia, oro…). Si no hay, uno al azar de fondo hasta que crees el tuyo.
-let DEF = leerLocal(), nuevo = !DEF;
+let MENU_AV = null;   // la libreta ☰ (se crea más abajo, dentro de su bloque)
+let DEF = leerLocal(), nuevo = !DEF || !!DEF?.nuevo;   // nuevo: no hay héroe, o es uno recién creado en «Tus héroes»
 if (!DEF) DEF = heroeAlAzar();
 function aplicarHeroe(def) {
   DEF = def; const s = estadisticas(def);
@@ -396,6 +397,19 @@ function pintarPortada() {
 }
 const SITIO_CREADOR = new THREE.Vector3(-2.5, 0, -21);
 let borrador = null;
+// «Tus héroes»: cambiar al que llevas, crear uno nuevo (empieza en el nivel 1) o retocar nombre y colores
+function abrirHeroes() {
+  const todos = listaHeroes(DEF), esc = (t) => String(t || '').replace(/[<>&"]/g, '');
+  const fila = (h) => `<button class="fh-fila" data-heroe="${h.id}" style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer;${h.id === DEF.id ? 'box-shadow:inset 0 0 0 2px #c9a24a' : ''}"><span class="fh-ico">${CLASES[h.clase]?.icono || '🧙'}</span><b>${esc(h.nombre) || 'Sin nombre'}</b><span class="fh-val">nivel ${h.nivel || 1}</span><small>${RAZAS[h.raza]?.nombre || ''} ${(CLASES[h.clase]?.nombre || '').toLowerCase()} · 🪙 ${h.oro || 0}${h.id === DEF.id ? ' · el que llevas' : ''}</small></button>`;
+  MENU_AV.pagina('Tus héroes', `${ESTILO_FICHA}<p class="fh-txt">Cada héroe va por su cuenta: su nivel, su oro, su forja y sus criptas. El pueblo es de todos.</p>${todos.map(fila).join('')}
+    ${todos.length < MAX_HEROES ? '<button class="fh-fila" data-nuevo style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer"><span class="fh-ico">➕</span><b>Héroe nuevo</b><span class="fh-val"></span><small>Empieza en el nivel 1, con la raza y la clase que quieras</small></button>' : `<p class="fh-txt">Como mucho ${MAX_HEROES} héroes.</p>`}
+    <button class="fh-fila" data-retocar style="width:100%;text-align:left;border:0;font:inherit;cursor:pointer"><span class="fh-ico">✏️</span><b>Retocar a ${esc(DEF.nombre)}</b><span class="fh-val"></span><small>Nombre y colores${(DEF.nivel || 1) > 1 ? '' : ', raza y clase'}</small></button>`);
+  const L = document.querySelector('.libreta-av'); if (!L) return;
+  const cambiar = (h) => { guardarAhora(); guardarHeroe(h, true); hud.banner(`Llamando a ${h.nombre || 'tu héroe nuevo'}…`, 'heroe'); setTimeout(() => location.reload(), 1600); };
+  L.querySelectorAll('[data-heroe]').forEach((b) => b.addEventListener('click', () => { if (b.dataset.heroe !== DEF.id) { MENU_AV.cerrar(); cambiar(cambiarDeHeroe(DEF, b.dataset.heroe)); } }));
+  L.querySelector('[data-nuevo]')?.addEventListener('click', () => { const h = heroeNuevo(DEF); if (h) { MENU_AV.cerrar(); cambiar(h); } });
+  L.querySelector('[data-retocar]')?.addEventListener('click', () => { MENU_AV.cerrar(); abrirCreador(); });
+}
 function abrirCreador() {
   borrador = JSON.parse(JSON.stringify(DEF)); if (nuevo) borrador.nombre = '';
   $('#portada')?.classList.add('fuera'); setTimeout(() => $('#portada')?.remove(), 900);
@@ -412,8 +426,11 @@ function pintarCreador(rehacer) {
   const tarjetas = (sel, lista, actual, al) => { const d = $(sel); d.innerHTML = ''; for (const [id, x] of Object.entries(lista)) { const t = document.createElement('button'); t.className = id === actual ? 'sel' : ''; t.innerHTML = `<span>${x.icono}</span>${x.nombre}`; t.onclick = () => { sonido.dado(.4); al(id); }; d.appendChild(t); } };
   tarjetas('#cRazas', RAZAS, b.raza, (id) => { b.raza = id; const R = RAZAS[id]; if (!R.pieles.includes(b.colores.piel)) b.colores.piel = R.pieles[0]; if (!R.pelos.includes(b.colores.pelo)) b.colores.pelo = R.pelos[0]; pintarCreador(true); });
   tarjetas('#cClases', CLASES, b.clase, (id) => { b.clase = id; if (!CLASES[id].ropa.includes(b.colores.ropa)) b.colores.ropa = CLASES[id].ropa[0]; pintarCreador(true); });
+  const fijo = !nuevo && ((DEF.nivel || 1) > 1 || (DEF.xp || 0) > 0);   // ya tiene camino hecho: raza y clase, fijas
+  for (const id of ['#cRazas', '#cClases', '#cAzar']) { $(id).hidden = fijo; if (id !== '#cAzar') $(id).previousElementSibling.hidden = fijo; }
   $('#cRasgo').innerHTML = `<b>${R0.rasgo}.</b> ${R0.texto}`;
   $('#cHab').innerHTML = `${C0.texto} <b>${C0.habilidad.icono} ${C0.habilidad.nombre}:</b> ${C0.habilidad.texto}`;
+  if (fijo) $('#cHab').innerHTML += '<br><i>La raza y la clase ya no se cambian: para probar otras, crea un héroe nuevo en «Cambiar de héroe».</i>';
   const muestras = (sel, lista, clave) => { const d = $(sel); d.innerHTML = ''; for (const c of lista) { const m = document.createElement('button'); m.style.background = c; m.className = b.colores[clave] === c ? 'sel' : ''; m.setAttribute('aria-label', c); m.onclick = () => { b.colores[clave] = c; sonido.dado(.3); pintarCreador(true); }; d.appendChild(m); } };
   muestras('#cRopa', C0.ropa, 'ropa'); muestras('#cPiel', R0.pieles, 'piel'); muestras('#cPelo', R0.pelos, 'pelo');
   $('#lPiel').textContent = b.raza === 'escamado' ? 'Escamas' : 'Piel'; $('#lPelo').textContent = b.raza === 'escamado' ? 'Cuernos' : 'Pelo';
@@ -426,7 +443,7 @@ $('#cAzar').addEventListener('click', () => { const r = heroeAlAzar(); Object.as
 $('#cListo').addEventListener('click', () => {
   borrador.nombre = (borrador.nombre || '').trim();
   if (!borrador.nombre) { $('#cError').hidden = false; $('#cNombre').focus(); return; }
-  nuevo = false; aplicarHeroe(borrador); guardarHeroe(DEF, true); hud.actualizar();
+  nuevo = false; delete borrador.nuevo; aplicarHeroe(borrador); guardarHeroe(DEF, true); hud.actualizar();
   $('#creador').classList.remove('abierto'); setTimeout(() => { $('#creador').hidden = true; }, 400);
   sonido.recoger(); bajar();
 });
@@ -567,10 +584,10 @@ function bajar() {
   setTimeout(() => $('#portada')?.remove(), 900);
 }
 $('#empezar').addEventListener('click', () => { sonido.arrancar(); if (nuevo) abrirCreador(); else bajar(); });
-$('#cambiar').addEventListener('click', () => { sonido.arrancar(); abrirCreador(); });
+$('#cambiar').addEventListener('click', () => { sonido.arrancar(); abrirHeroes(); });
 pintarPortada();
 // Si hay sesión, el héroe de la nube manda (puede venir de otro dispositivo)
-cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) && !$('#creador').classList.contains('abierto')) { nuevo = false; aplicarHeroe(h); ponerHeroe(h); restaurarClaro(); hud.actualizar(); pintarPortada(); } });
+cargarHeroe().then((h) => { if (h && JSON.stringify(h) !== JSON.stringify(DEF) && !$('#creador').classList.contains('abierto')) { nuevo = !!h.nuevo; aplicarHeroe(h); ponerHeroe(h); restaurarClaro(); hud.actualizar(); pintarPortada(); } });
 if (params.has('rapido')) { $('#portada').remove(); CAM.introT = 99; CAM.introEmpezada = true; }
 if (params.has('desde')) {   // vuelves de la cripta: apareces en su puerta, sin portada ni bajada
   $('#portada').remove(); CAM.modo = 'paseo'; H.bloqueadoFin = true; H.bloqueado = false; $('#hud').classList.add('ver');
@@ -604,8 +621,9 @@ const datosHeroe = () => ({ nombre: DEF.nombre, raza: DEF.raza, clase: DEF.clase
   // El botón ☰: jugar juntos, sonido, pantalla completa, controles y volver (igual en todo el juego)
   const bSala = document.createElement('button');   // el panel de la sala se abre desde la libreta
   sonido.silenciar(leerMudo());
-  const MENU = crearMenu({ boton: $('#menuB'), apps: () => [
+  const MENU = MENU_AV = crearMenu({ boton: $('#menuB'), apps: () => [
     { ico: '📜', titulo: 'Tu héroe', sub: 'Ataque, defensa…', hacer: (M) => { M.pagina('Tu héroe', fichaHeroe(DEF, estado)); return 'seguir'; } },
+    { ico: '👥', titulo: 'Tus héroes', sub: 'Cambiar o crear otro', hacer: () => { if (combate.activo) return; abrirHeroes(); return 'seguir'; } },
     { ico: '👥', titulo: 'Jugar juntos', sub: SALA ? 'Sala ' + SALA.codigo : 'Con código', hacer: () => { setTimeout(() => bSala.click(), 0); } },
     { ico: sonido.mudo() ? '🔇' : '🔊', titulo: 'Sonido', sub: sonido.mudo() ? 'Apagado' : 'Encendido', hacer: (M) => { sonido.arrancar(); sonido.silenciar(!sonido.mudo()); guardarMudo(sonido.mudo()); M.pintar(); return 'seguir'; } },
     appPantalla(),
