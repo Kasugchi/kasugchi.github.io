@@ -7,7 +7,8 @@
 // =============================================================
 import * as THREE from 'three';
 import { toon, contorno, lienzo, fbm } from './claro-estilo.js';
-import { MODELOS, salvaje, crearRobot } from './robots.js';
+import { MODELOS, salvaje } from './robots.js';
+import { crearRobot } from './robots-3d.js';
 
 export const CENTRO = new THREE.Vector3(400, 0, 0);
 const MEDIO = 30;          // medio lado del vertedero
@@ -343,7 +344,8 @@ export function crearVertedero({ escena, camara, lienzoDom, ui, alEncontrar, alC
       if (dir.lengthSq()) { dir.normalize(); p.addScaledVector(dir, dt * 4.2 * rapidez); yo.grupo.rotation.y = Math.atan2(dir.x, dir.z); p.y = Math.abs(Math.sin(t * 12)) * .06; } else p.y = 0;
       chocar(p);
       // el camión de Rufo: te repara
-      if (p.distanceTo(SITIO_REPARAR) < 2.8) alCamion?.();
+      V.cerca = p.distanceTo(SITIO_REPARAR) < 3.4;   // junto al camión: Rufo repara (y vende)
+      if (V.cerca) alCamion?.();
       // los salvajes deambulan; si te ven cerca, van a por ti
       for (const s of [...salvajes]) {
         const q = s.r.grupo.position, d = Math.hypot(p.x - q.x, p.z - q.z);
