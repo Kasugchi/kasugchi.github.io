@@ -25,6 +25,7 @@ import { crearCombate } from './claro-combate.js';
 import { crearSonido } from './claro-sonido.js';
 import { crearHud } from './claro-hud.js';
 import { escalon, escalonEncargo, reforzar, factorXP, premioHeroica, RANGOS, MAX_RANGO } from './dificultad.js';
+import { MERCENARIOS } from './mercenarios.js';
 import { crearJuntos } from './cripta-juntos.js';
 import { crearPeleaJuntos } from './pelea-juntos.js';
 import { ponerCine } from './cine.js';
@@ -100,6 +101,15 @@ function aplicarHeroe(def) {
 }
 aplicarHeroe(DEF);
 const heroe = crearHeroe(DEF); escena.add(heroe.grupo);
+// El mercenario alquilado en la cantina (js/mercenarios.js): baja contigo a esta cripta y te sigue; se gasta al bajar
+const MERC = (() => {
+  const tipo = DEF.mercenario, M = MERCENARIOS[tipo]; if (!M) return null;
+  delete DEF.mercenario; guardarHeroe(DEF);
+  const st = M.stats(DEF.nivel || 1), pj = crearHeroe({ ...M.aspecto, nombre: M.nombre });
+  pj.grupo.position.copy(heroe.grupo.position).add(new THREE.Vector3(1.2, 0, 1.2)); escena.add(pj.grupo);
+  setTimeout(() => hud.narrar(`${M.icono} ${M.nombre}: «${M.frases[Math.floor(Math.random() * M.frases.length)]}»`), 3500);
+  return { merc: tipo, pj, nombre: M.nombre, ...st, max: st.cuerpo, frases: M.frases };
+})();
 const linterna = new THREE.PointLight('#ffcf8a', 11, 13, 1.3); escena.add(linterna);   // la luz que llevas contigo
 const H = { pos: heroe.grupo.position, destino: null, interaccion: null, bloqueado: true, pasoFase: 0 };
 {
@@ -215,7 +225,8 @@ async function empezarCombate(grupo) {
   for (const g of grupo) { g.alerta = true; g.pj.vel = 0; }
   J?.luchar(grupo.map((g) => g.id));
   $('#hud').classList.add('combate');
-  const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, tipo: g.tipo, jefe: !!g.def?.jefe, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })));
+  const { resultado, caidosIds = [] } = await combate.empezar(grupo.map((g) => ({ pj: g.pj, id: g.id, tipo: g.tipo, jefe: !!g.def?.jefe, nombre: g.nombre, cuerpo: g.cuerpo, ataque: g.ataque, defensa: g.defensa, mover: g.mover, rotulo: g.rotulo })), { aliados: MERC?.cuerpo > 0 ? [MERC] : [] });
+  if (MERC && MERC.cuerpo <= 0 && MERC.pj.grupo.visible) { setTimeout(() => { MERC.pj.grupo.visible = false; }, 1500); hud.banner(`${MERC.nombre} se retira: no puede más`, 'enemigo'); }
   $('#hud').classList.remove('combate'); hud.narrar(''); CAM.modo = 'paseo';
   J?.luchar([]); for (const id of caidosIds) J?.anotar('m', id);
   let xp = 0;
@@ -475,6 +486,11 @@ function bucle() {
   cripta.actualizar(t, dt); heroe.animar(dt, t);
   for (const m of monstruos) { if (!m.pj.grupo.parent) continue; m.pj.animar(dt, t); if (m.vivo && m.alerta && !combate.activo) m.pj.mirarA(Math.atan2(H.pos.x - m.pj.grupo.position.x, H.pos.z - m.pj.grupo.position.z)); if (!m.visto && cripta.vista(...cripta.deMundo(m.pj.grupo.position))) m.visto = true; m.pj.grupo.visible = !!(m.visto || !m.vivo); if (m.rotulo) m.rotulo.visible = !!(m.vivo && m.visto); }
   linterna.position.copy(H.pos).add(new THREE.Vector3(0, 2.2, 0));
+  if (MERC?.pj.grupo.visible && !combate.activo) {   // el mercenario te sigue a un par de pasos
+    const p = MERC.pj.grupo.position, dx = H.pos.x - p.x, dz = H.pos.z - p.z, d = Math.hypot(dx, dz);
+    if (d > 12) { p.x = H.pos.x - 1; p.z = H.pos.z - 1; } else if (d > 1.8) { const v = Math.min(d - 1.8, dt * 6.2); p.x += dx / d * v; p.z += dz / d * v; MERC.pj.mirarA(Math.atan2(dx, dz)); }
+    MERC.pj.vel += ((d > 1.9 ? .75 : 0) - MERC.pj.vel) * Math.min(1, dt * 8); p.y = 0; MERC.pj.caido = false; MERC.pj.animar(dt, t);
+  }
   J.actualizar(dt, t); PJ?.actualizar(dt, t); if (ganarLuego && !combate.activo && !H.bloqueado && !dlg.actual) { ganarLuego = false; ganar(); }
   combate.actualizar(dt, t); dados.actualizar(dt); ui.actualizar(dt, t);
   actualizarCamara(dt); sonido.actualizar(99);

@@ -333,6 +333,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
 
   async function turnoAliado(a) {
     if (a.remoto) return turnoCompanero(a);
+    if (a.merc) return turnoMercenario(a);
     const objetivos = enemigos().filter((e) => distancia(a, e) <= a.alcance).sort((x, y) => distancia(a, x) - distancia(a, y));
     if (!objetivos.length) return;
     const e = objetivos[0]; camara.mirarHacia(a.pj.grupo.position);
@@ -340,6 +341,31 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     sonido.golpe(); await ui.proyectil(a.pj.gema.getWorldPosition(new THREE.Vector3()), sobre(e, 1), '#7fe0ff', .35);
     await atacar(a, e, { gesto: null, distanciaA: true });
   }
+  // Los mercenarios (js/mercenarios.js): la curandera cura al que baje de la mitad; si no, todos van a por el más cercano
+  const maxDe = (u) => (u === unidades[0] ? estado.max : u.max ?? u.cuerpo);
+  async function turnoMercenario(a) {
+    if (!a.vivo || !enemigos().length) return;
+    if (a.curas > 0) {
+      const herido = [unidades[0], ...aliados()].filter((u) => u.vivo && u.cuerpo <= maxDe(u) * .5 && maxDe(u) > u.cuerpo && !u.pj.esTorreta).sort((x, y) => x.cuerpo / maxDe(x) - y.cuerpo / maxDe(y))[0];
+      if (herido) {
+        camara.mirarHacia(a.pj.grupo.position); a.curas--; mirarse(a, herido); a.pj.hacer('lanzar', .7); sonido.hechizo(); await espera(300);
+        await ui.proyectil(sobre(a, 1.3), sobre(herido, 1.2), '#8affb0', .45);
+        const c = Math.min(a.cura || 3, maxDe(herido) - herido.cuerpo); herido.cuerpo += c;
+        if (herido === unidades[0]) { estado.cuerpo = herido.cuerpo; hud.actualizar(); }
+        ui.numero(sobre(herido, herido.pj.altura || 1.6), `+${c} ❤`, '#8affb0'); ui.chispas(sobre(herido, 1), '#8affb0', 24, 3);
+        hud.narrar(`${a.nombre} cura a ${herido === unidades[0] ? 'ti' : herido.nombre}: +${c}. (Le quedan ${a.curas} curas.)`); await espera(600); return;
+      }
+    }
+    return turnoCompaneroSolo(a);
+  }
+  // Un aliado de esta pantalla que entra en la pelea (un mercenario): se planta en la casilla libre más cercana
+  C.unirAliado = (u) => {
+    if (!C.activo) return false;
+    u.bando = 'aliado'; u.vivo = u.cuerpo > 0; u.max ??= u.cuerpo;
+    u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u); if (!u.c) return false;
+    unidades.push(u); ui.chispas(sobre(u, 1), '#ffd27a', 20, 2.5); andar(u, [u.c], .3);
+    return true;
+  };
   // Turno del compañero: el mismo turno de héroe, pero con sus números (est) y sus botones en su pantalla
   async function turnoCompanero(a) {
     if (!a.vivo || !enemigos().length) return;
@@ -382,7 +408,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     if (!blancos.length) return;
     const { dist, ruta } = caminos(e.c, 99, e);
     const pasosA = (b) => Math.min(...vecinos(b.c).map((v) => (v === e.c ? 0 : dist.get(v) ?? 1e9)));
-    const b = blancos.sort((x, y) => pasosA(x) - pasosA(y))[0];
+    const b = blancos.sort((x, y) => pasosA(x) - (x.provoca ? 3 : 0) - (pasosA(y) - (y.provoca ? 3 : 0)))[0];   // el escudero provoca: van a por él si les pilla cerca
     camara.mirarHacia(e.pj.grupo.position);
     if (!pegados(e, b)) {
       let mejor = null, md = 1e9;
@@ -425,7 +451,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
     C.activo = false; hud.acciones([]); dados.limpiar();
     const fin = resolver; resolver = null;
     tablero.cerrar = 0; sonido.musica('paseo');
-    for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo && !u.remoto)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
+    for (const a of unidades.filter((u) => u.bando === 'aliado' && u.vivo && !u.remoto && !u.merc)) { ui.chispas(sobre(a, .8), '#ffd27a', 14, 2); setTimeout(() => escena.remove(a.pj.grupo), 300); }
     for (const a of unidades.filter((u) => u.remoto)) { a.pj.caido = false; a.pj.manejado = false; }
     const muertos = unidades.filter((u) => u.bando === 'enemigo' && !u.vivo);
     C.final = { id: C.idPelea, fin: res, caidos: muertos.map((u) => u.tipo || 'esqueleto'), ids: muertos.map((u) => u.id).filter((x) => x != null), companeros: unidades.filter((u) => u.remoto).map((u) => ({ uid: u.uid, c: Math.max(0, u.cuerpo), v: u.vivo, usos: u.est?.usos, pociones: u.est?.pociones })) };
@@ -435,13 +461,13 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   // ---------- empezar ----------
   // grupo: [{ pj, nombre, cuerpo, ataque, defensa, mover, rotulo }]
   C.ponerHeroe = (pj) => { heroe = pj; };
-  C.empezar = (grupo) => new Promise(async (fin) => {
+  C.empezar = (grupo, { aliados: extra = [] } = {}) => new Promise(async (fin) => {
     resolver = fin; C.activo = true; C.idPelea = Math.random().toString(36).slice(2, 8); C.final = null; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; if (estado.racial?.id === 'rezo') estado.rezos = 1;   // un rezo por pelea (medido: con dos por cripta el trol quedaba el último)
     C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);
-    unidades = [h, ...grupo.map((e) => ({ ...e, max: e.max ?? e.cuerpo, bando: 'enemigo', vivo: true }))];
+    unidades = [h, ...grupo.map((e) => ({ ...e, max: e.max ?? e.cuerpo, bando: 'enemigo', vivo: true })), ...extra.filter((u) => u.cuerpo > 0).map((u) => Object.assign(u, { bando: 'aliado', vivo: true }))];   // extra: los mercenarios
     for (const u of unidades) u.c = masCercana(u.pj.grupo.position.x, u.pj.grupo.position.z, u);
     hud.banner('¡Círculo de combate!', 'enemigo');
     camara.enfocarCombate(new THREE.Vector3(tablero.cx, tablero.y0, tablero.cz), heroe.grupo.position);

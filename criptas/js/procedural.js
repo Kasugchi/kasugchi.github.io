@@ -344,8 +344,8 @@ function intentar(r, semilla, nivel) {
       const salaLlave = intermedias[Math.max(0, Math.floor(intermedias.length / 2))];
       tesoros[salaLlave] = { texto: 'Colgada de un clavo, una llave de hierro grande y oxidada.', flag: 'llave' };
       tesoros[salaObj] = { texto: `Encadenado al muro está ${preso}. Rompéis los grilletes: «Sabía que vendría alguien. Sacadme de aquí».`, flag: 'rescatado' };
-      objetivo = { tipo: 'escalera', requiere: ['rescatado'], texto: `Libera a ${preso} y vuelve con vida a la escalera.` };
-      tareas = [{ flag: 'llave', texto: 'Encontrar la llave de la celda (busca tesoro en las salas)' }, { flag: 'rescatado', texto: 'Abrir la celda y liberar a ' + preso }, { salir: true, texto: 'Volver a la escalera y salir' }];
+      objetivo = { tipo: 'escalera', requiere: ['rescatado'], texto: `Libera ${aPreso(preso)} y vuelve con vida a la escalera.` };
+      tareas = [{ flag: 'llave', texto: 'Encontrar la llave de la celda (busca tesoro en las salas)' }, { flag: 'rescatado', texto: 'Abrir la celda y liberar ' + aPreso(preso) }, { salir: true, texto: 'Volver a la escalera y salir' }];
       intro = `${preso.replace(/^./, (c) => c.toUpperCase())} bajó ${/^el /.test(enTexto) ? 'al ' + enTexto.slice(3) : 'a ' + enTexto} y no ha vuelto. Lo tienen encerrado tras una puerta de hierro; la llave debe de estar en alguna parte de la mazmorra.`;
       disparadores.push({ cuando: 'flag', nombre: 'llave', acciones: [{ tipo: 'desbloquear', puerta: 'sellada' }, { tipo: 'historia', texto: 'La llave encaja en la cerradura de la celda: ya podéis abrirla.' }] });
       disparadores.push({ cuando: 'flag', nombre: 'rescatado', acciones: [{ tipo: 'aparecer', monstruos: refuerzos() }, { tipo: 'historia', texto: 'Alguien da la alarma. ¡Volved a la escalera con el prisionero!' }] });
@@ -586,3 +586,6 @@ export function validar(m) {
   if (jefe && !T.DIRS.some(([dx, dy]) => d2[k(jefe.x + dx, jefe.y + dy)] !== undefined)) return 'jefe inalcanzable';
   return null;
 }
+
+// «a el escriba» → «al escriba» (los presos con artículo)
+function aPreso(p) { return /^el /i.test(p) ? 'al ' + p.slice(3) : 'a ' + p; }
