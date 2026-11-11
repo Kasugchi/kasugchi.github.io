@@ -126,6 +126,10 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   async function atacar(a, d, { dados: nDados = a.ataque, gesto = 'golpe', distanciaA = false } = {}) {
     const loa = C.rezo > 0 ? estado.loa : null;                    // la bendición del loa del trol, si está rezando
     if (a.heroe && loa) nDados += loa === 'tigre' ? 2 : loa === 'raptor' ? 1 : 0;
+    if (a === unidades[0] && !actorR && estado.eq) {   // el equipo (js/equipo.js): el tricornio y el juego pirata
+      if (estado.eq.primerAtaque && !C.eqPrimerAtaque) { C.eqPrimerAtaque = true; nDados += estado.eq.primerAtaque; ui.numero(sobre(a, a.pj.altura + .4), 'Tricornio', '#ffd27a'); }
+      if (estado.eq.contraJefes && d.jefe) nDados += estado.eq.contraJefes;
+    }
     if (C.afijo === 'furia' && a.bando === 'enemigo' && a.cuerpo <= (a.max ?? a.cuerpo) / 2) { nDados += 2; ui.numero(sobre(a, a.pj.altura + .4), '¡Furia!', '#ff6a4a'); }   // afijo de la semana
     mirarse(a, d); if (!distanciaA) mirarse(d, a);
     if (gesto) await a.pj.hacer(gesto, gesto === 'brutal' ? .8 : .55);
@@ -147,6 +151,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
       C.escamasUsadas = true; dano -= 1; ui.numero(sobre(d, d.pj.altura + .5), 'Escamas', '#9fe8c0');
       if (dano <= 0) { sonido.bloqueo(); hud.narrar('Tus escamas se tragan el golpe entero.'); await espera(700); return; }
     }
+    if (d === unidades[0] && C.eqParas > 0 && dano > 0) { C.eqParas--; ui.numero(sobre(d, d.pj.altura + .5), 'Casaca curtida', '#d8d0c0'); sonido.bloqueo(); hud.narrar('Tu casaca curtida se traga el golpe.'); await espera(600); return; }   // el peto pirata
     if (d.heroe && C.piedra > 0 && dano > 1) { dano = 1; ui.numero(sobre(d, d.pj.altura + .5), 'Piel de piedra', '#d8d0c0'); }
     sonido.golpe(); d.pj.herido(); d.cuerpo -= dano; ui.numero(sobre(d, d.pj.altura), `-${dano}`); ui.chispas(sobre(d, 1), '#ffd0a0', 10, 2.5);
     if (d.heroe) { estado.cuerpo = Math.max(0, d.cuerpo); hud.actualizar(); }
@@ -470,7 +475,7 @@ export function crearCombate({ escena, mundo, ui, dados, sonido, camara, hud, he
   C.ponerHeroe = (pj) => { heroe = pj; };
   C.empezar = (grupo, { aliados: extra = [] } = {}) => new Promise(async (fin) => {
     resolver = fin; C.activo = true; C.idPelea = Math.random().toString(36).slice(2, 8); C.final = null; C.escamasUsadas = false; C.rezo = 0; C.racialUsada = false; if (estado.racial?.id === 'rezo') estado.rezos = 1;   // un rezo por pelea (medido: con dos por cripta el trol quedaba el último)
-    C.piedra = 0; C.accionExtra = false; sonido.circulo(); sonido.musica('combate');
+    C.piedra = 0; C.accionExtra = false; C.eqPrimerAtaque = false; C.eqParas = estado.eq?.primerGolpe || 0; sonido.circulo(); sonido.musica('combate');
     const h = { heroe: true, bando: 'heroe', pj: heroe, nombre: 'Tú', cuerpo: estado.cuerpo, max: estado.max, ataque: estado.ataque, defensa: estado.defensa, vivo: true };
     const centro = heroe.grupo.position.clone().multiplyScalar(.45).add(grupo.reduce((a, e) => a.add(e.pj.grupo.position), new THREE.Vector3()).multiplyScalar(.55 / grupo.length));
     montar(centro);

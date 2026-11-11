@@ -4,6 +4,7 @@
 //  La raza da el aspecto y un rasgo pequeño; la clase, la forma de pelear
 //  y una habilidad pensada para ir solo, sin tres compañeros al lado.
 // =============================================================
+import { JUEGOS, efectosEquipo, textoEquipo } from './equipo.js';
 import { usuarioListo, leerAventuraNube, subirAventura } from './nube.js';
 import { ARMAS } from './datos.js';
 
@@ -32,8 +33,8 @@ export const CLASES = {
 };
 
 // Experiencia necesaria para cada nivel (el 1 empieza en 0)
-// Hasta el 8 como siempre (nadie pierde niveles); desde ahí, cada nivel cuesta bastante más que el anterior
-export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740, 1000, 1350, 1820, 2460, 3320, 4480, 6050];
+// Del 1 al 8 aprendes a jugar tu clase; ahí se congela y lo que te hace fuerte es el equipo (js/equipo.js)
+export const NIVELES = [0, 30, 80, 150, 250, 380, 540, 740];
 export const nivelDe = (xp) => { let n = 1; for (let i = 1; i < NIVELES.length; i++) if (xp >= NIVELES[i]) n = i + 1; return n; };
 export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 
@@ -41,13 +42,20 @@ export const XP = { Esqueleto: 10, 'Capitán Fémur': 25 };
 export const MATERIALES = {
   hueso: { n: 'Hueso pulido', e: '🦴' }, polvo: { n: 'Polvo de tumba', e: '⚱️' }, venda: { n: 'Venda de momia', e: '🧻' },
   ectoplasma: { n: 'Ectoplasma', e: '👻' }, piedra: { n: 'Piedra rúnica', e: '🪨' }, trofeo: { n: 'Trofeo de jefe', e: '🏆' },
-  esencia: { n: 'Esencia heroica', e: '✨' }   // solo la sueltan los jefes de las heroicas (más cuanto más alto el rango)
+  esencia: { n: 'Esencia heroica', e: '✨' },
+  femur: { n: 'Fémur de capitán', e: '🦴' }, salitre: { n: 'Hueso salado', e: '🧂' }, perla: { n: 'Perla negra', e: '⚫' }   // de las zonas (equipo)   // solo la sueltan los jefes de las heroicas (más cuanto más alto el rango)
 };
 export const BOTIN = { esqueleto: 'hueso', guerrero: 'hueso', orco: 'hueso', sacerdotisa: 'hueso', zombi: 'polvo', trasgo: 'polvo', bruja: 'polvo', momia: 'venda', fantasma: 'ectoplasma', hechicero: 'ectoplasma', ilusionista: 'ectoplasma', gargola: 'piedra', golem: 'piedra' };
 // Qué cae al vencer a un monstruo: su material (no siempre) y, si era jefe, su trofeo y dos más
-export function botinDe(tipo, jefe) {
+// Y los de la zona (para el equipo): los pequeños, el común (la mitad de las veces); los jefes, el raro (en heroica, siempre)
+export function botinDe(tipo, jefe, { zona = null, heroica = false } = {}) {
   const m = BOTIN[tipo] || 'polvo', r = {};
   if (jefe) { r.trofeo = 1; r[m] = 2; } else if (Math.random() < .65) r[m] = 1;
+  const J = Object.values(JUEGOS).find((j) => j.zona === zona);
+  if (J) {
+    if (!jefe && J.comun !== m && Math.random() < .5) r[J.comun] = (r[J.comun] || 0) + 1;
+    if (jefe && (heroica || Math.random() < .4)) r[J.raro] = (r[J.raro] || 0) + 1;
+  }
   return r;
 }
 export function sumarBotin(h, b) { h.materiales ||= {}; for (const [k, n] of Object.entries(b)) h.materiales[k] = (h.materiales[k] || 0) + n; }
@@ -65,13 +73,14 @@ export const FORJA = {
 // Lo que el héroe tiene ahora mismo, según raza, clase, nivel y lo que le ha forjado Brasa
 // enCripta: la comida de Marga solo cuenta dentro de la cripta (y se gasta en ella)
 export function estadisticas(h, enCripta = false) {
-  const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null, mj = mejorasDe(h);
+  const c = CLASES[h.clase], n = h.nivel || 1, co = enCripta ? h.comida?.efecto : null, mj = mejorasDe(h), ef = efectosEquipo(h);
   return {
+    eq: ef,   // las habilidades del equipo que llevas (js/equipo.js)
     ataque: Math.max(c.ataque, ARMAS[h.arma]?.ataque || 0) + mj.ataque + (h.forja?.arma || 0) + (co === 'ataque' ? 1 : 0),   // un arma encontrada solo cuenta si es mejor que la tuya
     defensa: c.defensa + (h.raza === 'elfo' ? 1 : 0) + mj.defensa + (h.forja?.armadura || 0) + (co === 'defensa' ? 1 : 0),
-    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (Math.min(n, 8) - 1) + Math.floor(Math.max(0, n - 8) / 2) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0),
+    max: c.cuerpo + (h.raza === 'enano' ? 2 : 0) + (Math.min(n, 8) - 1) + Math.floor(Math.max(0, n - 8) / 2) + mj.cuerpo + (co === 'cuerpo' ? 2 : 0) + (ef.cuerpo || 0),
     usos: c.habilidad.usos + (h.raza === 'humano' ? 1 : 0) + mj.usos + (co === 'habilidad' ? 1 : 0) + (h.forja?.amuleto || 0),
-    pasosExtra: h.raza === 'elfo' ? 2 : 0,
+    pasosExtra: (h.raza === 'elfo' ? 2 : 0) + (ef.pasos || 0),
     hab: { reforzada: mj.reforzada || 0, rapida: mj.rapida || 0, gorda: mj.gorda || 0, certera: mj.certera || 0, furia: mj.furia || 0, pl: Math.floor((n - 1) / 3) },   // mejoras propias de la clase; pl: la bola de fuego y la torreta crecen con el nivel
     escamas: h.raza === 'escamado',
     oroExtra: 0,
@@ -152,6 +161,7 @@ export function fichaHeroe(h, est = null) {
   const dados = (n, cara) => `${n} ${cara.repeat(Math.min(n, 6))}`;
   const mj = h.mejoras || {}, mc = (MEJORAS_CLASE[h.clase] || []).filter((m) => (e.hab?.[m.id] || 0) > 0);
   const elegidas = [mj.ataque && `⚔️ +${mj.ataque} de ataque`, mj.defensa && `🛡️ +${mj.defensa} de defensa`, mj.cuerpo && `❤️ +${mj.cuerpo * 2} de cuerpo`, mj.usos && `✨ +${mj.usos} usos`, ...mc.map((m) => `${m.texto.split(':')[0]}${(e.hab[m.id] || 0) > 1 ? ` ×${e.hab[m.id]}` : ''}`)].filter(Boolean);
+  const equipo = textoEquipo(h);
   const forja = h.forja ? [h.forja.arma && `arma +${h.forja.arma}`, h.forja.armadura && `armadura +${h.forja.armadura}`, h.forja.amuleto && `amuleto +${h.forja.amuleto}`].filter(Boolean) : [];
   const loa = h.raza === 'troll' && (est?.loa || h.loa) ? LOAS[est?.loa || h.loa] : null;
   return `${ESTILO_FICHA}
@@ -165,6 +175,7 @@ export function fichaHeroe(h, est = null) {
   ${loa ? `<p class="fh-txt"><b>${loa.icono} ${loa.nombre}:</b> ${loa.texto}</p>` : ''}
   ${elegidas.length ? `<div class="fh-sec">Mejoras de nivel</div><p class="fh-txt">${elegidas.join(' · ')}</p>` : ''}
   ${(h.titulos || []).length ? `<div class="fh-sec">Títulos</div><p class="fh-txt">🏅 ${h.titulos.join(' · ')}</p>` : ''}
+  ${equipo.length ? `<div class="fh-sec">Equipo</div><p class="fh-txt">${equipo.join('<br>')}</p>` : ''}
   ${forja.length ? `<div class="fh-sec">De la forja</div><p class="fh-txt">${forja.join(' · ')}</p>` : ''}
   ${h.arma && ARMAS[h.arma] ? `<p class="fh-txt">Llevas: <b>${ARMAS[h.arma].nombre || h.arma}</b></p>` : ''}`;
 }

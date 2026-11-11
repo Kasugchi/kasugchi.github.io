@@ -59,6 +59,10 @@ Juego de mazmorras por turnos estilo juego de mesa, multijugador con código de 
 
 Cada parada tiene `fuerza` (claro 1; pantano, cine e isla 2; minas 3) y un nivel recomendado que se enseña en la portada y en el atril. Los bichos se refuerzan según la zona (`reforzar`). Al bajar a una cripta se elige **normal** o **heroica** (`?modo=heroica&rango=N`): la heroica se ajusta al nivel del héroe, y cada rango (I a V, se abren de uno en uno en `heroicas` del héroe) la endurece más; da más experiencia, oro, botín, trofeo y **esencia heroica**, que piden el +4 y el +5 de la forja de Bruna. El rango III está pensado para ir en grupo. Los encargos del tablón usan su propio nivel. En compañía, cada héroe que entra en una pelea da vida extra a los bichos. La bola de fuego y la torreta crecen con el nivel (`hab.pl`).
 
+### Equipo (`js/equipo.js`)
+
+A lo Monster Hunter: el nivel se congela en el 8 y desde ahí te hace fuerte el equipo. Casco, peto y botas de cada zona (`JUEGOS`: de momento hueso del claro y pirata de la isla); cada pieza da una habilidad (no más dados) y se mejora hasta +3 (el +3, con Bruna y esencia). Con las 3 de un juego, su extra. Se hacen en la forja del pueblo («Equipo de las zonas») con el material común de la zona (los bichos pequeños, la mitad de las veces) y el raro (los jefes; en heroica, siempre): `botinDe(tipo, jefe, { zona, heroica })`. Lo que tienes va en `HEROE.piezas`, lo que llevas en `HEROE.equipo`; `efectosEquipo` lo suma y el combate lo lee en `estado.eq`.
+
 ### Mercenarios (`js/mercenarios.js`)
 
 Se alquilan a Rufo (cantina) con el oro del héroe de aventura: `HEROE.mercenario` guarda cuál, y se gasta al bajar a la siguiente cripta. Allí te sigue y entra en cada pelea como aliado con cabeza propia (`turnoMercenario` en el combate): la curandera cura al que baje de la mitad; el escudero provoca a los bichos de al lado. Sus números crecen con tu nivel.
