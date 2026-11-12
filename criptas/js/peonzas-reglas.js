@@ -14,8 +14,8 @@
 export const RUMBOS = {
   E: { n: 'Al rival', e: '🎯', t: 'Un empujón hacia el otro.' },
   C: { n: 'Al centro', e: '🛡️', t: 'Un empujón hacia el centro (para no caerte).' },
-  L: { n: 'Rodear ↺', e: '↺', t: 'Un empujón de lado, en contra del reloj.' },
-  R: { n: 'Rodear ↻', e: '↻', t: 'Un empujón de lado, a favor del reloj.' }
+  L: { n: 'Rodear ↺', e: '↺', t: 'Das vueltas alrededor del otro, en contra del reloj.' },
+  R: { n: 'Rodear ↻', e: '↻', t: 'Das vueltas alrededor del otro, a favor del reloj.' }
 };
 // Un efecto dura el segmento en el que lo gastas (cuatro segundos)
 export const EFECTOS = {
@@ -104,15 +104,16 @@ export const tieneOpciones = (L, t) => t.emp > 0 || (L.efecto && t.cargas > 0);
 // Un segmento. ord[i] = { r: 'E'|'C'|'L'|'R'|null, x: true si gasta el efecto }.
 // Devuelve el estado nuevo, los fotogramas (para dibujar), los choques y, si ha terminado, quién ha ganado.
 export function segmento(L, T0, ord, rnd) {
-  const T = T0.map((t) => ({ ...t })), ev = [], frames = [];
+  const T = T0.map((t) => ({ ...t, rum: null })), ev = [], frames = [];
   const sq = Math.sqrt, fx = [null, null];
   // al empezar: los empujones y los efectos que se gastan
   for (const i of [0, 1]) {
     const o = ord[i] || {}, t = T[i], r = T[1 - i];
     if (o.r && t.emp > 0) {
       t.emp--; const dx = r.x - t.x, dy = r.y - t.y, d = sq(dx * dx + dy * dy) + 1e-6, px = -t.y, py = t.x, pd = sq(px * px + py * py) + 1e-6;
+      t.rum = o.r;   // el rumbo dura buena parte del tramo: «rodear» da vueltas alrededor del otro de verdad
       const dir = o.r === 'E' ? [dx / d, dy / d] : o.r === 'C' ? [-t.x / pd, -t.y / pd] : o.r === 'L' ? [-py / pd, px / pd] : [py / pd, -px / pd];
-      t.vx += dir[0] * 3.2; t.vy += dir[1] * 3.2; ev.push({ t: 0, k: 'empujon', i });
+      const f = o.r === 'E' || o.r === 'C' ? 1.8 : .8; t.vx += dir[0] * f; t.vy += dir[1] * f; ev.push({ t: 0, k: 'empujon', i });
     }
     if (o.x && L[i].efecto && t.cargas > 0) {
       t.cargas--; fx[i] = L[i].efecto; ev.push({ t: 0, k: 'efecto', i, ef: fx[i] });
@@ -126,9 +127,15 @@ export function segmento(L, T0, ord, rnd) {
       const r2 = t.x * t.x + t.y * t.y, rad = sq(r2) + 1e-6, dx = o.x - t.x, dy = o.y - t.y, d = sq(dx * dx + dy * dy) + 1e-6;
       const kc = 1 + K.kc * l.P + r2 * K.kb;                          // el cuenco: te devuelve al centro, más fuerte cerca del borde
       let ax = -t.x * kc, ay = -t.y * kc;
-      const busca = K.busca * l.A * rr * (d > 1.3 ? 1 : 0);              // las de ataque van a por el otro
+      const busca = K.busca * l.A * rr * (d > 1.3 && !(t.rum === 'L' || t.rum === 'R') ? 1 : 0);   // las de ataque van a por el otro (salvo si estás rodeando)
       ax += dx / d * busca; ay += dy / d * busca;
       ax += -t.y / rad * l.s * .9 * rr; ay += t.x / rad * l.s * .9 * rr;   // el remolino que da el sentido de giro
+      if (t.rum && tick < 80) {   // lo que has pedido: ir a por el otro, al centro, o girar alrededor del otro a distancia
+        const g = 2.4 * rr + .6;
+        if (t.rum === 'E') { ax += dx / d * g; ay += dy / d * g; }
+        else if (t.rum === 'C') { ax -= t.x / rad * g; ay -= t.y / rad * g; }
+        else { const c = t.rum === 'R' ? 1 : -1; ax += c * dy / d * g * 1.3 + dx / d * 1.6 * (d - 1.5); ay += -c * dx / d * g * 1.3 + dy / d * 1.6 * (d - 1.5); ax -= t.x / rad * Math.max(0, rad - 2) * 8; ay -= t.y / rad * Math.max(0, rad - 2) * 8; }   // rodear sin salirte: el borde te frena
+      }
       if (fx[1 - i] === 'iman' && tick < 80) { ax += dx / d * 3.4; ay += dy / d * 3.4; }   // el imán del otro tira de ti
       const wob = .5 + (1 - rr) * (1 - rr) * 1.6; ax += (rnd() - .5) * 2 * wob; ay += (rnd() - .5) * 2 * wob;
       t.vx = (t.vx + ax * DT) * (1 - .55 * DT); t.vy = (t.vy + ay * DT) * (1 - .55 * DT);
