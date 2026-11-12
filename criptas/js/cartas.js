@@ -94,12 +94,22 @@ function htmlDuelos() {
 function htmlMazo() {
   const mazo = contar(K().mazo), col = K().coleccion, ids = Object.keys(CARTAS).filter((id) => (col[id] || 0) > 0);
   const orden = (a, b) => (CARTAS[a].k === 'bicho' ? 0 : 1) - (CARTAS[b].k === 'bicho' ? 0 : 1) || (CARTAS[b].a || 0) - (CARTAS[a].a || 0) || nom(a).localeCompare(nom(b));
-  return `<h2>Mi mazo<small>${K().mazo.length}/40 · fuerza ${R.valorMazo(K().mazo)} · máximo 3 copias de cada carta</small></h2>
+  K().otros ||= []; K().nombreMazo ||= 'Mi mazo';
+  const mazos = `<div class="mazos"><b class="activo">✅ ${esc(K().nombreMazo)}</b>${K().otros.map((m, i) => `<span><button data-usar="${i}">${esc(m.n)}</button><button class="x" data-borrar="${i}" title="Borrar">✕</button></span>`).join('')}
+    ${K().otros.length < 4 ? '<button data-nuevo>➕ Copiar este mazo</button>' : ''}<button data-nombre>✏️ Nombre</button></div>`;
+  return `<h2>Mi mazo<small>${esc(K().nombreMazo)} · ${K().mazo.length}/40 · fuerza ${R.valorMazo(K().mazo)} · máximo 3 copias de cada carta</small></h2>${mazos}
     <p class="nota">Toca − para sacar una carta y + para meter una de tu colección.</p>${DEBUG ? '<div class="fila-botones"><button id="bOtroInicial">🎲 Probar otro mazo inicial</button></div>' : ''}
     <div class="lista">${ids.sort(orden).map((id) => `<div class="fila"><span class="dib">${CARTAS[id].e}</span><div><b>${esc(nom(id))}</b><small>${CARTAS[id].k === 'bicho' ? `⚔${CARTAS[id].a} 🛡${CARTAS[id].d} · ${textoCarta(id)}` : textoCarta(id)}</small></div>
       <div class="cuenta"><button data-menos="${id}" ${(mazo[id] || 0) ? '' : 'disabled'}>−</button><i>${mazo[id] || 0}/${Math.min(3, col[id])}</i><button data-mas="${id}" ${(mazo[id] || 0) < Math.min(3, col[id]) && K().mazo.length < 40 ? '' : 'disabled'}>+</button></div></div>`).join('')}</div>`;
 }
+// Varios mazos: el que usas va en K().mazo (como siempre) y los demás en K().otros [{ n, c }]. Comparten la colección.
+function ajustarAColeccion(m) { const col = K().coleccion, c = {}; return m.filter((id) => (c[id] = (c[id] || 0) + 1) <= Math.min(3, col[id] || 0)); }
 function alMazo() {
+  const otra = () => { const st = panel.scrollTop; pantallaMenu('mazo'); panel.scrollTop = st; };
+  panel.querySelectorAll('[data-usar]').forEach((b) => b.onclick = () => { const i = +b.dataset.usar, m = K().otros[i]; K().otros[i] = { n: K().nombreMazo, c: K().mazo }; K().mazo = ajustarAColeccion(m.c); K().nombreMazo = m.n; guardar(); otra(); });
+  panel.querySelectorAll('[data-borrar]').forEach((b) => b.onclick = () => { const i = +b.dataset.borrar; if (b.dataset.seguro) { K().otros.splice(i, 1); guardar(); otra(); } else { b.dataset.seguro = 1; b.textContent = '¿Seguro?'; } });
+  panel.querySelector('[data-nuevo]')?.addEventListener('click', () => { K().otros.push({ n: K().nombreMazo, c: [...K().mazo] }); K().nombreMazo = 'Mazo ' + (K().otros.length + 1); guardar(); otra(); });
+  panel.querySelector('[data-nombre]')?.addEventListener('click', () => { const n = prompt('¿Cómo se llama este mazo?', K().nombreMazo); if (n && n.trim()) { K().nombreMazo = n.trim().slice(0, 24); guardar(); otra(); } });
   $('#bOtroInicial')?.addEventListener('click', pantallaElegir);
   panel.querySelectorAll('[data-menos]').forEach((b) => b.onclick = () => { const i = K().mazo.indexOf(b.dataset.menos); if (i >= 0) K().mazo.splice(i, 1); guardar(); const st = panel.scrollTop; pantallaMenu('mazo'); panel.scrollTop = st; });
   panel.querySelectorAll('[data-mas]').forEach((b) => b.onclick = () => { if (K().mazo.length < 40) K().mazo.push(b.dataset.mas); guardar(); const st = panel.scrollTop; pantallaMenu('mazo'); panel.scrollTop = st; });
@@ -454,7 +464,8 @@ async function arrancar() {
   if (regalo === 'vinetas' && !DEBUG && /pruebas|localhost/.test(location.hostname)) {
     const tienes = contar(Object.entries(K().coleccion).flatMap(([id, n]) => Array(n).fill(id))), quiere = contar(R.MAZO_VINETAS);
     for (const [id, n] of Object.entries(quiere)) K().coleccion[id] = Math.max(tienes[id] || 0, n);
-    K().mazo = [...R.MAZO_VINETAS]; K().tema ||= 'vinetas'; guardar();
+    K().otros ||= []; if (K().mazo?.length && K().nombreMazo !== 'Viñetas') K().otros.push({ n: K().nombreMazo || 'Mi mazo', c: K().mazo });
+    K().mazo = [...R.MAZO_VINETAS]; K().nombreMazo = 'Viñetas'; K().tema ||= 'vinetas'; guardar();
     history.replaceState(null, '', location.pathname);
     setTimeout(() => aviso('✏️ Mazo de viñetas en tu colección y puesto. ¡A por él!', 3500), 300);
   }
