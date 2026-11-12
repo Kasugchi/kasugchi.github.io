@@ -21,54 +21,100 @@ export const ui = crearUI3D(escena, camara);
 export const sonido = crearSonido({ entorno: 'cine' });
 addEventListener('pointerdown', () => sonido.arrancar?.(), { once: true });
 
-escena.add(new THREE.HemisphereLight('#ffe8d0', '#3a2a50', 1.5));
-const foco = new THREE.SpotLight('#fff0d0', 140, 30, .7, .5, 1.3); foco.position.set(0, 11, 3); foco.castShadow = true; foco.shadow.mapSize.set(1024, 1024); escena.add(foco, foco.target);
+escena.background = new THREE.Color('#150f24'); escena.fog = new THREE.Fog('#150f24', 18, 46);
+escena.add(new THREE.HemisphereLight('#c8b8ff', '#2a1a40', 1.1));
+const foco = new THREE.SpotLight('#fff0d8', 170, 32, .62, .5, 1.3); foco.position.set(0, 12, 3); foco.castShadow = true; foco.shadow.mapSize.set(1024, 1024); escena.add(foco, foco.target);
+for (const [x, c] of [[-6, '#ff5a8a'], [6, '#4a9aff']]) { const l = new THREE.PointLight(c, 40, 16); l.position.set(x, 3, 1); escena.add(l); }
 
 export const PLATO = 3.2;   // radio del plato
-// ---------- el puesto: una mesa de feria con su plato, guirnaldas y bombillas ----------
+const luces = [];           // los conos de luz que barren el escenario
+// ---------- el escenario: tarima con neón, estadio con su borde y sus bocas, foco y pantalla de fondo ----------
 {
-  const mesa = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.6, .5, 40), toon('#8a5a36')); mesa.position.y = -.55; mesa.receiveShadow = true; contorno(mesa, .05); escena.add(mesa);
-  const mantel = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, .06, 40), toon('#c8453a')); mantel.position.y = -.27; mantel.receiveShadow = true; escena.add(mantel);
-  const faldon = new THREE.Mesh(new THREE.CylinderGeometry(5.3, 5.3, 2.6, 40, 1, true), toon('#a8332e', { side: THREE.DoubleSide })); faldon.position.y = -1.6; escena.add(faldon);
-  const suelo = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), toon('#3a2a40')); suelo.rotation.x = -Math.PI / 2; suelo.position.y = -2.9; suelo.receiveShadow = true; escena.add(suelo);
-  // el plato: un cuenco bajo (los bordes suben un poco, como en el original que no vamos a nombrar)
-  const perfil = []; for (let i = 0; i <= 24; i++) { const r = (i / 24) * PLATO; perfil.push(new THREE.Vector2(r, -.2 + Math.pow(r / PLATO, 3) * .38)); }
-  const cuenco = new THREE.Mesh(new THREE.LatheGeometry(perfil, 48), toon('#4a8aa8', { side: THREE.DoubleSide })); cuenco.receiveShadow = true; escena.add(cuenco);
-  const borde = new THREE.Mesh(new THREE.TorusGeometry(PLATO + .05, .16, 8, 48).rotateX(Math.PI / 2), toon('#f4ecd8')); borde.position.y = .2; contorno(borde, .03); escena.add(borde);
-  const circulo = new THREE.Mesh(new THREE.RingGeometry(.9, 1.0, 48).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffe08a', transparent: true, opacity: .5 })); circulo.position.y = -.17; escena.add(circulo);
-  // el cartel y las bombillas
-  const tx = lienzo(1024, 200, (x, w, h) => { x.fillStyle = '#2a1a2a'; x.fillRect(0, 0, w, h); x.strokeStyle = '#ffd27a'; x.lineWidth = 12; x.strokeRect(10, 10, w - 20, h - 20); x.fillStyle = '#ffd27a'; x.font = 'bold 92px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('PEONZAS DE RUFO', w / 2, h / 2 + 4); });
-  const cartel = new THREE.Mesh(new THREE.PlaneGeometry(8, 1.56), new THREE.MeshBasicMaterial({ map: tx })); cartel.position.set(0, 5.6, -7); escena.add(cartel);
-  for (let i = 0; i < 18; i++) { const a = Math.PI * (1.05 + i / 17 * .9), b = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ color: ['#ffd27a', '#ff8a6a', '#8ad0ff', '#a8e88a'][i % 4] })); b.position.set(Math.cos(a) * 8.5, 3.6 + Math.sin(i * 1.7) * .25, Math.sin(a) * 8.5 - 2); escena.add(b); }
-  const n = 90, pub = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.3, .55, 3, 8), toon('#ffffff'), n), m4 = new THREE.Matrix4(), cols = ['#e8b04a', '#c85a5a', '#5a8ac8', '#7ac85a', '#c87ab0', '#e8e0d0'], sitios = [];
-  for (let i = 0; i < n; i++) { const a = Math.PI * (1.05 + Math.random() * .9), r = 8 + Math.random() * 5; sitios.push([Math.cos(a) * r, -1.2 + (r - 8) * .3, Math.sin(a) * r - 1, Math.random() * 6]); pub.setColorAt(i, new THREE.Color(cols[i % cols.length])); }
+  const suelo = new THREE.Mesh(new THREE.PlaneGeometry(90, 90), toon('#1c1430')); suelo.rotation.x = -Math.PI / 2; suelo.position.y = -2.2; suelo.receiveShadow = true; escena.add(suelo);
+  const tarima = new THREE.Mesh(new THREE.CylinderGeometry(7.4, 7.7, .8, 56), toon('#2a2040')); tarima.position.y = -.9; tarima.receiveShadow = true; contorno(tarima, .05); escena.add(tarima);
+  for (const [r, c, y] of [[7.45, '#ff5a8a', -.52], [7.15, '#4a9aff', -.5]]) { const n = new THREE.Mesh(new THREE.TorusGeometry(r, .06, 6, 80).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: c })); n.position.y = y; escena.add(n); }
+  const peana = new THREE.Mesh(new THREE.CylinderGeometry(4.5, 5.1, 1, 8), toon('#3a2f58')); peana.position.y = -.42; peana.receiveShadow = true; contorno(peana, .05); escena.add(peana);
+  // el estadio: un cuenco con el suelo pintado (sectores, aros y flechas), borde por tramos y cuatro bocas por donde se sale
+  const dibujo = lienzo(512, 512, (x, w, h) => {
+    const c = w / 2; x.translate(c, c);
+    for (let i = 0; i < 16; i++) { x.fillStyle = i % 2 ? '#3f74a8' : '#2f5f92'; x.beginPath(); x.moveTo(0, 0); x.arc(0, 0, c, i * Math.PI / 8, (i + 1) * Math.PI / 8); x.fill(); }
+    for (const [r, col, g] of [[.97, '#ffe08a', 12], [.74, '#ff5a8a', 7], [.48, '#4a9aff', 7], [.22, '#ffe08a', 9]]) { x.strokeStyle = col; x.lineWidth = g; x.beginPath(); x.arc(0, 0, c * r, 0, Math.PI * 2); x.stroke(); }
+    x.fillStyle = '#ffe08a'; for (let i = 0; i < 8; i++) { x.save(); x.rotate(i * Math.PI / 4); x.beginPath(); x.moveTo(c * .5, -18); x.lineTo(c * .68, 0); x.lineTo(c * .5, 18); x.closePath(); x.fill(); x.restore(); }
+    x.fillStyle = '#ffffff'; x.beginPath(); x.arc(0, 0, 16, 0, Math.PI * 2); x.fill();
+  });
+  // el cuenco: un disco con anillos al que se le curva el borde hacia arriba (su textura se proyecta plana, así el dibujo sale redondo)
+  const geo = new THREE.RingGeometry(.001, PLATO, 72, 30).rotateX(-Math.PI / 2), pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) { const r = Math.hypot(pos.getX(i), pos.getZ(i)) / PLATO; pos.setY(i, -.2 + Math.pow(r, 4) * .32); }
+  geo.computeVertexNormals();
+  const cuenco = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: dibujo, side: THREE.DoubleSide })); cuenco.receiveShadow = true; escena.add(cuenco);
+  for (let i = 0; i < 16; i++) {   // el borde, a tramos de dos colores
+    const a = i / 16 * Math.PI * 2, t = new THREE.Mesh(new THREE.BoxGeometry(1.3, .26, .26), toon(i % 2 ? '#ff5a6a' : '#f4ecd8'));
+    t.position.set(Math.cos(a) * (PLATO + .1), .22, Math.sin(a) * (PLATO + .1)); t.rotation.y = -a - Math.PI / 2; t.castShadow = true; contorno(t, .03); escena.add(t);
+  }
+  for (let i = 0; i < 4; i++) {   // las bocas: huecos negros en el borde, como en los estadios de verdad
+    const a = Math.PI / 4 + i * Math.PI / 2, h = new THREE.Mesh(new THREE.BoxGeometry(.9, .5, .5), new THREE.MeshBasicMaterial({ color: '#0a0612' }));
+    h.position.set(Math.cos(a) * (PLATO + .12), .22, Math.sin(a) * (PLATO + .12)); h.rotation.y = -a - Math.PI / 2; escena.add(h);
+    const l = new THREE.Mesh(new THREE.BoxGeometry(.9, .06, .06), new THREE.MeshBasicMaterial({ color: ['#ff5a8a', '#4a9aff'][i % 2] })); l.position.set(Math.cos(a) * (PLATO + .1), .5, Math.sin(a) * (PLATO + .1)); l.rotation.y = -a - Math.PI / 2; escena.add(l);
+  }
+  // la pantalla de fondo: rayos, estrellas y el rótulo
+  const fondo = lienzo(1024, 512, (x, w, h) => {
+    const g = x.createRadialGradient(w / 2, h * .55, 20, w / 2, h * .55, w * .6); g.addColorStop(0, '#5a3a9a'); g.addColorStop(1, '#150f24'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.save(); x.translate(w / 2, h * .55); for (let i = 0; i < 24; i++) { x.rotate(Math.PI / 12); x.fillStyle = i % 2 ? 'rgba(255,200,120,.10)' : 'rgba(120,180,255,.08)'; x.beginPath(); x.moveTo(0, 0); x.lineTo(w, -50); x.lineTo(w, 50); x.fill(); } x.restore();
+    x.strokeStyle = '#ffd27a'; x.lineWidth = 10; x.strokeRect(14, 14, w - 28, h - 28);
+    x.fillStyle = '#ffd27a'; x.font = 'bold 118px Georgia, serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.shadowColor = '#ff5a8a'; x.shadowBlur = 28; x.fillText('PEONZAS', w / 2, h * .36); x.fillText('DE RUFO', w / 2, h * .64);
+  });
+  const pantalla = new THREE.Mesh(new THREE.PlaneGeometry(13, 6.5), new THREE.MeshBasicMaterial({ map: fondo })); pantalla.position.set(0, 4.4, -10); escena.add(pantalla);
+  // la cercha con sus focos: conos de luz de colores que barren el plato
+  const cercha = new THREE.Mesh(new THREE.TorusGeometry(9.5, .09, 6, 60, Math.PI).rotateZ(0), toon('#6a6a80')); cercha.position.set(0, 4.2, -2); cercha.rotation.x = 0; escena.add(cercha);
+  for (let i = 0; i < 6; i++) {
+    const ang = Math.PI * (i + .5) / 6, px = Math.cos(ang) * 9.5, py = 4.2 + Math.sin(ang) * 9.5 * .8, col = ['#ff5a8a', '#4a9aff', '#ffd27a'][i % 3];
+    const cono = new THREE.Mesh(new THREE.ConeGeometry(1.1, 9, 24, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    const g = new THREE.Group(); cono.position.y = -4.5; g.add(cono); g.position.set(px, Math.min(8.5, py), -2); g.userData = { fase: i * 1.1, vel: .5 + (i % 3) * .15, x0: px }; escena.add(g); luces.push(g);
+    const f = new THREE.Mesh(new THREE.CylinderGeometry(.22, .3, .4, 10), toon('#2a2a38')); f.position.copy(g.position); escena.add(f);
+  }
+  for (let i = 0; i < 22; i++) { const a = Math.PI * (1.04 + i / 21 * .92), b = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({ color: ['#ffd27a', '#ff8a6a', '#8ad0ff', '#a8e88a'][i % 4] })); b.position.set(Math.cos(a) * 8.8, 3.4 + Math.sin(i * 1.7) * .25, Math.sin(a) * 8.8 - 1); escena.add(b); }
+  // el público, en gradas detrás
+  const n = 120, pub = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.3, .55, 3, 8), toon('#ffffff'), n), m4 = new THREE.Matrix4(), cols = ['#e8b04a', '#c85a5a', '#5a8ac8', '#7ac85a', '#c87ab0', '#e8e0d0'], sitios = [];
+  for (let i = 0; i < n; i++) { const a = Math.PI * (1.08 + Math.random() * .84), r = 9 + Math.floor(Math.random() * 3) * 1.4; sitios.push([Math.cos(a) * r, -1.1 + (r - 9) * .45, Math.sin(a) * r - 1, Math.random() * 6]); pub.setColorAt(i, new THREE.Color(cols[i % cols.length])); }
   escena.add(pub); escena.userData.publico = { pub, sitios, m4 };
 }
 
-// ---------- una peonza hecha con sus piezas ----------
+// ---------- una peonza hecha como un Beyblade: punta, rueda de metal, aro de ataque y tapa con su emblema ----------
+const COLOR_EFECTO_P = { fuego: '#ff8a3a', iman: '#ff6aa8', rayo: '#fff26a', escarcha: '#8ad8ff', torbellino: '#b8f0c8' };
+const EMBLEMA_P = { fuego: '🔥', iman: '🧲', rayo: '⚡', escarcha: '🧊', torbellino: '🌪️' };
 function aroMalla(P) {
-  const g = new THREE.Group(), c = P.color;
-  const f = P.forma;
-  if (f === 'chapa') { const base = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, .1, 24), toon(c)); g.add(base); for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2, d = new THREE.Mesh(new THREE.BoxGeometry(.1, .14, .08), toon('#f4e0c0')); d.position.set(Math.cos(a) * .64, 0, Math.sin(a) * .64); d.rotation.y = -a; g.add(d); } }
-  else if (f === 'sierra') { g.add(new THREE.Mesh(new THREE.CylinderGeometry(.52, .52, .08, 20), toon(c))); for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2, d = new THREE.Mesh(new THREE.ConeGeometry(.12, .3, 4), toon('#e8e8f0')); d.position.set(Math.cos(a) * .62, 0, Math.sin(a) * .62); d.rotation.z = -Math.PI / 2; d.rotation.y = -a; d.lookAt(Math.cos(a) * 2, 0, Math.sin(a) * 2); d.rotateX(Math.PI / 2); g.add(d); } }
-  else if (f === 'tuerca') { const t = new THREE.Mesh(new THREE.CylinderGeometry(.64, .64, .2, 6), toon(c)); g.add(t); }
-  else if (f === 'aspas') { for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2, b = new THREE.Mesh(new THREE.BoxGeometry(.7, .05, .3), toon(c)); b.position.set(Math.cos(a) * .38, 0, Math.sin(a) * .38); b.rotation.y = -a; b.rotation.z = .25; g.add(b); } g.add(new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, .1, 12), toon('#4a4a5a'))); }
-  else if (f === 'cuchara') { for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2, s = new THREE.Mesh(new THREE.SphereGeometry(.34, 10, 8), toon(c)); s.scale.set(1.2, .35, .8); s.position.set(Math.cos(a) * .42, 0, Math.sin(a) * .42); s.rotation.y = -a; g.add(s); } g.add(new THREE.Mesh(new THREE.CylinderGeometry(.3, .3, .08, 12), toon('#9a9aa8'))); }
-  else { const t = new THREE.Mesh(new THREE.TorusGeometry(.5, .14, 8, 24).rotateX(Math.PI / 2), toon(c)); g.add(t); }
+  const g = new THREE.Group(), c = P.color, f = P.forma, claro = new THREE.Color(c).lerp(new THREE.Color('#ffffff'), .5).getStyle();
+  if (f === 'chapa') { g.add(new THREE.Mesh(new THREE.CylinderGeometry(.66, .66, .1, 28), toon(c))); for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2, d = new THREE.Mesh(new THREE.BoxGeometry(.11, .16, .1), toon(claro)); d.position.set(Math.cos(a) * .68, 0, Math.sin(a) * .68); d.rotation.y = -a; g.add(d); } }
+  else if (f === 'sierra') { g.add(new THREE.Mesh(new THREE.CylinderGeometry(.52, .52, .09, 24), toon(c))); for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2, d = new THREE.Mesh(new THREE.ConeGeometry(.15, .38, 4), toon('#eef0f8')); d.position.set(Math.cos(a) * .66, 0, Math.sin(a) * .66); d.rotation.order = 'YZX'; d.rotation.set(0, -a, -Math.PI / 2); g.add(d); } }
+  else if (f === 'tuerca') { g.add(new THREE.Mesh(new THREE.CylinderGeometry(.68, .68, .2, 6), toon(c))); g.add(new THREE.Mesh(new THREE.CylinderGeometry(.36, .36, .24, 6), toon('#2a2a3a'))); }
+  else if (f === 'aspas') { for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2, b = new THREE.Mesh(new THREE.BoxGeometry(.62, .05, .3), toon(c)); b.position.set(Math.cos(a) * .42, 0, Math.sin(a) * .42); b.rotation.y = -a; b.rotation.z = .3; g.add(b); } g.add(new THREE.Mesh(new THREE.CylinderGeometry(.26, .26, .1, 14), toon('#3a3a4a'))); }
+  else if (f === 'cuchara') { for (let i = 0; i < 3; i++) { const a = i / 3 * Math.PI * 2, s = new THREE.Mesh(new THREE.SphereGeometry(.38, 12, 8), toon(c)); s.scale.set(1.25, .3, .75); s.position.set(Math.cos(a) * .44, 0, Math.sin(a) * .44); s.rotation.y = -a; g.add(s); } g.add(new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .1, 14), toon('#8a8a9a'))); }
+  else { const t = new THREE.Mesh(new THREE.TorusGeometry(.54, .15, 8, 28).rotateX(Math.PI / 2), toon(c)); g.add(t); for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2, d = new THREE.Mesh(new THREE.BoxGeometry(.2, .12, .12), toon(claro)); d.position.set(Math.cos(a) * .66, 0, Math.sin(a) * .66); d.rotation.y = -a; g.add(d); } }
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
 export function crearPeonza(equipo) {
   const grupo = new THREE.Group(), girador = new THREE.Group(), inclina = new THREE.Group();
-  const aro = PIEZAS_P[equipo.aro], disco = PIEZAS_P[equipo.disco], punta = PIEZAS_P[equipo.punta];
-  const pu = new THREE.Mesh(new THREE.ConeGeometry(.16, .42, 12), toon(punta.color)); pu.rotation.x = Math.PI; pu.position.y = .21; contorno(pu, .03); girador.add(pu);
-  const di = new THREE.Mesh(new THREE.CylinderGeometry(.5, .42, .2, 28), toon(disco.color)); di.position.y = .52; di.castShadow = true; contorno(di, .035); girador.add(di);
-  const ar = aroMalla(aro); ar.position.y = .72; girador.add(ar);
-  const tapa = new THREE.Mesh(new THREE.SphereGeometry(.26, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(disco.color)); tapa.position.y = .82; girador.add(tapa);
+  const aro = PIEZAS_P[equipo.aro], disco = PIEZAS_P[equipo.disco], punta = PIEZAS_P[equipo.punta], ce = COLOR_EFECTO_P[aro.efecto] || '#e8e8ff';
+  // la punta y el engranaje
+  const pu = new THREE.Mesh(new THREE.ConeGeometry(.12, .36, 12), toon(punta.color)); pu.rotation.x = Math.PI; pu.position.y = .18; contorno(pu, .03); girador.add(pu);
+  const eng = new THREE.Mesh(new THREE.CylinderGeometry(.3, .24, .12, 8), toon('#3a3a4a')); eng.position.y = .4; girador.add(eng);
+  // la rueda de metal (el disco): pesada, con dientes y un aro de otro color
+  const di = new THREE.Mesh(new THREE.CylinderGeometry(.56, .46, .2, 32), toon(disco.color)); di.position.y = .54; di.castShadow = true; contorno(di, .035); girador.add(di);
+  for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2, d = new THREE.Mesh(new THREE.BoxGeometry(.16, .14, .14), toon('#2a2a3a')); d.position.set(Math.cos(a) * .56, .54, Math.sin(a) * .56); d.rotation.y = -a; girador.add(d); }
+  const rin = new THREE.Mesh(new THREE.TorusGeometry(.38, .035, 6, 28).rotateX(Math.PI / 2), toon(ce)); rin.position.y = .65; girador.add(rin);
+  // el aro de ataque
+  const ar = aroMalla(aro); ar.position.y = .76; girador.add(ar);
+  // la tapa de energía, con su emblema
+  const dom = new THREE.Mesh(new THREE.SphereGeometry(.3, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshToonMaterial({ color: ce, transparent: true, opacity: .75, gradientMap: null })); dom.position.y = .84; girador.add(dom);
+  const emb = lienzo(128, 128, (x, w, h) => { x.fillStyle = '#1a1226'; x.beginPath(); x.arc(64, 64, 62, 0, Math.PI * 2); x.fill(); x.font = '78px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(EMBLEMA_P[aro.efecto] || '⭐', 64, 70); });
+  const cara = new THREE.Mesh(new THREE.CircleGeometry(.27, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: emb })); cara.position.y = 1.0; girador.add(cara);
+  // el borrón de movimiento: un disco transparente que se ve más cuanto más gira
+  const blur = new THREE.Mesh(new THREE.RingGeometry(.5, .9, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: ce, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); blur.position.y = .7; inclina.add(blur);
   inclina.add(girador); grupo.add(inclina); grupo.scale.setScalar(1.15);
-  const marca = new THREE.Mesh(new THREE.RingGeometry(.78, .95, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .85, depthWrite: false })); marca.position.y = .02; grupo.add(marca);
-  const aura = new THREE.Mesh(new THREE.SphereGeometry(.95, 18, 12), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false })); aura.position.y = .5; grupo.add(aura);
-  return { grupo, girador, inclina, aura, marca, vel: 14, giro: 1, vive: true, x: 0, z: 0 };
+  const marca = new THREE.Mesh(new THREE.RingGeometry(.86, 1.02, 32).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: .85, depthWrite: false })); marca.position.y = .02; grupo.add(marca);
+  const aura = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0, depthWrite: false })); aura.position.y = .55; grupo.add(aura);
+  return { grupo, girador, inclina, aura, marca, blur, vel: 14, giro: 1, vive: true, x: 0, z: 0 };
 }
 
 // ---------- el escenario: dos peonzas sobre el plato ----------
@@ -84,7 +130,7 @@ export function poner(equipos, sentidos = [1, 1]) {
     if (!eq) return; const p = crearPeonza(eq); T[i] = p; p.s = sentidos[i] || 1; escena.add(p.grupo);
     p.grupo.rotation.y = i * 1.3; p.vel = 14;
     if (vista === 'taller') { p.grupo.position.set(0, .2, 0); p.marca.visible = false; p.grupo.scale.setScalar(MOVIL ? 1.35 : 1.7); }
-    else { p.grupo.position.set(i === 0 ? -2.4 : 2.4, 0, 0); p.grupo.scale.setScalar(.85); p.marca.material.color.set(COLOR_LADO[i]); }
+    else { p.grupo.position.set(i === 0 ? -2.4 : 2.4, 0, 0); p.grupo.scale.setScalar(.92); p.marca.material.color.set(COLOR_LADO[i]); }
   });
 }
 export const peonza = (i) => T[i];
@@ -147,15 +193,17 @@ function bucle() {
     const p = T[i]; if (!p) continue;
     const g = p.giro, tamb = p.vive ? (1 - g) * (1 - g) * .5 : 0;   // se tambalea cuanto menos giro le queda
     p.girador.rotation.y += p.vel * (.25 + .75 * g) * dt * (p.vive ? 1 : 0) * (p.s || 1) * -1;
+    p.blur.material.opacity = p.vive ? .32 * g * Math.min(1, p.vel / 20) : 0; p.blur.rotation.y = -p.girador.rotation.y * .6;
     if (p.vive) { p.inclina.rotation.z = Math.sin(tt * 9 + i * 2) * tamb * .6; p.inclina.rotation.x = Math.cos(tt * 8 + i) * tamb * .5; }
     if (vista === 'taller' && i === 0) p.grupo.position.y = .2 + Math.sin(tt * 2) * .06;
   }
+  for (const l of luces) { l.rotation.z = Math.sin(tt * l.userData.vel + l.userData.fase) * .35; l.rotation.x = Math.cos(tt * l.userData.vel * .8 + l.userData.fase) * .25; }
   const { pub, sitios, m4 } = escena.userData.publico;
   for (let i = 0; i < sitios.length; i++) { const s = sitios[i]; m4.setPosition(s[0], s[1] + Math.abs(Math.sin(tt * 3 + s[3])) * .22, s[2]); pub.setMatrixAt(i, m4); } pub.instanceMatrix.needsUpdate = true;
   // la cámara: arriba y un poco delante; en el móvil sube para que el panel de abajo no tape el plato
   const sac = sacudida * (Math.random() - .5) * .3; sacudida = Math.max(0, sacudida - dt * 1.5);
-  const alto = vista === 'taller' ? 5.2 : MOVIL ? 10.5 : 8.2, atras = vista === 'taller' ? 6.4 : MOVIL ? 11.5 : 9.6;
-  camara.position.set(sac, alto + sac, atras); camara.lookAt(0, vista === 'taller' ? (MOVIL ? -1.7 : .3) : (MOVIL ? -2.6 : -.6), 0);
+  const alto = vista === 'taller' ? 3.4 : MOVIL ? 8.6 : 6.4, atras = vista === 'taller' ? 6.0 : MOVIL ? 9.6 : 8.0, lado = vista === 'taller' && !MOVIL ? -2.4 : 0;
+  camara.position.set(sac + lado, alto + sac, atras); camara.lookAt(lado, vista === 'taller' ? (MOVIL ? -1.3 : .5) : (MOVIL ? -2.4 : -.2), 0);
   sonido.actualizar?.(dt); ui.actualizar(dt, tt);
   render.render(escena, camara); requestAnimationFrame(bucle);
 }
