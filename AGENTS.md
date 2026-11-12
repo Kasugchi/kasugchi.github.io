@@ -111,6 +111,16 @@ Sirve el repo con `python3 -m http.server 8765` desde la raíz y abre `http://lo
 (parámetros útiles: `?hora=N` fija la hora, `?rapido=20` acelera el reloj). Sin sesión de Google, el cerrojo te manda al menú: para probar en local, lo más fácil es iniciar sesión en el menú con una cuenta con acceso.
 Abre la consola del navegador: no debe haber errores rojos. `window.pueblo` expone el estado para depurar.
 
+### Cartas de Velmor (`cartas.html`)
+
+Homenaje a los duelos de cartas en tablero de los 2000 (7×7, terrenos, líder, fusiones a ciegas), con bichos, nombres y reglas propias. Fase 1 hecha: duelo contra los del pueblo, mazo inicial, colección, editor de mazo, libro de fusiones y tragaperras.
+
+- `js/cartas-reglas.js`: reglas puras y deterministas (semilla en `S.s`, para el online futuro). `CARTAS` (bichos con tipo `t`, elemento `el`, `a`/`d`, estrellas `nv`, `hab`; magias, terrenos, equipo, trampas), `TERRENOS` (±500 por tipo/elemento; derrumbe aplasta ≥1500; laberinto solo para `fantasmal`/`galerias`), `fusionar()` (recetas exactas secretas → por pareja de tipos → por pareja de elementos; sale el más flojo del grupo que supere a los dos), `crearDuelo`, `jugar` (una jugada por turno al lado del líder, cartas encadenadas), `opciones`/`mover`/`atacar`/`voltear`/`cambiarPosicion`, `finTurno`, `accionIA` (no mira lo boca abajo; perfiles con carácter) y mazos (`mazosIniciales`, `construirMazo`, `mazoRival` crece con la fuerza del tuyo).
+- `js/cartas-3d.js`: mesa, tablero, figuritas (miniaturas de la cripta teñidas o dibujo en peana), cartas boca abajo, primer plano al chocar. `js/cartas.js`: menús, mano, turnos y animación de los sucesos `S.ev`.
+- Se guarda en el héroe: `cartas = { tema, mazo[40], coleccion{id:n}, libro{clave:resultado}, victorias{rival:n} }`. `?debug=1`: todas las cartas, todos los rivales, botón 🤖 Auto, no guarda.
+- Equilibrio: simulador IA contra IA (primer jugador ~53 %, temas entre 40 y 60 %). Si tocas números, vuelve a simular.
+- Pendiente (acordado con Carlos): captura de bichos en la cripta (probabilidad baja al matarlos, aviso sin interrumpir), ~170 bichos por familias con variantes que cambian identidad y no solo números, jefes con transformación y ritual (sacrificios, carta de ritual, cementerio, coste de mazo o vida, terreno, despertar lento), líder = tu héroe o un bicho dominado (la maestría es del jugador por tipo de carta, no de la copia), NPCs con mazos y revanchas según su carácter, el Adivino del Ojo de Cristal (jefe secreto ambulante que ve tu mano), iglesia con cementerio en el pueblo (ofrenda: das 3, te ofrece 2, eliges 1), duelo online con Kami (tragaperras = su cementerio + 2 de su mazo y la carta cambia de dueño; rendirse pierde; desconectarse da un minuto), reloj de ajedrez 10 min + 10 s por turno (opcional contra NPCs), enseñarse álbum y mazo con permiso, sin coste de mazo (si eres fuerte, los rivales suben).
+
 ## Antes de terminar una tarea
 
 - [ ] Estás en una rama, no en `main`.

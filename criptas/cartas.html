@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Cartas de Velmor · Criptas de Velmor</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<script>
+  // Fuera de la web de verdad (pruebas, ramas, local) la app se instala con otro nombre e icono, para no confundirlas
+  if (!/^(lab\.crove\.cc|kasugchi\.github\.io)$/.test(location.hostname)) {
+    document.querySelector('link[rel="manifest"]').href = 'manifest-pruebas.webmanifest';
+    document.querySelector('link[rel="icon"]').href = 'icono-pruebas.svg';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "three": "./js/vendor/three.module.min.js",
+    "./js/acceso.js": "./js/acceso.js?v=20261112150709",
+    "./js/calidad.js": "./js/calidad.js?v=20261112150709",
+    "./js/campanas.js": "./js/campanas.js?v=20261112150709",
+    "./js/cancionero.js": "./js/cancionero.js?v=20261112150709",
+    "./js/cartas-3d.js": "./js/cartas-3d.js?v=20261112150709",
+    "./js/cartas-reglas.js": "./js/cartas-reglas.js?v=20261112150709",
+    "./js/cartas.js": "./js/cartas.js?v=20261112150709",
+    "./js/cine.js": "./js/cine.js?v=20261112150709",
+    "./js/claro-combate.js": "./js/claro-combate.js?v=20261112150709",
+    "./js/claro-cripta.js": "./js/claro-cripta.js?v=20261112150709",
+    "./js/claro-dados.js": "./js/claro-dados.js?v=20261112150709",
+    "./js/claro-estilo.js": "./js/claro-estilo.js?v=20261112150709",
+    "./js/claro-heroes.js": "./js/claro-heroes.js?v=20261112150709",
+    "./js/claro-hud.js": "./js/claro-hud.js?v=20261112150709",
+    "./js/claro-mundo.js": "./js/claro-mundo.js?v=20261112150709",
+    "./js/claro-personajes.js": "./js/claro-personajes.js?v=20261112150709",
+    "./js/claro-sonido.js": "./js/claro-sonido.js?v=20261112150709",
+    "./js/claro-ui3d.js": "./js/claro-ui3d.js?v=20261112150709",
+    "./js/claro.js": "./js/claro.js?v=20261112150709",
+    "./js/cocina.js": "./js/cocina.js?v=20261112150709",
+    "./js/cripta-juntos.js": "./js/cripta-juntos.js?v=20261112150709",
+    "./js/cripta.js": "./js/cripta.js?v=20261112150709",
+    "./js/datos.js": "./js/datos.js?v=20261112150709",
+    "./js/decor-entradas.js": "./js/decor-entradas.js?v=20261112150709",
+    "./js/decor-isla.js": "./js/decor-isla.js?v=20261112150709",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261112150709",
+    "./js/dificultad.js": "./js/dificultad.js?v=20261112150709",
+    "./js/equipo.js": "./js/equipo.js?v=20261112150709",
+    "./js/firebase.js": "./js/firebase.js?v=20261112150709",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261112150709",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261112150709",
+    "./js/ia.js": "./js/ia.js?v=20261112150709",
+    "./js/iconos.js": "./js/iconos.js?v=20261112150709",
+    "./js/insultos.js": "./js/insultos.js?v=20261112150709",
+    "./js/menu-aventura.js": "./js/menu-aventura.js?v=20261112150709",
+    "./js/mercenarios.js": "./js/mercenarios.js?v=20261112150709",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261112150709",
+    "./js/midi.js": "./js/midi.js?v=20261112150709",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261112150709",
+    "./js/motor.js": "./js/motor.js?v=20261112150709",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261112150709",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261112150709",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261112150709",
+    "./js/nube.js": "./js/nube.js?v=20261112150709",
+    "./js/panel.js": "./js/panel.js?v=20261112150709",
+    "./js/pantalla.js": "./js/pantalla.js?v=20261112150709",
+    "./js/paradas.js": "./js/paradas.js?v=20261112150709",
+    "./js/pelea-juntos.js": "./js/pelea-juntos.js?v=20261112150709",
+    "./js/peonzas-3d.js": "./js/peonzas-3d.js?v=20261112150709",
+    "./js/peonzas-reglas.js": "./js/peonzas-reglas.js?v=20261112150709",
+    "./js/peonzas.js": "./js/peonzas.js?v=20261112150709",
+    "./js/planos.js": "./js/planos.js?v=20261112150709",
+    "./js/poderes.js": "./js/poderes.js?v=20261112150709",
+    "./js/procedural.js": "./js/procedural.js?v=20261112150709",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261112150709",
+    "./js/red.js": "./js/red.js?v=20261112150709",
+    "./js/render.js": "./js/render.js?v=20261112150709",
+    "./js/render3d.js": "./js/render3d.js?v=20261112150709",
+    "./js/reunion.js": "./js/reunion.js?v=20261112150709",
+    "./js/ring-escena.js": "./js/ring-escena.js?v=20261112150709",
+    "./js/ring-reglas.js": "./js/ring-reglas.js?v=20261112150709",
+    "./js/ring.js": "./js/ring.js?v=20261112150709",
+    "./js/robots-3d.js": "./js/robots-3d.js?v=20261112150709",
+    "./js/robots.js": "./js/robots.js?v=20261112150709",
+    "./js/sitios.js": "./js/sitios.js?v=20261112150709",
+    "./js/sprites.js": "./js/sprites.js?v=20261112150709",
+    "./js/tablero.js": "./js/tablero.js?v=20261112150709",
+    "./js/ui.js": "./js/ui.js?v=20261112150709",
+    "./js/vertedero.js": "./js/vertedero.js?v=20261112150709",
+    "./js/viajero.js": "./js/viajero.js?v=20261112150709"
+  }
+}
+</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1a1220; font-family: Nunito, system-ui, sans-serif; color: #3a2a20; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  [hidden] { display: none !important; }
+  .caja { background: #fff8e6; border-radius: 18px; box-shadow: 0 8px 24px #0006; }
+  #panel { position: fixed; left: 12px; top: 12px; bottom: 12px; width: min(460px, calc(100% - 24px)); overflow-y: auto; padding: 16px 18px; box-sizing: border-box; z-index: 5; overscroll-behavior: contain; }
+  @media (max-width: 760px) { #panel { top: 56px; left: 8px; right: 8px; bottom: 8px; width: auto; } }
+  #panel h2 { margin: 0 0 6px; color: #6a1c4a; font-weight: 900; } #panel h2 small { display: block; font-size: 13px; color: #6a5a4a; font-weight: 700; }
+  #panel p { margin: 6px 0 10px; font-weight: 600; line-height: 1.4; } .nota { font-size: 13px; opacity: .8; } .aviso { color: #a82a2a; }
+  .pestanas { display: flex; gap: 6px; margin: -4px 0 10px; } .pestanas button { flex: 1; border: 0; border-radius: 12px; background: #f0e2c0; padding: 8px 6px; font: inherit; font-weight: 900; cursor: pointer; color: #6a5a4a; }
+  .pestanas button.activa { background: #ffcf4a; color: #3a2a20; box-shadow: 0 3px 0 #c8962a; }
+  .fila-botones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .fila-botones button, .boton { border: 0; border-radius: 14px; background: #f0e2c0; padding: 10px 14px; font: inherit; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 #d8c08a; color: #3a2a20; text-decoration: none; }
+  .fila-botones .grande { background: #ffcf4a; box-shadow: 0 3px 0 #c8962a; flex: 1; } .fila-botones .azul { background: #9ac8ff; box-shadow: 0 3px 0 #5a88c8; }
+  .fila-botones button:disabled { opacity: .5; cursor: default; }
+  button.sutil { border: 0; background: none; font: inherit; font-weight: 800; opacity: .7; margin-top: 8px; cursor: pointer; }
+  .tema { display: block; width: 100%; text-align: left; border: 0; border-radius: 14px; background: #fff0cc; padding: 10px 12px; margin: 8px 0; font: inherit; cursor: pointer; box-shadow: 0 3px 0 #e2c88a; }
+  .tema span { font-size: 30px; float: left; margin-right: 10px; } .tema b { display: block; font-size: 16px; } .tema small { display: block; font-weight: 600; opacity: .8; }
+  .muestra { clear: both; display: flex; gap: 6px; margin-top: 6px; font-size: 22px; } .muestra i { font-style: normal; }
+  .rival { background: #fff0cc; border-radius: 14px; padding: 8px 10px; margin: 8px 0; } .rival.cerrado { opacity: .55; } .rival small { display: block; font-weight: 600; opacity: .8; margin: 2px 0; }
+  .lista .fila, #panel .fila { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; background: #fff0cc; border-radius: 12px; padding: 6px 8px; margin: 5px 0; }
+  .fila .dib { font-size: 24px; text-align: center; } .fila small { display: block; font-size: 11px; font-weight: 600; opacity: .8; }
+  .cuenta { display: flex; align-items: center; gap: 4px; } .cuenta button { width: 30px; height: 30px; border: 0; border-radius: 10px; background: #ffcf4a; font: inherit; font-weight: 900; cursor: pointer; } .cuenta button:disabled { opacity: .3; } .cuenta i { font-style: normal; font-weight: 900; min-width: 30px; text-align: center; font-size: 12px; }
+  .huecos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; } .huecos i { font-style: normal; background: #3a2a40; color: #8a7a9a; border-radius: 8px; padding: 6px 8px; font-weight: 900; font-size: 12px; }
+  #volver { position: fixed; right: 10px; top: max(10px, env(safe-area-inset-top)); z-index: 6; }
+
+  /* la carta */
+  .carta { position: relative; width: min(74px, calc((100vw - 32px) / 5)); height: 104px; box-sizing: border-box; border-radius: 10px; background: var(--fondo); border: 3px solid var(--borde); box-shadow: 0 4px 10px #0007; display: flex; flex-direction: column; align-items: center; padding: 3px 3px 2px; cursor: pointer; transition: transform .12s; flex: 0 0 auto; }
+  .carta .estrellas { font-size: 7px; color: #c8960a; letter-spacing: -1px; height: 8px; line-height: 8px; }
+  .carta .dib { font-size: 30px; line-height: 38px; } .carta b { font-size: 9.5px; line-height: 1.05; text-align: center; font-weight: 900; height: 21px; overflow: hidden; }
+  .carta em { font-style: normal; font-size: 10px; font-weight: 900; line-height: 1.1; text-align: center; margin-top: auto; } .carta em.k { font-size: 9px; opacity: .75; }
+  .carta.sel { transform: translateY(-14px); box-shadow: 0 0 0 3px #ffcf4a, 0 8px 16px #0008; }
+  .carta .orden { position: absolute; top: -10px; right: -8px; background: #ff5a3a; color: #fff; font-style: normal; font-weight: 900; border-radius: 50%; width: 22px; height: 22px; display: grid; place-items: center; font-size: 13px; }
+  .carta.mini { width: 60px; height: 84px; cursor: default; } .carta.mini .dib { font-size: 24px; line-height: 30px; } .carta.mini b { font-size: 8px; height: 17px; } .carta.mini em { font-size: 8.5px; }
+  @media (min-width: 761px) { .carta { width: 92px; height: 128px; } .carta .dib { font-size: 40px; line-height: 50px; } .carta b { font-size: 11px; height: 25px; } .carta em { font-size: 12px; } .carta .estrellas { font-size: 9px; height: 10px; } }
+
+  /* el duelo */
+  #hud { position: fixed; left: 8px; right: 8px; top: max(8px, env(safe-area-inset-top)); display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; z-index: 4; pointer-events: none; }
+  #hud .jug { background: #fff8e6; border-radius: 14px; box-shadow: 0 6px 18px #0006; padding: 6px 10px; min-width: 120px; border: 3px solid #3a8aff; } #hud .jug.el { border-color: #ff4a4a; text-align: right; }
+  #hud .jug.activo { box-shadow: 0 0 0 3px #ffcf4a, 0 6px 18px #0006; }
+  #hud b { display: block; font-size: 13px; } #hud span { font-weight: 900; font-size: 18px; color: #a82a2a; } #hud small { display: block; font-size: 11px; font-weight: 700; opacity: .75; }
+  #hud .turno { background: #2a1e2ae6; color: #fff8e6; border-radius: 12px; padding: 4px 10px; font-weight: 900; font-size: 12px; }
+  #mano { position: fixed; left: 0; right: 0; bottom: max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 4px; z-index: 4; padding: 0 6px; }
+  #acciones { position: fixed; right: 8px; bottom: calc(max(8px, env(safe-area-inset-bottom)) + 116px); display: flex; flex-direction: column; align-items: flex-end; gap: 6px; z-index: 4; }
+  @media (min-width: 761px) { #acciones { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 140px); } }
+  #acciones button { border: 0; border-radius: 14px; background: #fff8e6; padding: 10px 14px; font: inherit; font-weight: 900; cursor: pointer; box-shadow: 0 4px 0 #c8a86a; } #acciones button.grande { background: #ffcf4a; box-shadow: 0 4px 0 #c8962a; } #acciones button:disabled { opacity: .7; cursor: default; }
+  #info { position: fixed; left: 8px; bottom: calc(max(8px, env(safe-area-inset-bottom)) + 116px); width: min(330px, calc(100% - 150px)); padding: 8px 10px; box-sizing: border-box; z-index: 4; font-size: 12px; }
+  @media (min-width: 761px) { #info { bottom: calc(max(8px, env(safe-area-inset-bottom)) + 140px); } }
+  #info .ficha { display: flex; gap: 8px; align-items: flex-start; } #info b { display: block; font-size: 13px; } #info small { display: block; font-weight: 600; opacity: .85; line-height: 1.35; }
+  #info .dib.grande { font-size: 40px; } #info .oculta { font-style: normal; font-weight: 700; opacity: .6; font-size: 11px; } #info .fila-botones { margin-top: 6px; } #info .fila-botones button { padding: 7px 10px; font-size: 12px; } #info .hecho { opacity: .7; font-weight: 700; }
+  #aviso { position: fixed; left: 50%; top: calc(max(8px, env(safe-area-inset-top)) + 74px); transform: translateX(-50%); background: #2a1e2ae6; color: #fff8e6; padding: 10px 16px; border-radius: 14px; font-weight: 800; text-align: center; width: max-content; max-width: calc(100% - 24px); box-sizing: border-box; z-index: 7; pointer-events: none; }
+  #aviso small { opacity: .8; }
+  #pos { position: fixed; left: 50%; top: 40%; transform: translate(-50%, -50%); width: min(380px, calc(100% - 24px)); box-sizing: border-box; padding: 14px; z-index: 9; text-align: center; } #pos p { margin: 0 0 4px; font-weight: 800; } #pos small { display: block; font-weight: 600; opacity: .75; }
+  .rodillo { display: flex; justify-content: center; margin: 10px 0; } .rodillo .carta { transform: scale(1.3); margin: 18px 0; } .rodillo.premio .carta { box-shadow: 0 0 0 4px #ffcf4a, 0 0 30px #ffcf4a; }
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<div id="hud" hidden></div>
+<a id="volver" class="boton caja" href="pueblo.html">🏘 Al pueblo</a>
+<div id="panel" class="caja" hidden></div>
+<div id="info" class="caja" hidden></div>
+<div id="acciones" hidden></div>
+<div id="mano" hidden></div>
+<div id="aviso" hidden></div>
+<div id="pos" class="caja" hidden></div>
+<script type="module">
+import './js/acceso.js';
+import './js/cartas.js';
+</script>
+</body>
+</html>
