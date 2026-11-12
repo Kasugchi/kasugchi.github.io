@@ -449,6 +449,15 @@ async function arrancar() {
   if (DEBUG) modoDebug();
   if (!DEF) { mostrar('<h2>🃏 Cartas de Velmor</h2><p>Necesitas un héroe para jugar. Créalo en el pueblo y vuelve.</p><a class="boton" href="pueblo.html">🏘 Al pueblo</a>'); return; }
   DEF.cartas ||= {}; K().libro ||= {}; K().victorias ||= {}; K().coleccion ||= {};
+  // Solo en la web de pruebas: ?regalo=vinetas mete el mazo de viñetas en tu colección (de verdad, se guarda) y te lo pone
+  const regalo = new URLSearchParams(location.search).get('regalo');
+  if (regalo === 'vinetas' && !DEBUG && /pruebas|localhost/.test(location.hostname)) {
+    const tienes = contar(Object.entries(K().coleccion).flatMap(([id, n]) => Array(n).fill(id))), quiere = contar(R.MAZO_VINETAS);
+    for (const [id, n] of Object.entries(quiere)) K().coleccion[id] = Math.max(tienes[id] || 0, n);
+    K().mazo = [...R.MAZO_VINETAS]; K().tema ||= 'vinetas'; guardar();
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => aviso('✏️ Mazo de viñetas en tu colección y puesto. ¡A por él!', 3500), 300);
+  }
   if (!K().mazo?.length) pantallaElegir(); else pantallaMenu('duelos');
   $('#bSala').hidden = false;
   if (DEBUG) { let r = null; try { r = sessionStorage.getItem('cartas_reiniciar'); sessionStorage.removeItem('cartas_reiniciar'); } catch {} const R0 = R.RIVALES_C.find((x) => x.id === r); if (R0 && K().mazo?.length) empezarDuelo(R0); }
