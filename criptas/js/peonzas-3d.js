@@ -76,73 +76,64 @@ const T = [null, null];            // las dos peonzas
 const COLOR_LADO = ['#ff7a8a', '#6ab0ff'];
 const COLOR_EFECTO = { fuego: '#ff8a3a', iman: '#ff6aa8', rayo: '#fff26a', escarcha: '#8ad8ff', torbellino: '#b8f0c8' };
 let vista = 'taller', sacudida = 0, tt = 0;
-const distanciaDe = (borde) => .85 + Math.min(100, borde) / 100 * 1.8;
-function sitio(i, borde) { const d = distanciaDe(borde); return new THREE.Vector3(i === 0 ? -d : d, 0, 0); }
 export function quitar() { for (let i = 0; i < 2; i++) if (T[i]) { escena.remove(T[i].grupo); T[i] = null; } }
-export function poner(equipos) {   // [equipoYo, equipoRival?]
+// equipos: [equipoYo] para el taller, o [equipo0, equipo1] para el plato. sentidos: hacia dónde gira cada una (1 derecha, -1 izquierda)
+export function poner(equipos, sentidos = [1, 1]) {
   quitar(); vista = equipos[1] ? 'duelo' : 'taller';
   equipos.forEach((eq, i) => {
-    if (!eq) return; const p = crearPeonza(eq); T[i] = p; escena.add(p.grupo);
-    p.grupo.position.copy(vista === 'taller' ? new THREE.Vector3(0, .2, 0) : sitio(i, 0)); p.grupo.rotation.y = i * 1.3; p.vel = 14; if (vista === 'duelo') p.marca.material.color.set(COLOR_LADO[i]); else p.marca.visible = false;
+    if (!eq) return; const p = crearPeonza(eq); T[i] = p; p.s = sentidos[i] || 1; escena.add(p.grupo);
+    p.grupo.rotation.y = i * 1.3; p.vel = 14;
+    if (vista === 'taller') { p.grupo.position.set(0, .2, 0); p.marca.visible = false; p.grupo.scale.setScalar(MOVIL ? 1.35 : 1.7); }
+    else { p.grupo.position.set(i === 0 ? -2.4 : 2.4, 0, 0); p.grupo.scale.setScalar(.85); p.marca.material.color.set(COLOR_LADO[i]); }
   });
-  if (vista === 'taller') { T[0].grupo.scale.setScalar(MOVIL ? 1.35 : 1.7); }
 }
 export const peonza = (i) => T[i];
-// Cuánto gira (0 a 1) y cuánto se tambalea: se ve en la peonza cómo va de giro
-export function verGiro(i, giro, max) { const p = T[i]; if (!p) return; p.giro = Math.max(0, giro / max); }
-export function verBorde(i, borde) { const p = T[i]; if (!p || !p.vive) return; p.destino = sitio(i, borde); }
+// Cuánto le queda de giro (0 a 1): se ve en lo rápido que gira y en lo que se tambalea
+export function verGiro(i, r) { const p = T[i]; if (p) p.giro = Math.max(0, Math.min(1, r)); }
 
-// Un «paso» de animación: una función de 0 a 1 durante ms milisegundos
 const tween = (ms, fn) => new Promise((fin) => { const t0 = performance.now(); (function paso() { const u = Math.min(1, (performance.now() - t0) / ms); fn(u); if (u < 1) requestAnimationFrame(paso); else fin(); })(); });
 const suave = (u) => u * u * (3 - 2 * u);
 const sobre = (i, h = .8) => T[i].grupo.position.clone().add(new THREE.Vector3(0, h, 0));
 
-// El lanzamiento: cada peonza cae sobre el plato girando a lo loco
-export async function lanzar(q) {
-  for (const i of [0, 1]) { const p = T[i]; if (!p) continue; p.vive = true; p.animando = true; p.destino = sitio(i, 0); p.grupo.position.set(p.destino.x * 2.2, 5, 0); p.vel = 40; }
-  await tween(800, (u) => { for (const i of [0, 1]) { const p = T[i]; if (!p) continue; const d = suave(u); p.grupo.position.set(p.destino.x * (2.2 - 1.2 * d), 5 - 5 * d * d, 0); } });
+// El lanzamiento: cada peonza cae sobre el plato desde su lado, girando a lo loco. Est = el estado inicial de la simulación.
+export async function lanzar(Est) {
+  const fin = [0, 1].map((i) => new THREE.Vector3(Est[i].x, 0, Est[i].y));
+  for (const i of [0, 1]) { const p = T[i]; if (!p) continue; p.vive = true; p.giro = 1; p.vel = 40; p.inclina.rotation.set(0, 0, 0); p.inclina.position.y = 0; p.grupo.rotation.z = 0; }
+  await tween(800, (u) => { for (const i of [0, 1]) { const p = T[i]; if (!p) continue; const d = suave(u); p.grupo.position.set(fin[i].x * (2 - d), 5 - 5 * d * d, fin[i].z); } });
   sonido.golpe?.(); ui.chispas(new THREE.Vector3(0, .3, 0), '#fff2a8', 24, 4); sacudida = .25;
-  for (const i of [0, 1]) if (T[i]) ui.chispas(sobre(i, .2), COLOR_LADO[i], 14, 3);
-  await espera(300); for (const i of [0, 1]) if (T[i]) { T[i].animando = false; T[i].vel = 14; }
+  for (const i of [0, 1]) if (T[i]) { ui.chispas(sobre(i, .2), COLOR_LADO[i], 14, 3); T[i].vel = 14; }
+  await espera(300);
 }
 
-// Una ronda: cada uno hace su tiro y se ve lo que pasa. r = lo que devolvió ronda() de las reglas.
-export async function animarRonda(r, tiros, S, L) {
-  const [a, b] = [T[0], T[1]]; if (!a || !b) return;
-  a.animando = b.animando = true;
-  const x0 = [a.grupo.position.clone(), b.grupo.position.clone()];
-  const quien = (t) => (t === 'E' ? 'embiste' : t === 'A' ? 'aguanta' : 'gira');
-  // 1) cada uno se coloca según su tiro; los que embisten salen disparados hacia el otro
-  const meta = [0, 1].map((i) => { const j = 1 - i; if (tiros[i].t === 'E') { const d = sobre(j, 0).sub(sobre(i, 0)); return sobre(i, 0).add(d.multiplyScalar(.82)).setY(0); } return x0[i].clone(); });
-  for (const i of [0, 1]) if (r.uso[i]) T[i].aura.material.color.set(COLOR_EFECTO[L[i].efecto] || '#ffffff');
-  for (const i of [0, 1]) { if (tiros[i].t === 'A') T[i].aura.material.opacity = .35; if (tiros[i].x && r.uso[i]) T[i].aura.material.opacity = .5; }
-  await tween(420, (u) => { const k = suave(u); for (const i of [0, 1]) { T[i].grupo.position.lerpVectors(x0[i], meta[i], k); if (tiros[i].t === 'G') T[i].grupo.position.x += Math.sin(u * 14) * .18; T[i].vel = tiros[i].t === 'G' ? 50 : 22; } });
-  // 2) el choque
-  const centro = sobre(0, .5).add(sobre(1, .5)).multiplyScalar(.5);
-  const golpeado = [0, 1].filter((i) => r.d[i] > 0 || r.p[i] > 0);
-  if (golpeado.length) { sonido.golpe?.(); sacudida = .35 + Math.min(.5, Math.max(...r.d) / 40); ui.chispas(centro, '#fff2a8', 22, 4.5); }
-  else sonido.bloqueo?.();
-  for (const i of [0, 1]) {
-    if (r.d[i] > 0) ui.numero(sobre(i, 1.6), '-' + r.d[i], '#ff5a4a');
-    if (r.uso[i]) { ui.chispas(sobre(i, .8), COLOR_EFECTO[L[i].efecto], 30, 5); sonido.hechizo?.(); }
-  }
-  // 3) el empujón: salen despedidos hacia su borde
-  const fin = [0, 1].map((i) => (r.fin && r.fin.ganador !== i && r.fin.motivo === 'fuera' ? sitio(i, 100).multiplyScalar(1.5).setY(.4) : sitio(i, r.S[i].borde)));
-  await tween(520, (u) => { const k = suave(u); for (const i of [0, 1]) { T[i].grupo.position.lerpVectors(meta[i], fin[i], k); T[i].grupo.rotation.y += .1; } });
-  for (const i of [0, 1]) { T[i].aura.material.opacity = 0; T[i].vel = 14; T[i].destino = sitio(i, r.S[i].borde); T[i].animando = false; }
-  await espera(120);
+// Reproducir un segmento de la simulación: res = { frames, ev, fx }. Va a su ritmo (30 pasos por segundo).
+export function reproducir(res, rapidez = 1) {
+  const [a, b] = [T[0], T[1]]; if (!a || !b) return Promise.resolve();
+  for (const e of res.ev) if (e.k === 'efecto') { const p = T[e.i]; p.aura.material.color.set(COLOR_EFECTO[e.ef] || '#ffffff'); p.aura.material.opacity = .45; ui.chispas(sobre(e.i, .8), COLOR_EFECTO[e.ef], 28, 5); sonido.hechizo?.(); }
+  return new Promise((fin) => {
+    const t0 = performance.now(), n = res.frames.length; let hecho = -1;
+    (function paso() {
+      const k = Math.min(n - 1, (performance.now() - t0) / 1000 * 30 * rapidez), i0 = Math.floor(k), f0 = res.frames[i0], f1 = res.frames[Math.min(n - 1, i0 + 1)], u = k - i0;
+      for (const i of [0, 1]) { const p = T[i], o = i * 3; p.grupo.position.set(f0[o] + (f1[o] - f0[o]) * u, 0, f0[o + 1] + (f1[o + 1] - f0[o + 1]) * u); p.giro = f0[o + 2] + (f1[o + 2] - f0[o + 2]) * u; }
+      for (const e of res.ev) if (e.k === 'choque' && e.t > hecho && e.t <= i0) {
+        const pos = new THREE.Vector3(e.x, .6, e.y), fuerte = Math.max(...e.d);
+        sonido.golpe?.(); sacudida = Math.max(sacudida, Math.min(.6, .12 + fuerte / 30)); ui.chispas(pos, e.engrane ? '#ffd27a' : '#fff2a8', 14 + Math.round(fuerte), 3 + fuerte / 6);
+        e.d.forEach((d, i) => d >= 3 && ui.numero(sobre(i, 1.5), '-' + d, '#ff5a4a'));
+      }
+      hecho = i0;
+      if (i0 >= n - 1) { for (const i of [0, 1]) T[i].aura.material.opacity = 0; fin(); } else requestAnimationFrame(paso);
+    })();
+  });
 }
 
 // El final: la que pierde se para y se cae, o sale volando del plato
 export async function terminar(ganador, motivo) {
   const p = T[1 - ganador]; if (!p) return;
   p.vive = false;
-  if (motivo === 'fuera' || (motivo === 'a la vez' && p.destino && p.destino.length() > 2.2)) {
-    const d0 = p.grupo.position.clone(), lado = d0.x >= 0 ? 1 : -1;
-    await tween(1100, (u) => { p.grupo.position.set(d0.x + lado * u * 3.2, Math.max(-2, .4 + Math.sin(u * Math.PI) * 2.4 - u * u * 2.4), d0.z + u * 1.5); p.grupo.rotation.z = -lado * u * 4; });
+  const d0 = p.grupo.position.clone(), r = Math.hypot(d0.x, d0.z) || 1, ux = d0.x / r, uz = d0.z / r;
+  if (motivo === 'fuera' || (motivo === 'a la vez' && r > 2.6)) {
+    await tween(1100, (u) => { p.grupo.position.set(d0.x + ux * u * 3.2, Math.max(-2, .4 + Math.sin(u * Math.PI) * 2.4 - u * u * 2.4), d0.z + uz * u * 3.2); p.grupo.rotation.z = -u * 4; });
   } else {
-    p.vel = 0; const d0 = p.grupo.position.clone();
-    await tween(1200, (u) => { p.vel = 22 * (1 - u); p.inclina.rotation.z = u * 1.35 * (d0.x > 0 ? -1 : 1); p.inclina.position.y = -u * .22; p.grupo.position.x = d0.x + (d0.x > 0 ? .4 : -.4) * u; });
+    p.vel = 0; await tween(1200, (u) => { p.vel = 22 * (1 - u); p.inclina.rotation.z = u * 1.35; p.inclina.position.y = -u * .22; });
   }
   sonido.derrota?.(); const g = T[ganador]; if (g) { sonido.victoria?.(); ui.chispas(sobre(ganador, 1), '#ffe08a', 40, 5); ui.monedas(sobre(ganador, 1), 10); }
 }
@@ -154,11 +145,10 @@ function bucle() {
   const dt = Math.min(clock.getDelta(), .05); tt += dt;
   for (let i = 0; i < 2; i++) {
     const p = T[i]; if (!p) continue;
-    const g = p.giro, tamb = p.vive ? (1 - g) * .35 : 0;   // se tambalea cuanto menos giro le queda
-    p.girador.rotation.y += p.vel * (.25 + .75 * g) * dt * (p.vive ? 1 : 0);
+    const g = p.giro, tamb = p.vive ? (1 - g) * (1 - g) * .5 : 0;   // se tambalea cuanto menos giro le queda
+    p.girador.rotation.y += p.vel * (.25 + .75 * g) * dt * (p.vive ? 1 : 0) * (p.s || 1) * -1;
     if (p.vive) { p.inclina.rotation.z = Math.sin(tt * 9 + i * 2) * tamb * .6; p.inclina.rotation.x = Math.cos(tt * 8 + i) * tamb * .5; }
-    if (vista === 'duelo' && p.vive && p.destino && !p.animando) p.grupo.position.lerp(p.destino, 1 - Math.exp(-4 * dt));
-    else if (vista === 'taller' && i === 0) p.grupo.position.y = .2 + Math.sin(tt * 2) * .06;
+    if (vista === 'taller' && i === 0) p.grupo.position.y = .2 + Math.sin(tt * 2) * .06;
   }
   const { pub, sitios, m4 } = escena.userData.publico;
   for (let i = 0; i < sitios.length; i++) { const s = sitios[i]; m4.setPosition(s[0], s[1] + Math.abs(Math.sin(tt * 3 + s[3])) * .22, s[2]); pub.setMatrixAt(i, m4); } pub.instanceMatrix.needsUpdate = true;

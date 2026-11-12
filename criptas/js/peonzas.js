@@ -5,8 +5,8 @@
 //  Duelo por sala: los dos eligen tiro a la vez; cada uno publica sus tiros (peonOrden) y las dos pantallas
 //  resuelven cada ronda con la misma semilla, así que ven lo mismo sin que mande ninguna.
 // =============================================================
-import { MOVIL, poner, quitar, lanzar, animarRonda, terminar, verGiro, verBorde, sonido } from './peonzas-3d.js';
-import { TIROS, EFECTOS, HUECOS_PEONZA, PIEZAS_P, AJUSTES, RIVALES_P, TEXTOS, VENCE, peonzaNueva, arreglarP, luchadora, empezar, semilla, azar, ronda, decisionIA, especRival } from './peonzas-reglas.js';
+import { poner, lanzar, reproducir, terminar, verGiro, sonido } from './peonzas-3d.js';
+import { RUMBOS, EFECTOS, HUECOS_PEONZA, PIEZAS_P, AJUSTES, RIVALES_P, TEXTOS_FIN, MAX_SEGMENTOS, peonzaNueva, arreglarP, luchadora, empezar, giroInicial, tieneOpciones, segmento, porTiempo, textoLanzador, semilla, azar, decisionIA, especRival } from './peonzas-reglas.js';
 import { leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
@@ -34,11 +34,11 @@ const mostrar = (html, cual = '') => { panel.innerHTML = html; panel.hidden = fa
 const ocultar = () => { panel.hidden = true; pantalla = ''; };
 const narrar = (t) => { const n = $('#narrar'); n.innerHTML = t; n.hidden = !t; };
 const barra = (e, v, max, c) => `<div class="stat" style="--c:${c};--p:${Math.min(100, v / max * 100)}%"><span>${e}</span><i></i><em>${v}</em></div>`;
-const textoPieza = (P) => `${P.a ? `⚔️${P.a} ` : ''}${P.p ? `🛡️${P.p} ` : ''}${P.g ? `🌀${P.g}` : ''}${P.efecto ? ` · ${EFECTOS[P.efecto].e} ${EFECTOS[P.efecto].n} ×${P.cargas}` : ''}`;
+const textoPieza = (P) => P.hueco === 'lanzador' ? textoLanzador(P) : `${P.a ? `⚔️${P.a} ` : ''}${P.p ? `🛡️${P.p} ` : ''}${P.g ? `🌀${P.g}` : ''}${P.efecto ? ` · ${EFECTOS[P.efecto].e} ${EFECTOS[P.efecto].n} ×${P.cargas}` : ''}`;
 
 function pestanas() { return `<div class="pestanas">${[['peonza', '🌀 Tu peonza'], ['tienda', '🛠️ Rufo'], ['retos', '🏆 Retos']].map(([k, t]) => `<button data-p="${k}" class="${pestana === k ? 'activa' : ''}">${t}</button>`).join('')}</div>`; }
 function pantallaTaller(p = pestana) {
-  pestana = p; if (!jugando) poner([Q().equipo]);
+  pestana = p; if (!jugando) poner([Q().equipo], [luchadora(miEspec()).s]);
   const html = p === 'tienda' ? htmlTienda() : p === 'retos' ? htmlRetos() : htmlPeonza();
   mostrar(pestanas() + html, 'taller');
   panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => pantallaTaller(b.dataset.p));
@@ -49,9 +49,10 @@ function pantallaTaller(p = pestana) {
 function htmlPeonza() {
   const q = Q(), L = luchadora({ ...miEspec() }), ef = L.efecto ? EFECTOS[L.efecto] : null;
   const huecos = Object.entries(HUECOS_PEONZA).map(([h, H]) => `<div class="hueco"><b>${H.e} ${H.n}</b><div class="piezas">${[...new Set(q.piezas)].filter((id) => PIEZAS_P[id].hueco === h).map((id) => `<button data-pz="${id}" class="${q.equipo[h] === id ? 'puesta' : ''}">${esc(PIEZAS_P[id].n)}<small>${textoPieza(PIEZAS_P[id])}</small></button>`).join('')}</div></div>`).join('');
-  return `<h2>${esc(q.nombre)}<small>${q.victorias} ganadas · ${q.derrotas} perdidas · giro total ${L.giroMax}</small></h2>
+  return `<h2>${esc(q.nombre)}<small>${q.victorias} ganadas · ${q.derrotas} perdidas</small></h2>
     ${barra('⚔️', L.A, 12, '#e8584a')}${barra('🛡️', L.P, 12, '#5a8ac8')}${barra('🌀', L.G, 12, '#5ac85a')}
-    ${ef ? `<div class="efecto">${ef.e} <b>${ef.n}</b> ×${L.cargas}: ${ef.t} <small>(solo si eliges ${TIROS[ef.en].e} ${TIROS[ef.en].n}; si no sirve, no se gasta)</small></div>` : ''}
+    <p class="nota">Gira hacia la <b>${L.s > 0 ? 'derecha ↻' : 'izquierda ↺'}</b> y sale con <b>${giroInicial(L, 1)}</b> de giro (lo pesada que sea le resta). ⚔️ la hace perseguir y pegar fuerte · 🛡️ aguanta los golpes y empuja · 🌀 gasta el giro más despacio. Si gira al revés que la otra, se engranan y se comen el giro.</p>
+    ${ef ? `<div class="efecto">${ef.e} <b>${ef.n}</b> ×${L.cargas}: ${ef.t}</div>` : ''}
     <div class="hueco"><b>🔧 Apretar tuercas</b><div class="tuercas">${AJUSTES.map((a) => `<button data-aj="${a}" class="${q.ajuste === a ? 'puesta' : ''}">${a > 0 ? '+' : ''}${a}</button>`).join('')}</div>
     <small class="nota">Cada punto de ataque que le metes te quita 2 de aguante (y al revés). Ahora: ${q.ajuste > 0 ? `+${q.ajuste} ataque, ${-2 * q.ajuste} aguante` : q.ajuste < 0 ? `${q.ajuste} ataque, +${-2 * q.ajuste} aguante` : 'a pelo, sin tocar'}.</small></div>
     ${huecos}
@@ -157,61 +158,73 @@ const publicarOrden = (c, campos) => { c.mi = { ...c.mi, ...campos }; SALA?.camb
 // ---------- una partida ----------
 function pintarBarras(c) {
   [['#yo', 0], ['#el', 1]].forEach(([sel, i]) => {
-    const e = c.espec[i], L = c.L[i], S = c.S?.[i] || { giro: L.giroMax, borde: 0, cargas: L.cargas }, ef = L.efecto ? EFECTOS[L.efecto] : null;
-    $(sel).innerHTML = `<div class="luchador"><b>${esc(e.piloto || e.nombre)}${i === c.yo ? ' (tú)' : ''}</b> <small>${esc(e.nombre)}</small>
-      <div class="barra"><span>🌀</span><i style="--p:${Math.max(0, S.giro) / L.giroMax * 100}%"></i><em>${Math.max(0, S.giro)}</em></div>
-      <div class="barra borde"><span>📍</span><i style="--p:${Math.min(100, S.borde)}%"></i><em>${ef ? ef.e + S.cargas : ''}</em></div></div>`;
-    verGiro(i, S.giro, L.giroMax); verBorde(i, S.borde);
+    const e = c.espec[i], L = c.L[i], t = c.T?.[i], w = t ? Math.max(0, t.w) : giroInicial(L, 1), w0 = t ? t.w0 : w, ef = L.efecto ? EFECTOS[L.efecto] : null;
+    $(sel).innerHTML = `<div class="luchador"><b>${esc(e.piloto || e.nombre)}${i === c.yo ? ' (tú)' : ''}</b> <small>${esc(e.nombre)} · ${L.s > 0 ? '↻' : '↺'}</small>
+      <div class="barra"><span>🌀</span><i style="--p:${w / w0 * 100}%"></i><em>${Math.round(w)}</em></div>
+      <div class="barra borde"><span>${t && t.emp ? '🎯' : ''}</span><i style="--p:${t ? t.emp / Math.max(1, L.emp) * 100 : 0}%"></i><em>${t && ef ? ef.e + t.cargas : ''}</em></div></div>`;
+    verGiro(i, t ? w / w0 : 1);
   });
 }
 function lanzamiento() {
   return new Promise((ok) => {
-    const l = $('#lanza'); l.innerHTML = `<p>🌀 ¡Lanzamiento! Suelta con la barra en el centro verde: cuanto mejor, más giro de salida.</p><div class="medidor"><i id="cursor"></i></div><button id="bSuelta">¡Suelta!</button>`; l.hidden = false;
+    const l = $('#lanza'); l.innerHTML = `<p>🎯 ¡Lanzamiento! Suelta con la barra en el centro verde: cuanto mejor, más giro de salida.</p><div class="medidor"><i id="cursor"></i></div><button id="bSuelta">¡Suelta!</button>`; l.hidden = false;
     let u = 0, vivo = true; const t0 = performance.now();
     (function paso() { if (!vivo) return; u = .5 + .5 * Math.sin((performance.now() - t0) / 380); $('#cursor').style.left = u * 100 + '%'; requestAnimationFrame(paso); })();
     $('#bSuelta').onclick = () => { vivo = false; const q = Math.max(0, 1 - Math.abs(u - .5) * 2.4); l.innerHTML = `<p>${q > .85 ? '¡Lanzamiento perfecto! 🌟' : q > .5 ? '¡Buen lanzamiento!' : q > .2 ? 'Regulero… pero gira.' : 'Eso ha sido un estornudo, no un lanzamiento.'}</p>`; setTimeout(() => { l.hidden = true; ok(Math.round(q * 20) / 20); }, 900); };
   });
 }
-function elegir(c, n) {
+// Entre tramo y tramo: empujones y efecto (solo si tienes algo que gastar). Si no eliges, sigue sola.
+function elegir(c, seg) {
   return new Promise((ok) => {
-    const L = c.L[c.yo], S = c.S[c.yo], ef = L.efecto ? EFECTOS[L.efecto] : null, b = $('#botones');
-    b.innerHTML = Object.entries(TIROS).map(([k, T]) => `<button class="tiro" data-t="${k}"><span>${T.e}</span>${T.n}<small>gana a ${TIROS[VENCE[k]].e}</small></button>`).join('')
-      + (ef && S.cargas > 0 ? `<button class="ef" id="bEf" title="${esc(ef.t)}"><span>${ef.e}</span>${ef.n} ×${S.cargas}<small>con ${TIROS[ef.en].e}</small></button>` : '')
+    const L = c.L[c.yo], t = c.T[c.yo], ef = L.efecto ? EFECTOS[L.efecto] : null, b = $('#botones');
+    let rumbo = null, con = false, resto = 8, vivo = true;
+    const fin = (r) => { if (!vivo) return; vivo = false; clearInterval(tm); b.hidden = true; ok(r); };
+    b.innerHTML = (t.emp > 0 ? Object.entries(RUMBOS).map(([k, R]) => `<button class="tiro" data-r="${k}"><span>${R.e}</span>${R.n}</button>`).join('') : '')
+      + (ef && t.cargas > 0 ? `<button class="ef" id="bEf" title="${esc(ef.t)}"><span>${ef.e}</span>${ef.n} ×${t.cargas}<small>${esc(ef.t)}</small></button>` : '')
+      + '<button class="ef" id="bSigue"><span>▶️</span>Seguir<small id="cuenta"></small></button>'
       + (c.tipo === 'sala' ? '<button class="suelta" id="bRinde">🏳️ Rendirme</button>' : '');
-    b.hidden = false; let con = false;
-    narrar(`Ronda ${n} · ¿qué haces? <small>(💥 gana a 🌀 · 🌀 gana a 🛡️ · 🛡️ gana a 💥)</small>`);
+    b.hidden = false;
+    const pintar = () => { $('#cuenta') && ($('#cuenta').textContent = `(${resto} s)`); narrar(`Tramo ${seg + 1}${t.emp ? ` · 🎯 ${t.emp} empujón${t.emp > 1 ? 'es' : ''}` : ''}${ef && t.cargas ? ` · ${ef.e} ${t.cargas}` : ''}<small>Un empujón cambia hacia dónde va tu peonza; el efecto dura todo el tramo.</small>`); };
+    pintar(); const tm = setInterval(() => { resto--; pintar(); if (resto <= 0) fin({ r: rumbo, x: con }); }, 1000);
+    b.querySelectorAll('[data-r]').forEach((x) => x.onclick = () => { rumbo = rumbo === x.dataset.r ? null : x.dataset.r; b.querySelectorAll('[data-r]').forEach((y) => y.classList.toggle('on', y.dataset.r === rumbo)); });
     $('#bEf') && ($('#bEf').onclick = () => { con = !con; $('#bEf').classList.toggle('on', con); });
-    b.querySelectorAll('[data-t]').forEach((x) => x.onclick = () => { b.hidden = true; ok({ t: x.dataset.t, x: con && !!ef && ef.en === x.dataset.t }); });
-    $('#bRinde') && ($('#bRinde').onclick = () => { if (!confirm('¿Te rindes? Pierdes la apuesta.')) return; b.hidden = true; ok({ rendido: true }); });
+    $('#bSigue').onclick = () => fin({ r: rumbo, x: con });
+    $('#bRinde') && ($('#bRinde').onclick = () => { if (!confirm('¿Te rindes? Pierdes la apuesta.')) return; fin({ rendido: true }); });
   });
 }
 async function jugar(c) {
-  jugando = true; ESPERA = null; c.mi = {}; c.L = c.espec.map(luchadora); c.S = null; c.ultimo = null;
+  jugando = true; ESPERA = null; c.mi = {}; c.hist = {}; c.L = c.espec.map(luchadora); c.T = null;
   const yo = c.yo, rivalIA = c.tipo === 'ia' ? RIVALES_P[c.rival] : null, rIA = azar(semilla('ia', c.seed));
-  ocultar(); $('#reto').hidden = true; poner(c.espec.map((e) => e.equipo)); pintarBarras(c); $('#barras').hidden = false;
-  narrar(c.apuesta ? `⚙️ ${c.apuesta} de chatarra en juego` : 'Partida por jugar');
-  await espera(600);
+  ocultar(); $('#reto').hidden = true; poner(c.espec.map((e) => e.equipo), c.L.map((l) => l.s)); pintarBarras(c); $('#barras').hidden = false;
+  narrar(`${c.apuesta ? `⚙️ ${c.apuesta} de chatarra en juego. ` : ''}${c.L[0].s !== c.L[1].s ? '¡Giran en sentido contrario! Si se tocan, se engranan.' : `Giran las dos hacia la ${c.L[0].s > 0 ? 'derecha ↻' : 'izquierda ↺'}: si se tocan, rebotan.`}`);
+  await espera(1200);
   const q = await lanzamiento(), lz = [0, 0]; lz[yo] = q;
   if (c.tipo === 'ia') lz[1 - yo] = .45 + rIA() * .45;
   else { publicarOrden(c, { lz: q }); narrar('Esperando el lanzamiento del otro…'); const o = await esperarRival(c, (x) => x.lz != null || x.fin); if (o.fin) return acabar(c, yo, 'El otro se ha ido', o.fin === 'ausente'); lz[1 - yo] = o.lz; }
-  c.S = [empezar(c.L[0], lz[0]), empezar(c.L[1], lz[1])]; narrar(''); pintarBarras(c); await lanzar(); pintarBarras(c);
-  for (let n = 1; n < 200; n++) {
-    const mio = await elegir(c, n);
-    if (mio.rendido) { publicarOrden(c, { fin: 'rendido' }); await terminar(1 - yo, 'parada'); return acabar(c, 1 - yo, 'Te has rendido'); }
-    narrar('…'); let otro;
-    if (c.tipo === 'ia') otro = decisionIA(rivalIA, c.L[1 - yo], c.S[1 - yo], azar(semilla('ia', c.seed, n)), c.ultimo);
-    else {
-      c.hist = [...(c.hist || []), [mio.t, mio.x ? 1 : 0]]; publicarOrden(c, { h: c.hist });
-      const o = await esperarRival(c, (x) => x.fin || (x.h?.length >= n)); if (o.fin) return acabar(c, yo, o.fin === 'rendido' ? 'El otro se ha rendido' : 'El otro se ha ido', o.fin === 'ausente');
-      otro = { t: o.h[n - 1][0], x: !!o.h[n - 1][1] };
+  c.T = empezar(c.L, lz); narrar(''); pintarBarras(c); await lanzar(c.T); await espera(300);
+  for (let seg = 0; seg < MAX_SEGMENTOS; seg++) {
+    const op = [0, 1].map((i) => tieneOpciones(c.L[i], c.T[i])), ord = [{}, {}];
+    if (op[yo]) {
+      const mio = await elegir(c, seg);
+      if (mio.rendido) { publicarOrden(c, { fin: 'rendido' }); await terminar(1 - yo, 'parada'); return acabar(c, 1 - yo, 'Te has rendido'); }
+      ord[yo] = mio; if (c.tipo === 'sala') { c.hist[seg] = [mio.r || '', mio.x ? 1 : 0]; publicarOrden(c, { h: c.hist }); }
     }
-    c.ultimo = mio.t;
-    const o = yo === 0 ? [mio, otro] : [otro, mio], r = ronda(c.L, c.S, o, azar(semilla('r', c.seed, n)), n);
-    const texto = TEXTOS[r.tipo] || '';
-    narrar(`${TIROS[o[0].t].e}${o[0].x ? EFECTOS[c.L[0].efecto]?.e || '' : ''} ${esc(c.espec[0].piloto || c.espec[0].nombre)} · ${TIROS[o[1].t].e}${o[1].x ? EFECTOS[c.L[1].efecto]?.e || '' : ''} ${esc(c.espec[1].piloto || c.espec[1].nombre)}<br>${texto}`);
-    await animarRonda(r, o, c.S, c.L); c.S = r.S; pintarBarras(c);
-    if (r.fin) { narrar(`${r.fin.motivo === 'fuera' ? '¡FUERA DEL PLATO!' : r.fin.motivo === 'parada' ? '¡Se ha parado!' : '¡Los dos a la vez!'}`); await terminar(r.fin.ganador, r.fin.motivo); const cae = 1 - r.fin.ganador, nom = cae === yo ? 'Tu peonza' : c.tipo === 'ia' ? c.espec[cae].nombre : `La peonza de ${c.espec[cae].piloto || 'tu rival'}`; return acabar(c, r.fin.ganador, `${nom} ${r.fin.motivo === 'fuera' ? 'ha salido volando del plato' : 'se ha quedado sin giro'}`); }
-    await espera(250);
+    if (c.tipo === 'ia') { if (op[1 - yo]) ord[1 - yo] = decisionIA(rivalIA, c.L[1 - yo], c.T[1 - yo], azar(semilla('ia', c.seed, seg)), seg); }
+    else if (op[1 - yo]) {
+      narrar('Esperando al otro…'); const o = await esperarRival(c, (x) => x.fin || (x.h && x.h[seg] != null));
+      if (o.fin) return acabar(c, yo, o.fin === 'rendido' ? 'El otro se ha rendido' : 'El otro se ha ido', o.fin === 'ausente');
+      ord[1 - yo] = { r: o.h[seg][0] || null, x: !!o.h[seg][1] };
+    }
+    const res = segmento(c.L, c.T, ord, azar(semilla('s', c.seed, seg)));
+    const gasta = res.ev.filter((e) => e.k === 'efecto' || e.k === 'empujon').map((e) => `${esc(c.espec[e.i].piloto || c.espec[e.i].nombre)}: ${e.k === 'efecto' ? EFECTOS[e.ef].e + ' ' + EFECTOS[e.ef].n : '🎯 empujón'}`);
+    narrar(gasta.length ? gasta.join(' · ') : '');
+    await reproducir(res); c.T = res.T; pintarBarras(c);
+    const fin = res.fin || (seg === MAX_SEGMENTOS - 1 ? porTiempo(c.T) : null);
+    if (fin) {
+      const cae = 1 - fin.ganador, nom = cae === yo ? 'Tu peonza' : c.tipo === 'ia' ? c.espec[cae].nombre : `La peonza de ${c.espec[cae].piloto || 'tu rival'}`;
+      narrar(fin.motivo === 'fuera' ? '¡FUERA DEL PLATO!' : '¡Se ha parado!'); await terminar(fin.ganador, fin.motivo);
+      return acabar(c, fin.ganador, `${nom} ${TEXTOS_FIN[fin.motivo]}`);
+    }
   }
 }
 function acabar(c, ganador, motivo, sinApuesta = false) {
@@ -220,8 +233,8 @@ function acabar(c, ganador, motivo, sinApuesta = false) {
   if (gano) q.victorias++; else q.derrotas++;
   if (ap) { if (gano) { DEF.materiales.chatarra = chatarra() + ap; extra += `<p>⚙️ <b>+${ap}</b> de chatarra.</p>`; } else { const p = Math.min(ap, chatarra()); DEF.materiales.chatarra = chatarra() - p; extra += `<p>⚙️ <b>−${p}</b> de chatarra. Rufo se la queda para la caja de los tornillos.</p>`; } }
   if (gano && c.tipo === 'ia' && c.rival === q.liga) {
-    q.liga++; const premio = Object.entries(PIEZAS_P).find(([id, P]) => P.premio === RIVALES_P[c.rival].quien);
-    if (premio && !q.piezas.includes(premio[0])) { q.piezas.push(premio[0]); extra += `<p>🎁 ${esc(RIVALES_P[c.rival].quien)} te da su <b>${esc(premio[1].n)}</b> (${HUECOS_PEONZA[premio[1].hueco].e} ${HUECOS_PEONZA[premio[1].hueco].n}).</p>`; }
+    q.liga++;
+    for (const [id, P] of Object.entries(PIEZAS_P).filter(([, P]) => P.premio === RIVALES_P[c.rival].quien)) if (!q.piezas.includes(id)) { q.piezas.push(id); extra += `<p>🎁 ${esc(RIVALES_P[c.rival].quien)} te da su <b>${esc(P.n)}</b> (${HUECOS_PEONZA[P.hueco].e} ${HUECOS_PEONZA[P.hueco].n}).</p>`; }
     if (q.liga >= RIVALES_P.length) extra += '<p>🏆 ¡Has ganado a toda la liga de Rufo! Él dice que estaba cansado.</p>';
   }
   guardar(); arreglarP(q);
@@ -252,4 +265,4 @@ import('./reunion.js').then((RED) => RED.crearPanel({
   alConectar: (R) => { SALA = R; publicar(); R.cambiar({ peonReto: null, peonOrden: null }); R.on('gente', alGente); alGente(R.gente()); if (pantalla === 'taller' && pestana === 'retos') pantallaTaller('retos'); },
   alSalir: () => { SALA = null; GENTE = {}; if (pantalla === 'taller' && pestana === 'retos') pantallaTaller('retos'); }
 })).catch((e) => console.warn('Sin sala:', e?.message));
-window.peonzas = { get DEF() { return DEF; }, get SALA() { return SALA; }, jugar, retoIA, retar, ronda, luchadora };
+window.peonzas = { get DEF() { return DEF; }, get SALA() { return SALA; }, jugar, retoIA, retar, luchadora };
