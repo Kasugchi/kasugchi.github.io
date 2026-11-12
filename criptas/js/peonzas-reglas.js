@@ -58,7 +58,7 @@ export const PIEZAS_P = {
 export const KIT_P = ['aro_chapa', 'dis_tapa', 'pun_chincheta', 'lz_cuerda'];
 export const EQUIPO_P = { aro: 'aro_chapa', disco: 'dis_tapa', punta: 'pun_chincheta', lanzador: 'lz_cuerda' };
 export const AJUSTES = [-2, -1, 0, 1, 2];
-export const GESTOS = { cuerda: ['🧵 un tirón', 'Tira hasta la zona verde: si te pasas, se escapa.'], resorte: ['🌀 resorte', 'Más fácil: cuanto más tires, más sale (pero nunca perfecto).'], cremallera: ['⛓️ dos tirones', 'Dos tirones seguidos, el segundo rápido: sube el techo.'] };
+export const GESTOS = { cuerda: ['🧵 una carga', 'Gira hasta la zona verde y suelta: si te pasas, se escapa.'], resorte: ['🌀 resorte', 'Más fácil: cuanto más cargues, más sale (pero nunca perfecto).'], cremallera: ['⛓️ dos cargas', 'Dos cargas seguidas, la segunda rápida: sube el techo.'] };
 export const textoLanzador = (P) => `${GESTOS[P.gesto]?.[0] || ''} · ${P.s > 0 ? '↻ derecha' : '↺ izquierda'} · potencia ${Math.round(P.pot * 100)} %${P.emp ? ` · ${P.emp} empujones` : ' · sin empujones'}`;
 
 // ---------- tu peonza (en el héroe de aventura: DEF.peonza) ----------

@@ -173,27 +173,45 @@ function pintarBarras(c) {
     verGiro(i, t ? w / w0 : 1);
   });
 }
-// Lanzamiento: tiras de la cuerda arrastrando el dedo (o el ratón) hacia abajo. Hasta dónde tiras da la fuerza; hacia el lado que te desvíes, el ángulo de entrada.
-// Cada lanzador tiene su gesto (GESTOS): cuerda (zona verde, si te pasas se escapa), resorte (fácil, techo bajo) y cremallera (dos tirones, el segundo rápido).
-const calidadTiro = (gesto, len) => gesto === 'resorte' ? Math.min(.9, .3 + len * .65) : len > .96 ? .12 : Math.max(.1, 1 - Math.abs(len - .78) * 2.6);
+// Lanzamiento: haces círculos con el dedo (o el ratón) en el sentido de giro de tu lanzador y la cuerda se va cargando; sueltas con un golpe de dedo hacia arriba con la carga en la zona verde; hacia dónde lo lances es por dónde entra al plato.
+// Cada vuelta carga un poco y se va perdiendo si paras, así que importa la velocidad. Cada lanzador tiene su gesto (GESTOS): cuerda (zona verde, si te pasas se escapa),
+// resorte (zona enorme, techo bajo) y cremallera (dos cargas seguidas, la segunda rápida). Hacia qué lado lances (izquierda o derecha del «arriba») decide el ángulo: entras más de lado y das vueltas antes de chocar.
+const calidadTiro = (gesto, carga) => gesto === 'resorte' ? Math.min(.9, .3 + carga * .65) : carga > .96 ? .12 : Math.max(.1, 1 - Math.abs(carga - .78) * 2.6);
+const aguja = (a) => a === 0 ? '⬆️ recto' : a < 0 ? `${a <= -.75 ? '⬅️' : '↖️'} de lado` : `${a >= .75 ? '➡️' : '↗️'} de lado`;
 function lanzamiento(gesto, sentido) {
   return new Promise((ok) => {
-    const l = $('#lanza'), G = GESTOS[gesto] || GESTOS.cuerda, tiros = gesto === 'cremallera' ? 2 : 1, MAX = 130, hecho = [];
-    l.innerHTML = `<p>🎯 <b>${G[0]}</b> · ${G[1]}</p><div class="cuerda" style="touch-action:none"><div class="zona"></div><i class="hilo"></i><b class="asa">${sentido > 0 ? '↻' : '↺'}</b></div><small id="lzInfo">Arrastra la anilla hacia abajo y suelta${tiros > 1 ? ' (dos veces)' : ''}. Hacia un lado, cambias el ángulo.</small>`; l.hidden = false;
-    const zona = l.querySelector('.cuerda'), asa = l.querySelector('.asa'), hilo = l.querySelector('.hilo'), info = $('#lzInfo');
-    let ini = null, t1 = 0, ang = 0; const sujeta = (len, dx) => { asa.style.transform = `translate(${dx}px, ${len * MAX}px)`; hilo.style.height = len * MAX + 28 + 'px'; asa.classList.toggle('bien', gesto !== 'resorte' && len > .66 && len < .92); };
-    zona.onpointerdown = (e) => { ini = { x: e.clientX, y: e.clientY }; zona.setPointerCapture(e.pointerId); };
-    zona.onpointermove = (e) => { if (!ini) return; sujeta(Math.max(0, Math.min(1.05, (e.clientY - ini.y) / MAX)), Math.max(-60, Math.min(60, e.clientX - ini.x))); };
-    zona.onpointerup = (e) => {
-      if (!ini) return; const len = Math.max(0, Math.min(1.05, (e.clientY - ini.y) / MAX)), dx = Math.max(-60, Math.min(60, e.clientX - ini.x)); ini = null; sujeta(0, 0);
-      if (len < .2) { info.textContent = 'Tira más fuerte, que eso no mueve ni una pluma.'; return; }
-      const ahora = performance.now(); let q = calidadTiro(gesto, len);
+    const l = $('#lanza'), G = GESTOS[gesto] || GESTOS.cuerda, tiros = gesto === 'cremallera' ? 2 : 1, hecho = [], angs = [];
+    l.innerHTML = `<p>🎯 <b>${G[0]}</b> · ${G[1]}</p><div class="rueda" style="touch-action:none"><i class="pista"></i><b class="dedo"></b><span class="flecha">${sentido > 0 ? '↻' : '↺'}</span></div>
+      <div class="medidor carga"><div class="zona${gesto === 'resorte' ? ' ancha' : ''}"></div><i id="cursor"></i></div>
+      <div class="apunta"><span id="aguja">⬆️ recto</span></div>
+      <small id="lzInfo">Gira el dedo en círculos ${sentido > 0 ? 'hacia la derecha ↻' : 'hacia la izquierda ↺'} para cargar y suelta con la barra en verde${tiros > 1 ? ' (dos veces)' : ''}.</small>`; l.hidden = false;
+    const rueda = l.querySelector('.rueda'), dedo = l.querySelector('.dedo'), cur = $('#cursor'), info = $('#lzInfo');
+    let ang = 0, carga = 0, th = null, activo = false, t1 = 0, ultimo = performance.now(), vivo = true;
+    const muestras = [];   // los últimos movimientos del dedo: el golpe final decide el ángulo
+    const golpe = () => { const n = performance.now(), m = muestras.filter((q) => n - q.t < 140); if (m.length < 2) return 0; const vx = m[m.length - 1].x - m[0].x, vy = m[m.length - 1].y - m[0].y; return vy < -12 ? Math.round(Math.max(-1, Math.min(1, vx / (Math.abs(vx) + Math.abs(vy)) * 1.6)) * 4) / 4 : 0; };
+    (function paso() {   // la carga se va escapando: hay que girar con ganas
+      if (!vivo) return; const n = performance.now(), dt = Math.min(.05, (n - ultimo) / 1000); ultimo = n;   // un tirón del móvil no debe vaciarte la carga
+      carga = Math.max(0, carga - .12 * dt); cur.style.left = Math.min(1, carga) * 100 + '%'; cur.classList.toggle('bien', gesto === 'resorte' ? carga > .3 : carga > .66 && carga < .92); requestAnimationFrame(paso);
+    })();
+    const centro = () => { const r = rueda.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+    rueda.onpointerdown = (e) => { activo = true; th = null; muestras.length = 0; rueda.setPointerCapture(e.pointerId); };
+    rueda.onpointermove = (e) => {
+      if (!activo) return; muestras.push({ x: e.clientX, y: e.clientY, t: performance.now() }); ang = golpe(); $('#aguja').textContent = aguja(ang);
+      const [cx, cy] = centro(), a = Math.atan2(e.clientY - cy, e.clientX - cx), r = rueda.getBoundingClientRect().width / 2;
+      dedo.style.transform = `translate(${Math.max(-r, Math.min(r, e.clientX - cx))}px, ${Math.max(-r, Math.min(r, e.clientY - cy))}px)`;
+      if (th !== null) { let d = a - th; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; carga = Math.max(0, Math.min(1.08, carga + d * sentido / (2 * Math.PI) * .45)); }
+      th = a;
+    };
+    rueda.onpointerup = () => {
+      if (!activo) return; activo = false; dedo.style.transform = ''; th = null; const angTiro = golpe();
+      if (carga < .2) { info.textContent = 'Eso no ha cargado nada: gira más rápido y en el sentido de la flecha.'; return; }
+      const ahora = performance.now(); let q = calidadTiro(gesto, carga); const pasado = carga > .96 && gesto === 'cuerda';
       if (hecho.length === 1 && ahora - t1 > 1400) q *= .85;   // el segundo tirón de la cremallera, si tardas, sale peor
-      hecho.push(q); ang += dx / 60; t1 = ahora; sonido.golpe?.();
-      if (hecho.length < tiros) { info.textContent = '¡Otro tirón, rápido!'; return; }
-      const f = hecho.reduce((s, x) => s + x, 0) / hecho.length + (tiros > 1 ? .08 : 0), fin = Math.max(0, Math.min(1, f));
-      l.innerHTML = `<p>${len > .96 && gesto === 'cuerda' ? '¡Se te ha escapado la cuerda! 🙈' : fin > .85 ? '¡Lanzamiento perfecto! 🌟' : fin > .5 ? '¡Buen lanzamiento!' : fin > .2 ? 'Regulero… pero gira.' : 'Eso ha sido un estornudo, no un lanzamiento.'}</p>`;
-      setTimeout(() => { l.hidden = true; ok({ q: Math.round(fin * 20) / 20, a: Math.round(Math.max(-1, Math.min(1, ang / tiros)) * 4) / 4 }); }, 900);
+      hecho.push(q); angs.push(angTiro); t1 = ahora; carga = 0; sonido.golpe?.();
+      if (hecho.length < tiros) { info.textContent = '¡Otra carga, rápido!'; return; }
+      vivo = false; const f = hecho.reduce((s, x) => s + x, 0) / hecho.length + (tiros > 1 ? .08 : 0), fin = Math.max(0, Math.min(1, f));
+      l.innerHTML = `<p>${pasado ? '¡Se te ha escapado la cuerda! 🙈' : fin > .85 ? '¡Lanzamiento perfecto! 🌟' : fin > .5 ? '¡Buen lanzamiento!' : fin > .2 ? 'Regulero… pero gira.' : 'Eso ha sido un estornudo, no un lanzamiento.'}</p>`;
+      setTimeout(() => { l.hidden = true; ok({ q: Math.round(fin * 20) / 20, a: Math.round(angs.reduce((x, y) => x + y, 0) / angs.length * 4) / 4 }); }, 900);
     };
   });
 }
