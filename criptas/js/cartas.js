@@ -28,6 +28,9 @@ function modoDebug() {
   const b = document.createElement('div'); b.textContent = '🧪 MODO PRUEBAS · todas las cartas · no se guarda nada';
   b.style.cssText = 'position:fixed;left:8px;top:calc(max(8px, env(safe-area-inset-top)) + 72px);z-index:50;background:#7a1fa2;color:#fff;font:700 11px Nunito,sans-serif;padding:3px 10px;border-radius:9px;pointer-events:none;opacity:.9'; document.body.appendChild(b);
 }
+// Si te falta alguna carta (te la ganaron en un duelo), Tachuela te presta ratas hasta las 40: así siempre puedes jugar
+const faltan = () => Math.max(0, 40 - (K()?.mazo?.length || 0));
+const mazoParaJugar = () => [...K().mazo, ...Array(faltan()).fill('rata')];
 const contar = (lista) => lista.reduce((m, id) => (m[id] = (m[id] || 0) + 1, m), {});
 
 // ---------- pintar una carta (mano, menús, info) ----------
@@ -55,7 +58,8 @@ let pestana = 'duelos';
 let tirada = 0;   // en pruebas: cada «otra tirada» saca mazos nuevos de todos los temas
 function pantallaElegir() {
   const quien = DEF.id || DEF.nombre || 'yo';
-  const ops = DEBUG ? R.TEMAS.map((t) => ({ tema: t, mazo: R.construirMazo(t.id, R.semilla('mazo', quien + (tirada ? '#' + tirada : ''), t.id)) })) : R.mazosIniciales(quien);
+  const ops = DEBUG ? [{ tema: { id: 'vinetas', n: 'Viñetas (de pruebas)', e: '✏️', txt: 'Dibujos con bote de tinta: en su terreno pegan fuerte y a los demás los debilita. Más tocho que los iniciales, a propósito.' }, mazo: [...R.MAZO_VINETAS] },
+    ...R.TEMAS.map((t) => ({ tema: t, mazo: R.construirMazo(t.id, R.semilla('mazo', quien + (tirada ? '#' + tirada : ''), t.id)) }))] : R.mazosIniciales(quien);
   mostrar(`<h2>🃏 Cartas de Velmor<small>${DEBUG ? `🧪 Pruebas: los ${ops.length} temas${tirada ? ` (tirada ${tirada})` : ''}. Fuera de pruebas, cada héroe ve solo tres.` : 'Elige tu primer mazo. Cada héroe recibe tres distintos; todos valen lo mismo, cambia el estilo.'}</small></h2>
     ${DEBUG ? `<div class="fila-botones"><button id="bTirada">🎲 Otra tirada</button>${K()?.mazo?.length ? '<button id="bVolverMenu">↩️ Volver</button>' : ''}</div>` : ''}
     ${ops.map((o, i) => `<button class="tema" data-i="${i}"><span>${o.tema.e}</span><b>${esc(o.tema.n)}</b><small>${esc(o.tema.txt)}${DEBUG ? ` · fuerza ${R.valorMazo(o.mazo)}` : ''}</small>
@@ -78,9 +82,9 @@ function pantallaMenu(p = pestana) {
   if (p === 'mazo') alMazo();
 }
 function htmlDuelos() {
-  const v = K().victorias, mio = R.valorMazo(K().mazo), ok = K().mazo.length === 40;
+  const v = K().victorias, mio = R.valorMazo(mazoParaJugar()), ok = K().mazo.length > 0;
   return `<h2>Duelos en el pueblo<small>Tu mazo: ${K().mazo.length}/40 cartas · fuerza ${mio}</small></h2>
-    ${ok ? '' : '<p class="aviso">⚠️ Tu mazo tiene que tener 40 cartas justas para jugar.</p>'}
+    ${faltan() ? `<p class="aviso">🐀 Te faltan ${faltan()} carta${faltan() > 1 ? 's' : ''}: Tachuela te presta ratas hasta las 40. Gana duelos para conseguir cartas y cámbialas en «Mi mazo».</p>` : ''}
     ${R.RIVALES_C.map((r, i) => {
       const abierto = DEBUG || i === 0 || (v[R.RIVALES_C[i - 1].id] || 0) > 0, g = v[r.id] || 0;
       return `<div class="rival ${abierto ? '' : 'cerrado'}"><b>${r.e} ${esc(r.quien)}</b> <small>${TERRENOS[r.terreno].e} juega en ${TERRENOS[r.terreno].n.toLowerCase()} · ${g ? `le has ganado ${g} ${g === 1 ? 'vez' : 'veces'}` : 'sin ganarle aún'}</small>
@@ -111,8 +115,8 @@ function htmlLibro() {
 function htmlAyuda() {
   return `<h2>Cómo se juega</h2>
     <p>🎯 <b>Gana</b> quien deje al otro sin vida (8000), o le rodee el líder por los cuatro lados.</p>
-    <p>🃏 Cada turno robas hasta tener 5 y haces <b>una sola jugada</b> al lado de tu líder: una carta, o varias seguidas. Si eliges varios bichos, <b>intentan fusionarse</b> en orden; si no encajan, el primero se pierde. Un bicho y un equipo seguidos: sale equipado.</p>
-    <p>🚶 Después, cada carta tuya hace <b>una cosa</b>: moverse (o atacar a una de al lado), voltearse o cambiar entre ataque y defensa. Las cartas salen <b>boca abajo</b>: el rival no sabe qué son hasta que chocan.</p>
+    <p>🃏 Cada turno robas hasta tener 5 y haces <b>una sola jugada</b> al lado de tu líder: una carta, o varias seguidas. Si eliges varios bichos, <b>intentan fusionarse</b> en orden; si no encajan, el primero se pierde. Un bicho y un equipo seguidos: sale equipado. El equipo suelto solo se le puede dar a un bicho tuyo que esté cerca de tu líder.</p>
+    <p>🚶 Después, cada carta tuya hace <b>una cosa</b>: moverse o atacar a una de al lado. Destaparla o girarla entre ataque y defensa no gasta esa acción (girar, una vez por turno y antes de moverse). Las cartas salen <b>boca abajo</b>: el rival no sabe qué son hasta que chocan.</p>
     <p>⚔️ Ataque contra ataque: pierde el más flojo y su dueño pierde la diferencia. Contra defensa: si no la rompes, te comes tú la diferencia. Golpe al líder: todo el ataque a la vida.</p>
     <p>🗺️ Cada rival juega en su terreno (±500 a los que les va bien o mal). Las cartas de terreno cambian la casilla donde las juegas y una a cada lado, en cruz. El laberinto no se cruza, salvo fantasmas y gusanos.</p>
     <p>🪤 Las trampas salen boca abajo como cualquier carta y saltan solas. Manda delante al bicho flojo.</p>
@@ -126,7 +130,7 @@ function empezarDuelo(r) {
   ONLINE = null; YO = 0; EL = 1; orientar(0);
   RIVAL = r; const rev = Math.min(2, K().victorias[r.id] || 0);
   const suyo = R.mazoRival(r, R.valorMazo(K().mazo), rev);
-  S = R.crearDuelo({ mazos: [K().mazo, suyo], lideres: [{ clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', nombre: DEF.nombre }, { clase: 'vecino', nombre: r.quien }], terreno: r.terreno, s: (Math.random() * 2 ** 32) >>> 0 });
+  S = R.crearDuelo({ mazos: [mazoParaJugar(), suyo], lideres: [{ clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', nombre: DEF.nombre }, { clase: 'vecino', nombre: r.quien }], terreno: r.terreno, s: (Math.random() * 2 ** 32) >>> 0 });
   lideres([{ heroe: { raza: DEF.raza || 'humano', clase: DEF.clase || 'barbaro', colores: DEF.colores } }, { vecino: { ropa: { pip: '#5aa8e8', anzuelo: '#3a6a8a', brasa: '#a83a2a', rufo: '#2a2a3a', fantasma: '#c8d8f0' }[r.id] || '#8a6a4a' } }]);
   limpiar(); pintarTablero(S); sincronizar(S, YO); S.ev.length = 0;
   panel.hidden = true; $('#volver').hidden = true; hud.hidden = false; mano.hidden = false; acciones.hidden = false; info.hidden = true;
@@ -229,7 +233,7 @@ function verInfoUnidad(u) {
       if (!u.arriba) botones.push(`<button data-u="voltear">🔄 Destapar</button>`);
       if (!u.cambio && !u.hecho && u.red <= 0) botones.push(`<button data-u="posicion">${u.def ? '⚔️ A ataque' : '🛡️ A defensa'}</button>`);
       if (u.hecho) botones.push('<small class="hecho">Ya ha hecho lo suyo este turno.</small>');
-      else if (u.def) botones.push('<small class="hecho">En defensa no ataca (sí se mueve).</small>');
+      else if (u.def) botones.push('<small class="hecho">En defensa no ataca: gírala a ataque (no gasta su turno) y luego ataca.</small>');
     }
   }
   info.hidden = false; info.innerHTML = html + (botones.length ? `<div class="fila-botones">${botones.join('')}</div>` : '');
@@ -268,11 +272,12 @@ async function procesar() {
     const e = S.ev.shift();
     switch (e.t) {
       case 'fusion':
+        await animFusion(e, true);
         if (e.p === YO) { K().libro ||= {}; if (!K().libro[e.clave]) { K().libro[e.clave] = e.r; aviso(`🌀 ¡FUSIÓN NUEVA! ${esc(nom(e.a))} + ${esc(nom(e.b))} → <b>${esc(nom(e.r))}</b><br><small>Apuntada en tu libro.</small>`, 2600); guardar(); } else aviso(`🌀 ¡Fusión! ${esc(nom(e.a))} + ${esc(nom(e.b))} → <b>${esc(nom(e.r))}</b>`, 2000); }
-        else aviso(`🌀 ¡${esc(RIVAL.quien)} fusiona! ${esc(nom(e.a))} + ${esc(nom(e.b))} → <b>${esc(nom(e.r))}</b>`, 2200);
-        sonido.moneda?.(); await espera(1300); break;
-      case 'fallo': aviso(`💨 ${esc(nom(e.a))} y ${esc(nom(e.b))} no fusionan. ${esc(nom(e.a))} se pierde.`, 1800); await espera(1100); break;
-      case 'equipa': aviso(`🗡️ ${esc(nom(e.a || ''))} ${e.a ? 'sale equipado con' : 'se equipa'} ${esc(nom(e.b))}`, 1500); await espera(600); break;
+        else aviso(`🌀 ¡${esc(RIVAL.quien)} ha fusionado algo! Sale boca abajo… a saber qué es.`, 2000);
+        await espera(400); break;
+      case 'fallo': await animFusion(e, false); aviso(e.p === YO ? `💨 ${esc(nom(e.a))} y ${esc(nom(e.b))} no fusionan. ${esc(nom(e.a))} se pierde.` : `💨 A ${esc(RIVAL.quien)} no le encajan dos cartas: una al cementerio.`, 1800); await espera(400); break;
+      case 'equipa': aviso(e.p === YO ? `🗡️ ${esc(nom(e.a || ''))} ${e.a ? 'sale equipado con' : 'se equipa'} ${esc(nom(e.b))}` : `🗡️ ${esc(RIVAL.quien)} equipa algo.`, 1500); await espera(600); break;
       case 'perdida': aviso(`🗑️ ${esc(nom(e.c))} no tenía dónde ir y se pierde.`, 1500); await espera(700); break;
       case 'invoca': case 'pone': ponerFigura(S, e.u, YO); await caer(e.uid); break;
       case 'magia': aviso(`${CARTAS[e.c].e} ${esc(quien(e.p))}: <b>${esc(nom(e.c))}</b>`, 1600); await espera(800); break;
@@ -298,6 +303,17 @@ async function procesar() {
   if (cerca) await vistaMesa();
   sincronizar(S, YO); pintarHUD(); pintarMano(); pintarAcciones(); jugando = false;
   if (S.fin) await terminar();
+}
+
+// ---------- la animación de fusión (y de cuando no encajan), como en los duelos de antes ----------
+const reverso = () => '<div class="carta reverso"><span class="dib">?</span></div>';
+async function animFusion(e, ok) {
+  const fx = $('#fx'), mia = e.p === YO, ver = (id) => (mia ? htmlCarta(id) : reverso());
+  fx.hidden = false; fx.className = ''; fx.innerHTML = `<div class="fxc izq">${ver(e.a)}</div><div class="fxc der">${ver(e.b)}</div><div class="fxc res"></div><div class="flash"></div>`;
+  await espera(60); fx.classList.add('juntar'); await espera(520);
+  if (ok) { fx.classList.add('funde'); sonido.moneda?.(); await espera(260); fx.querySelector('.res').innerHTML = mia ? htmlCarta(e.r) : reverso(); fx.classList.add('nace'); await espera(mia ? 1000 : 650); }
+  else { fx.classList.add('rebota'); sonido.golpe?.(); await espera(800); }
+  fx.hidden = true; fx.innerHTML = '';
 }
 
 // ---------- final y tragaperras ----------
@@ -345,14 +361,14 @@ async function terminar() {
 // =============================================================
 let SALA = null, GENTE = {}, ESPERA = null, VISTOS = {}, esperando = null;
 const leerJSON = (t) => { try { return JSON.parse(t || 'null'); } catch { return null; } };
-const miFicha = () => ({ debug: DEBUG, nombre: DEF.nombre || 'Alguien', clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', raza: DEF.raza || 'humano', colores: DEF.colores || null, mazo: K()?.mazo || [] });
+const miFicha = () => ({ debug: DEBUG, nombre: DEF.nombre || 'Alguien', clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', raza: DEF.raza || 'humano', colores: DEF.colores || null, mazo: K()?.mazo?.length ? mazoParaJugar() : [] });
 function publicarCartas() { if (SALA && K()?.mazo) SALA.cambiar({ cartas: JSON.stringify(miFicha()) }); }
 const enLaMesa = () => Object.values(GENTE).filter((g) => g.id !== SALA?.yo.id && g.donde === 'cartas' && g.online !== false && leerJSON(g.cartas)?.mazo?.length === 40);
 function htmlPlaza() {
   if (!SALA) return '<p class="nota">Abrid la misma sala con el botón 👥 y entrad los dos a las cartas: aquí saldrá para retaros.</p>';
   const otros = enLaMesa();
   if (!otros.length) return `<p class="nota">Sala ${esc(SALA.codigo)}: cuando otro de la sala entre en las cartas (con mazo de 40), saldrá aquí.</p>`;
-  return otros.map((g) => { const f = leerJSON(g.cartas); return `<div class="rival"><b>🧑 ${esc(f.nombre)}</b><small>Mazo de 40 · fuerza ${R.valorMazo(f.mazo)}</small><div class="fila-botones"><button class="grande" data-sala="${g.id}" ${K().mazo.length === 40 ? '' : 'disabled'}>⚔️ Retar</button></div></div>`; }).join('');
+  return otros.map((g) => { const f = leerJSON(g.cartas); return `<div class="rival"><b>🧑 ${esc(f.nombre)}</b><small>Mazo de 40 · fuerza ${R.valorMazo(f.mazo)}</small><div class="fila-botones"><button class="grande" data-sala="${g.id}" ${K().mazo.length ? '' : 'disabled'}>⚔️ Retar</button></div></div>`; }).join('');
 }
 function avisoSala(t, ms = 4000) { aviso(t, ms); }
 function retar(id) {
@@ -366,8 +382,8 @@ function retar(id) {
 function mostrarReto(id, g, reto) {
   const f = leerJSON(g.cartas), d = $('#pos'); d.hidden = false;
   const real = !DEBUG && !f?.debug;
-  d.innerHTML = `<p><b>${esc(f?.nombre || g.nombre)}</b> te reta a un duelo de cartas.</p><small>${real ? '⚠️ Duelo a muerte: la carta que gane la tragaperras cambia de dueño. Si te da miedo, no la metas en el mazo.' : '🧪 Uno de los dos está en pruebas: no se juega ninguna carta.'}</small>${K().mazo.length === 40 ? '' : '<small>Necesitas un mazo de 40 para aceptar.</small>'}
-    <div class="fila-botones"><button class="grande" id="bSi" ${K().mazo.length === 40 ? '' : 'disabled'}>¡Acepto!</button><button id="bNo">Ahora no</button></div>`;
+  d.innerHTML = `<p><b>${esc(f?.nombre || g.nombre)}</b> te reta a un duelo de cartas.</p><small>${real ? '⚠️ Duelo a muerte: la carta que gane la tragaperras cambia de dueño. Si te da miedo, no la metas en el mazo.' : '🧪 Uno de los dos está en pruebas: no se juega ninguna carta.'}</small>${K().mazo.length ? '' : '<small>Necesitas un mazo para aceptar.</small>'}
+    <div class="fila-botones"><button class="grande" id="bSi" ${K().mazo.length ? '' : 'disabled'}>¡Acepto!</button><button id="bNo">Ahora no</button></div>`;
   $('#bSi').onclick = () => { d.hidden = true; publicarCartas(); SALA.cambiar({ cartasSi: reto.n, cartasLog: null }); duelOnline({ yo: 1, n: reto.n, seed: reto.seed, rivalId: id, fichas: [f, miFicha()] }); };
   $('#bNo').onclick = () => { d.hidden = true; SALA?.cambiar({ cartasNo: reto.n }); };
 }
@@ -435,7 +451,7 @@ async function arrancar() {
   DEF.cartas ||= {}; K().libro ||= {}; K().victorias ||= {}; K().coleccion ||= {};
   if (!K().mazo?.length) pantallaElegir(); else pantallaMenu('duelos');
   $('#bSala').hidden = false;
-  if (DEBUG) { let r = null; try { r = sessionStorage.getItem('cartas_reiniciar'); sessionStorage.removeItem('cartas_reiniciar'); } catch {} const R0 = R.RIVALES_C.find((x) => x.id === r); if (R0 && K().mazo?.length === 40) empezarDuelo(R0); }
+  if (DEBUG) { let r = null; try { r = sessionStorage.getItem('cartas_reiniciar'); sessionStorage.removeItem('cartas_reiniciar'); } catch {} const R0 = R.RIVALES_C.find((x) => x.id === r); if (R0 && K().mazo?.length) empezarDuelo(R0); }
 }
 arrancar();
 async function iaPrueba() {   // solo para las pruebas automáticas: la máquina hace UNA cosa de tu turno, como si la tocaras tú

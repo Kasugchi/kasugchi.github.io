@@ -149,6 +149,13 @@ export const CARTAS = {
   // viñetas
   muneco_tinta:   B('Muñeco de Tinta', 'vineta', 'luz', 1000, 1000, 3, '✏️', { fam: 'tinta' }),
   dragon_tebeo:   B('Dragón de Tebeo', 'vineta', 'fuego', 2200, 1800, 7, '💥', { fam: 'tinta', fus: true }),
+  conejo_garabato:B('Conejo Garabato', 'vineta', 'luz', 1200, 800, 3, '🐰', { fam: 'tinta', hab: ['veloz'] }),
+  gato_garabato:  B('Gato Garabato', 'vineta', 'oscuridad', 1500, 900, 4, '🐱', { fam: 'tinta' }),
+  sirena_tebeo:   B('Sirena de Tebeo', 'vineta', 'agua', 1400, 1300, 4, '🧜', { fam: 'tinta' }),
+  calavera_risa:  B('Calavera Risueña', 'vineta', 'oscuridad', 1100, 1000, 3, '😆', { fam: 'tinta', hab: ['fantasmal'] }),
+  caballero_papel:B('Caballero de Papel', 'vineta', 'viento', 1700, 1400, 5, '📜', { fam: 'tinta' }),
+  mago_vineta:    B('Mago de Viñeta', 'vineta', 'luz', 1800, 1500, 6, '🪄', { fam: 'tinta' }),
+  rey_tebeo:      B('Rey de las Viñetas', 'vineta', 'luz', 2600, 2200, 8, '🤴', { fam: 'tinta', fus: true }),
 
   // ---------- magias (gastan tu jugada) ----------
   bola_fuego:   { k: 'magia', n: 'Bola de Fuego', e: '🔥', obj: 'rival', txt: 'Destruye un bicho rival con 1500 de ataque o menos. Si es más tocho, solo lo destapa.' },
@@ -241,6 +248,8 @@ const POR_TIPO = {
   [R('dragon', 'dragon')]: ['dragon_ceniza'],
   [R('demonio', 'demonio')]: ['demonio_azufre', 'canciller'],
   [R('vineta', 'dragon')]: ['dragon_tebeo'],
+  [R('vineta', 'vineta')]: ['dragon_tebeo', 'rey_tebeo'],
+  [R('vineta', 'mago')]: ['mago_vineta', 'rey_tebeo'],
 };
 const POR_ELEMENTO = {
   [R('fuego', 'agua')]: ['espiritu_vapor'],
@@ -335,7 +344,7 @@ export function casillasJuego(S, p, ids) {   // ids: las cartas elegidas, en ord
   const L = lider(S, p), r = alcanceJuego(S, p), out = [];
   if (C.k === 'magia' && C.obj === 'rival') return S.u.filter((u) => u.p !== p && !u.lider).map((u) => ({ x: u.x, y: u.y }));
   if (C.k === 'magia') return [{ x: L.x, y: L.y }];
-  if (C.k === 'equipo' && ids.length === 1) return bichos(S, p).map((u) => ({ x: u.x, y: u.y }));
+  if (C.k === 'equipo' && ids.length === 1) return bichos(S, p).filter((u) => Math.max(Math.abs(u.x - L.x), Math.abs(u.y - L.y)) <= r).map((u) => ({ x: u.x, y: u.y }));   // el equipo se lo das a uno que tengas cerca
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
     const x = L.x + dx, y = L.y + dy; if (!dentro(x, y) || (!dx && !dy)) continue;
     if (C.k === 'terreno') { out.push({ x, y }); continue; }
@@ -370,7 +379,7 @@ export function jugar(S, p, sel, x, y, opts = {}) {
   const C = CARTAS[acc];
   if (C.k === 'bicho') {
     if (en(S, x, y) || bichos(S, p).length >= MAX_BICHOS) { S.ev.push({ t: 'perdida', p, c: acc }); S.cem[p].push(acc); return true; }
-    const u = { id: S.uid++, c: acc, p, x, y, arriba: fusiono || !!opts.arriba, def: !!opts.def, ma, md, hecho: true, cambio: true, red: 0 };
+    const u = { id: S.uid++, c: acc, p, x, y, arriba: !!opts.arriba, def: !!opts.def, ma, md, hecho: true, cambio: true, red: 0 };
     S.u.push(u); S.ev.push({ t: 'invoca', p, uid: u.id, c: acc, x, y, fusion: fusiono, u: { ...u } });
     aplastar(S, u); if (S.u.includes(u)) trampasInvocacion(S, u);
   } else if (C.k === 'trampa') {
@@ -506,7 +515,7 @@ function combate(S, at, de) {
 export function voltear(S, uid) { const u = S.u.find((v) => v.id === uid); if (!u || u.p !== S.juega || u.arriba || u.trampa) return false; u.arriba = true; S.ev.push({ t: 'voltea', uid }); return true; }
 export function cambiarPosicion(S, uid) {
   const u = S.u.find((v) => v.id === uid); if (!u || u.p !== S.juega || u.lider || u.trampa || u.cambio || u.hecho || u.red > 0) return false;
-  u.def = !u.def; u.cambio = true; u.hecho = true; S.ev.push({ t: 'posicion', uid, def: u.def }); return true;
+  u.def = !u.def; u.cambio = true; S.ev.push({ t: 'posicion', uid, def: u.def }); return true;   // girarse no gasta la acción: puedes girarte y atacar
 }
 
 // ---------- turnos y final ----------
@@ -689,6 +698,13 @@ export function construirMazo(tema, s, objetivo = VALOR_INICIAL, { nivelMax = 4,
   }
   return mazo;
 }
+// El mazo de viñetas de pruebas (para Carlos, en ?debug=1): dibujos que en su terreno pegan y fuera de él se debilitan los demás
+export const MAZO_VINETAS = [
+  ...Array(3).fill('conejo_garabato'), ...Array(3).fill('gato_garabato'), ...Array(3).fill('sirena_tebeo'), ...Array(3).fill('calavera_risa'),
+  ...Array(3).fill('caballero_papel'), ...Array(3).fill('muneco_tinta'), ...Array(2).fill('mago_vineta'), ...Array(3).fill('dragoncito'),
+  ...Array(3).fill('t_vinetas'), ...Array(3).fill('bola_fuego'), 'farol', 'chispas', 'chispas',
+  'espada', 'espada', 'amuleto', 'amuleto', 'foso', 'foso', 'espejo', 'sello',
+];
 export const valorMazo = (m) => Math.round(m.reduce((s, id) => s + valor(id), 0));
 export function mazosIniciales(heroeId) {   // los 3 que te ofrecen (fijos para cada héroe)
   const r = rnd(semilla('mazos', heroeId)), temas = [...TEMAS]; const out = [];
