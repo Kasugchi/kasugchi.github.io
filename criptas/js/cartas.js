@@ -46,7 +46,8 @@ function textoCarta(id) {
   const C = CARTAS[id]; if (!C) return '';
   if (C.k === 'bicho') {
     const hab = (C.hab || []).map((h) => ({ veloz: '💨 Veloz: se mueve 2.', fantasmal: '👻 Fantasmal: atraviesa los muros.', galerias: '🪱 Vive en las galerías: se mueve por el laberinto.', muro: '🧱 Muro: no ataca.', perforante: '🗡️ Perforante.', inmortal: '🪨 El derrumbe no le aplasta.' }[h])).join(' ');
-    return `${TIPOS[C.t][0]} ${TIPOS[C.t][1]} · ${ELEMENTOS[C.el][0]} ${ELEMENTOS[C.el][1]} · ${'★'.repeat(C.nv)}${hab ? '<br>' + hab : ''}`;
+    const dibujo = C.t === 'vineta' ? '✏️ Dibujo: fuera del terreno de viñetas pierde 500; dentro, los demás pierden 500.' : '';
+    return `${TIPOS[C.t][0]} ${TIPOS[C.t][1]} · ${ELEMENTOS[C.el][0]} ${ELEMENTOS[C.el][1]} · ${'★'.repeat(C.nv)}${hab || dibujo ? '<br>' + [hab, dibujo].filter(Boolean).join(' ') : ''}`;
   }
   return esc(C.txt || '');
 }
@@ -58,7 +59,7 @@ let pestana = 'duelos';
 let tirada = 0;   // en pruebas: cada «otra tirada» saca mazos nuevos de todos los temas
 function pantallaElegir() {
   const quien = DEF.id || DEF.nombre || 'yo';
-  const ops = DEBUG ? [{ tema: { id: 'vinetas', n: 'Viñetas (de pruebas)', e: '✏️', txt: 'Dibujos con bote de tinta: en su terreno pegan fuerte y a los demás los debilita. Más tocho que los iniciales, a propósito.' }, mazo: [...R.MAZO_VINETAS] },
+  const ops = DEBUG ? [{ tema: { id: 'vinetas', n: 'Viñetas (de pruebas)', e: '✏️', txt: 'Dibujos: fuera de su terreno pierden 500 y dentro debilitan a todos los demás. Hay que montarse el bote de tinta.' }, mazo: [...R.MAZO_VINETAS] },
     ...R.TEMAS.map((t) => ({ tema: t, mazo: R.construirMazo(t.id, R.semilla('mazo', quien + (tirada ? '#' + tirada : ''), t.id)) }))] : R.mazosIniciales(quien);
   mostrar(`<h2>🃏 Cartas de Velmor<small>${DEBUG ? `🧪 Pruebas: los ${ops.length} temas${tirada ? ` (tirada ${tirada})` : ''}. Fuera de pruebas, cada héroe ve solo tres.` : 'Elige tu primer mazo. Cada héroe recibe tres distintos; todos valen lo mismo, cambia el estilo.'}</small></h2>
     ${DEBUG ? `<div class="fila-botones"><button id="bTirada">🎲 Otra tirada</button>${K()?.mazo?.length ? '<button id="bVolverMenu">↩️ Volver</button>' : ''}</div>` : ''}
@@ -129,7 +130,8 @@ function htmlAyuda() {
     <p>🚶 Después, cada carta tuya hace <b>una cosa</b>: moverse o atacar a una de al lado. Destaparla o girarla entre ataque y defensa no gasta esa acción (girar, una vez por turno y antes de moverse). Las cartas salen <b>boca abajo</b>: el rival no sabe qué son hasta que chocan.</p>
     <p>⚔️ Ataque contra ataque: pierde el más flojo y su dueño pierde la diferencia. Contra defensa: si no la rompes, te comes tú la diferencia. Golpe al líder: todo el ataque a la vida.</p>
     <p>🗺️ Cada rival juega en su terreno (±500 a los que les va bien o mal). Las cartas de terreno cambian la casilla donde las juegas y una a cada lado, en cruz. El laberinto no se cruza, salvo fantasmas y gusanos.</p>
-    <p>🪤 Las trampas salen boca abajo como cualquier carta y saltan solas. Manda delante al bicho flojo.</p>
+    <p>🪤 Magias, terrenos, equipo y trampas se dejan <b>boca abajo</b> en el campo, como un bicho más: el rival no sabe qué son. Se mueven una casilla por turno. Desde el turno siguiente, las magias y terrenos se <b>activan</b> (tócalas → 🔮), el equipo se le pone a un bicho tuyo de al lado y las trampas saltan solas. Si el rival ataca una que no es trampa, la rompe.</p>
+    <p>🗑️ Marca cartas de la mano y dale a <b>Descartar</b> para quitártelas (no gasta tu jugada).</p>
     <p>🎰 Al ganar, la tragaperras te da una carta del cementerio del rival o de su mazo.</p>`;
 }
 
@@ -161,7 +163,8 @@ function pintarMano() {
 function pintarAcciones() {
   const mio = S && S.juega === YO && !S.fin && modo !== 'ia';
   acciones.innerHTML = `${sel.length && mio && !S.jugado ? `<button class="grande" id="bJugar">✅ Jugar ${sel.length > 1 ? `(${sel.length})` : ''}</button>` : ''}
-    ${(sel.length || modo === 'casilla' || elegida) && mio ? '<button id="bCancelar">↩️</button>' : ''}
+    ${sel.length && mio && modo !== 'casilla' ? `<button id="bDescartar">🗑️ Descartar${sel.length > 1 ? ` (${sel.length})` : ''}</button>` : ''}
+    ${(sel.length || modo === 'casilla' || modo === 'objetivo' || elegida) && mio ? '<button id="bCancelar">↩️</button>' : ''}
     ${mio ? `<button id="bFin">⏭️ Fin de turno</button>` : `<button disabled>${S?.fin ? '' : '⏳ Juega el rival…'}</button>`}
     ${mio && DEBUG && !ONLINE ? '<button id="bAuto">🤖 Auto</button>' : ''}
     ${S && !S.fin && (ONLINE || !DEBUG) ? '<button id="bRendir">🏳️ Rendirse</button>' : ''}
@@ -173,13 +176,14 @@ function pintarAcciones() {
   $('#bSalir')?.addEventListener('click', () => location.reload());
   $('#bJugar')?.addEventListener('click', elegirCasilla);
   $('#bCancelar')?.addEventListener('click', cancelar);
+  $('#bDescartar')?.addEventListener('click', async () => { const s2 = [...sel]; sel = []; hacer({ t: 'descartar', sel: s2 }); pintarMano(); await procesar(); });
   $('#bFin')?.addEventListener('click', terminarTurno);
 }
 function tocarCarta(i) {
   if (!S || S.juega !== YO || S.fin || modo === 'ia') return;
   const id = S.mano[YO][i], C = CARTAS[id];
   quitarEleccion(); verInfoCarta(id);
-  if (S.jugado) { aviso('Ya has hecho tu jugada este turno. Mueve tus cartas o pasa turno.'); return; }
+  if (S.jugado) { const ya = sel.indexOf(i); if (ya >= 0) sel.splice(ya, 1); else sel.push(i); pintarMano(); pintarAcciones(); return; }   // ya has jugado: solo puedes marcar para descartar
   const encadenable = (k) => k === 'bicho' || k === 'equipo';
   const ya = sel.indexOf(i);
   if (ya >= 0) sel.splice(ya, 1);
@@ -192,12 +196,11 @@ function elegirCasilla() {
   const ids = sel.map((i) => S.mano[YO][i]), cs = R.casillasJuego(S, YO, ids);
   if (!cs.length) { aviso('No hay sitio donde jugar eso ahora (¿tienes ya 5 bichos o no hay casillas libres al lado de tu líder?).'); return; }
   const C = CARTAS[ids[0]];
-  if (C.k === 'magia' && C.obj === 'nada') { hacerJugada(cs[0].x, cs[0].y); return; }
   modo = 'casilla'; desmarcar(); marcar(cs, '#ffe27a');
-  aviso(C.k === 'magia' ? '🎯 Toca el bicho rival al que se la lanzas.' : C.k === 'equipo' && ids.length === 1 ? '🎯 Toca el bicho tuyo al que se lo pones.' : C.k === 'terreno' ? '🎯 Toca dónde cambiar el terreno (esa casilla y una a cada lado).' : '🎯 Toca una casilla brillante al lado de tu líder.');
+  aviso(C.k === 'bicho' || ids.length > 1 ? '🎯 Toca una casilla brillante al lado de tu líder.' : '🎯 Toca dónde dejarla boca abajo. Otro turno la mueves y la activas.');
   pintarAcciones();
 }
-function cancelar() { sel = []; modo = 'yo'; desmarcar(); quitarEleccion(); pintarMano(); pintarAcciones(); }
+function cancelar() { sel = []; if (modo === 'objetivo') elegida = null; modo = 'yo'; desmarcar(); quitarEleccion(); pintarMano(); pintarAcciones(); }
 function quitarEleccion() { elegida = null; opc = null; info.hidden = true; if (modo !== 'casilla') desmarcar(); }
 async function preguntarPosicion() {
   return new Promise((ok) => {
@@ -215,7 +218,10 @@ async function hacerJugada(x, y) {
 async function tocarTablero(cx, cy) {
   if (!S || jugando) return; const c = casillaEn(cx, cy); if (!c) return;
   if (modo === 'casilla') { if (R.casillasJuego(S, YO, sel.map((i) => S.mano[YO][i])).some((k) => k.x === c.x && k.y === c.y)) await hacerJugada(c.x, c.y); return; }
+  if (modo === 'objetivo') { const uid = elegida; if (R.objetivosMagia(S, uid).some((k) => k.x === c.x && k.y === c.y)) { modo = 'yo'; quitarEleccion(); hacer({ t: 'activar', uid, x: c.x, y: c.y }); await procesar(); } return; }
   if (elegida && opc && S.juega === YO) {
+    const eq = (opc.equipar || []).find((k) => k.x === c.x && k.y === c.y);
+    if (eq) { const uid = elegida; quitarEleccion(); hacer({ t: 'equipar', uid, x: c.x, y: c.y }); await procesar(); return; }
     const at = opc.atacar.find((k) => k.x === c.x && k.y === c.y), mv = opc.mover.find((k) => k.x === c.x && k.y === c.y);
     if (at || mv) { const uid = elegida; quitarEleccion(); hacer({ t: at ? 'atacar' : 'mover', uid, x: c.x, y: c.y }); await procesar(); return; }
   }
@@ -226,7 +232,7 @@ async function tocarTablero(cx, cy) {
 function elegirUnidad(u) {
   desmarcar(); elegida = null; opc = null;
   const mio = u.p === YO && S.juega === YO && !S.fin && modo !== 'ia';
-  if (mio && !u.trampa) { elegida = u.id; opc = R.opciones(S, u.id); marcar(opc.mover, '#5ac8ff'); marcar(opc.atacar, '#ff5a5a'); marcar([{ x: u.x, y: u.y }], '#ffffff'); }
+  if (mio) { elegida = u.id; opc = R.opciones(S, u.id); marcar(opc.mover, '#5ac8ff'); marcar(opc.atacar, '#ff5a5a'); marcar(opc.equipar || [], '#5ad85a'); marcar([{ x: u.x, y: u.y }], '#ffffff'); }
   verInfoUnidad(u); pintarAcciones();
 }
 function verInfoCarta(id) { info.hidden = false; info.innerHTML = `<div class="ficha">${htmlCarta(id, { mini: true })}<div><b>${esc(nom(id))}</b><small>${textoCarta(id)}</small></div></div>`; }
@@ -239,6 +245,13 @@ function verInfoUnidad(u) {
   else {
     const C = CARTAS[u.c], ter = R.ajusteTerreno(S, u);
     html = `<div class="ficha">${htmlCarta(u.c, { mini: true })}<div><b>${esc(C.n)}${u.arriba ? '' : ' <i class="oculta">(boca abajo)</i>'}</b><small>${textoCarta(u.c)}${C.k === 'bicho' ? `<br>Ahora: ⚔${R.ataqueDe(S, u)} 🛡${R.defensaDe(S, u)} · en ${u.def ? 'defensa' : 'ataque'}${ter ? ` · terreno ${ter > 0 ? '+' : ''}${ter}` : ''}${u.red > 0 ? ' · 🕸️ pegado' : ''}` : ''}</small></div></div>`;
+    if (mio && u.trampa) {   // carta de soporte tuya en el campo
+      const k = CARTAS[u.c].k;
+      if ((k === 'magia' || k === 'terreno') && !u.hecho) botones.push(`<button data-u="activar">🔮 Activar</button>`);
+      if (k === 'equipo') botones.push(`<small class="hecho">${u.hecho ? 'Otro turno podrás moverla.' : 'Muévela pegada a un bicho tuyo y toca el bicho (en verde) para equiparlo.'}</small>`);
+      if (k === 'trampa') botones.push('<small class="hecho">Salta sola. Puedes moverla una casilla por turno.</small>');
+      if (u.hecho && k !== 'equipo') botones.push('<small class="hecho">Recién puesta: podrás usarla en tu próximo turno.</small>');
+    }
     if (mio && !u.trampa) {
       if (!u.arriba) botones.push(`<button data-u="voltear">🔄 Destapar</button>`);
       if (!u.cambio && !u.hecho && u.red <= 0) botones.push(`<button data-u="posicion">${u.def ? '⚔️ A ataque' : '🛡️ A defensa'}</button>`);
@@ -247,7 +260,12 @@ function verInfoUnidad(u) {
     }
   }
   info.hidden = false; info.innerHTML = html + (botones.length ? `<div class="fila-botones">${botones.join('')}</div>` : '');
-  info.querySelectorAll('[data-u]').forEach((b) => b.onclick = async () => { const uid = u.id; hacer({ t: b.dataset.u === 'voltear' ? 'voltear' : 'posicion', uid }); await procesar(); const v = S.u.find((w) => w.id === uid); if (v) elegirUnidad(v); });
+  info.querySelector('[data-u=activar]')?.addEventListener('click', async () => {
+    const uid = u.id;
+    if (u.c === 'bola_fuego') { const ob = R.objetivosMagia(S, uid); if (!ob.length) { aviso('No hay a quién lanzársela.'); return; } modo = 'objetivo'; desmarcar(); marcar(ob, '#ff5a5a'); aviso('🔥 Toca la carta rival a la que se la lanzas.'); pintarAcciones(); return; }
+    quitarEleccion(); hacer({ t: 'activar', uid }); await procesar();
+  });
+  info.querySelectorAll('[data-u]:not([data-u=activar])').forEach((b) => b.onclick = async () => { const uid = u.id; hacer({ t: b.dataset.u === 'voltear' ? 'voltear' : 'posicion', uid }); await procesar(); const v = S.u.find((w) => w.id === uid); if (v) elegirUnidad(v); });
 }
 async function terminarTurno() {
   if (!S || S.juega !== YO || jugando) return;
@@ -288,6 +306,8 @@ async function procesar() {
         await espera(400); break;
       case 'fallo': await animFusion(e, false); aviso(e.p === YO ? `💨 ${esc(nom(e.a))} y ${esc(nom(e.b))} no fusionan. ${esc(nom(e.a))} se pierde.` : `💨 A ${esc(RIVAL.quien)} no le encajan dos cartas: una al cementerio.`, 1800); await espera(400); break;
       case 'equipa': aviso(e.p === YO ? `🗡️ ${esc(nom(e.a || ''))} ${e.a ? 'sale equipado con' : 'se equipa'} ${esc(nom(e.b))}` : `🗡️ ${esc(RIVAL.quien)} equipa algo.`, 1500); await espera(600); break;
+      case 'activa': aviso(`${CARTAS[e.c].e} ${esc(quien(e.p))} activa <b>${esc(nom(e.c))}</b>`, 1600); { const f = figura(e.uid); if (f) ui.chispas(f.position.clone().setY(.5), '#c8a8ff', 20, 3); } await espera(700); break;
+      case 'descarta': aviso(e.p === YO ? `🗑️ Descartas ${e.n} carta${e.n > 1 ? 's' : ''}.` : `🗑️ ${esc(RIVAL.quien)} descarta ${e.n} carta${e.n > 1 ? 's' : ''}.`, 1300); await espera(300); break;
       case 'perdida': aviso(`🗑️ ${esc(nom(e.c))} no tenía dónde ir y se pierde.`, 1500); await espera(700); break;
       case 'invoca': case 'pone': ponerFigura(S, e.u, YO); await caer(e.uid); break;
       case 'magia': aviso(`${CARTAS[e.c].e} ${esc(quien(e.p))}: <b>${esc(nom(e.c))}</b>`, 1600); await espera(800); break;

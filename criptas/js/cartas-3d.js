@@ -15,7 +15,7 @@ export const MOVIL = matchMedia('(pointer: coarse)').matches || innerWidth < 760
 export const render = new THREE.WebGLRenderer({ canvas: $('#lienzo'), antialias: !MOVIL });
 render.setPixelRatio(Math.min(devicePixelRatio, MOVIL ? 1.6 : 2)); render.setSize(innerWidth, innerHeight);
 render.shadowMap.enabled = true; render.outputColorSpace = THREE.SRGBColorSpace;
-export const escena = new THREE.Scene(); escena.background = new THREE.Color('#1a1220'); escena.fog = new THREE.Fog('#1a1220', 18, 40);
+export const escena = new THREE.Scene(); escena.background = new THREE.Color('#141026'); escena.fog = new THREE.Fog('#141026', 18, 42);
 export const camara = new THREE.PerspectiveCamera(MOVIL ? 60 : 40, innerWidth / innerHeight, .1, 100);
 export const ui = crearUI3D(escena, camara);
 export const sonido = crearSonido({ entorno: 'cine' });
@@ -34,12 +34,14 @@ export const mundo = (x, y, h = 0) => new THREE.Vector3(posX(x), h, posZ(y));
 // ---------- la mesa: madera, velas y un tapete ----------
 const llamas = [];
 {
-  const mesa = new THREE.Mesh(new THREE.BoxGeometry(11, .6, 11), toon('#5a3a22')); mesa.position.y = -.42; mesa.receiveShadow = true; contorno(mesa, .04); escena.add(mesa);
-  const tapete = new THREE.Mesh(new THREE.BoxGeometry(8.1, .08, 8.1), toon('#3a1a2a')); tapete.position.y = -.1; tapete.receiveShadow = true; escena.add(tapete);
+  const mesa = new THREE.Mesh(new THREE.BoxGeometry(11, .6, 11), toon('#4a4458')); mesa.position.y = -.42; mesa.receiveShadow = true; contorno(mesa, .04); escena.add(mesa);
+  const tapete = new THREE.Mesh(new THREE.BoxGeometry(8.1, .08, 8.1), toon('#24203a')); tapete.position.y = -.1; tapete.receiveShadow = true; escena.add(tapete);
   const ribete = new THREE.Mesh(new THREE.BoxGeometry(8.3, .06, 8.3), toon('#c8a040')); ribete.position.y = -.13; escena.add(ribete);
-  const suelo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), toon('#241a1c')); suelo.rotation.x = -Math.PI / 2; suelo.position.y = -3; escena.add(suelo);
+  const suelo = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), toon('#1c1830')); suelo.rotation.x = -Math.PI / 2; suelo.position.y = -3; escena.add(suelo);
   for (const [x, z] of [[-5, -4.6], [5, -4.6], [-5, 4.6], [5, 4.6]]) {
-    const v = new THREE.Mesh(new THREE.CylinderGeometry(.12, .14, .6, 10), toon('#f4ecd8')); v.position.set(x, .2, z); escena.add(v);
+    const pilar = new THREE.Mesh(new THREE.CylinderGeometry(.32, .38, 1.1, 8), toon('#6a6478')); pilar.position.set(x, -.05, z); contorno(pilar, .03); escena.add(pilar);
+    const cuenco = new THREE.Mesh(new THREE.CylinderGeometry(.3, .18, .2, 10), toon('#3a3040')); cuenco.position.set(x, .55, z); escena.add(cuenco);
+    const v = new THREE.Mesh(new THREE.CylinderGeometry(.12, .14, .1, 10), toon('#ffb85a')); v.position.set(x, .3, z); escena.add(v);
     const ll = new THREE.Mesh(new THREE.SphereGeometry(.08, 8, 6), new THREE.MeshBasicMaterial({ color: '#ffd27a' })); ll.position.set(x, .58, z); ll.scale.y = 1.6; escena.add(ll); llamas.push(ll);
   }
 }
@@ -62,9 +64,12 @@ function texturaDe(t) {
 }
 // ---------- el tablero ----------
 const casillas = [], marcas = [], muros = [];
-const geoCasilla = new THREE.BoxGeometry(.96, .12, .96);
+const geoCasilla = new THREE.BoxGeometry(.94, .14, .94);
+const decorados = [];
 for (let y = 0; y < LADO; y++) for (let x = 0; x < LADO; x++) {
-  const m = new THREE.Mesh(geoCasilla, new THREE.MeshToonMaterial({ color: '#ffffff' })); m.position.copy(mundo(x, y, 0)); m.receiveShadow = true; m.userData = { x, y }; escena.add(m); casillas.push(m);
+  const lado = new THREE.MeshToonMaterial({ color: '#8a7a6a' }), arriba = new THREE.MeshToonMaterial({ color: '#ffffff' });
+  const m = new THREE.Mesh(geoCasilla, [lado, lado, arriba, lado, lado, lado]);
+  const dec = new THREE.Group(); dec.position.copy(mundo(x, y, .07)); escena.add(dec); decorados.push(dec); m.position.copy(mundo(x, y, 0)); m.receiveShadow = true; m.userData = { x, y, lado, arriba }; escena.add(m); casillas.push(m);
   const mk = new THREE.Mesh(new THREE.PlaneGeometry(.9, .9).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .45, depthWrite: false })); mk.position.copy(mundo(x, y, .075)); mk.visible = false; escena.add(mk); marcas.push(mk);
   const muro = new THREE.Mesh(new THREE.BoxGeometry(.92, .55, .92), toon('#6a6270')); muro.position.copy(mundo(x, y, .33)); muro.visible = false; muro.castShadow = true; contorno(muro, .03); escena.add(muro); muros.push(muro);
 }
@@ -72,10 +77,26 @@ let terrenoPuesto = [];
 export function pintarTablero(S, animar = false) {
   for (let y = 0; y < LADO; y++) for (let x = 0; x < LADO; x++) {
     const i = y * LADO + x, t = S.tab[y][x]; if (terrenoPuesto[i] === t) continue; terrenoPuesto[i] = t;
-    casillas[i].material.map = texturaDe(t); casillas[i].material.needsUpdate = true;
+    const m = casillas[i]; m.userData.arriba.map = texturaDe(t); m.userData.arriba.needsUpdate = true;
+    m.userData.lado.color.set(TERRENOS[t].col).multiplyScalar(.55);
+    m.position.y = t === 'mar' ? -.04 : 0;
     muros[i].visible = !!TERRENOS[t].muro;
+    decorar(decorados[i], t, i);
     if (animar) { const m = casillas[i]; m.scale.y = 3; tween(300, (k) => { m.scale.y = 3 - 2 * k; }); }
   }
+}
+// Adornos de cada terreno (pocos, para que el móvil vaya fino): árboles, rocas, cactus, olas, niebla…
+const azarC = (i, k) => { const v = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return v - Math.floor(v); };
+function decorar(g, t, i) {
+  for (const h of [...g.children]) g.remove(h);
+  const pon = (mesh, k, h = 0) => { mesh.position.set((azarC(i, k) - .5) * .6, h, (azarC(i, k + 7) - .5) * .6); mesh.castShadow = true; g.add(mesh); return mesh; };
+  if (t === 'bosque') for (let k = 0; k < 2; k++) { const a = pon(new THREE.Mesh(new THREE.ConeGeometry(.12, .34, 6), toon('#2a6a2a')), k, .2); a.scale.setScalar(.8 + azarC(i, k + 3) * .5); }
+  if (t === 'pradera') for (let k = 0; k < 3; k++) pon(new THREE.Mesh(new THREE.ConeGeometry(.03, .12, 3), toon('#c8e85a')), k, .06);
+  if (t === 'montana') { const r = pon(new THREE.Mesh(new THREE.ConeGeometry(.16, .3, 5), toon('#7a7a8a')), 1, .15); r.rotation.y = azarC(i, 2) * 3; }
+  if (t === 'paramo') { if (azarC(i, 4) < .5) pon(new THREE.Mesh(new THREE.CylinderGeometry(.04, .05, .22, 6), toon('#5a8a3a')), 1, .11); pon(new THREE.Mesh(new THREE.DodecahedronGeometry(.06), toon('#a87a4a')), 2, .04); }
+  if (t === 'derrumbe') for (let k = 0; k < 3; k++) pon(new THREE.Mesh(new THREE.DodecahedronGeometry(.05 + azarC(i, k) * .05), toon('#5a4a3a')), k, .05);
+  if (t === 'oscuridad') { const n = pon(new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 4), new THREE.MeshBasicMaterial({ color: '#c8a8ff', transparent: true, opacity: .8 })), 1, .25); n.userData.flota = azarC(i, 9) * 6; }
+  if (t === 'vinetas') { const e = pon(new THREE.Mesh(new THREE.TorusGeometry(.08, .02, 4, 10), new THREE.MeshBasicMaterial({ color: '#222' })), 1, .04); e.rotation.x = Math.PI / 2; }
 }
 export function marcar(lista, color = '#ffe27a') { for (const { x, y } of lista) { const mk = marcas[y * LADO + x]; mk.visible = true; mk.material.color.set(color); } }
 export function desmarcar() { for (const mk of marcas) mk.visible = false; }
@@ -88,6 +109,8 @@ export function orientar(yo) {
   for (const m of casillas) m.position.copy(mundo(m.userData.x, m.userData.y, 0));
   marcas.forEach((mk, i) => mk.position.copy(mundo(i % LADO, Math.floor(i / LADO), .075)));
   muros.forEach((mu, i) => mu.position.copy(mundo(i % LADO, Math.floor(i / LADO), .33)));
+  decorados.forEach((d, i) => d.position.copy(mundo(i % LADO, Math.floor(i / LADO), .07)));
+  terrenoPuesto = [];   // que se vuelvan a pintar (el agua va un poco más baja)
 }
 const figuras = new Map();   // uid → { g, firma }
 function reverso(p) {
@@ -150,7 +173,7 @@ function construir(S, u, yo) {
   const g = new THREE.Group();
   const base = new THREE.Mesh(new THREE.CylinderGeometry(.4, .42, .05, 24), toon(COLOR_LADO[u.p === yo ? 0 : 1])); base.position.y = .085; g.add(base);
   if (u.lider) g.add(figuraLider(INFO_LIDERES[u.p] || {}));
-  else if (u.trampa) { if (u.arriba) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dibujoEmoji(CARTAS[u.c].e, '#e8d8ff') })); s.scale.set(.6, .6, 1); s.position.y = .45; g.add(s); } else g.add(cartaTumbada(u.p === yo ? 0 : 1, false)); }
+  else if (u.trampa) { if (u.arriba) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dibujoEmoji(CARTAS[u.c].e, '#e8d8ff') })); s.scale.set(.6, .6, 1); s.position.y = .45; g.add(s); } else { g.add(cartaTumbada(u.p === yo ? 0 : 1, false)); if (u.p === yo) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dibujoEmoji(CARTAS[u.c].e, '#e8d8ff'), transparent: true, opacity: .85 })); s.scale.set(.32, .32, 1); s.position.y = .42; g.add(s); } } }
   else if (!u.arriba) g.add(cartaTumbada(u.p === yo ? 0 : 1, u.def));
   else { const f = figuraBicho(CARTAS[u.c]); if (u.def) { f.rotation.y = Math.PI / 2; f.scale.setScalar(.85); } g.add(f); }
   if (u.p !== yo && !u.lider) g.rotation.y = Math.PI;
@@ -230,6 +253,8 @@ function bucle(t) {
   const dt = Math.min(.05, (t - t0) / 1000); t0 = t;
   for (let i = tweens.length - 1; i >= 0; i--) { const w = tweens[i], k = Math.min(1, (t - w.t0) / w.ms); w.fn(k); if (k >= 1) { tweens.splice(i, 1); w.ok(); } }
   for (const l of llamas) l.scale.y = 1.5 + Math.sin(t / 90 + l.position.x) * .25;
+  if (texTerreno.mar) { texTerreno.mar.wrapS = texTerreno.mar.wrapT = THREE.RepeatWrapping; texTerreno.mar.offset.x = (t / 9000) % 1; }
+  for (const d of decorados) for (const h of d.children) if (h.userData.flota !== undefined) h.position.y = .25 + Math.sin(t / 600 + h.userData.flota) * .08;
   for (const [, f] of figuras) if (f.g.userData.etiqueta) f.g.userData.etiqueta.position.y = 1.05 + Math.sin(t / 500 + f.g.position.x) * .03;
   camara.position.lerp(camPos, .2); const m = new THREE.Vector3(); camara.getWorldDirection(m);
   camara.lookAt(camMira);

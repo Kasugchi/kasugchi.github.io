@@ -28,7 +28,7 @@ export const TERRENOS = {
   montana:   { n: 'Montaña', e: '⛰️', col: '#8a8a9a', mas: { t: ['dragon', 'ave', 'hada'] }, menos: { t: ['nomuerto'] } },
   mar:       { n: 'Mar', e: '🌊', col: '#3a7ac8', mas: { t: ['marino'], el: ['agua'] }, menos: { t: ['maquina'], el: ['fuego'] } },
   oscuridad: { n: 'Oscuridad', e: '🌑', col: '#3a2a5a', mas: { t: ['demonio', 'nomuerto', 'espiritu'], el: ['oscuridad'] }, menos: { t: ['hada'], el: ['luz'] } },
-  vinetas:   { n: 'Viñetas', e: '✏️', col: '#f0e8f8', mas: { t: ['vineta'] }, todosMenos: true },
+  vinetas:   { n: 'Viñetas', e: '✏️', col: '#f0e8f8', todosMenos: true },   // aquí todos pierden 500 menos los dibujos; los dibujos, fuera de aquí, pierden 500
   derrumbe:  { n: 'Derrumbe', e: '🪨', col: '#6a5a4a', aplasta: 1500 },
   laberinto: { n: 'Laberinto', e: '🧱', col: '#5a5260', muro: true },
 };
@@ -199,57 +199,69 @@ const EXACTAS = {
   [R('dragon_esq', 'hechicero')]: 'archimago',
   [R('trasgo_petardo', 'tostadora')]: 'canon_trasgo',
   [R('rata', 'aprendiz')]: 'rata_biblio',
-  [R('muneco_tinta', 'dragoncito')]: 'dragon_tebeo',
+  [R('muneco_tinta', 'dragoncito')]: 'dragon_tebeo',   // las viñetas solo se fusionan con recetas exactas
+  [R('conejo_garabato', 'muneco_tinta')]: 'caballero_papel',
+  [R('gato_garabato', 'sirena_tebeo')]: 'mago_vineta',
+  [R('mago_vineta', 'caballero_papel')]: 'rey_tebeo',
   [R('hada_rocio', 'esqueleto')]: 'esq_bendito',
   [R('gusano', 'arana')]: 'gusano_reina',
   [R('esqueleto', 'esq_negro')]: 'capitan_femur',
   [R('momia', 'ilusionista')]: 'momia_real',
 };
+// Escaleras por pareja de tipos (como en el Duelist): sale el MÁS FLOJO de la lista que supere a los dos.
+// Así juntar dos bichos pequeños da uno mediano, y para lo gordo hay que fusionar cosas gordas o encadenar.
 const POR_TIPO = {
-  [R('nomuerto', 'bestia')]: ['caballero_fant', 'jinete_sin'],
-  [R('espiritu', 'bestia')]: ['caballero_fant', 'jinete_sin'],
-  [R('nomuerto', 'dragon')]: ['dragon_esq'],
-  [R('nomuerto', 'nomuerto')]: ['capitan_femur', 'momia_real'],
-  [R('nomuerto', 'mago')]: ['lich'],
-  [R('espiritu', 'espiritu')]: ['espectro'],
-  [R('espiritu', 'nomuerto')]: ['espectro', 'lich'],
-  [R('guerrero', 'bestia')]: ['jinete_lobo', 'centauro'],
-  [R('guerrero', 'dragon')]: ['caballero_drag'],
-  [R('guerrero', 'hada')]: ['paladin'],
-  [R('guerrero', 'maquina')]: ['cabo_mecanico'],
-  [R('guerrero', 'guerrero')]: ['guerrero_osc', 'caballero_drag'],
-  [R('mago', 'demonio')]: ['brujo_infernal'],
-  [R('mago', 'dragon')]: ['archimago'],
-  [R('mago', 'mago')]: ['bruja_plaga', 'brujo_infernal'],
-  [R('hada', 'ave')]: ['valquiria'],
-  [R('hada', 'hada')]: ['angel_campana'],
+  [R('nomuerto', 'nomuerto')]: ['esq_negro', 'zombi_apestoso', 'esq_maldito', 'capitan_femur', 'momia_real'],
+  [R('nomuerto', 'bestia')]: ['caballo_fant', 'huargo', 'caballero_fant', 'jinete_sin'],
+  [R('espiritu', 'bestia')]: ['caballo_fant', 'caballero_fant', 'jinete_sin'],
+  [R('nomuerto', 'dragon')]: ['dragon_pantano', 'dragon_esq'],
+  [R('nomuerto', 'mago')]: ['hechicero', 'bruja_plaga', 'lich'],
+  [R('espiritu', 'espiritu')]: ['fantasma', 'espectro'],
+  [R('espiritu', 'nomuerto')]: ['fantasma', 'esq_maldito', 'espectro', 'lich'],
+  [R('espiritu', 'mago')]: ['hechicero', 'espectro'],
+  [R('guerrero', 'bestia')]: ['huargo', 'jinete_lobo', 'centauro'],
+  [R('guerrero', 'dragon')]: ['guerrero_osc', 'caballero_drag'],
+  [R('guerrero', 'hada')]: ['hada_guerrera', 'paladin'],
+  [R('guerrero', 'maquina')]: ['robot_chatarra', 'cabo_mecanico'],
+  [R('guerrero', 'guerrero')]: ['orco', 'guerrero_osc', 'orco_berserker', 'caballero_drag'],
+  [R('guerrero', 'nomuerto')]: ['esq_negro', 'esq_maldito', 'caballero_fant'],
+  [R('guerrero', 'roca')]: ['caballero_oxido', 'gargola'],
+  [R('mago', 'dragon')]: ['dragon_pantano', 'archimago'],
+  [R('mago', 'mago')]: ['hechicero', 'bruja_plaga', 'brujo_infernal'],
+  [R('mago', 'hada')]: ['ilusionista', 'hada_guerrera', 'angel_campana'],
+  [R('hada', 'ave')]: ['hada_viento', 'valquiria'],
+  [R('hada', 'hada')]: ['hada_viento', 'hada_guerrera', 'angel_campana'],
   [R('hada', 'nomuerto')]: ['esq_bendito'],
-  [R('ave', 'bestia')]: ['grifo', 'quimera'],
-  [R('demonio', 'bestia')]: ['bicefalo', 'quimera'],
-  [R('bestia', 'bestia')]: ['oso', 'bicefalo'],
-  [R('marino', 'dragon')]: ['leviatan'],
-  [R('marino', 'marino')]: ['serp_marina', 'kraken'],
+  [R('ave', 'bestia')]: ['cuervo', 'huargo', 'grifo', 'quimera'],
+  [R('ave', 'ave')]: ['cuervo', 'grifo'],
+  [R('demonio', 'bestia')]: ['huargo', 'bicefalo', 'quimera'],
+  [R('bestia', 'bestia')]: ['lobo', 'huargo', 'oso', 'bicefalo'],
+  [R('marino', 'dragon')]: ['serp_marina', 'leviatan'],
+  [R('marino', 'marino')]: ['cangrejo', 'serp_marina', 'kraken'],
   [R('marino', 'nomuerto')]: ['pirata_ahogado'],
-  [R('marino', 'guerrero')]: ['pirata_ahogado'],
-  [R('marino', 'reptil')]: ['cocodrilo', 'kraken'],
-  [R('marino', 'bestia')]: ['cocodrilo'],
-  [R('maquina', 'maquina')]: ['tanque', 'coloso'],
-  [R('roca', 'roca')]: ['gargola_onice', 'golem_runico'],
-  [R('roca', 'dragon')]: ['gargola_onice'],
-  [R('insecto', 'insecto')]: ['reina_colmena', 'escorpion'],
-  [R('insecto', 'reptil')]: ['escorpion'],
-  [R('insecto', 'planta')]: ['carnivora', 'guardian_bosque'],
-  [R('planta', 'planta')]: ['carnivora', 'guardian_bosque'],
-  [R('planta', 'roca')]: ['guardian_bosque'],
-  [R('planta', 'bestia')]: ['carnivora', 'guardian_bosque'],
-  [R('insecto', 'bestia')]: ['escorpion'],
-  [R('reptil', 'reptil')]: ['basilisco'],
-  [R('reptil', 'dragon')]: ['basilisco', 'dragon_ceniza'],
-  [R('dragon', 'dragon')]: ['dragon_ceniza'],
+  [R('marino', 'guerrero')]: ['cangrejo', 'pirata_ahogado'],
+  [R('marino', 'reptil')]: ['serpiente', 'cocodrilo', 'kraken'],
+  [R('marino', 'bestia')]: ['cangrejo', 'cocodrilo'],
+  [R('maquina', 'maquina')]: ['robot_chatarra', 'tanque', 'coloso'],
+  [R('maquina', 'roca')]: ['golem_barro', 'tanque'],
+  [R('roca', 'roca')]: ['golem_barro', 'gargola', 'gargola_onice', 'golem_runico'],
+  [R('roca', 'dragon')]: ['gargola', 'gargola_onice'],
+  [R('insecto', 'insecto')]: ['arana', 'mantis', 'gusano', 'reina_colmena', 'escorpion'],
+  [R('insecto', 'reptil')]: ['mantis', 'escorpion'],
+  [R('insecto', 'planta')]: ['enredadera', 'carnivora', 'guardian_bosque'],
+  [R('planta', 'planta')]: ['enredadera', 'carnivora', 'guardian_bosque'],
+  [R('planta', 'roca')]: ['arbol_abuelo', 'guardian_bosque'],
+  [R('planta', 'bestia')]: ['enredadera', 'carnivora', 'guardian_bosque'],
+  [R('insecto', 'bestia')]: ['mantis', 'escorpion'],
+  [R('reptil', 'reptil')]: ['serpiente', 'basilisco'],
+  [R('reptil', 'dragon')]: ['dragoncito', 'dragon_pantano', 'basilisco', 'dragon_ceniza'],
+  [R('dragon', 'dragon')]: ['dragon_pantano', 'dragon_ceniza'],
   [R('demonio', 'demonio')]: ['demonio_azufre', 'canciller'],
-  [R('vineta', 'dragon')]: ['dragon_tebeo'],
-  [R('vineta', 'vineta')]: ['dragon_tebeo', 'rey_tebeo'],
-  [R('vineta', 'mago')]: ['mago_vineta', 'rey_tebeo'],
+  [R('demonio', 'nomuerto')]: ['demonio_azufre', 'canciller'],
+  [R('demonio', 'guerrero')]: ['orco_berserker', 'demonio_azufre', 'canciller'],
+  [R('demonio', 'mago')]: ['bruja_plaga', 'brujo_infernal', 'canciller'],
+  [R('roca', 'bestia')]: ['golem_barro', 'gargola', 'oso'],
+  [R('roca', 'nomuerto')]: ['gargola', 'gargola_onice'],
 };
 const POR_ELEMENTO = {
   [R('fuego', 'agua')]: ['espiritu_vapor'],
@@ -316,13 +328,16 @@ const dist = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const habDe = (u) => (u.c && CARTAS[u.c].hab) || [];
 const tiene = (u, h) => habDe(u).includes(h);
 export const bichos = (S, p) => S.u.filter((u) => u.p === p && !u.lider && !u.trampa);
-const trampas = (S, p) => S.u.filter((u) => u.p === p && u.trampa);
+const soportes = (S, p) => S.u.filter((u) => u.p === p && u.trampa);   // «trampa» en la unidad = carta que no es bicho (magia, terreno, equipo o trampa)
+const trampas = (S, p) => S.u.filter((u) => u.p === p && u.trampa && CARTAS[u.c].k === 'trampa');
 
 // ---------- ataque y defensa reales: carta + equipo + terreno + líder ----------
 export function ajusteTerreno(S, u) {
   if (!u.c || u.trampa) return 0; const T = TERRENOS[S.tab[u.y][u.x]], C = CARTAS[u.c];
   const cumple = (r) => r && ((r.t || []).includes(C.t) || (r.el || []).includes(C.el));
-  let b = 0; if (cumple(T.mas)) b += 500; if (cumple(T.menos)) b -= 500; if (T.todosMenos && !cumple(T.mas)) b -= 500;
+  let b = 0; if (cumple(T.mas)) b += 500; if (cumple(T.menos)) b -= 500;
+  if (T.todosMenos && C.t !== 'vineta') b -= 500;
+  if (C.t === 'vineta' && !T.todosMenos) b -= 500;   // los dibujos fuera de su terreno se quedan sin gracia
   return b;
 }
 function pegadoALider(S, u) { const L = lider(S, u.p); return L && Math.max(Math.abs(L.x - u.x), Math.abs(L.y - u.y)) === 1; }
@@ -342,15 +357,12 @@ export function alcanceJuego(S, p) { return lider(S, p).clase === 'mago' ? 2 : 1
 export function casillasJuego(S, p, ids) {   // ids: las cartas elegidas, en orden. Devuelve [{x,y}] válidas según la primera.
   const C = CARTAS[ids[0]]; if (!C) return [];
   const L = lider(S, p), r = alcanceJuego(S, p), out = [];
-  if (C.k === 'magia' && C.obj === 'rival') return S.u.filter((u) => u.p !== p && !u.lider).map((u) => ({ x: u.x, y: u.y }));
-  if (C.k === 'magia') return [{ x: L.x, y: L.y }];
-  if (C.k === 'equipo' && ids.length === 1) return bichos(S, p).filter((u) => Math.max(Math.abs(u.x - L.x), Math.abs(u.y - L.y)) <= r).map((u) => ({ x: u.x, y: u.y }));   // el equipo se lo das a uno que tengas cerca
+  const soporte = C.k !== 'bicho' && !(C.k === 'equipo' && ids.length > 1);   // magias, terrenos, equipo y trampas: boca abajo en el campo, como en el Duelist
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
     const x = L.x + dx, y = L.y + dy; if (!dentro(x, y) || (!dx && !dy)) continue;
-    if (C.k === 'terreno') { out.push({ x, y }); continue; }
     if (en(S, x, y) || TERRENOS[S.tab[y][x]].muro) continue;
-    if (C.k === 'trampa' && trampas(S, p).length >= MAX_TRAMPAS) continue;
-    if ((C.k === 'bicho' || C.k === 'equipo') && bichos(S, p).length >= MAX_BICHOS && !(C.ritual)) continue;
+    if (soporte && soportes(S, p).length >= MAX_TRAMPAS) continue;
+    if (!soporte && bichos(S, p).length >= MAX_BICHOS) continue;
     out.push({ x, y });
   }
   return out;
@@ -382,32 +394,51 @@ export function jugar(S, p, sel, x, y, opts = {}) {
     const u = { id: S.uid++, c: acc, p, x, y, arriba: !!opts.arriba, def: !!opts.def, ma, md, hecho: true, cambio: true, red: 0 };
     S.u.push(u); S.ev.push({ t: 'invoca', p, uid: u.id, c: acc, x, y, fusion: fusiono, u: { ...u } });
     aplastar(S, u); if (S.u.includes(u)) trampasInvocacion(S, u);
-  } else if (C.k === 'trampa') {
+  } else {   // magia, terreno, equipo o trampa: se queda boca abajo en la casilla (se mueve y se activa en otro turno)
     if (en(S, x, y)) { S.cem[p].push(acc); return true; }
     const u = { id: S.uid++, c: acc, p, x, y, arriba: false, trampa: true, def: false, ma: 0, md: 0, hecho: true, cambio: true, red: 0 };
     S.u.push(u); S.ev.push({ t: 'pone', p, uid: u.id, x, y, u: { ...u } });
-  } else if (C.k === 'equipo') {
-    const u = en(S, x, y);
-    if (u && u.p === p && !u.lider && !u.trampa) { const [a, d] = bonoEquipo(u.c, acc); u.ma += a; u.md += d; S.ev.push({ t: 'equipa', p, uid: u.id, b: acc }); }
-    else S.ev.push({ t: 'perdida', p, c: acc });
-    S.cem[p].push(acc);
-  } else if (C.k === 'terreno') {
-    for (const [dx, dy] of [[0, 0], ...VECINOS]) {   // la casilla y una a cada lado (en cruz)
-      const xx = x + dx, yy = y + dy; if (!dentro(xx, yy)) continue;
-      if (C.terr === 'laberinto' && en(S, xx, yy)) continue;
-      S.tab[yy][xx] = C.terr;
-    }
-    S.ev.push({ t: 'terreno', p, x, y, terr: C.terr, c: acc }); S.cem[p].push(acc);
-    for (const u of [...S.u]) if (Math.abs(u.x - x) + Math.abs(u.y - y) <= 1) aplastar(S, u);
-  } else if (C.k === 'magia') { magia(S, p, acc, x, y); S.cem[p].push(acc); }
+  }
   comprobar(S); return true;
+}
+function terreno(S, p, id, x, y) {
+  const C = CARTAS[id];
+  for (const [dx, dy] of [[0, 0], ...VECINOS]) {   // la casilla y una a cada lado (en cruz)
+    const xx = x + dx, yy = y + dy; if (!dentro(xx, yy)) continue;
+    if (C.terr === 'laberinto' && en(S, xx, yy)) continue;
+    S.tab[yy][xx] = C.terr;
+  }
+  S.ev.push({ t: 'terreno', p, x, y, terr: C.terr, c: id });
+  for (const u of [...S.u]) if (Math.abs(u.x - x) + Math.abs(u.y - y) <= 1) aplastar(S, u);
+}
+// Activar una magia o un terreno que tienes en el campo (al darle la vuelta). La Bola de Fuego pide a quién.
+export function objetivosMagia(S, uid) { const u = S.u.find((v) => v.id === uid); return u && u.c === 'bola_fuego' ? S.u.filter((v) => v.p !== u.p && !v.lider).map((v) => ({ x: v.x, y: v.y })) : []; }
+export function activar(S, uid, tx, ty) {
+  const u = S.u.find((v) => v.id === uid); if (!u || !u.trampa || u.p !== S.juega || u.hecho || S.fin) return false;
+  const C = CARTAS[u.c]; if (C.k !== 'magia' && C.k !== 'terreno') return false;
+  if (u.c === 'bola_fuego' && !objetivosMagia(S, uid).some((c) => c.x === tx && c.y === ty)) return false;
+  u.arriba = true; S.ev.push({ t: 'activa', p: u.p, uid, c: u.c });
+  const x = u.x, y = u.y; destruir(S, u, 'gastada');
+  if (C.k === 'terreno') terreno(S, u.p, u.c, x, y); else magia(S, u.p, u.c, tx ?? x, ty ?? y);
+  comprobar(S); return true;
+}
+export function equiparCon(S, uid, x, y) {   // el equipo que tienes en el campo se le pone al bicho tuyo de al lado
+  const u = S.u.find((v) => v.id === uid), b = en(S, x, y);
+  if (!u || !u.trampa || CARTAS[u.c].k !== 'equipo' || u.p !== S.juega || u.hecho || !b || b.p !== u.p || b.lider || b.trampa || dist(u, b) !== 1) return false;
+  const [a, d] = bonoEquipo(b.c, u.c); b.ma += a; b.md += d; S.ev.push({ t: 'equipa', p: u.p, uid: b.id, b: u.c, desde: u.id }); destruir(S, u, 'gastada');
+  return true;
+}
+export function descartar(S, p, sel) {   // tirar cartas de la mano (no gasta la jugada)
+  if (S.fin || S.juega !== p || !sel.length) return false;
+  const ids = sel.map((i) => S.mano[p][i]); if (ids.some((v) => !v)) return false;
+  S.mano[p] = S.mano[p].filter((_, i) => !sel.includes(i)); S.cem[p].push(...ids); S.ev.push({ t: 'descarta', p, n: ids.length, ids }); return true;
 }
 function magia(S, p, id, x, y) {
   const o = 1 - p; S.ev.push({ t: 'magia', p, c: id, x, y });
   if (id === 'chispas') danar(S, o, 700);
   else if (id === 'pocima') { S.lp[p] += 1500; S.ev.push({ t: 'cura', p, n: 1500 }); }
   else if (id === 'farol') for (const u of S.u) if (u.p === o && !u.arriba) { u.arriba = true; S.ev.push({ t: 'voltea', uid: u.id }); }
-  else if (id === 'escoba') for (const u of [...S.u]) if (u.p === o && u.trampa) destruir(S, u, 'escoba');
+  else if (id === 'escoba') for (const u of [...S.u]) if (u.p === o && u.trampa && CARTAS[u.c].k === 'trampa') destruir(S, u, 'escoba');
   else if (id === 'bola_fuego') {
     const u = en(S, x, y); if (!u || u.p === p || u.lider) return;
     if (!u.arriba) { u.arriba = true; S.ev.push({ t: 'voltea', uid: u.id }); }
@@ -459,15 +490,16 @@ export function pasos(S, u) {
   return tiene(u, 'veloz') || favorece ? 2 : 1;
 }
 export function opciones(S, uid) {   // { mover: [{x,y}], atacar: [{x,y,desde}] }
-  const u = S.u.find((v) => v.id === uid), res = { mover: [], atacar: [] };
-  if (!u || u.trampa || u.p !== S.juega || u.hecho || u.red > 0 || S.fin) return res;
-  const max = pasos(S, u), vistos = new Map([[u.x + ',' + u.y, 0]]), cola = [[u.x, u.y, 0]];
+  const u = S.u.find((v) => v.id === uid), res = { mover: [], atacar: [], equipar: [] };
+  if (!u || u.p !== S.juega || u.hecho || u.red > 0 || S.fin) return res;
+  if (u.trampa && CARTAS[u.c].k === 'equipo') for (const [dx, dy] of VECINOS) { const b = en(S, u.x + dx, u.y + dy); if (b && b.p === u.p && !b.lider && !b.trampa) res.equipar.push({ x: b.x, y: b.y }); }
+  const max = u.trampa ? 1 : pasos(S, u), vistos = new Map([[u.x + ',' + u.y, 0]]), cola = [[u.x, u.y, 0]];
   while (cola.length) {
     const [x, y, d] = cola.shift();
     for (const [dx, dy] of VECINOS) {
       const xx = x + dx, yy = y + dy, k = xx + ',' + yy; if (!dentro(xx, yy)) continue;
       const o = en(S, xx, yy);
-      if (o) { if (o.p !== u.p && !u.lider && !u.def && !tiene(u, 'muro') && !res.atacar.some((a) => a.x === xx && a.y === yy)) res.atacar.push({ x: xx, y: yy, desde: { x, y } }); continue; }
+      if (o) { if (o.p !== u.p && !u.lider && !u.trampa && !u.def && !tiene(u, 'muro') && !res.atacar.some((a) => a.x === xx && a.y === yy)) res.atacar.push({ x: xx, y: yy, desde: { x, y } }); continue; }
       if (vistos.has(k) || d + 1 > max || !puedeEntrar(S, u, xx, yy)) continue;
       vistos.set(k, d + 1); res.mover.push({ x: xx, y: yy }); cola.push([xx, yy, d + 1]);
     }
@@ -478,7 +510,7 @@ export function mover(S, uid, x, y) {
   const u = S.u.find((v) => v.id === uid); if (!opciones(S, uid).mover.some((c) => c.x === x && c.y === y)) return false;
   const desde = { x: u.x, y: u.y }; u.x = x; u.y = y; u.hecho = true; u.cambio = true;
   S.ev.push({ t: 'mueve', uid, desde, x, y });
-  if (!u.lider) { aplastar(S, u); if (S.u.includes(u)) trampasPaso(S, u); }
+  if (!u.lider && !u.trampa) { aplastar(S, u); if (S.u.includes(u)) trampasPaso(S, u); }
   comprobar(S); return true;
 }
 export function atacar(S, uid, x, y) {
@@ -491,8 +523,9 @@ export function atacar(S, uid, x, y) {
 }
 function combate(S, at, de) {
   const antes = { x: at.x, y: at.y };
-  if (de.trampa) {   // has atacado una trampa creyendo que era un bicho
-    de.arriba = true; S.ev.push({ t: 'voltea', uid: de.id }); disparar(S, de, at);
+  if (de.trampa) {   // has atacado una carta que no era un bicho: si es trampa, salta; si no, la rompes
+    de.arriba = true; S.ev.push({ t: 'voltea', uid: de.id });
+    if (CARTAS[de.c].k === 'trampa') disparar(S, de, at); else destruir(S, de, 'combate');
     if (S.u.includes(at) && !en(S, de.x, de.y)) { at.x = de.x; at.y = de.y; S.ev.push({ t: 'mueve', uid: at.id, desde: antes, x: at.x, y: at.y }); }
     return;
   }
@@ -558,6 +591,20 @@ export const PERFILES = {
 const MEDIO = { a: 1200, d: 1100 };   // lo que la IA supone que hay debajo de una carta boca abajo
 function permutaciones(n, k) { const out = []; const rec = (pre) => { if (pre.length) out.push([...pre]); if (pre.length === k) return; for (let i = 0; i < n; i++) if (!pre.includes(i)) { pre.push(i); rec(pre); pre.pop(); } }; rec([]); return out; }
 function simularCadena(ids) { let acc = ids[0], perdidas = 0, fus = 0, ma = 0, md = 0; for (let i = 1; i < ids.length; i++) { const A = CARTAS[acc], Bc = CARTAS[ids[i]]; if (A.k === 'bicho' && Bc.k === 'bicho') { const r = fusionar(acc, ids[i]); if (r) { acc = r; fus++; ma = md = 0; continue; } } if (A.k === 'bicho' && Bc.k === 'equipo') { ma += Bc.a; md += Bc.d; continue; } perdidas += valor(acc); acc = ids[i]; ma = md = 0; } return { acc, perdidas, fus, ma, md }; }
+function valorMagia(S, p, id) {   // cuánto le apetece a la IA lanzar esta magia ahora (y a quién)
+  const o = 1 - p, L = lider(S, p); let v = 0, x = L.x, y = L.y;
+  if (id === 'chispas') v = 7 + (S.lp[o] <= 700 ? 100 : 0);
+  if (id === 'pocima') v = S.lp[p] < 4000 ? 16 : 3;
+  if (id === 'farol') v = S.u.filter((u) => u.p === o && !u.arriba && !u.lider).length * 4;
+  if (id === 'escoba') v = S.u.filter((u) => u.p === o && u.trampa && u.arriba && CARTAS[u.c].k === 'trampa').length * 8;
+  if (id === 'bola_fuego') { const t = S.u.filter((u) => u.p === o && !u.lider).map((u) => ({ u, s: u.arriba ? (u.trampa || ataqueDe(S, u) <= 1500 ? valor(u.c) : 1) : 6 })).sort((a, b) => b.s - a.s)[0]; if (t) { v = t.s; x = t.u.x; y = t.u.y; } }
+  return { v, x, y };
+}
+function valorTerreno(S, p, terr, x, y) {   // lo que gana (sus bichos) menos lo que gana el rival si la cruz alrededor de (x, y) pasa a ser ese terreno
+  let s = 0;
+  for (const u of S.u) if (!u.lider && !u.trampa && Math.abs(u.x - x) + Math.abs(u.y - y) <= 1 && visible(S, u, p)) { const antes = S.tab[u.y][u.x]; const b0 = ajusteTerreno(S, u); S.tab[u.y][u.x] = terr; const b = ajusteTerreno(S, u); S.tab[u.y][u.x] = antes; s += (u.p === p ? 1 : -1) * (b - b0) / 100; }
+  return s;
+}
 export function accionIA(S, p, perfil = PERFILES.novato) {
   if (S.fin || S.juega !== p) return { t: 'fin' };
   const o = 1 - p, L = lider(S, p), LR = lider(S, o);
@@ -584,24 +631,31 @@ export function accionIA(S, p, perfil = PERFILES.novato) {
         const casilla = elegirCasilla(ids, true); if (!casilla) continue;
         const cerca = S.u.filter((u) => u.p === o && !u.lider).length;
         cons({ v: (valor(ids[0]) * .9 + cerca * 2) * perfil.trampas, j: { t: 'jugar', sel, ...casilla } });
-      } else if (sel.length === 1 && C0.k === 'equipo') {
+      } else if (sel.length === 1 && C0.k === 'equipo') {   // se deja al lado de su bicho más fuerte y otro turno se lo pone
         const objetivo = bichos(S, p).sort((a, b) => ataqueDe(S, b) - ataqueDe(S, a))[0]; if (!objetivo) continue;
-        cons({ v: valor(ids[0]) * .8, j: { t: 'jugar', sel, x: objetivo.x, y: objetivo.y } });
+        const cs = casillasJuego(S, p, ids); if (!cs.length) continue;
+        const c = cs.sort((m, n) => dist(m, objetivo) - dist(n, objetivo))[0];
+        cons({ v: valor(ids[0]) * .7 - dist(c, objetivo), j: { t: 'jugar', sel, x: c.x, y: c.y } });
       } else if (sel.length === 1 && C0.k === 'magia') {
-        let v = 0, x = L.x, y = L.y; const id = ids[0];
-        if (id === 'chispas') v = 7 + (S.lp[o] <= 700 ? 100 : 0);
-        if (id === 'pocima') v = S.lp[p] < 4000 ? 16 : 3;
-        if (id === 'farol') v = S.u.filter((u) => u.p === o && !u.arriba && !u.lider).length * 4;
-        if (id === 'escoba') v = S.u.filter((u) => u.p === o && u.trampa && u.arriba).length * 8 + 1;
-        if (id === 'bola_fuego') { const t = S.u.filter((u) => u.p === o && !u.lider).map((u) => ({ u, s: u.arriba ? (ataqueDe(S, u) <= 1500 ? valor(u.c) : 1) : 6 })).sort((a, b) => b.s - a.s)[0]; if (t) { v = t.s; x = t.u.x; y = t.u.y; } }
-        if (v > 0) cons({ v, j: { t: 'jugar', sel, x, y } });
+        const m = valorMagia(S, p, ids[0]), c = elegirCasilla(ids, false); if (!c) continue;
+        if (m.v > 0) cons({ v: m.v * .8, j: { t: 'jugar', sel, x: c.x, y: c.y } });
       } else if (sel.length === 1 && C0.k === 'terreno') {
-        const cs = casillasJuego(S, p, ids); let best = null;
-        for (const c of cs) { let s = 0; for (const u of S.u) if (!u.lider && !u.trampa && Math.abs(u.x - c.x) + Math.abs(u.y - c.y) <= 1 && visible(S, u, p)) { const antes = S.tab[u.y][u.x]; S.tab[u.y][u.x] = C0.terr; const b = ajusteTerreno(S, u); S.tab[u.y][u.x] = antes; s += (u.p === p ? 1 : -1) * (b - ajusteTerreno(S, u)) / 100; } if (!best || s > best.s) best = { c, s }; }
-        if (best && best.s > 0) cons({ v: best.s, j: { t: 'jugar', sel, ...best.c } });
+        let best = null; for (const c of casillasJuego(S, p, ids)) { const v = valorTerreno(S, p, C0.terr, c.x, c.y); if (!best || v > best.v) best = { c, v }; }
+        if (best && best.v > 0) cons({ v: best.v * .8, j: { t: 'jugar', sel, ...best.c } });
       }
     }
     if (mejor && mejor.v > 0) return mejor.j;
+  }
+  // 1b) las cartas que tiene boca abajo en el campo: activar magias y terrenos que sirvan, llevar el equipo a su bicho
+  for (const u of S.u.filter((v) => v.p === p && v.trampa && !v.hecho)) {
+    const k = CARTAS[u.c].k;
+    if (k === 'magia') { const m = valorMagia(S, p, u.c); if (m.v > 2) return { t: 'activar', uid: u.id, x: m.x, y: m.y }; }
+    if (k === 'terreno' && valorTerreno(S, p, CARTAS[u.c].terr, u.x, u.y) > 2) return { t: 'activar', uid: u.id };
+    if (k === 'equipo') {
+      const op = opciones(S, u.id);
+      if (op.equipar.length) { const b = op.equipar.map((c) => en(S, c.x, c.y)).sort((m, n) => ataqueDe(S, n) - ataqueDe(S, m))[0]; return { t: 'equipar', uid: u.id, x: b.x, y: b.y }; }
+      const mios = bichos(S, p); if (mios.length && op.mover.length) { const cerca = (c) => Math.min(...mios.map((b) => dist(c, b))); const m = op.mover.sort((a, b) => cerca(a) - cerca(b))[0]; if (cerca(m) < cerca(u)) return { t: 'mover', uid: u.id, x: m.x, y: m.y }; }
+    }
   }
   // 2) los bichos: atacar si sale a cuenta; si no, avanzar o guardar
   const mios = bichos(S, p).filter((u) => !u.hecho && u.red <= 0).sort((a, b) => ataqueDe(S, b) - ataqueDe(S, a));
@@ -650,6 +704,9 @@ export function aplicar(S, p, a) {   // aplica una acción (de la IA o de la red
   if (a.t === 'voltear') return voltear(S, a.uid);
   if (a.t === 'posicion') return cambiarPosicion(S, a.uid);
   if (a.t === 'fin') { if (S.juega !== p) return false; finTurno(S); return true; }
+  if (a.t === 'activar') return activar(S, a.uid, a.x, a.y);
+  if (a.t === 'equipar') return equiparCon(S, a.uid, a.x, a.y);
+  if (a.t === 'descartar') return descartar(S, p, a.sel);
   if (a.t === 'rendir') { if (S.fin) return false; S.fin = { gana: 1 - p, motivo: 'rendido' }; S.ev.push({ t: 'fin', ...S.fin }); return true; }
   return false;
 }
@@ -701,9 +758,10 @@ export function construirMazo(tema, s, objetivo = VALOR_INICIAL, { nivelMax = 4,
 // El mazo de viñetas de pruebas (para Carlos, en ?debug=1): dibujos que en su terreno pegan y fuera de él se debilitan los demás
 export const MAZO_VINETAS = [
   ...Array(3).fill('conejo_garabato'), ...Array(3).fill('gato_garabato'), ...Array(3).fill('sirena_tebeo'), ...Array(3).fill('calavera_risa'),
-  ...Array(3).fill('caballero_papel'), ...Array(3).fill('muneco_tinta'), ...Array(2).fill('mago_vineta'), ...Array(3).fill('dragoncito'),
-  ...Array(3).fill('t_vinetas'), ...Array(3).fill('bola_fuego'), 'farol', 'chispas', 'chispas',
-  'espada', 'espada', 'amuleto', 'amuleto', 'foso', 'foso', 'espejo', 'sello',
+  ...Array(2).fill('caballero_papel'), ...Array(3).fill('muneco_tinta'), 'mago_vineta', ...Array(2).fill('dragoncito'),
+  ...Array(3).fill('trasgo'), ...Array(2).fill('hada_rocio'), 'aprendiz',
+  ...Array(2).fill('t_vinetas'), 'bola_fuego', 'farol', 'chispas', 'pocima',
+  'espada', 'espada', 'amuleto', 'escudo', 'foso', 'espejo', 'red', 'sello',
 ];
 export const valorMazo = (m) => Math.round(m.reduce((s, id) => s + valor(id), 0));
 export function mazosIniciales(heroeId) {   // los 3 que te ofrecen (fijos para cada héroe)
