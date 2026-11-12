@@ -383,13 +383,13 @@ export function jugar(S, p, sel, x, y, opts = {}) {
     else S.ev.push({ t: 'perdida', p, c: acc });
     S.cem[p].push(acc);
   } else if (C.k === 'terreno') {
-    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    for (const [dx, dy] of [[0, 0], ...VECINOS]) {   // la casilla y una a cada lado (en cruz)
       const xx = x + dx, yy = y + dy; if (!dentro(xx, yy)) continue;
       if (C.terr === 'laberinto' && en(S, xx, yy)) continue;
       S.tab[yy][xx] = C.terr;
     }
     S.ev.push({ t: 'terreno', p, x, y, terr: C.terr, c: acc }); S.cem[p].push(acc);
-    for (const u of [...S.u]) if (Math.abs(u.x - x) <= 1 && Math.abs(u.y - y) <= 1) aplastar(S, u);
+    for (const u of [...S.u]) if (Math.abs(u.x - x) + Math.abs(u.y - y) <= 1) aplastar(S, u);
   } else if (C.k === 'magia') { magia(S, p, acc, x, y); S.cem[p].push(acc); }
   comprobar(S); return true;
 }
@@ -530,7 +530,7 @@ export function finTurno(S) {
   if (!S.mano[o].length && !S.mazo[o].length) { S.fin = { gana: p, motivo: 'mazo' }; S.ev.push({ t: 'fin', ...S.fin }); return; }
   S.ev.push({ t: 'turno', p: o, n: S.turno });
 }
-export const TEXTOS_FIN = { vida: 'se ha quedado sin vida', rodeado: 'tiene al líder rodeado', mazo: 'se ha quedado sin cartas', tiempo: 'ha llegado al turno 99' };
+export const TEXTOS_FIN = { rendido: 'se ha rendido', vida: 'se ha quedado sin vida', rodeado: 'tiene al líder rodeado', mazo: 'se ha quedado sin cartas', tiempo: 'ha llegado al turno 99' };
 
 // ---------- lo que ve cada uno (para la IA, que no hace trampas, y para la pantalla) ----------
 export const visible = (S, u, quien) => u.p === quien || u.arriba;
@@ -588,7 +588,7 @@ export function accionIA(S, p, perfil = PERFILES.novato) {
         if (v > 0) cons({ v, j: { t: 'jugar', sel, x, y } });
       } else if (sel.length === 1 && C0.k === 'terreno') {
         const cs = casillasJuego(S, p, ids); let best = null;
-        for (const c of cs) { let s = 0; for (const u of S.u) if (!u.lider && !u.trampa && Math.abs(u.x - c.x) <= 1 && Math.abs(u.y - c.y) <= 1 && visible(S, u, p)) { const antes = S.tab[u.y][u.x]; S.tab[u.y][u.x] = C0.terr; const b = ajusteTerreno(S, u); S.tab[u.y][u.x] = antes; s += (u.p === p ? 1 : -1) * (b - ajusteTerreno(S, u)) / 100; } if (!best || s > best.s) best = { c, s }; }
+        for (const c of cs) { let s = 0; for (const u of S.u) if (!u.lider && !u.trampa && Math.abs(u.x - c.x) + Math.abs(u.y - c.y) <= 1 && visible(S, u, p)) { const antes = S.tab[u.y][u.x]; S.tab[u.y][u.x] = C0.terr; const b = ajusteTerreno(S, u); S.tab[u.y][u.x] = antes; s += (u.p === p ? 1 : -1) * (b - ajusteTerreno(S, u)) / 100; } if (!best || s > best.s) best = { c, s }; }
         if (best && best.s > 0) cons({ v: best.s, j: { t: 'jugar', sel, ...best.c } });
       }
     }
@@ -640,7 +640,8 @@ export function aplicar(S, p, a) {   // aplica una acción (de la IA o de la red
   if (a.t === 'atacar') return atacar(S, a.uid, a.x, a.y);
   if (a.t === 'voltear') return voltear(S, a.uid);
   if (a.t === 'posicion') return cambiarPosicion(S, a.uid);
-  if (a.t === 'fin') { finTurno(S); return true; }
+  if (a.t === 'fin') { if (S.juega !== p) return false; finTurno(S); return true; }
+  if (a.t === 'rendir') { if (S.fin) return false; S.fin = { gana: 1 - p, motivo: 'rendido' }; S.ev.push({ t: 'fin', ...S.fin }); return true; }
   return false;
 }
 

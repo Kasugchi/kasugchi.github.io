@@ -26,7 +26,9 @@ const sol = new THREE.DirectionalLight('#fff0d8', 1.6); sol.position.set(-4, 10,
 Object.assign(sol.shadow.camera, { left: -6, right: 6, top: 6, bottom: -6 }); escena.add(sol);
 for (const [x, z, c] of [[-5.5, -4, '#ffb85a'], [5.5, -4, '#ffb85a'], [-5.5, 4.5, '#ffb85a'], [5.5, 4.5, '#ffb85a']]) { const l = new THREE.PointLight(c, 10, 9); l.position.set(x, 1.6, z); escena.add(l); }
 
-const posX = (x) => x - (LADO - 1) / 2, posZ = (y) => y - (LADO - 1) / 2;
+let GIRO = 1;   // -1 si juegas con las de arriba (en línea, el que acepta): el tablero se ve desde tu lado
+const posX = (x) => GIRO * (x - (LADO - 1) / 2), posZ = (y) => GIRO * (y - (LADO - 1) / 2);
+const deX = (wx) => Math.round(GIRO * wx + (LADO - 1) / 2), deZ = (wz) => Math.round(GIRO * wz + (LADO - 1) / 2);
 export const mundo = (x, y, h = 0) => new THREE.Vector3(posX(x), h, posZ(y));
 
 // ---------- la mesa: madera, velas y un tapete ----------
@@ -80,6 +82,13 @@ export function desmarcar() { for (const mk of marcas) mk.visible = false; }
 
 // ---------- figuras ----------
 const COLOR_LADO = ['#3a8aff', '#ff4a4a'];
+let YO3 = 0;   // quién mira: lo suyo en azul y abajo
+export function orientar(yo) {
+  YO3 = yo; GIRO = yo === 1 ? -1 : 1;
+  for (const m of casillas) m.position.copy(mundo(m.userData.x, m.userData.y, 0));
+  marcas.forEach((mk, i) => mk.position.copy(mundo(i % LADO, Math.floor(i / LADO), .075)));
+  muros.forEach((mu, i) => mu.position.copy(mundo(i % LADO, Math.floor(i / LADO), .33)));
+}
 const figuras = new Map();   // uid → { g, firma }
 function reverso(p) {
   return lienzo(128, 176, (x, w, h) => {
@@ -139,12 +148,12 @@ function firmaDe(S, u, yo) { return [u.c, u.arriba, u.def, u.trampa, u.lider, u.
 const visibleLabel = (S, u, yo) => u.lider || u.trampa ? '' : (u.arriba || u.p === yo) ? (u.def ? '🛡' + defensaDe(S, u) : '⚔' + ataqueDe(S, u)) : '';
 function construir(S, u, yo) {
   const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(.4, .42, .05, 24), toon(COLOR_LADO[u.p])); base.position.y = .085; g.add(base);
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(.4, .42, .05, 24), toon(COLOR_LADO[u.p === yo ? 0 : 1])); base.position.y = .085; g.add(base);
   if (u.lider) g.add(figuraLider(INFO_LIDERES[u.p] || {}));
-  else if (u.trampa) { if (u.arriba) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dibujoEmoji(CARTAS[u.c].e, '#e8d8ff') })); s.scale.set(.6, .6, 1); s.position.y = .45; g.add(s); } else g.add(cartaTumbada(u.p, false)); }
-  else if (!u.arriba) g.add(cartaTumbada(u.p, u.def));
+  else if (u.trampa) { if (u.arriba) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dibujoEmoji(CARTAS[u.c].e, '#e8d8ff') })); s.scale.set(.6, .6, 1); s.position.y = .45; g.add(s); } else g.add(cartaTumbada(u.p === yo ? 0 : 1, false)); }
+  else if (!u.arriba) g.add(cartaTumbada(u.p === yo ? 0 : 1, u.def));
   else { const f = figuraBicho(CARTAS[u.c]); if (u.def) { f.rotation.y = Math.PI / 2; f.scale.setScalar(.85); } g.add(f); }
-  if (u.p === 1 && !u.lider) g.rotation.y = Math.PI;
+  if (u.p !== yo && !u.lider) g.rotation.y = Math.PI;
   const txt = visibleLabel(S, u, yo); if (txt) { const s = etiqueta(txt, u.def, !u.arriba); s.position.y = 1.05; g.add(s); g.userData.etiqueta = s; }
   if (u.red > 0) { const r = new THREE.Mesh(new THREE.TorusGeometry(.32, .03, 4, 16).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#e8e8e8' })); r.position.y = .4; g.add(r); }
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -168,7 +177,7 @@ export function ponerFigura(S, u, yo) {   // una figura nueva desde una foto de 
   const g = construir(S, u, yo); g.position.copy(mundo(u.x, u.y, 0)); escena.add(g); figuras.set(u.id, { g, firma: firmaDe(S, u, yo) });
 }
 export function rehacer(S, uid, yo) { const u = S.u.find((v) => v.id === uid), f = figuras.get(uid); if (!u || !f) return; const pos = f.g.position.clone(), g = construir(S, u, yo); escena.remove(f.g); g.position.copy(pos); escena.add(g); f.g = g; f.firma = firmaDe(S, u, yo); }
-export const casillaDe = (uid) => { const f = figuras.get(uid); return f ? { x: Math.round(f.g.position.x + (LADO - 1) / 2), y: Math.round(f.g.position.z + (LADO - 1) / 2) } : null; };
+export const casillaDe = (uid) => { const f = figuras.get(uid); return f ? { x: deX(f.g.position.x), y: deZ(f.g.position.z) } : null; };
 export function limpiar() { for (const [, f] of figuras) escena.remove(f.g); figuras.clear(); terrenoPuesto = []; }
 
 // ---------- tweens y animaciones ----------
@@ -212,7 +221,7 @@ export function casillaEn(cx, cy) {
   const h = ray.intersectObjects(casillas, false)[0]; if (h) return h.object.userData;
   // si tocas una figura alta, cuenta su casilla
   const p = new THREE.Vector3(); ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -.4), p);
-  const x = Math.round(p.x + (LADO - 1) / 2), y = Math.round(p.z + (LADO - 1) / 2); return x >= 0 && y >= 0 && x < LADO && y < LADO ? { x, y } : null;
+  const x = deX(p.x), y = deZ(p.z); return x >= 0 && y >= 0 && x < LADO && y < LADO ? { x, y } : null;
 }
 
 // ---------- bucle ----------

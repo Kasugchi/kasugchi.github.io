@@ -5,7 +5,7 @@
 //  ?debug=1: todas las cartas, todos los rivales y no se guarda nada.
 // =============================================================
 import * as C3 from './cartas-3d.js';
-import { pintarTablero, sincronizar, ponerFigura, rehacer, figura, casillaDe, marcar, desmarcar, casillaEn, moverFigura, caer, hundir, sacudir, primerPlano, vistaMesa, lideres, limpiar, ui, sonido, mundo } from './cartas-3d.js';
+import { orientar, pintarTablero, sincronizar, ponerFigura, rehacer, figura, casillaDe, marcar, desmarcar, casillaEn, moverFigura, caer, hundir, sacudir, primerPlano, vistaMesa, lideres, limpiar, ui, sonido, mundo } from './cartas-3d.js';
 import * as R from './cartas-reglas.js';
 import { leerLocal, cargarHeroe, guardarHeroe, CLASES } from './claro-heroes.js';
 
@@ -15,12 +15,12 @@ const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nom = (id) => CARTAS[id]?.n || '¿?';
 const DEBUG = new URLSearchParams(location.search).has('debug');
-const YO = 0, EL = 1;
+let YO = 0, EL = 1;   // en línea, el que acepta el reto juega con las de arriba (YO = 1)
 
 // ---------- tu colección (en el héroe) ----------
 let DEF = leerLocal();
 const K = () => DEF.cartas;
-function guardar() { if (DEF && !DEBUG) guardarHeroe(DEF); if (DEBUG) try { sessionStorage.setItem('cartas_debug', JSON.stringify(DEF.cartas)); } catch {} }   // en pruebas, solo para esta pestaña
+function guardar() { if (typeof publicarCartas === 'function') try { publicarCartas(); } catch {} if (DEF && !DEBUG) guardarHeroe(DEF); if (DEBUG) try { sessionStorage.setItem('cartas_debug', JSON.stringify(DEF.cartas)); } catch {} }   // en pruebas, solo para esta pestaña
 function modoDebug() {
   DEF = structuredClone(DEF || { nombre: 'Probador', clase: 'barbaro', raza: 'humano' });
   try { const g = JSON.parse(sessionStorage.getItem('cartas_debug') || 'null'); if (g) DEF.cartas = g; } catch {}
@@ -52,11 +52,16 @@ function textoCarta(id) {
 const panel = $('#panel');
 const mostrar = (html) => { panel.innerHTML = html; panel.hidden = false; panel.scrollTop = 0; };
 let pestana = 'duelos';
+let tirada = 0;   // en pruebas: cada «otra tirada» saca mazos nuevos de todos los temas
 function pantallaElegir() {
-  const ops = R.mazosIniciales(DEF.id || DEF.nombre || 'yo');
-  mostrar(`<h2>🃏 Cartas de Velmor<small>Elige tu primer mazo. Cada héroe recibe tres distintos; todos valen lo mismo, cambia el estilo.</small></h2>
-    ${ops.map((o, i) => `<button class="tema" data-i="${i}"><span>${o.tema.e}</span><b>${esc(o.tema.n)}</b><small>${esc(o.tema.txt)}</small>
+  const quien = DEF.id || DEF.nombre || 'yo';
+  const ops = DEBUG ? R.TEMAS.map((t) => ({ tema: t, mazo: R.construirMazo(t.id, R.semilla('mazo', quien + (tirada ? '#' + tirada : ''), t.id)) })) : R.mazosIniciales(quien);
+  mostrar(`<h2>🃏 Cartas de Velmor<small>${DEBUG ? `🧪 Pruebas: los ${ops.length} temas${tirada ? ` (tirada ${tirada})` : ''}. Fuera de pruebas, cada héroe ve solo tres.` : 'Elige tu primer mazo. Cada héroe recibe tres distintos; todos valen lo mismo, cambia el estilo.'}</small></h2>
+    ${DEBUG ? `<div class="fila-botones"><button id="bTirada">🎲 Otra tirada</button>${K()?.mazo?.length ? '<button id="bVolverMenu">↩️ Volver</button>' : ''}</div>` : ''}
+    ${ops.map((o, i) => `<button class="tema" data-i="${i}"><span>${o.tema.e}</span><b>${esc(o.tema.n)}</b><small>${esc(o.tema.txt)}${DEBUG ? ` · fuerza ${R.valorMazo(o.mazo)}` : ''}</small>
       <div class="muestra">${[...new Set(o.mazo.filter(R.esBicho))].sort((a, b) => CARTAS[b].a - CARTAS[a].a).slice(0, 6).map((id) => `<i title="${esc(nom(id))}">${CARTAS[id].e}</i>`).join('')}</div></button>`).join('')}`);
+  $('#bTirada')?.addEventListener('click', () => { tirada++; pantallaElegir(); });
+  $('#bVolverMenu')?.addEventListener('click', () => pantallaMenu('mazo'));
   panel.querySelectorAll('[data-i]').forEach((b) => b.onclick = () => {
     const o = ops[+b.dataset.i]; DEF.cartas = { tema: o.tema.id, mazo: [...o.mazo], coleccion: DEBUG ? K().coleccion : contar(o.mazo), libro: K()?.libro || {}, victorias: K()?.victorias || {} };
     guardar(); pantallaMenu('duelos');
@@ -69,6 +74,7 @@ function pantallaMenu(p = pestana) {
   mostrar(pestanas() + html);
   panel.querySelectorAll('[data-p]').forEach((b) => b.onclick = () => pantallaMenu(b.dataset.p));
   if (p === 'duelos') panel.querySelectorAll('[data-reto]').forEach((b) => b.onclick = () => empezarDuelo(R.RIVALES_C.find((r) => r.id === b.dataset.reto)));
+  if (p === 'duelos') panel.querySelectorAll('[data-sala]').forEach((b) => b.onclick = () => retar(b.dataset.sala));
   if (p === 'mazo') alMazo();
 }
 function htmlDuelos() {
@@ -79,17 +85,18 @@ function htmlDuelos() {
       const abierto = DEBUG || i === 0 || (v[R.RIVALES_C[i - 1].id] || 0) > 0, g = v[r.id] || 0;
       return `<div class="rival ${abierto ? '' : 'cerrado'}"><b>${r.e} ${esc(r.quien)}</b> <small>${TERRENOS[r.terreno].e} juega en ${TERRENOS[r.terreno].n.toLowerCase()} · ${g ? `le has ganado ${g} ${g === 1 ? 'vez' : 'veces'}` : 'sin ganarle aún'}</small>
         <small>«${esc(r.frase)}»</small><div class="fila-botones"><button class="grande" data-reto="${r.id}" ${abierto && ok ? '' : 'disabled'}>${abierto ? (g ? '⚔️ Revancha' : '⚔️ Retar') : '🔒 Gana al anterior'}</button></div></div>`;
-    }).join('')}`;
+    }).join('')}<h3 class="sala">👥 Contra los de la sala</h3><div id="plaza">${htmlPlaza()}</div>`;
 }
 function htmlMazo() {
   const mazo = contar(K().mazo), col = K().coleccion, ids = Object.keys(CARTAS).filter((id) => (col[id] || 0) > 0);
   const orden = (a, b) => (CARTAS[a].k === 'bicho' ? 0 : 1) - (CARTAS[b].k === 'bicho' ? 0 : 1) || (CARTAS[b].a || 0) - (CARTAS[a].a || 0) || nom(a).localeCompare(nom(b));
   return `<h2>Mi mazo<small>${K().mazo.length}/40 · fuerza ${R.valorMazo(K().mazo)} · máximo 3 copias de cada carta</small></h2>
-    <p class="nota">Toca − para sacar una carta y + para meter una de tu colección.</p>
+    <p class="nota">Toca − para sacar una carta y + para meter una de tu colección.</p>${DEBUG ? '<div class="fila-botones"><button id="bOtroInicial">🎲 Probar otro mazo inicial</button></div>' : ''}
     <div class="lista">${ids.sort(orden).map((id) => `<div class="fila"><span class="dib">${CARTAS[id].e}</span><div><b>${esc(nom(id))}</b><small>${CARTAS[id].k === 'bicho' ? `⚔${CARTAS[id].a} 🛡${CARTAS[id].d} · ${textoCarta(id)}` : textoCarta(id)}</small></div>
       <div class="cuenta"><button data-menos="${id}" ${(mazo[id] || 0) ? '' : 'disabled'}>−</button><i>${mazo[id] || 0}/${Math.min(3, col[id])}</i><button data-mas="${id}" ${(mazo[id] || 0) < Math.min(3, col[id]) && K().mazo.length < 40 ? '' : 'disabled'}>+</button></div></div>`).join('')}</div>`;
 }
 function alMazo() {
+  $('#bOtroInicial')?.addEventListener('click', pantallaElegir);
   panel.querySelectorAll('[data-menos]').forEach((b) => b.onclick = () => { const i = K().mazo.indexOf(b.dataset.menos); if (i >= 0) K().mazo.splice(i, 1); guardar(); const st = panel.scrollTop; pantallaMenu('mazo'); panel.scrollTop = st; });
   panel.querySelectorAll('[data-mas]').forEach((b) => b.onclick = () => { if (K().mazo.length < 40) K().mazo.push(b.dataset.mas); guardar(); const st = panel.scrollTop; pantallaMenu('mazo'); panel.scrollTop = st; });
 }
@@ -107,15 +114,16 @@ function htmlAyuda() {
     <p>🃏 Cada turno robas hasta tener 5 y haces <b>una sola jugada</b> al lado de tu líder: una carta, o varias seguidas. Si eliges varios bichos, <b>intentan fusionarse</b> en orden; si no encajan, el primero se pierde. Un bicho y un equipo seguidos: sale equipado.</p>
     <p>🚶 Después, cada carta tuya hace <b>una cosa</b>: moverse (o atacar a una de al lado), voltearse o cambiar entre ataque y defensa. Las cartas salen <b>boca abajo</b>: el rival no sabe qué son hasta que chocan.</p>
     <p>⚔️ Ataque contra ataque: pierde el más flojo y su dueño pierde la diferencia. Contra defensa: si no la rompes, te comes tú la diferencia. Golpe al líder: todo el ataque a la vida.</p>
-    <p>🗺️ Cada rival juega en su terreno (±500 a los que les va bien o mal). Las cartas de terreno cambian la zona alrededor de donde las juegas. El laberinto no se cruza, salvo fantasmas y gusanos.</p>
+    <p>🗺️ Cada rival juega en su terreno (±500 a los que les va bien o mal). Las cartas de terreno cambian la casilla donde las juegas y una a cada lado, en cruz. El laberinto no se cruza, salvo fantasmas y gusanos.</p>
     <p>🪤 Las trampas salen boca abajo como cualquier carta y saltan solas. Manda delante al bicho flojo.</p>
     <p>🎰 Al ganar, la tragaperras te da una carta del cementerio del rival o de su mazo.</p>`;
 }
 
 // ---------- el duelo ----------
-let S = null, RIVAL = null, sel = [], modo = 'menu', elegida = null, opc = null, jugando = false;
+let S = null, RIVAL = null, ONLINE = null, sel = [], modo = 'menu', elegida = null, opc = null, jugando = false;
 const hud = $('#hud'), mano = $('#mano'), acciones = $('#acciones'), info = $('#info');
 function empezarDuelo(r) {
+  ONLINE = null; YO = 0; EL = 1; orientar(0);
   RIVAL = r; const rev = Math.min(2, K().victorias[r.id] || 0);
   const suyo = R.mazoRival(r, R.valorMazo(K().mazo), rev);
   S = R.crearDuelo({ mazos: [K().mazo, suyo], lideres: [{ clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', nombre: DEF.nombre }, { clase: 'vecino', nombre: r.quien }], terreno: r.terreno, s: (Math.random() * 2 ** 32) >>> 0 });
@@ -141,9 +149,11 @@ function pintarAcciones() {
   acciones.innerHTML = `${sel.length && mio && !S.jugado ? `<button class="grande" id="bJugar">✅ Jugar ${sel.length > 1 ? `(${sel.length})` : ''}</button>` : ''}
     ${(sel.length || modo === 'casilla' || elegida) && mio ? '<button id="bCancelar">↩️</button>' : ''}
     ${mio ? `<button id="bFin">⏭️ Fin de turno</button>` : `<button disabled>${S?.fin ? '' : '⏳ Juega el rival…'}</button>`}
-    ${mio && DEBUG ? '<button id="bAuto">🤖 Auto</button>' : ''}
-    ${DEBUG && S ? '<div class="debug"><button id="bReiniciar">🔄 Reiniciar</button><button id="bSalir">🚪 Salir</button></div>' : ''}`;
+    ${mio && DEBUG && !ONLINE ? '<button id="bAuto">🤖 Auto</button>' : ''}
+    ${S && !S.fin && (ONLINE || !DEBUG) ? '<button id="bRendir">🏳️ Rendirse</button>' : ''}
+    ${DEBUG && S && !ONLINE ? '<div class="debug"><button id="bReiniciar">🔄 Reiniciar</button><button id="bSalir">🚪 Salir</button></div>' : ''}`;
   $('#bAuto')?.addEventListener('click', autoTurno);
+  $('#bRendir')?.addEventListener('click', async () => { if (!confirmarRendir()) return; hacer({ t: 'rendir' }); await procesar(); });
   // en pruebas: recargar la página es lo más limpio (corta animaciones y el turno del rival a medias)
   $('#bReiniciar')?.addEventListener('click', () => { try { sessionStorage.setItem('cartas_reiniciar', RIVAL.id); } catch {} location.reload(); });
   $('#bSalir')?.addEventListener('click', () => location.reload());
@@ -170,7 +180,7 @@ function elegirCasilla() {
   const C = CARTAS[ids[0]];
   if (C.k === 'magia' && C.obj === 'nada') { hacerJugada(cs[0].x, cs[0].y); return; }
   modo = 'casilla'; desmarcar(); marcar(cs, '#ffe27a');
-  aviso(C.k === 'magia' ? '🎯 Toca el bicho rival al que se la lanzas.' : C.k === 'equipo' && ids.length === 1 ? '🎯 Toca el bicho tuyo al que se lo pones.' : C.k === 'terreno' ? '🎯 Toca dónde cambiar el terreno (la casilla y las de alrededor).' : '🎯 Toca una casilla brillante al lado de tu líder.');
+  aviso(C.k === 'magia' ? '🎯 Toca el bicho rival al que se la lanzas.' : C.k === 'equipo' && ids.length === 1 ? '🎯 Toca el bicho tuyo al que se lo pones.' : C.k === 'terreno' ? '🎯 Toca dónde cambiar el terreno (esa casilla y una a cada lado).' : '🎯 Toca una casilla brillante al lado de tu líder.');
   pintarAcciones();
 }
 function cancelar() { sel = []; modo = 'yo'; desmarcar(); quitarEleccion(); pintarMano(); pintarAcciones(); }
@@ -186,14 +196,14 @@ async function hacerJugada(x, y) {
   const ids = sel.map((i) => S.mano[YO][i]); let def = false;
   if (ids.some((id) => CARTAS[id].k === 'bicho')) { const r = await preguntarPosicion(); if (r === null) return; def = r; }
   desmarcar(); const s2 = [...sel]; sel = []; modo = 'yo';
-  R.jugar(S, YO, s2, x, y, { def }); pintarMano(); await procesar();
+  hacer({ t: 'jugar', sel: s2, x, y, def }); pintarMano(); await procesar();
 }
 async function tocarTablero(cx, cy) {
   if (!S || jugando) return; const c = casillaEn(cx, cy); if (!c) return;
   if (modo === 'casilla') { if (R.casillasJuego(S, YO, sel.map((i) => S.mano[YO][i])).some((k) => k.x === c.x && k.y === c.y)) await hacerJugada(c.x, c.y); return; }
   if (elegida && opc && S.juega === YO) {
     const at = opc.atacar.find((k) => k.x === c.x && k.y === c.y), mv = opc.mover.find((k) => k.x === c.x && k.y === c.y);
-    if (at || mv) { const uid = elegida; quitarEleccion(); (at ? R.atacar : R.mover)(S, uid, c.x, c.y); await procesar(); return; }
+    if (at || mv) { const uid = elegida; quitarEleccion(); hacer({ t: at ? 'atacar' : 'mover', uid, x: c.x, y: c.y }); await procesar(); return; }
   }
   const u = R.en(S, c.x, c.y);
   if (!u) { quitarEleccion(); pintarAcciones(); return; }
@@ -223,11 +233,11 @@ function verInfoUnidad(u) {
     }
   }
   info.hidden = false; info.innerHTML = html + (botones.length ? `<div class="fila-botones">${botones.join('')}</div>` : '');
-  info.querySelectorAll('[data-u]').forEach((b) => b.onclick = async () => { const uid = u.id; (b.dataset.u === 'voltear' ? R.voltear : R.cambiarPosicion)(S, uid); await procesar(); const v = S.u.find((w) => w.id === uid); if (v) elegirUnidad(v); });
+  info.querySelectorAll('[data-u]').forEach((b) => b.onclick = async () => { const uid = u.id; hacer({ t: b.dataset.u === 'voltear' ? 'voltear' : 'posicion', uid }); await procesar(); const v = S.u.find((w) => w.id === uid); if (v) elegirUnidad(v); });
 }
 async function terminarTurno() {
   if (!S || S.juega !== YO || jugando) return;
-  cancelar(); R.finTurno(S); await procesar(); if (!S.fin) await turnoRival();
+  cancelar(); hacer({ t: 'fin' }); await procesar(); if (!S.fin) await (ONLINE ? turnoRemoto() : turnoRival());
 }
 async function autoTurno() {   // solo en pruebas: la máquina juega tu turno
   if (!S || S.juega !== YO || jugando) return; cancelar(); modo = 'ia';
@@ -291,26 +301,130 @@ async function procesar() {
 }
 
 // ---------- final y tragaperras ----------
+// La tragaperras: su cementerio + dos al azar de lo que le quedaba. En línea sale lo mismo en las dos pantallas
+// (azar con la semilla del duelo) y solo cartas que eran de verdad suyas (no lo que salió de fusionar).
+function tragaperras(perdedor) {
+  const r = ONLINE ? R.rnd(R.semilla('premio', ONLINE.id)) : Math.random;
+  const suyas = ONLINE ? contar(ONLINE.mazos[perdedor]) : null, deVerdad = (id) => !suyas || (suyas[id] || 0) > 0;
+  const resto = [...S.mazo[perdedor], ...S.mano[perdedor]].filter(deVerdad), bolsa = S.cem[perdedor].filter(deVerdad);
+  for (let i = 0; i < 2 && resto.length; i++) bolsa.push(resto.splice(Math.floor(r() * resto.length), 1)[0]);
+  if (!bolsa.length) bolsa.push(ONLINE ? ONLINE.mazos[perdedor][0] : 'rata');
+  return { bolsa, premio: bolsa[Math.floor(r() * bolsa.length)] };
+}
+function perderCarta(id) {   // en línea y de verdad: la carta se va con el otro
+  K().coleccion[id] = Math.max(0, (K().coleccion[id] || 0) - 1);
+  const enMazo = K().mazo.filter((x) => x === id).length; if (enMazo > K().coleccion[id]) K().mazo.splice(K().mazo.indexOf(id), 1);
+  guardar();
+}
 async function terminar() {
   modo = 'fin'; acciones.innerHTML = ''; info.hidden = true; await espera(900);
   const gano = S.fin.gana === YO, motivo = R.TEXTOS_FIN[S.fin.motivo] || '';
   if (!gano) {
-    mostrar(`<h2>${S.fin.gana === -1 ? '🤝 Empate' : '💀 Has perdido'}<small>${S.fin.gana === -1 ? 'Turno 99 y la misma vida. Qué cosas.' : { vida: 'Te has quedado sin vida.', rodeado: 'Te han rodeado al líder.', mazo: 'Te has quedado sin cartas.', tiempo: 'Turno 99, y tenía más vida.' }[S.fin.motivo] || ''}</small></h2><p>${esc(RIVAL.quien)}: «${['Vuelve cuando quieras. Traigo pañuelos.', 'Otra vez será, campeón.', 'Las cartas no mienten. Tú sí, al decir que ibas a ganar.'][Math.floor(Math.random() * 3)]}»</p><div class="fila-botones"><button class="grande" id="bOtra">⚔️ Otra</button><button id="bMenu">🃏 Al menú</button></div>`);
-    $('#bOtra').onclick = () => empezarDuelo(RIVAL); $('#bMenu').onclick = () => pantallaMenu('duelos'); return;
+    let perdida = '';
+    if (ONLINE && S.fin.gana !== -1) { const { premio } = tragaperras(YO); if (ONLINE.deVerdad) { perderCarta(premio); perdida = `<p>🎰 La tragaperras le da a ${esc(RIVAL.quien)} tu <b>${esc(nom(premio))}</b>. ${K().mazo.length < 40 ? 'Te quedan ' + K().mazo.length + ' cartas en el mazo: rellénalo en «Mi mazo».' : ''}</p>`; } else perdida = `<p class="nota">🎰 Se habría llevado tu ${esc(nom(premio))}, pero en pruebas no cuenta.</p>`; }
+    mostrar(`<h2>${S.fin.gana === -1 ? '🤝 Empate' : '💀 Has perdido'}<small>${S.fin.gana === -1 ? 'Turno 99 y la misma vida. Qué cosas.' : { vida: 'Te has quedado sin vida.', rodeado: 'Te han rodeado al líder.', mazo: 'Te has quedado sin cartas.', tiempo: 'Turno 99, y tenía más vida.' }[S.fin.motivo] || ''}</small></h2><p>${esc(RIVAL.quien)}: «${['Vuelve cuando quieras. Traigo pañuelos.', 'Otra vez será, campeón.', 'Las cartas no mienten. Tú sí, al decir que ibas a ganar.'][Math.floor(Math.random() * 3)]}»</p>${perdida}<div class="fila-botones"><button class="grande" id="bOtra">⚔️ Otra</button><button id="bMenu">🃏 Al menú</button></div>`);
+    const otro = ONLINE?.rivalId; $('#bOtra').onclick = () => (otro ? retar(otro) : empezarDuelo(RIVAL)); $('#bMenu').onclick = () => pantallaMenu('duelos'); cerrarOnline(); return;
   }
-  K().victorias[RIVAL.id] = (K().victorias[RIVAL.id] || 0) + 1;
+  if (!ONLINE) K().victorias[RIVAL.id] = (K().victorias[RIVAL.id] || 0) + 1;
   // la tragaperras: todo su cementerio y dos al azar de lo que le quedaba en el mazo
-  const resto = [...S.mazo[EL], ...S.mano[EL]], bolsa = [...S.cem[EL]];
-  for (let i = 0; i < 2 && resto.length; i++) bolsa.push(resto.splice(Math.floor(Math.random() * resto.length), 1)[0]);
-  const premio = bolsa[Math.floor(Math.random() * bolsa.length)] || 'rata';
+  const { bolsa, premio } = tragaperras(EL);
   K().coleccion[premio] = (K().coleccion[premio] || 0) + 1; guardar();
   mostrar(`<h2>🏆 ¡Has ganado!<small>${esc(RIVAL.quien)} ${motivo}.</small></h2><p>🎰 La tragaperras gira con su cementerio y dos cartas de su mazo…</p><div id="rodillo" class="rodillo">${htmlCarta(bolsa[0])}</div><p id="premioTxt" class="nota"> </p><div class="fila-botones"><button class="grande" id="bOtra">⚔️ Revancha</button><button id="bMenu">🃏 Al menú</button></div>`);
-  $('#bOtra').onclick = () => empezarDuelo(RIVAL); $('#bMenu').onclick = () => pantallaMenu('duelos');
+  const otro = ONLINE?.rivalId, deVerdad = ONLINE?.deVerdad; $('#bOtra').onclick = () => (otro ? retar(otro) : empezarDuelo(RIVAL)); $('#bMenu').onclick = () => pantallaMenu('duelos');
+  cerrarOnline(); if (otro) $('#bOtra').textContent = '⚔️ Otra';
   const rod = $('#rodillo');
   for (let i = 0; i < 18; i++) { rod.innerHTML = htmlCarta(bolsa[Math.floor(Math.random() * bolsa.length)]); await espera(60 + i * 12); }
   rod.innerHTML = htmlCarta(premio); rod.classList.add('premio'); sonido.moneda?.();
-  $('#premioTxt').innerHTML = `Te llevas <b>${esc(nom(premio))}</b> a tu colección. Métela en el mazo desde «Mi mazo».`;
+  $('#premioTxt').innerHTML = `Te llevas <b>${esc(nom(premio))}</b> a tu colección${otro && deVerdad ? ` (y ${esc(RIVAL.quien)} la pierde 😈)` : ''}. Métela en el mazo desde «Mi mazo».`;
 }
+
+// =============================================================
+//  EN LÍNEA: duelo contra alguien de la sala (a muerte si ninguno está en pruebas).
+//  Las dos pantallas llevan la misma partida (misma semilla, mismos mazos) y cada uno publica la lista
+//  de lo que hace (cartasLog); el otro la va aplicando en orden. Sin anfitrión. El que reta juega abajo (0).
+// =============================================================
+let SALA = null, GENTE = {}, ESPERA = null, VISTOS = {}, esperando = null;
+const leerJSON = (t) => { try { return JSON.parse(t || 'null'); } catch { return null; } };
+const miFicha = () => ({ debug: DEBUG, nombre: DEF.nombre || 'Alguien', clase: CLASES[DEF.clase] ? DEF.clase : 'barbaro', raza: DEF.raza || 'humano', colores: DEF.colores || null, mazo: K()?.mazo || [] });
+function publicarCartas() { if (SALA && K()?.mazo) SALA.cambiar({ cartas: JSON.stringify(miFicha()) }); }
+const enLaMesa = () => Object.values(GENTE).filter((g) => g.id !== SALA?.yo.id && g.donde === 'cartas' && g.online !== false && leerJSON(g.cartas)?.mazo?.length === 40);
+function htmlPlaza() {
+  if (!SALA) return '<p class="nota">Abrid la misma sala con el botón 👥 y entrad los dos a las cartas: aquí saldrá para retaros.</p>';
+  const otros = enLaMesa();
+  if (!otros.length) return `<p class="nota">Sala ${esc(SALA.codigo)}: cuando otro de la sala entre en las cartas (con mazo de 40), saldrá aquí.</p>`;
+  return otros.map((g) => { const f = leerJSON(g.cartas); return `<div class="rival"><b>🧑 ${esc(f.nombre)}</b><small>Mazo de 40 · fuerza ${R.valorMazo(f.mazo)}</small><div class="fila-botones"><button class="grande" data-sala="${g.id}" ${K().mazo.length === 40 ? '' : 'disabled'}>⚔️ Retar</button></div></div>`; }).join('');
+}
+function avisoSala(t, ms = 4000) { aviso(t, ms); }
+function retar(id) {
+  if (!SALA || S && !S.fin && ONLINE) return; const g = GENTE[id], f = leerJSON(g?.cartas); if (!f) return;
+  const n = Date.now(); ESPERA = { n, id, seed: n >>> 0 }; publicarCartas();
+  SALA.cambiar({ cartasReto: JSON.stringify({ para: id, n, seed: ESPERA.seed }), cartasLog: null });
+  mostrar(`<h2>Retando a ${esc(f.nombre)}…</h2><p>Esperando a que acepte.</p><div class="fila-botones"><button id="bCancelarReto">Cancelar</button></div>`);
+  $('#bCancelarReto').onclick = () => { ESPERA = null; SALA?.cambiar({ cartasReto: null }); pantallaMenu('duelos'); };
+  setTimeout(() => { if (ESPERA?.n === n) { ESPERA = null; SALA?.cambiar({ cartasReto: null }); pantallaMenu('duelos'); avisoSala(`${esc(f.nombre)} no contesta.`); } }, 60000);
+}
+function mostrarReto(id, g, reto) {
+  const f = leerJSON(g.cartas), d = $('#pos'); d.hidden = false;
+  const real = !DEBUG && !f?.debug;
+  d.innerHTML = `<p><b>${esc(f?.nombre || g.nombre)}</b> te reta a un duelo de cartas.</p><small>${real ? '⚠️ Duelo a muerte: la carta que gane la tragaperras cambia de dueño. Si te da miedo, no la metas en el mazo.' : '🧪 Uno de los dos está en pruebas: no se juega ninguna carta.'}</small>${K().mazo.length === 40 ? '' : '<small>Necesitas un mazo de 40 para aceptar.</small>'}
+    <div class="fila-botones"><button class="grande" id="bSi" ${K().mazo.length === 40 ? '' : 'disabled'}>¡Acepto!</button><button id="bNo">Ahora no</button></div>`;
+  $('#bSi').onclick = () => { d.hidden = true; publicarCartas(); SALA.cambiar({ cartasSi: reto.n, cartasLog: null }); duelOnline({ yo: 1, n: reto.n, seed: reto.seed, rivalId: id, fichas: [f, miFicha()] }); };
+  $('#bNo').onclick = () => { d.hidden = true; SALA?.cambiar({ cartasNo: reto.n }); };
+}
+function alGente(gente) {
+  GENTE = gente; const yo = SALA?.yo.id;
+  for (const [id, g] of Object.entries(gente)) {
+    if (id === yo) continue;
+    const reto = leerJSON(g.cartasReto);
+    if (reto && reto.para === yo && reto.n !== VISTOS[id]) { VISTOS[id] = reto.n; if ((S && !S.fin && ONLINE) || ESPERA) SALA.cambiar({ cartasNo: reto.n }); else mostrarReto(id, g, reto); }
+    if (ESPERA && ESPERA.id === id) {
+      if (g.cartasSi === ESPERA.n) { const e = ESPERA; ESPERA = null; duelOnline({ yo: 0, n: e.n, seed: e.seed, rivalId: id, fichas: [miFicha(), leerJSON(g.cartas)] }); }
+      else if (g.cartasNo === ESPERA.n) { ESPERA = null; pantallaMenu('duelos'); avisoSala('Dice que ahora no.'); }
+    }
+  }
+  if (ONLINE && esperando) revisarRemota();
+  else if (ONLINE && S && !S.fin) { const l = logRival(); if (l[ONLINE.visto]?.t === 'rendir') { ONLINE.visto++; R.aplicar(S, EL, { t: 'rendir' }); if (!jugando) procesar(); } }   // se rinde en tu turno
+  if (!S && !panel.hidden && pestana === 'duelos') { const pl = $('#plaza'); if (pl) { const h = htmlPlaza(); if (pl.innerHTML !== h) { pl.innerHTML = h; pl.querySelectorAll('[data-sala]').forEach((b) => b.onclick = () => retar(b.dataset.sala)); } } }
+}
+function duelOnline({ yo, n, seed, rivalId, fichas }) {
+  YO = yo; EL = 1 - yo; orientar(yo);
+  const otra = fichas[EL];
+  RIVAL = { id: 'sala', quien: otra.nombre, e: '🧑', terreno: 'normal', frase: '¡A ver qué traes!' };
+  ONLINE = { id: n, rivalId, log: [], visto: 0, mazos: [fichas[0].mazo, fichas[1].mazo], deVerdad: !fichas[0].debug && !fichas[1].debug };
+  S = R.crearDuelo({ mazos: [fichas[0].mazo, fichas[1].mazo], lideres: fichas.map((f) => ({ clase: f.clase, nombre: f.nombre })), terreno: 'normal', s: seed });
+  lideres(fichas.map((f) => ({ heroe: { raza: f.raza || 'humano', clase: f.clase || 'barbaro', colores: f.colores || undefined } })));
+  limpiar(); pintarTablero(S); sincronizar(S, YO); S.ev.length = 0;
+  panel.hidden = true; $('#volver').hidden = true; $('#bSala').hidden = true; hud.hidden = false; mano.hidden = false; acciones.hidden = false; info.hidden = true;
+  sel = []; modo = 'yo'; elegida = null; opc = null;
+  aviso(`⚔️ Duelo contra ${esc(otra.nombre)}${ONLINE.deVerdad ? ' (¡a muerte!)' : ''}. ${YO === 0 ? 'Empiezas tú.' : 'Empieza él.'}`, 2600); pintarHUD(); pintarMano(); pintarAcciones();
+  if (S.juega !== YO) turnoRemoto();
+}
+function hacer(a) {   // lo que haces tú: se aplica aquí y, en línea, se manda al otro
+  const ok = R.aplicar(S, YO, a);
+  if (ok && ONLINE) { ONLINE.log.push(a); SALA?.cambiar({ cartasLog: JSON.stringify({ id: ONLINE.id, a: ONLINE.log }) }); }
+  return ok;
+}
+const logRival = () => { const l = leerJSON(GENTE[ONLINE?.rivalId]?.cartasLog); return l && l.id === ONLINE.id ? l.a : []; };
+function revisarRemota() { const l = logRival(); if (esperando && l.length > ONLINE.visto) { const ok = esperando; esperando = null; ok(l[ONLINE.visto++]); } }
+const siguienteRemota = () => new Promise((ok) => { esperando = ok; revisarRemota(); });
+async function turnoRemoto() {
+  modo = 'ia'; pintarAcciones(); const yoAhora = ONLINE?.id;
+  while (ONLINE && ONLINE.id === yoAhora && !S.fin && S.juega === EL) {
+    const a = await siguienteRemota(); if (!ONLINE || ONLINE.id !== yoAhora) return;
+    if (!R.aplicar(S, EL, a)) console.warn('Jugada del otro que no encaja', a);
+    await procesar();
+  }
+  modo = 'yo'; pintarMano(); pintarAcciones();
+  if (S && !S.fin) aviso('🃏 Tu turno', 1200);
+}
+function cerrarOnline() { if (!ONLINE) return; ONLINE = null; esperando = null; $('#bSala').hidden = false; SALA?.cambiar({ cartasLog: null, cartasReto: null }); }
+let tRendir = 0;
+const confirmarRendir = () => { const b = $('#bRendir'); if (Date.now() - tRendir < 3000) return true; tRendir = Date.now(); if (b) b.textContent = '¿Seguro? Toca otra vez'; return false; };
+import('./reunion.js').then((RED) => RED.crearPanel({
+  donde: 'cartas', boton: $('#bSala'), proponer: false, datos: () => ({ clase: DEF?.clase || 'barbaro', x: 0, z: 0 }),
+  alConectar: (Rr) => { SALA = Rr; publicarCartas(); Rr.cambiar({ cartasReto: null, cartasLog: null }); Rr.on('gente', alGente); alGente(Rr.gente()); },
+  alSalir: () => { SALA = null; GENTE = {}; }
+})).catch((e) => console.warn('Sin sala:', e?.message));
 
 // ---------- arranque ----------
 $('#lienzo').addEventListener('click', (e) => tocarTablero(e.clientX, e.clientY));
@@ -320,8 +434,15 @@ async function arrancar() {
   if (!DEF) { mostrar('<h2>🃏 Cartas de Velmor</h2><p>Necesitas un héroe para jugar. Créalo en el pueblo y vuelve.</p><a class="boton" href="pueblo.html">🏘 Al pueblo</a>'); return; }
   DEF.cartas ||= {}; K().libro ||= {}; K().victorias ||= {}; K().coleccion ||= {};
   if (!K().mazo?.length) pantallaElegir(); else pantallaMenu('duelos');
+  $('#bSala').hidden = false;
   if (DEBUG) { let r = null; try { r = sessionStorage.getItem('cartas_reiniciar'); sessionStorage.removeItem('cartas_reiniciar'); } catch {} const R0 = R.RIVALES_C.find((x) => x.id === r); if (R0 && K().mazo?.length === 40) empezarDuelo(R0); }
 }
 arrancar();
-window.cartas = { get S() { return S; }, get DEF() { return DEF; }, R, autoTurno };
+async function iaPrueba() {   // solo para las pruebas automáticas: la máquina hace UNA cosa de tu turno, como si la tocaras tú
+  if (!DEBUG || !S || S.fin || S.juega !== YO || jugando || modo === 'ia') return;
+  const a = R.accionIA(structuredClone(S), YO, R.PERFILES.agresivo);
+  if (a.t === 'fin' || !hacer(a)) { await terminarTurno(); return; }
+  await procesar();
+}
+window.cartas = { jugarIAparaPrueba: iaPrueba, get S() { return S; }, get DEF() { return DEF; }, get SALA() { return SALA; }, get ONLINE() { return ONLINE; }, R, autoTurno, retar };
 window.cartas3d = C3;
