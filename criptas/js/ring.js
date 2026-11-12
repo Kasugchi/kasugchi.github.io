@@ -98,6 +98,8 @@ function enganchaTienda() {
 }
 // Tras comprar o arreglar: se repinta donde estés (el taller o el camión del vertedero)
 const repintarTienda = () => (pantalla === 'camion' ? pantallaCamion() : pantallaTaller());
+// En qué hueco va una pieza (para que se sepa en las listas de Rufo y del vertedero)
+const dondeVa = (P) => (P.hueco === 'brazo' ? '🦾 Brazo' : P.hueco === 'cabeza' ? `${HUECOS_ROBOT.cabeza.e} Cabeza` : `${HUECOS_ROBOT.piernas.e} Piernas`);
 // El banco de Rufo: piezas que no lleva nadie de la liga, hechas con la chatarra de las criptas
 const chatarra = () => DEF.materiales?.chatarra || 0;
 function bancoRufo() {
@@ -105,7 +107,7 @@ function bancoRufo() {
   return `<h3 class="sala">🛠️ El banco de Rufo</h3>
     <p class="nota">«Dame chatarra y te hago cosas que no tiene nadie en el pueblo.» La chatarra ⚙️ la sueltan los bichos de las criptas y del claro (los jefes, siempre). Tienes ⚙️ ${chatarra()} y 🪙 ${DEF.oro || 0}.</p>
     <div class="piezas">${Object.entries(RUFO_HACE).map(([id, c]) => { const P = PIEZAS[id], tengo = cuantas(R, id) >= (P.hueco === 'brazo' ? 2 : 1), puedo = chatarra() >= c.chatarra && (DEF.oro || 0) >= c.oro;
-      return `<button data-hacer="${id}" ${tengo || !puedo ? 'disabled' : ''}>${HUECOS_ROBOT[P.hueco === 'brazo' ? 'brazoD' : P.hueco].e} ${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>${tengo ? (P.hueco === 'brazo' ? '✓ Ya tienes las dos' : '✓ Ya la tienes') : `${cuantas(R, id) ? 'Otra más (para el otro brazo): ' : ''}⚙️ ${c.chatarra} · 🪙 ${c.oro}`}</small></button>`; }).join('')}</div>`;
+      return `<button data-hacer="${id}" ${tengo || !puedo ? 'disabled' : ''}>${P.n}<small class="hueco-de">${dondeVa(P)}</small><small>${textoPieza(P, R.nucleo)}</small><small>${tengo ? (P.hueco === 'brazo' ? '✓ Ya tienes las dos' : '✓ Ya la tienes') : `${cuantas(R, id) ? 'Otra más (para el otro brazo): ' : ''}⚙️ ${c.chatarra} · 🪙 ${c.oro}`}</small></button>`; }).join('')}</div>`;
 }
 function hacerPieza(id) {
   const R = ROBOT(), c = RUFO_HACE[id];
@@ -627,7 +629,7 @@ function tiendaVertedero() {
   return `<h3 class="sala">🕸️ Redes para el vertedero</h3>
     <div class="piezas">${Object.entries(REDES).map(([id, X]) => `<button data-red="${id}" ${(DEF.oro || 0) < X.oro ? 'disabled' : ''}>${X.e} ${X.n} ×${R.redes?.[id] || 0}<small>${X.b ? `+${Math.round(X.b * 100)}% de atrapar` : 'la de siempre'}</small><small>🪙 ${X.oro}</small></button>`).join('')}</div>
     ${rotas.length ? `<h3 class="sala">🔧 Por arreglar</h3><p class="nota">Lo que trajiste roto del vertedero. Rufo lo deja como nuevo… previo pago.</p>
-    <div class="piezas">${rotas.map((id, k) => { const P = PIEZAS[id], c = costeArreglo(id), puedo = (DEF.oro || 0) >= c.oro && chatarra() >= c.chatarra; return `<button data-arreglar="${k}" ${puedo ? '' : 'disabled'}>${P.n}<small>${textoPieza(P, R.nucleo)}</small><small>🪙 ${c.oro} · ⚙️ ${c.chatarra}</small></button>`; }).join('')}</div>` : ''}`;
+    <div class="piezas">${rotas.map((id, k) => { const P = PIEZAS[id], c = costeArreglo(id), puedo = (DEF.oro || 0) >= c.oro && chatarra() >= c.chatarra; return `<button data-arreglar="${k}" ${puedo ? '' : 'disabled'}>${P.n}<small class="hueco-de">${dondeVa(P)}</small><small>${textoPieza(P, R.nucleo)}</small><small>🪙 ${c.oro} · ⚙️ ${c.chatarra}</small></button>`; }).join('')}</div>` : ''}`;
 }
 function comprarRed(id) {
   const R = ROBOT(), X = REDES[id]; if (!X || (DEF.oro || 0) < X.oro) return;
@@ -711,7 +713,7 @@ async function finSalvaje(P, ev) {
     for (const h of HUECOS) { const id = el.piezas[h].id; if (!viva(el, h) || Math.random() < .4) { (R.arreglar ||= []).push(id); rotas.push(id); } else { R.piezas.push(id); sanas.push(id); } }
     const xp = 10 + 4 * el.nivel; R.xp += xp; R.capturas = (R.capturas || 0) + 1;
     titulo = `🕸️ ¡Atrapado! ${M.e} ${M.n}`;
-    texto = `Lo desmontas allí mismo: ${sanas.length ? `<br>✅ Enteras: <b>${sanas.map((id) => PIEZAS[id].n).join(', ')}</b> (ya están en tu taller).` : ''}${rotas.length ? `<br>🔧 Rotas: <b>${rotas.map((id) => PIEZAS[id].n).join(', ')}</b> (llévaselas a Rufo para que te las arregle).` : ''}<br><small>+${xp} de experiencia. ${M.n}: ${M.jt} si llevas sus cuatro piezas.</small>`;
+    texto = `Lo desmontas allí mismo: ${sanas.length ? `<br>✅ Enteras: <b>${sanas.map((id) => `${PIEZAS[id].n} (${dondeVa(PIEZAS[id]).replace(/^\S+ /, '').toLowerCase()})`).join(', ')}</b> (ya están en tu taller).` : ''}${rotas.length ? `<br>🔧 Rotas: <b>${rotas.map((id) => `${PIEZAS[id].n} (${dondeVa(PIEZAS[id]).replace(/^\S+ /, '').toLowerCase()})`).join(', ')}</b> (llévaselas a Rufo para que te las arregle).` : ''}<br><small>+${xp} de experiencia. ${M.n}: ${M.jt} si llevas sus cuatro piezas.</small>`;
   } else {
     fuera_ = true; const ch = 1 + Math.floor(el.nivel / 3); DEF.materiales.chatarra = (DEF.materiales.chatarra || 0) + ch;
     const xp = 6 + 2 * el.nivel; R.xp += xp; let extra = '';
