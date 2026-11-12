@@ -6,7 +6,7 @@
 //  resuelven cada ronda con la misma semilla, así que ven lo mismo sin que mande ninguna.
 // =============================================================
 import { poner, lanzar, reproducir, terminar, verGiro, sonido } from './peonzas-3d.js';
-import { RUMBOS, EFECTOS, HUECOS_PEONZA, PIEZAS_P, AJUSTES, RIVALES_P, TEXTOS_FIN, MAX_SEGMENTOS, peonzaNueva, arreglarP, luchadora, empezar, giroInicial, tieneOpciones, segmento, porTiempo, textoLanzador, semilla, azar, decisionIA, especRival } from './peonzas-reglas.js';
+import { RUMBOS, EFECTOS, HUECOS_PEONZA, PIEZAS_P, AJUSTES, RIVALES_P, TEXTOS_FIN, MAX_SEGMENTOS, peonzaNueva, arreglarP, luchadora, empezar, giroInicial, tieneOpciones, segmento, porTiempo, textoLanzador, GESTOS, semilla, azar, decisionIA, especRival } from './peonzas-reglas.js';
 import { leerLocal, cargarHeroe, guardarHeroe } from './claro-heroes.js';
 
 const $ = (s) => document.querySelector(s);
@@ -173,12 +173,28 @@ function pintarBarras(c) {
     verGiro(i, t ? w / w0 : 1);
   });
 }
-function lanzamiento() {
+// Lanzamiento: tiras de la cuerda arrastrando el dedo (o el ratón) hacia abajo. Hasta dónde tiras da la fuerza; hacia el lado que te desvíes, el ángulo de entrada.
+// Cada lanzador tiene su gesto (GESTOS): cuerda (zona verde, si te pasas se escapa), resorte (fácil, techo bajo) y cremallera (dos tirones, el segundo rápido).
+const calidadTiro = (gesto, len) => gesto === 'resorte' ? Math.min(.9, .3 + len * .65) : len > .96 ? .12 : Math.max(.1, 1 - Math.abs(len - .78) * 2.6);
+function lanzamiento(gesto, sentido) {
   return new Promise((ok) => {
-    const l = $('#lanza'); l.innerHTML = `<p>🎯 ¡Lanzamiento! Suelta con la barra en el centro verde: cuanto mejor, más giro de salida.</p><div class="medidor"><i id="cursor"></i></div><button id="bSuelta">¡Suelta!</button>`; l.hidden = false;
-    let u = 0, vivo = true; const t0 = performance.now();
-    (function paso() { if (!vivo) return; u = .5 + .5 * Math.sin((performance.now() - t0) / 380); $('#cursor').style.left = u * 100 + '%'; requestAnimationFrame(paso); })();
-    $('#bSuelta').onclick = () => { vivo = false; const q = Math.max(0, 1 - Math.abs(u - .5) * 2.4); l.innerHTML = `<p>${q > .85 ? '¡Lanzamiento perfecto! 🌟' : q > .5 ? '¡Buen lanzamiento!' : q > .2 ? 'Regulero… pero gira.' : 'Eso ha sido un estornudo, no un lanzamiento.'}</p>`; setTimeout(() => { l.hidden = true; ok(Math.round(q * 20) / 20); }, 900); };
+    const l = $('#lanza'), G = GESTOS[gesto] || GESTOS.cuerda, tiros = gesto === 'cremallera' ? 2 : 1, MAX = 130, hecho = [];
+    l.innerHTML = `<p>🎯 <b>${G[0]}</b> · ${G[1]}</p><div class="cuerda" style="touch-action:none"><div class="zona"></div><i class="hilo"></i><b class="asa">${sentido > 0 ? '↻' : '↺'}</b></div><small id="lzInfo">Arrastra la anilla hacia abajo y suelta${tiros > 1 ? ' (dos veces)' : ''}. Hacia un lado, cambias el ángulo.</small>`; l.hidden = false;
+    const zona = l.querySelector('.cuerda'), asa = l.querySelector('.asa'), hilo = l.querySelector('.hilo'), info = $('#lzInfo');
+    let ini = null, t1 = 0, ang = 0; const sujeta = (len, dx) => { asa.style.transform = `translate(${dx}px, ${len * MAX}px)`; hilo.style.height = len * MAX + 28 + 'px'; asa.classList.toggle('bien', gesto !== 'resorte' && len > .66 && len < .92); };
+    zona.onpointerdown = (e) => { ini = { x: e.clientX, y: e.clientY }; zona.setPointerCapture(e.pointerId); };
+    zona.onpointermove = (e) => { if (!ini) return; sujeta(Math.max(0, Math.min(1.05, (e.clientY - ini.y) / MAX)), Math.max(-60, Math.min(60, e.clientX - ini.x))); };
+    zona.onpointerup = (e) => {
+      if (!ini) return; const len = Math.max(0, Math.min(1.05, (e.clientY - ini.y) / MAX)), dx = Math.max(-60, Math.min(60, e.clientX - ini.x)); ini = null; sujeta(0, 0);
+      if (len < .2) { info.textContent = 'Tira más fuerte, que eso no mueve ni una pluma.'; return; }
+      const ahora = performance.now(); let q = calidadTiro(gesto, len);
+      if (hecho.length === 1 && ahora - t1 > 1400) q *= .85;   // el segundo tirón de la cremallera, si tardas, sale peor
+      hecho.push(q); ang += dx / 60; t1 = ahora; sonido.golpe?.();
+      if (hecho.length < tiros) { info.textContent = '¡Otro tirón, rápido!'; return; }
+      const f = hecho.reduce((s, x) => s + x, 0) / hecho.length + (tiros > 1 ? .08 : 0), fin = Math.max(0, Math.min(1, f));
+      l.innerHTML = `<p>${len > .96 && gesto === 'cuerda' ? '¡Se te ha escapado la cuerda! 🙈' : fin > .85 ? '¡Lanzamiento perfecto! 🌟' : fin > .5 ? '¡Buen lanzamiento!' : fin > .2 ? 'Regulero… pero gira.' : 'Eso ha sido un estornudo, no un lanzamiento.'}</p>`;
+      setTimeout(() => { l.hidden = true; ok({ q: Math.round(fin * 20) / 20, a: Math.round(Math.max(-1, Math.min(1, ang / tiros)) * 4) / 4 }); }, 900);
+    };
   });
 }
 // Entre tramo y tramo: empujones y efecto (solo si tienes algo que gastar). Si no eliges, sigue sola.
@@ -206,10 +222,10 @@ async function jugar(c) {
   ocultar(); $('#reto').hidden = true; poner(c.espec.map((e) => e.equipo), c.L.map((l) => l.s)); pintarBarras(c); $('#barras').hidden = false;
   narrar(`${c.apuesta ? `⚙️ ${c.apuesta} de chatarra en juego. ` : ''}${c.L[0].s !== c.L[1].s ? '¡Giran en sentido contrario! Si se tocan, se engranan.' : `Giran las dos hacia la ${c.L[0].s > 0 ? 'derecha ↻' : 'izquierda ↺'}: si se tocan, rebotan.`}`);
   await espera(1200);
-  const q = await lanzamiento(), lz = [0, 0]; lz[yo] = q;
-  if (c.tipo === 'ia') lz[1 - yo] = .45 + rIA() * .45;
-  else { publicarOrden(c, { lz: q }); narrar('Esperando el lanzamiento del otro…'); const o = await esperarRival(c, (x) => x.lz != null || x.fin); if (o.fin) return acabar(c, yo, 'El otro se ha ido', o.fin === 'ausente'); lz[1 - yo] = o.lz; }
-  c.T = empezar(c.L, lz); narrar(''); pintarBarras(c); await lanzar(c.T); await espera(300);
+  const mio = await lanzamiento(PIEZAS_P[c.espec[yo].equipo.lanzador]?.gesto, c.L[yo].s), lz = [0, 0], ang = [0, 0]; lz[yo] = mio.q; ang[yo] = mio.a;
+  if (c.tipo === 'ia') { lz[1 - yo] = .45 + rIA() * .45; ang[1 - yo] = Math.round((rIA() - .5) * 4) / 4; }
+  else { publicarOrden(c, { lz: mio.q, la: mio.a }); narrar('Esperando el lanzamiento del otro…'); const o = await esperarRival(c, (x) => x.lz != null || x.fin); if (o.fin) return acabar(c, yo, 'El otro se ha ido', o.fin === 'ausente'); lz[1 - yo] = o.lz; ang[1 - yo] = o.la || 0; }
+  c.T = empezar(c.L, lz, ang); narrar(''); pintarBarras(c); await lanzar(c.T); await espera(300);
   for (let seg = 0; seg < MAX_SEGMENTOS; seg++) {
     const op = [0, 1].map((i) => tieneOpciones(c.L[i], c.T[i])), ord = [{}, {}];
     if (op[yo]) {

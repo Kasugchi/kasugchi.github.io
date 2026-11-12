@@ -49,16 +49,17 @@ export const PIEZAS_P = {
   pun_tapon: { hueco: 'punta', n: 'Tapón de corcho', a: 0, p: 2, g: 1, color: '#c8a070', precio: { chatarra: 3, oro: 30 } },
   pun_canica: { hueco: 'punta', n: 'Canica', a: 0, p: 1, g: 2, color: '#5ab8e8', precio: { chatarra: 3, oro: 30 } },
   pun_boli: { hueco: 'punta', n: 'Punta de boli', a: 2, p: 0, g: 2, color: '#4a6ad8', premio: 'El Viejo Anzuelo' },
-  lz_cuerda: { hueco: 'lanzador', n: 'Lanzador de cuerda', s: 1, pot: 1, emp: 0, color: '#d8c8a8' },
-  lz_zurdo: { hueco: 'lanzador', n: 'Lanzador zurdo', s: -1, pot: 1, emp: 0, color: '#a8c8d8', precio: { chatarra: 4, oro: 40 } },
-  lz_resorte: { hueco: 'lanzador', n: 'Lanzador de resorte', s: 1, pot: 1.08, emp: 2, color: '#e8a8a8', precio: { chatarra: 7, oro: 80 } },
-  lz_turbo: { hueco: 'lanzador', n: 'Zurdo turbo', s: -1, pot: 1.12, emp: 3, color: '#a8e8c8', premio: 'Doña Escarcha' },
-  lz_cremallera: { hueco: 'lanzador', n: 'Cremallera de Rufo', s: 1, pot: 1.2, emp: 4, color: '#ffd27a', premio: 'Rufo' }
+  lz_cuerda: { hueco: 'lanzador', n: 'Lanzador de cuerda', gesto: 'cuerda', s: 1, pot: 1, emp: 0, color: '#d8c8a8' },
+  lz_zurdo: { hueco: 'lanzador', n: 'Lanzador zurdo', gesto: 'cuerda', s: -1, pot: 1, emp: 0, color: '#a8c8d8', precio: { chatarra: 4, oro: 40 } },
+  lz_resorte: { hueco: 'lanzador', n: 'Lanzador de resorte', gesto: 'resorte', s: 1, pot: 1.08, emp: 2, color: '#e8a8a8', precio: { chatarra: 7, oro: 80 } },
+  lz_turbo: { hueco: 'lanzador', n: 'Zurdo turbo', gesto: 'resorte', s: -1, pot: 1.12, emp: 3, color: '#a8e8c8', premio: 'Doña Escarcha' },
+  lz_cremallera: { hueco: 'lanzador', n: 'Cremallera de Rufo', gesto: 'cremallera', s: 1, pot: 1.2, emp: 4, color: '#ffd27a', premio: 'Rufo' }
 };
 export const KIT_P = ['aro_chapa', 'dis_tapa', 'pun_chincheta', 'lz_cuerda'];
 export const EQUIPO_P = { aro: 'aro_chapa', disco: 'dis_tapa', punta: 'pun_chincheta', lanzador: 'lz_cuerda' };
 export const AJUSTES = [-2, -1, 0, 1, 2];
-export const textoLanzador = (P) => `${P.s > 0 ? '↻ derecha' : '↺ izquierda'} · potencia ${Math.round(P.pot * 100)} %${P.emp ? ` · ${P.emp} empujones` : ' · sin empujones'}`;
+export const GESTOS = { cuerda: ['🧵 un tirón', 'Tira hasta la zona verde: si te pasas, se escapa.'], resorte: ['🌀 resorte', 'Más fácil: cuanto más tires, más sale (pero nunca perfecto).'], cremallera: ['⛓️ dos tirones', 'Dos tirones seguidos, el segundo rápido: sube el techo.'] };
+export const textoLanzador = (P) => `${GESTOS[P.gesto]?.[0] || ''} · ${P.s > 0 ? '↻ derecha' : '↺ izquierda'} · potencia ${Math.round(P.pot * 100)} %${P.emp ? ` · ${P.emp} empujones` : ' · sin empujones'}`;
 
 // ---------- tu peonza (en el héroe de aventura: DEF.peonza) ----------
 export const peonzaNueva = () => ({ nombre: 'Peonza', piezas: [...KIT_P], equipo: { ...EQUIPO_P }, ajuste: 0, liga: 0, victorias: 0, derrotas: 0 });
@@ -91,10 +92,10 @@ export const K = { busca: .5, emp: .53, dmgA: .11, dmgP: .06, base: 1.22, d0: 1.
 const MAX_SEG = 22;   // pasado este tiempo (88 s) gana quien conserve más giro
 // Lo que cada una gira al salir: la potencia del lanzador y tu lanzamiento (q de 0 a 1), menos lo que pesa
 export const giroInicial = (L, q) => Math.round(100 * L.pot * (.8 + .2 * Math.max(0, Math.min(1, q))) / (1 + K.peso * (L.P - 1)));
-export function empezar(L, lanz) {
+export function empezar(L, lanz, ang = [0, 0]) {   // ang: hacia dónde tiras (-1..1); entra de lado y gira más antes de chocar
   return [0, 1].map((i) => {
     const q = Math.max(0, Math.min(1, lanz[i])), lado = i === 0 ? -1 : 1, w0 = giroInicial(L[i], q);
-    return { x: lado * 2.4, y: 0, vx: -lado * (2 + 1.8 * q), vy: L[i].s * lado * -1.4, w: w0, w0, m: 1 + .3 * L[i].P, cargas: L[i].cargas, emp: L[i].emp, ef: null };
+    return { x: lado * 2.4, y: 0, vx: -lado * (2 + 1.8 * q), vy: L[i].s * lado * -1.4 + Math.max(-1, Math.min(1, ang[i] || 0)) * 1.1, w: w0, w0, m: 1 + .3 * L[i].P, cargas: L[i].cargas, emp: L[i].emp, ef: null };
   });
 }
 // ¿Tiene algo que decidir entre segmentos? (si ninguno tiene nada, la pelea corre sola)
