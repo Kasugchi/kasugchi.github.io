@@ -18,7 +18,15 @@ const leerJSON = (t) => { try { return JSON.parse(t || 'null'); } catch { return
 let DEF = leerLocal();
 const Q = () => DEF?.peonza;
 const chatarra = () => DEF?.materiales?.chatarra || 0;
-function guardar() { if (DEF) guardarHeroe(DEF); publicar(); }
+// ?debug=1: taller de pruebas con todas las piezas y chatarra de sobra. Trabaja sobre una copia y NUNCA guarda, así que tu héroe real no se toca.
+const DEBUG = new URLSearchParams(location.search).has('debug');
+function guardar() { if (DEF && !DEBUG) guardarHeroe(DEF); publicar(); }
+function modoDebug() {
+  DEF = structuredClone(DEF); DEF.materiales ||= {}; DEF.materiales.chatarra = 9999; DEF.oro = 9999;
+  DEF.peonza ||= peonzaNueva(); DEF.peonza.piezas = Object.keys(PIEZAS_P); DEF.peonza.liga = RIVALES_P.length - 1;
+  const b = document.createElement('div'); b.textContent = '🧪 MODO PRUEBAS · todo desbloqueado · no se guarda nada';
+  b.style.cssText = 'position:fixed;left:50%;bottom:4px;transform:translateX(-50%);z-index:50;background:#7a1fa2;color:#fff;font:700 11px Nunito,sans-serif;padding:3px 10px;border-radius:9px;pointer-events:none;opacity:.9'; document.body.appendChild(b);
+}
 const miEspec = () => { const q = Q(); return { nombre: q.nombre, piloto: DEF.nombre || '', equipo: { ...q.equipo }, ajuste: q.ajuste, cha: chatarra() }; };
 
 // ---------- la sala ----------
@@ -247,8 +255,10 @@ function acabar(c, ganador, motivo, sinApuesta = false) {
 // ---------- arranque ----------
 async function arrancar() {
   if (!DEF) DEF = await cargarHeroe();
+  if (DEBUG && !DEF) DEF = { nombre: 'Probador', clase: 'barbaro' };
   if (!DEF) return mostrar('<h2>Sin héroe</h2><p>Para tener peonza, primero hazte un héroe de aventura: baja al claro desde el pueblo.</p><div class="fila-botones"><a class="boton" href="claro.html">Ir al claro</a></div>');
   DEF.materiales ||= {};
+  if (DEBUG) modoDebug();
   if (!DEF.peonza) {
     DEF.peonza = peonzaNueva(); guardar(); poner([DEF.peonza.equipo]);
     mostrar(`<h2>Las peonzas de Rufo</h2><p>Rufo ha montado un puestecillo con un plato y una cajita de pedazos de cosas. «Toma, una peonza de las de toda la vida: tapa de olla, chapa de refresco y una chincheta. Se la apuesta uno, se la juega uno, y la chatarra cambia de manos.»</p>
@@ -259,7 +269,7 @@ async function arrancar() {
   if (arreglarP(Q())) guardar(); pantallaTaller('peonza');
 }
 arrancar();
-cargarHeroe().then((h) => { if (h && !jugando && h.peonza && JSON.stringify(h.peonza) !== JSON.stringify(DEF?.peonza)) { DEF = h; arreglarP(DEF.peonza); if (pantalla === 'taller') pantallaTaller(pestana); publicar(); } }).catch(() => {});
+if (!DEBUG) cargarHeroe().then((h) => { if (h && !jugando && h.peonza && JSON.stringify(h.peonza) !== JSON.stringify(DEF?.peonza)) { DEF = h; arreglarP(DEF.peonza); if (pantalla === 'taller') pantallaTaller(pestana); publicar(); } }).catch(() => {});
 import('./reunion.js').then((RED) => RED.crearPanel({
   donde: 'peonzas', boton: $('#bSala'), proponer: false, datos: () => ({ clase: DEF?.clase || 'barbaro', x: 0, z: 0 }),
   alConectar: (R) => { SALA = R; publicar(); R.cambiar({ peonReto: null, peonOrden: null }); R.on('gente', alGente); alGente(R.gente()); if (pantalla === 'taller' && pestana === 'retos') pantallaTaller('retos'); },
