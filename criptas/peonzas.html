@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Las Peonzas de Rufo · Criptas de Velmor</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<script>
+  // Fuera de la web de verdad (pruebas, ramas, local) la app se instala con otro nombre e icono, para no confundirlas
+  if (!/^(lab\.crove\.cc|kasugchi\.github\.io)$/.test(location.hostname)) {
+    document.querySelector('link[rel="manifest"]').href = 'manifest-pruebas.webmanifest';
+    document.querySelector('link[rel="icon"]').href = 'icono-pruebas.svg';
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet">
+<script type="importmap" id="versiones">
+{
+  "imports": {
+    "three": "./js/vendor/three.module.min.js",
+    "./js/acceso.js": "./js/acceso.js?v=20261112094039",
+    "./js/calidad.js": "./js/calidad.js?v=20261112094039",
+    "./js/campanas.js": "./js/campanas.js?v=20261112094039",
+    "./js/cancionero.js": "./js/cancionero.js?v=20261112094039",
+    "./js/cine.js": "./js/cine.js?v=20261112094039",
+    "./js/claro-combate.js": "./js/claro-combate.js?v=20261112094039",
+    "./js/claro-cripta.js": "./js/claro-cripta.js?v=20261112094039",
+    "./js/claro-dados.js": "./js/claro-dados.js?v=20261112094039",
+    "./js/claro-estilo.js": "./js/claro-estilo.js?v=20261112094039",
+    "./js/claro-heroes.js": "./js/claro-heroes.js?v=20261112094039",
+    "./js/claro-hud.js": "./js/claro-hud.js?v=20261112094039",
+    "./js/claro-mundo.js": "./js/claro-mundo.js?v=20261112094039",
+    "./js/claro-personajes.js": "./js/claro-personajes.js?v=20261112094039",
+    "./js/claro-sonido.js": "./js/claro-sonido.js?v=20261112094039",
+    "./js/claro-ui3d.js": "./js/claro-ui3d.js?v=20261112094039",
+    "./js/claro.js": "./js/claro.js?v=20261112094039",
+    "./js/cocina.js": "./js/cocina.js?v=20261112094039",
+    "./js/cripta-juntos.js": "./js/cripta-juntos.js?v=20261112094039",
+    "./js/cripta.js": "./js/cripta.js?v=20261112094039",
+    "./js/datos.js": "./js/datos.js?v=20261112094039",
+    "./js/decor-entradas.js": "./js/decor-entradas.js?v=20261112094039",
+    "./js/decor-isla.js": "./js/decor-isla.js?v=20261112094039",
+    "./js/dialogos.js": "./js/dialogos.js?v=20261112094039",
+    "./js/dificultad.js": "./js/dificultad.js?v=20261112094039",
+    "./js/equipo.js": "./js/equipo.js?v=20261112094039",
+    "./js/firebase.js": "./js/firebase.js?v=20261112094039",
+    "./js/guiaTortuga.js": "./js/guiaTortuga.js?v=20261112094039",
+    "./js/herramientas.js": "./js/herramientas.js?v=20261112094039",
+    "./js/ia.js": "./js/ia.js?v=20261112094039",
+    "./js/iconos.js": "./js/iconos.js?v=20261112094039",
+    "./js/insultos.js": "./js/insultos.js?v=20261112094039",
+    "./js/menu-aventura.js": "./js/menu-aventura.js?v=20261112094039",
+    "./js/mercenarios.js": "./js/mercenarios.js?v=20261112094039",
+    "./js/mezclador.js": "./js/mezclador.js?v=20261112094039",
+    "./js/midi.js": "./js/midi.js?v=20261112094039",
+    "./js/miniaturas.js": "./js/miniaturas.js?v=20261112094039",
+    "./js/motor.js": "./js/motor.js?v=20261112094039",
+    "./js/muebles-extra-1.js": "./js/muebles-extra-1.js?v=20261112094039",
+    "./js/muebles-extra.js": "./js/muebles-extra.js?v=20261112094039",
+    "./js/muebles3d.js": "./js/muebles3d.js?v=20261112094039",
+    "./js/nube.js": "./js/nube.js?v=20261112094039",
+    "./js/panel.js": "./js/panel.js?v=20261112094039",
+    "./js/pantalla.js": "./js/pantalla.js?v=20261112094039",
+    "./js/paradas.js": "./js/paradas.js?v=20261112094039",
+    "./js/pelea-juntos.js": "./js/pelea-juntos.js?v=20261112094039",
+    "./js/peonzas-3d.js": "./js/peonzas-3d.js?v=20261112094039",
+    "./js/peonzas-reglas.js": "./js/peonzas-reglas.js?v=20261112094039",
+    "./js/peonzas.js": "./js/peonzas.js?v=20261112094039",
+    "./js/planos.js": "./js/planos.js?v=20261112094039",
+    "./js/poderes.js": "./js/poderes.js?v=20261112094039",
+    "./js/procedural.js": "./js/procedural.js?v=20261112094039",
+    "./js/pueblo.js": "./js/pueblo.js?v=20261112094039",
+    "./js/red.js": "./js/red.js?v=20261112094039",
+    "./js/render.js": "./js/render.js?v=20261112094039",
+    "./js/render3d.js": "./js/render3d.js?v=20261112094039",
+    "./js/reunion.js": "./js/reunion.js?v=20261112094039",
+    "./js/ring-escena.js": "./js/ring-escena.js?v=20261112094039",
+    "./js/ring-reglas.js": "./js/ring-reglas.js?v=20261112094039",
+    "./js/ring.js": "./js/ring.js?v=20261112094039",
+    "./js/robots-3d.js": "./js/robots-3d.js?v=20261112094039",
+    "./js/robots.js": "./js/robots.js?v=20261112094039",
+    "./js/sitios.js": "./js/sitios.js?v=20261112094039",
+    "./js/sprites.js": "./js/sprites.js?v=20261112094039",
+    "./js/tablero.js": "./js/tablero.js?v=20261112094039",
+    "./js/ui.js": "./js/ui.js?v=20261112094039",
+    "./js/vertedero.js": "./js/vertedero.js?v=20261112094039",
+    "./js/viajero.js": "./js/viajero.js?v=20261112094039"
+  }
+}
+</script>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1c1626; font-family: Nunito, system-ui, sans-serif; color: #3a2a20; touch-action: manipulation; }
+  #lienzo { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  .caja { background: #fff8e6; border-radius: 18px; box-shadow: 0 8px 24px #0006; }
+  #panel { position: fixed; left: 12px; top: 12px; bottom: 12px; width: min(440px, calc(100% - 24px)); overflow-y: auto; padding: 16px 18px; box-sizing: border-box; z-index: 5; overscroll-behavior: contain; }
+  @media (max-width: 760px) { #panel { top: auto; max-height: 62%; left: 8px; right: 8px; bottom: 8px; width: auto; } }
+  #panel h2 { margin: 0 0 6px; color: #8a1c1c; font-weight: 900; } #panel h2 small { display: block; font-size: 13px; color: #6a5a4a; font-weight: 700; }
+  #panel p { margin: 6px 0 10px; font-weight: 600; line-height: 1.4; } .nota { font-size: 13px; opacity: .8; }
+  .cartas, .liga { display: grid; gap: 8px; } .cartas { grid-template-columns: 1fr 1fr; }
+  .cartas button, .liga button { text-align: left; border: 0; border-radius: 14px; background: #fff0cc; padding: 10px 12px; font: inherit; cursor: pointer; box-shadow: 0 3px 0 #e2c88a; }
+  .cartas button span, .liga button span { font-size: 28px; float: left; margin-right: 8px; } .cartas b, .liga b { display: block; } .cartas small, .liga small { display: block; font-size: 12px; opacity: .8; font-weight: 600; }
+  .liga button:disabled { opacity: .5; cursor: default; }
+  button.desguace { display: block; width: 100%; margin-top: 10px; text-align: left; border: 0; border-radius: 14px; background: linear-gradient(135deg, #3a2a3a, #5a3a2a); color: #ffe6a8; padding: 10px 12px; font: inherit; cursor: pointer; box-shadow: 0 3px 0 #2a1a1a; }
+  button.desguace span { font-size: 28px; float: left; margin-right: 8px; } button.desguace b { display: block; } button.desguace small { display: block; font-size: 12px; opacity: .85; font-weight: 600; }
+  .hueco { margin: 10px 0; } .hueco > b { font-size: 14px; } .piezas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .piezas button { border: 2px solid transparent; border-radius: 12px; background: #fff0cc; padding: 6px 10px; font: inherit; font-weight: 800; font-size: 13px; cursor: pointer; text-align: left; }
+  .piezas button:disabled { opacity: .55; cursor: default; }
+  .piezas button small { display: block; font-weight: 600; font-size: 11px; opacity: .8; } .piezas button.puesta { border-color: #c9a24a; background: #ffe6a8; }
+  .fila-botones { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .fila-botones button, .boton { border: 0; border-radius: 14px; background: #f0e2c0; padding: 10px 14px; font: inherit; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 #d8c08a; color: #3a2a20; text-decoration: none; }
+  .fila-botones .grande { background: #ffcf4a; box-shadow: 0 3px 0 #c8962a; flex: 1; }
+  #barras { position: fixed; left: 8px; right: 8px; top: max(8px, env(safe-area-inset-top)); display: flex; justify-content: space-between; gap: 8px; z-index: 4; pointer-events: none; }
+  #barras > div { padding: 8px 10px; width: min(220px, 46%); box-sizing: border-box; font-size: 13px; }
+  .barra { display: grid; grid-template-columns: 22px 1fr 22px; align-items: center; gap: 4px; margin-top: 3px; }
+  .barra i { height: 9px; border-radius: 6px; background: linear-gradient(90deg, #5ac85a var(--p), #e8dcc0 var(--p)); }
+  .barra.rota { opacity: .45; } .barra em { font-style: normal; font-weight: 900; text-align: right; }
+  #narrar { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(96px + env(safe-area-inset-bottom)); background: #2a1e2ae6; color: #fff8e6; padding: 10px 16px; border-radius: 14px; font-weight: 800; text-align: center; width: min(560px, calc(100% - 24px)); box-sizing: border-box; z-index: 4; }
+  #botones { position: fixed; left: 8px; right: 8px; bottom: max(10px, env(safe-area-inset-bottom)); display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; z-index: 4; }
+  #botones button { border: 0; border-radius: 14px; background: #fff8e6; padding: 10px 12px; font: inherit; font-weight: 900; font-size: 14px; cursor: pointer; box-shadow: 0 4px 0 #c8a86a; min-width: 96px; }
+  #botones button span { display: block; font-size: 20px; } #botones button:disabled { opacity: .5; }
+  #volver { position: fixed; right: 10px; top: max(10px, env(safe-area-inset-top)); z-index: 6; }
+  [hidden] { display: none !important; }   /* que «hidden» gane a los display: flex de abajo */
+  #barras:not([hidden]) ~ #volver { display: none; }   /* en plena pelea no se sale (en pareja dejarías tirado al otro) */
+  #bSala { position: fixed; right: 10px; top: calc(max(10px, env(safe-area-inset-top)) + 50px); z-index: 6; border: 0; font: inherit; font-weight: 900; padding: 8px 12px; cursor: pointer; }
+  #barras:not([hidden]) ~ #bSala { display: none; }
+  #barras > div { display: flex; flex-direction: column; gap: 6px; background: none; box-shadow: none; padding: 0; }
+  .luchador { background: #fff8e6; border-radius: 14px; box-shadow: 0 6px 18px #0006; padding: 7px 9px; border: 2px solid transparent; }
+  .luchador.activo { border-color: #ffcf4a; } .luchador.fuera { opacity: .5; }
+  .luchador small { font-weight: 700; opacity: .7; }
+  #panel h3.sala { margin: 16px 0 4px; color: #8a1c1c; }
+  .otro { background: #fff0cc; border-radius: 14px; padding: 8px 10px; margin: 6px 0; } .otro .fila-botones { margin-top: 6px; }
+  .otro .fila-botones button { flex: 1; } .otro .fila-botones small { display: block; font-size: 11px; font-weight: 700; opacity: .75; }
+  #reto { position: fixed; left: 50%; transform: translateX(-50%); top: calc(max(10px, env(safe-area-inset-top)) + 96px); width: min(460px, calc(100% - 24px)); box-sizing: border-box; padding: 12px 14px; z-index: 8; }
+  @media (max-width: 760px) { #botones button { min-width: 0; flex: 1 1 40%; padding: 8px; font-size: 13px; } #botones button span { font-size: 17px; } .luchador { padding: 5px 7px; font-size: 12px; } .barra { margin-top: 1px; } }
+  #vert { position: fixed; left: 10px; top: max(10px, env(safe-area-inset-top)); z-index: 5; padding: 10px 12px; width: min(300px, calc(100% - 120px)); box-sizing: border-box; font-size: 13px; }
+  @media (max-width: 760px) { #vert { padding: 7px 9px; font-size: 12px; } #vert .largo { display: none; } #vert button { margin-top: 5px; padding: 6px 9px; } }
+  #vert b { display: block; color: #8a1c1c; } #vert small { display: block; font-weight: 700; opacity: .8; margin-top: 3px; }
+  #vert button { margin-top: 8px; border: 0; border-radius: 12px; background: #ffcf4a; padding: 8px 10px; font: inherit; font-weight: 900; cursor: pointer; box-shadow: 0 3px 0 #c8962a; }
+  .piezas small.hueco-de { color: #8a1c1c; font-weight: 900; opacity: .9; }
+  .pestanas { display: flex; gap: 6px; margin: -4px 0 10px; } .pestanas button { flex: 1; border: 0; border-radius: 12px; background: #f0e2c0; padding: 8px 10px; font: inherit; font-weight: 900; cursor: pointer; color: #6a5a4a; }
+  .pestanas button.activa { background: #ffcf4a; color: #3a2a20; box-shadow: 0 3px 0 #c8962a; } .pestanas i { font-style: normal; background: #c83a3a; color: #fff; border-radius: 10px; padding: 0 6px; font-size: 12px; }
+  #vert button.rufo { background: #8ad0a8; box-shadow: 0 3px 0 #4a9a6a; margin-right: 6px; }
+  #reto p { margin: 0 0 6px; font-weight: 700; } #reto small { display: block; font-weight: 600; opacity: .8; margin-top: 4px; }
+
+  /* peonzas */
+  .stat { display: grid; grid-template-columns: 26px 1fr 28px; align-items: center; gap: 6px; margin: 4px 0; font-weight: 800; font-size: 13px; }
+  .stat i { height: 10px; border-radius: 6px; background: linear-gradient(90deg, var(--c) var(--p), #e8dcc0 var(--p)); } .stat em { font-style: normal; text-align: right; font-weight: 900; }
+  .tuercas { display: flex; gap: 6px; margin: 6px 0 4px; } .tuercas button { flex: 1; border: 2px solid transparent; border-radius: 12px; background: #fff0cc; padding: 8px 0; font: inherit; font-weight: 900; cursor: pointer; }
+  .tuercas button.puesta { border-color: #c9a24a; background: #ffe6a8; }
+  .efecto { background: #fff0cc; border-radius: 12px; padding: 8px 10px; margin: 8px 0; font-weight: 700; font-size: 13px; } .efecto b { color: #8a1c1c; }
+  .rival { background: #fff0cc; border-radius: 14px; padding: 8px 10px; margin: 8px 0; } .rival.cerrado { opacity: .5; } .rival small { display: block; font-weight: 600; opacity: .8; margin: 2px 0; }
+  .rival .fila-botones { margin-top: 6px; } .rival .fila-botones button { flex: 1; }
+  .tienda { display: grid; gap: 6px; } .tienda button { display: flex; justify-content: space-between; gap: 8px; text-align: left; border: 0; border-radius: 12px; background: #fff0cc; padding: 8px 10px; font: inherit; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #e2c88a; }
+  .tienda button:disabled { opacity: .5; cursor: default; } .tienda small { display: block; font-weight: 600; opacity: .8; font-size: 11px; } .tienda span.pr { white-space: nowrap; font-size: 12px; }
+  #lanza { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(110px + env(safe-area-inset-bottom)); width: min(420px, calc(100% - 24px)); box-sizing: border-box; padding: 12px 14px; z-index: 6; text-align: center; }
+  #lanza p { margin: 0 0 8px; font-weight: 800; } .medidor { position: relative; height: 22px; border-radius: 12px; background: linear-gradient(90deg, #e8a08a, #f0d88a 35%, #8ad88a 50%, #f0d88a 65%, #e8a08a); overflow: hidden; box-shadow: inset 0 2px 4px #0003; }
+  .medidor i { position: absolute; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: #2a1a2a; border-radius: 3px; }
+  #lanza button { margin-top: 10px; border: 0; border-radius: 14px; background: #ffcf4a; padding: 10px 20px; font: inherit; font-weight: 900; font-size: 16px; cursor: pointer; box-shadow: 0 4px 0 #c8962a; }
+  #botones button.ef { background: #ffe6a8; } #botones button.ef.on { background: #ffcf4a; box-shadow: 0 4px 0 #c8962a, 0 0 0 3px #ff8a3a; } #botones button.suelta { background: #e8d8d0; min-width: 0; flex: 0 0 auto; font-size: 12px; box-shadow: 0 3px 0 #b8a090; }
+  #botones button.ef small, #botones button.tiro small { display: block; font-size: 10px; opacity: .75; font-weight: 700; }
+  .barra.borde i { background: linear-gradient(90deg, #ff9a4a var(--p), #e8dcc0 var(--p)); }
+  #narrar { bottom: calc(150px + env(safe-area-inset-bottom)); }
+  #botones button.tiro { flex: 1 1 28%; min-width: 0; padding: 8px 4px; } #botones button.ef { flex: 1 1 60%; } #botones button span { font-size: 18px; }
+  #narrar small { display: block; opacity: .75; font-size: 11px; }
+  #narrar button { margin-left: 8px; border: 0; border-radius: 10px; background: #ffcf4a; padding: 4px 10px; font: inherit; font-weight: 900; cursor: pointer; }
+
+</style>
+</head>
+<body>
+<canvas id="lienzo"></canvas>
+<div id="barras" hidden><div id="yo" class="caja"></div><div id="el" class="caja"></div></div>
+<a id="volver" class="boton caja" href="pueblo.html">🏘 Al pueblo</a>
+<button id="bSala" class="caja">👥</button>
+<div id="reto" class="caja" hidden></div>
+<div id="panel" class="caja" hidden></div>
+<div id="lanza" class="caja" hidden></div>
+<div id="narrar" hidden></div>
+<div id="botones" hidden></div>
+<script type="module">
+import './js/acceso.js';
+import './js/peonzas.js';
+</script>
+</body>
+</html>
