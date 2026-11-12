@@ -173,7 +173,7 @@ function quitarEleccion() { elegida = null; opc = null; info.hidden = true; if (
 async function preguntarPosicion() {
   return new Promise((ok) => {
     const d = $('#pos'); d.hidden = false;
-    d.innerHTML = `<p>¿Cómo lo pones? <small>(sale boca abajo: el rival no sabrá qué es)</small></p><div class="fila-botones"><button class="grande" data-def="0">⚔️ En ataque</button><button class="grande azul" data-def="1">🛡️ En defensa</button></div><button class="sutil" data-def="x">Cancelar</button>`;
+    d.innerHTML = `<p>¿Cómo lo pones? <small>${sel.length > 1 ? 'Si se fusionan, lo verás ahora y saldrá boca arriba. Si no, boca abajo.' : 'Sale boca abajo: el rival no sabrá qué es.'}</small></p><div class="fila-botones"><button class="grande" data-def="0">⚔️ En ataque</button><button class="grande azul" data-def="1">🛡️ En defensa</button></div><button class="sutil" data-def="x">Cancelar</button>`;
     d.querySelectorAll('[data-def]').forEach((b) => b.onclick = () => { d.hidden = true; ok(b.dataset.def === 'x' ? null : b.dataset.def === '1'); });
   });
 }
