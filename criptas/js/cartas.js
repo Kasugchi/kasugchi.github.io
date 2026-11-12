@@ -20,9 +20,10 @@ const YO = 0, EL = 1;
 // ---------- tu colección (en el héroe) ----------
 let DEF = leerLocal();
 const K = () => DEF.cartas;
-function guardar() { if (DEF && !DEBUG) guardarHeroe(DEF); }
+function guardar() { if (DEF && !DEBUG) guardarHeroe(DEF); if (DEBUG) try { sessionStorage.setItem('cartas_debug', JSON.stringify(DEF.cartas)); } catch {} }   // en pruebas, solo para esta pestaña
 function modoDebug() {
   DEF = structuredClone(DEF || { nombre: 'Probador', clase: 'barbaro', raza: 'humano' });
+  try { const g = JSON.parse(sessionStorage.getItem('cartas_debug') || 'null'); if (g) DEF.cartas = g; } catch {}
   DEF.cartas ||= {}; const col = {}; for (const id of Object.keys(CARTAS)) col[id] = 3; DEF.cartas.coleccion = col; DEF.cartas.victorias ||= {}; DEF.cartas.libro ||= {};
   const b = document.createElement('div'); b.textContent = '🧪 MODO PRUEBAS · todas las cartas · no se guarda nada';
   b.style.cssText = 'position:fixed;left:8px;top:calc(max(8px, env(safe-area-inset-top)) + 72px);z-index:50;background:#7a1fa2;color:#fff;font:700 11px Nunito,sans-serif;padding:3px 10px;border-radius:9px;pointer-events:none;opacity:.9'; document.body.appendChild(b);
@@ -140,8 +141,12 @@ function pintarAcciones() {
   acciones.innerHTML = `${sel.length && mio && !S.jugado ? `<button class="grande" id="bJugar">✅ Jugar ${sel.length > 1 ? `(${sel.length})` : ''}</button>` : ''}
     ${(sel.length || modo === 'casilla' || elegida) && mio ? '<button id="bCancelar">↩️</button>' : ''}
     ${mio ? `<button id="bFin">⏭️ Fin de turno</button>` : `<button disabled>${S?.fin ? '' : '⏳ Juega el rival…'}</button>`}
-    ${mio && DEBUG ? '<button id="bAuto">🤖 Auto</button>' : ''}`;
+    ${mio && DEBUG ? '<button id="bAuto">🤖 Auto</button>' : ''}
+    ${DEBUG && S ? '<div class="debug"><button id="bReiniciar">🔄 Reiniciar</button><button id="bSalir">🚪 Salir</button></div>' : ''}`;
   $('#bAuto')?.addEventListener('click', autoTurno);
+  // en pruebas: recargar la página es lo más limpio (corta animaciones y el turno del rival a medias)
+  $('#bReiniciar')?.addEventListener('click', () => { try { sessionStorage.setItem('cartas_reiniciar', RIVAL.id); } catch {} location.reload(); });
+  $('#bSalir')?.addEventListener('click', () => location.reload());
   $('#bJugar')?.addEventListener('click', elegirCasilla);
   $('#bCancelar')?.addEventListener('click', cancelar);
   $('#bFin')?.addEventListener('click', terminarTurno);
@@ -315,6 +320,7 @@ async function arrancar() {
   if (!DEF) { mostrar('<h2>🃏 Cartas de Velmor</h2><p>Necesitas un héroe para jugar. Créalo en el pueblo y vuelve.</p><a class="boton" href="pueblo.html">🏘 Al pueblo</a>'); return; }
   DEF.cartas ||= {}; K().libro ||= {}; K().victorias ||= {}; K().coleccion ||= {};
   if (!K().mazo?.length) pantallaElegir(); else pantallaMenu('duelos');
+  if (DEBUG) { let r = null; try { r = sessionStorage.getItem('cartas_reiniciar'); sessionStorage.removeItem('cartas_reiniciar'); } catch {} const R0 = R.RIVALES_C.find((x) => x.id === r); if (R0 && K().mazo?.length === 40) empezarDuelo(R0); }
 }
 arrancar();
 window.cartas = { get S() { return S; }, get DEF() { return DEF; }, R, autoTurno };
