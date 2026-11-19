@@ -159,6 +159,9 @@ function sala(a,mix){const o=a.slice(),ds=[.31,.47,.73].map(s=>Math.floor(s*SR))
   for(let i=0;i<L;i++)o[i]+=w[i]*mix;return o}
 const campana=(f,amp,dec)=>t=>amp*Math.exp(-t/dec)*Math.min(1,t*200)*(Math.sin(TAU*f*t)+.3*Math.sin(TAU*f*2.01*t)*Math.exp(-t/(dec*.4)));
 
+// Cuenco tibetano golpeado: parciales inarmónicos con un ligero batido (la «ola» del cuenco)
+const CR=[1,2.76,5.4,8.9],CA=[1,.45,.22,.08],CD=[9,5,2.8,1.4];
+const cuenco=(f,g)=>u=>{let s=0;for(let k=0;k<4;k++){const ff=f*CR[k];s+=CA[k]*Math.exp(-u/CD[k])*(Math.sin(TAU*ff*u)+Math.sin(TAU*ff*1.0025*u))*.5}return s*g*Math.min(1,u*80)};
 const FONDOS=[
  {id:'lluvia',n:'Lluvia',g(){const a=new Float32Array(N),pk=pinkGen(),br=brownGen();let l1=0,l2=0;
    for(let i=0;i<N;i++){const x=pk();l1+=.1*(x-l1);l2+=.35*((x-l1)-l2);a[i]=l2*.9+br()*.28}
@@ -176,12 +179,33 @@ const FONDOS=[
    for(const[f,amp,cada]of[[4300,.06,.95],[3750,.04,1.6]]){let t=rnd(0,1);while(t<48){const p=Math.floor(t*SR);
      for(let k=0;k<3;k++)hit(o,p+Math.floor(k*.028*SR),Math.floor(.016*SR),u=>amp*Math.sin(Math.PI*u/.016)*Math.sin(TAU*f*u));t+=cada*rnd(.85,1.2)}}
    return sala(o,.25)}},
- {id:'cuencos',n:'Cuencos',g(){const o=new Float32Array(L),br=brownGen();
-   const base=[196,220,261.63,293.66,329.63].map(q),ratios=[1,2.76,5.4,8.9],amps=[1,.45,.22,.08],decs=[9,5,2.8,1.4];
-   let t=rnd(0,2);while(t<48){const f=base[Math.floor(rnd(0,base.length))],g=rnd(.6,1);
-     hit(o,Math.floor(t*SR),SR*14,u=>{let s=0;for(let k=0;k<4;k++){const ff=f*ratios[k];s+=amps[k]*Math.exp(-u/decs[k])*(Math.sin(TAU*ff*u)+Math.sin(TAU*ff*1.0025*u))*.5}return s*g*Math.min(1,u*80)*.35});
-     t+=rnd(7,11)}
-   for(let i=0;i<L;i++)o[i]+=br()*.02;return sala(o,.35)}},
+ {id:'cuencos',n:'Cuencos tibetanos',g(){const o=new Float32Array(L),br=brownGen();
+   // un cuenco frotado de fondo que no para de sonar y «late» despacio
+   const f0=q(130.81),f1=q(130.81*1.006),f2=q(361.04),f3=q(362.5);
+   for(let i=0;i<L;i++){const t=i/SR;o[i]=(.5*(Math.sin(TAU*f0*t)+Math.sin(TAU*f1*t))+.2*(Math.sin(TAU*f2*t)+Math.sin(TAU*f3*t)))*(.6+.4*Math.sin(TAU*t/24))*.25+br()*.02}
+   const base=[174.61,196,220,261.63,293.66,329.63].map(q);let t=rnd(0,2);
+   while(t<48){hit(o,Math.floor(t*SR),SR*14,cuenco(base[Math.floor(rnd(0,base.length))],rnd(.2,.35)));t+=rnd(6,10)}
+   return sala(o,.35)}},
+ {id:'gong',n:'Gong',g(){const o=new Float32Array(L),br=brownGen(),Rg=[1,1.47,1.98,2.43,2.96,3.6,4.3,5.1,6.2],f=q(65.41);
+   for(const t0 of[0,16,32]){const g=t0?rnd(.7,1):1;hit(o,Math.floor((t0+rnd(0,1))*SR),SR*22,u=>{let s=0;for(let k=0;k<Rg.length;k++){s+=Math.exp(-u/(16/(1+k*.35)))*(1-Math.exp(-u/(.02+k*.25)))*Math.sin(TAU*f*Rg[k]*u)/(1+k*.5)}return s*g*.5})}
+   for(let i=0;i<L;i++)o[i]+=br()*.03;return sala(o,.4)}},
+ {id:'koshi',n:'Campanillas de viento',g(){const a=new Float32Array(N),pk=pinkGen();let lp=0;
+   for(let i=0;i<N;i++){const t=i/SR,x=pk();lp+=.02*(x-lp);a[i]=lp*1.2*(.4+.6*Math.sin(TAU*t/16)**2)}
+   const o=fold(a),notas=[523.25,587.33,659.25,783.99,880,1046.5].map(q);let t=rnd(0,2);
+   while(t<48){const n=Math.floor(rnd(3,8));for(let k=0;k<n;k++){const f=notas[Math.floor(rnd(0,notas.length))],a0=rnd(.04,.12);
+     hit(o,Math.floor((t+rnd(0,1.6))*SR),SR*4,u=>a0*Math.min(1,u*300)*(Math.exp(-u/2.5)*Math.sin(TAU*f*u)+.4*Math.exp(-u)*Math.sin(TAU*f*2.76*u)+.15*Math.exp(-u/.4)*Math.sin(TAU*f*5.4*u)))}
+     t+=rnd(4,9)}
+   return sala(o,.3)}},
+ {id:'tanpura',n:'Cuerdas de meditación',g(){const o=new Float32Array(L),pat=[196,261.63,261.63,130.81].map(q);
+   // tanpura: cuatro cuerdas que se pulsan en bucle y van «abriéndose» al sonar
+   for(let c=0;c<10;c++)for(let k=0;k<4;k++){const f=pat[k];
+     hit(o,Math.floor((c*4.8+k*1.2)*SR),SR*5,u=>{let s=0;const env=Math.exp(-u/2.2)*Math.min(1,u*60);for(let h=1;h<=8;h++){const b=Math.min(1,u/(.15+h*.12));s+=Math.sin(TAU*f*h*u)/h*(.25+.75*Math.sin(b*Math.PI/2))}return s*env*.22})}
+   return sala(o,.3)}},
+ {id:'handpan',n:'Handpan',g(){const o=new Float32Array(L),br=brownGen(),esc=[146.83,220,233.08,261.63,293.66,329.63,349.23,392,440].map(q);let t=rnd(0,1);
+   const nota=(f,a0)=>u=>a0*Math.min(1,u*150)*(Math.exp(-u/2.6)*Math.sin(TAU*f*u)+.35*Math.exp(-u/1.4)*Math.sin(TAU*2*f*u)+.12*Math.exp(-u/.6)*Math.sin(TAU*3*f*u));
+   while(t<48){const a0=rnd(.15,.3);hit(o,Math.floor(t*SR),SR*5,nota(esc[Math.floor(rnd(0,esc.length))],a0));
+     if(Math.random()<.25)hit(o,Math.floor((t+.18)*SR),SR*5,nota(esc[Math.floor(rnd(0,esc.length))],a0*.6));t+=rnd(1.6,3.6)}
+   for(let i=0;i<L;i++)o[i]+=br()*.015;return sala(o,.35)}},
  {id:'pad',n:'Música ambiente',g(){const o=new Float32Array(L),br=brownGen();
    const acordes=[[146.83,220,329.63,369.99],[123.47,185,277.18,293.66],[98,196,246.94,293.66,369.99],[110,164.81,246.94,329.63]].map(c=>c.map(q));
    for(let k=0;k<4;k++){const c=acordes[k];
@@ -236,7 +260,8 @@ function guia(f){const C=f.reduce((s,x)=>s+x[1],0),Lb=C*Math.max(1,Math.round(48
     o[i]=(Math.sin(TAU*110*t)*.5+Math.sin(TAU*165*t)*.32*e+Math.sin(TAU*220*t)*.22*e*e+Math.sin(TAU*277*t)*.1*e*e*e)*(.2+.8*e)+lp2*2.2*e*e}
   return sala(o,.25)}
 const urlGuia=id=>cache['r'+id]||(cache['r'+id]=wav(guia(RITMOS.find(r=>r.id===id).f)));
-let urlCampana='';
+let urlCampana='',urlGolpe='';
+const golpeUrl=()=>urlGolpe||(urlGolpe=wav((()=>{const o=new Float32Array(SR*12),fn=cuenco(q(174.61),.9);for(let j=0;j<o.length;j++)o[j]=fn(j/SR);return o})()));
 const campanas=()=>urlCampana||(urlCampana=wav((()=>{const o=new Float32Array(SR*8);[[0,587.33],[1.3,739.99],[2.6,880],[4.2,739.99]].forEach(([t0,f])=>{const fn=campana(f,.5,2.2);for(let j=0;j<o.length-t0*SR;j++)o[Math.floor(t0*SR)+j]+=fn(j/SR)});return o})()));
 
 /* ---------- Planes: lo que ve alguien que no sabe del tema ---------- */
@@ -247,10 +272,12 @@ const PLANES=[
   que:'La respiración que más frena y después un ruido grave y constante, como el de un avión, que tapa todo lo demás.'},
  {id:'cabeza',n:'La cabeza no para',d:'Le das vueltas a todo y no desconectas.',ritmo:'coh',resp:5,fondo:'olas',frec:'theta',min:45,
   que:'5 minutos de respiración lenta y pareja. Después olas: su vaivén te invita a seguir respirando despacio.'},
- {id:'siesta',n:'Siesta de 20 minutos',d:'Descansar sin despertarte hecho polvo.',ritmo:'suave',resp:2,fondo:'pad',frec:'no',min:18,campana:true,
+ {id:'siesta',n:'Siesta de 20 minutos',d:'Descansar sin despertarte hecho polvo.',ritmo:'suave',resp:2,fondo:'pad',frec:'no',min:18,final:'campanas',
   que:'2 minutos respirando y 18 de música tranquila. Al final suenan unas campanitas suaves para despertarte.'},
  {id:'calma',n:'Solo quiero relajarme',d:'Sin prisa por dormir.',ritmo:'caja',resp:4,fondo:'cuencos',frec:'f432',min:0,
-  que:'Respiración en cuadrado y después cuencos tibetanos con un tono cálido de fondo, sin límite de tiempo.'}
+  que:'Respiración en cuadrado y después cuencos tibetanos, uno frotado que suena sin parar y otros que se golpean de vez en cuando, sin límite de tiempo.'},
+ {id:'meditar',n:'Meditar un rato',d:'Sentarte, cerrar los ojos y escuchar.',ritmo:'coh',resp:3,fondo:'tanpura',frec:'theta',min:15,final:'cuenco',
+  que:'3 minutos respirando y 15 con las cuerdas indias que se usan para meditar. Un cuenco marca el principio y el final.'}
 ];
 const TIMERS=[15,30,45,60,90,0],RDUR=[3,5,10,0];
 
@@ -260,7 +287,7 @@ try{Object.assign(st,JSON.parse(localStorage.getItem('duerme3')||'{}'))}catch(e)
 const save=()=>{try{localStorage.setItem('duerme3',JSON.stringify(st))}catch(e){}};
 $('volA').value=st.volA;$('volB').value=st.volB;$('rson').checked=st.rson;
 
-const auA=new Audio(),auB=new Audio(),auC=new Audio();for(const a of[auA,auB,auC]){a.loop=true;a.preload='auto'}
+const auA=new Audio(),auB=new Audio(),auC=new Audio(),auD=new Audio();auD.preload='auto';for(const a of[auA,auB,auC]){a.loop=true;a.preload='auto'}
 let playing=false,endAt=0,plan=null,respEnd=0,fase2=false,guiaSola=false,msg='Elige abajo',cambiando=false;
 const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const nombre=()=>{const a=FONDOS.find(x=>x.id===st.fondo),b=FRECS.find(x=>x.id===st.frec);return[a.id!=='no'&&a.n,b.id!=='no'&&b.n].filter(Boolean).join(' + ')||'Silencio'};
@@ -268,6 +295,8 @@ const setv=(a,v)=>{try{a.volume=Math.max(0,Math.min(1,v))}catch(e){}};
 function pon(au,u){cambiando=true;if(!u){au.pause();au.removeAttribute('src');au.dataset.u=''}else if(au.dataset.u!==u){au.src=u;au.dataset.u=u}cambiando=false;return!!u}
 const toca=au=>{const p=au.play();if(p)p.catch(()=>{})};
 const calla=au=>{cambiando=true;au.pause();cambiando=false};
+// Un cuenco suelto: al empezar, al acabar de respirar y al final de «Meditar»
+const golpe=(vol=.7)=>{pon(auD,golpeUrl());try{auD.currentTime=0}catch(e){}setv(auD,vol);toca(auD)};
 
 function showTime(){
   const now=Date.now();
@@ -310,13 +339,13 @@ function iniciaPlan(p){
   paraGuia();plan=p;st.fondo=p.fondo;st.frec=p.frec;save();
   playing=true;fase2=false;respEnd=Date.now()+p.resp*60000;endAt=p.min?respEnd+p.min*60000:0;
   auC.loop=true;pon(auC,urlGuia(p.ritmo));auC.dataset.r=p.ritmo;auC.currentTime=0;
-  tick(true);toca(auC);arranca(false);setMS();ui();
+  tick(true);toca(auC);golpe(.6);arranca(false);setMS();ui();
   setTimeout(()=>url(FRECS,st.frec),200);           // prepara el acompañamiento mientras respiras
 }
 function stop(m){playing=false;endAt=0;plan=null;fase2=false;for(const a of[auA,auB,auC])calla(a);msg=m||'Elige abajo';ui()}
 function fin(){
-  const conCampana=plan&&plan.campana;stop(conCampana?'Arriba, sin prisa':'Buenas noches');
-  if(conCampana){auC.loop=false;pon(auC,campanas());setv(auC,.9);toca(auC)}
+  const fn=plan&&plan.final;stop(fn==='campanas'?'Arriba, sin prisa':fn==='cuenco'?'Ya está':'Buenas noches');
+  if(fn==='campanas'){pon(auD,campanas());setv(auD,.9);toca(auD)}else if(fn==='cuenco')golpe(.7);
 }
 function tick(force){
   if(!playing&&!force){if(guiaSola)setv(auC,.6);return}
@@ -326,7 +355,7 @@ function tick(force){
   let a=1,b=1,c=0;
   if(plan){const x=Math.max(0,Math.min(1,(now-respEnd)/10000));   // 10 s de fundido al acabar de respirar
     c=.6*(1-x);a=.3+.7*x;b=x;
-    if(now>=respEnd&&!fase2){fase2=true;arranca(true);setMS();ui()}
+    if(now>=respEnd&&!fase2){fase2=true;golpe(.5);arranca(true);setMS();ui()}
     if(x>=1&&!auC.paused)calla(auC)}
   setv(auA,st.volA/100*a*f);setv(auB,st.volB/100*b*f);if(plan)setv(auC,c);
   showTime();
@@ -395,7 +424,7 @@ $('blackBtn').onclick=()=>{$('black').classList.add('on');lock()};
 let lastTap=0;$('black').addEventListener('pointerup',()=>{const n=Date.now();if(n-lastTap<400){$('black').classList.remove('on');if(!$('resp').classList.contains('on'))suelta()}lastTap=n});
 
 ui();
-setTimeout(()=>{urlGuia('suave');url(FONDOS,'lluvia')},400);
+setTimeout(()=>{urlGuia('suave');url(FONDOS,'lluvia');golpeUrl()},400);
 // PWA: registrar el service worker para poder instalarla y abrirla sin conexión
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
