@@ -1,6 +1,6 @@
 // Service worker de Duerme: guarda la app para que abra sin conexión.
 // Sube VERSION cuando cambies index.html para que los móviles cojan la nueva.
-const VERSION = 'duerme-2';
+const VERSION = 'duerme-3';
 const ARCHIVOS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

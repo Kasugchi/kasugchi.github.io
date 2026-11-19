@@ -13,47 +13,59 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,400;7..72,500&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
 <style>
-/* VOICE: calma nocturna, pocas palabras
+/* VOICE: calma nocturna, frases cortas, nada técnico a la vista
    IDEA: una lamparita de mesilla con forma de luna que respira
    PICTURE: luna grande que late despacio; en «Respira», un círculo que guía el aire
    COLOUR and TYPE: noche verde-negra, luna crema, acento verde mar; Literata + Figtree
-   LAYOUT: una columna: luna, fondo + frecuencia, temporizador, play; respira; meditaciones */
+   LAYOUT: una columna: luna, «¿cómo estás?», estado, respira; ajustes plegados al final */
 :root{color-scheme:dark;--bg:#0f1719;--bg2:#162225;--ink:#e9e4d6;--mut:#9aa8a6;--moon:#efe6cf;--acc:#7fc8b8;--line:#25363a}
 *{box-sizing:border-box;min-width:0}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
 main{max-width:560px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) max(5vw,16px) 48px}
 h1{font:500 32px/1.05 Literata,Georgia,serif;margin:8px 0 0}
-h2{font:500 24px/1.2 Literata,Georgia,serif;margin:44px 0 4px}
+h2{font:500 24px/1.2 Literata,Georgia,serif;margin:40px 0 4px}
 .sub{color:var(--mut);margin:4px 0 0;font-size:15px}
-.stage{display:grid;place-items:center;height:min(78vw,320px);margin:12px 0}
-.moon{width:min(62vw,240px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 32%,#fffaf0,var(--moon) 45%,#c9bc9a 100%);box-shadow:0 0 60px 10px rgba(239,230,207,.12),0 0 140px 40px rgba(127,200,184,.06);display:grid;place-items:center;text-align:center;color:#3b3a33;transition:filter 1.5s}
+.stage{display:grid;place-items:center;height:min(74vw,300px);margin:8px 0}
+.moon{width:min(58vw,224px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 35% 32%,#fffaf0,var(--moon) 45%,#c9bc9a 100%);box-shadow:0 0 60px 10px rgba(239,230,207,.12),0 0 140px 40px rgba(127,200,184,.06);display:grid;place-items:center;text-align:center;color:#3b3a33;transition:filter 1.5s}
 .moon.off{filter:brightness(.55) saturate(.6)}
 .playing .moon{animation:breathe 11s ease-in-out infinite}
 @keyframes breathe{45%{transform:scale(1.07)}}
 @media(prefers-reduced-motion:reduce){.playing .moon{animation:none}}
-.time{font:500 clamp(30px,9vw,44px)/1 Literata,serif;font-variant-numeric:tabular-nums}
+.time{font:500 clamp(30px,9vw,42px)/1 Literata,serif;font-variant-numeric:tabular-nums}
 .lab{font-size:14px;margin-top:6px;padding:0 18px}
+.planes{display:grid;gap:10px;margin-top:14px}
+.plan{display:block;width:100%;text-align:left;padding:16px 18px;border-radius:18px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;cursor:pointer}
+.plan b{display:block;font:500 20px/1.25 Literata,serif}
+.plan span{display:block;color:var(--mut);font-size:15px;margin-top:2px}
+.plan small{display:block;color:var(--acc);font-size:13px;margin-top:8px}
+.plan[aria-pressed=true]{border-color:var(--acc);background:#1a2c2e}
+#estado{display:none;margin-top:16px;padding:18px;border-radius:18px;background:#13201f;border:1px solid #2b4441}
+#estado.on{display:block}
+#estado h3{margin:0;font:500 20px/1.25 Literata,serif}
+#estado p{margin:8px 0 0;color:#c9d3cf}
+#estado .que{color:var(--mut);font-size:14px}
+.btns{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn{flex:1 1 140px;min-height:48px;border-radius:24px;border:1px solid var(--line);background:none;color:var(--ink);font:600 16px Figtree,sans-serif;cursor:pointer}
+.btn.fill{background:var(--moon);color:#1a1a16;border-color:var(--moon)}
 .row{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;font-size:15px;cursor:pointer}
 .chip[aria-pressed=true]{background:var(--acc);color:#0f1719;border-color:var(--acc);font-weight:600}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
-.k{font-size:14px;color:var(--mut);margin:22px 0 8px;display:flex;justify-content:space-between;gap:8px}
-.hint{font-size:13px;color:var(--mut);margin:6px 0 0}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--moon);outline-offset:2px}
+.k{font-size:14px;color:var(--mut);margin:22px 0 8px}
+.hint{font-size:13px;color:var(--mut);margin:6px 0 0;min-height:1em}
 input[type=range]{width:100%;accent-color:var(--acc);height:36px;margin:4px 0 0}
-.big{display:block;width:100%;min-height:56px;margin-top:24px;border:0;border-radius:28px;background:var(--moon);color:#1a1a16;font:600 18px Figtree,sans-serif;cursor:pointer}
+.big{display:block;width:100%;min-height:56px;margin-top:22px;border:0;border-radius:28px;background:var(--moon);color:#1a1a16;font:600 18px Figtree,sans-serif;cursor:pointer}
 .ghost{background:none;border:1px solid var(--line);color:var(--ink)}
-.med{display:grid;gap:8px;margin-top:12px}
-.mcard{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;padding:14px 16px;min-height:64px;border-radius:16px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;cursor:pointer}
-.mcard b{font-weight:600;display:block}.mcard span{color:var(--mut);font-size:14px}
-.mcard em{font-style:normal;color:var(--acc);font-size:14px;white-space:nowrap}
-.mcard[aria-pressed=true]{border-color:var(--acc);background:#1a2c2e}
-.now{min-height:24px;color:var(--acc);font:400 17px/1.5 Literata,serif;margin-top:14px}
-select{width:100%;min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--ink);font:inherit;font-size:16px;padding:0 12px}
-.vrow{display:flex;gap:8px;margin-top:8px}.vrow select{flex:1}.vrow .chip{flex:none}
 .sw{display:flex;align-items:center;gap:10px;min-height:44px;margin-top:10px;cursor:pointer;font-size:15px}
 .sw input{width:22px;height:22px;accent-color:var(--acc)}
-.note{color:var(--mut);font-size:14px;margin-top:36px;border-top:1px solid var(--line);padding-top:16px}
-.note p{margin:0 0 8px}
+details{margin-top:40px;border-top:1px solid var(--line)}
+summary{list-style:none;cursor:pointer;min-height:56px;display:flex;align-items:center;justify-content:space-between;font:500 20px Literata,serif}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:400 26px Figtree;color:var(--mut)}
+details[open] summary::after{content:"−"}
+.faq{margin-top:8px;border-top:1px solid var(--line)}
+.faq h3{font:500 18px Literata,serif;margin:22px 0 6px}
+.faq p{margin:0 0 10px;color:#c2ccc8;font-size:15px}
 .ov{position:fixed;inset:0;z-index:9;display:none}
 .ov.on{display:flex}
 #black{background:#000;align-items:flex-end;justify-content:center;padding-bottom:40px;color:#2a2a2a;font-size:13px;user-select:none}
@@ -68,41 +80,58 @@ select{width:100%;min-height:44px;border-radius:12px;border:1px solid var(--line
 </style></head><body>
 <main id="app">
 <h1>Duerme</h1>
-<p class="sub">Sonidos para dormir, frecuencias, respiración y meditaciones guiadas.</p>
-<div class="stage"><div class="moon off" id="moon"><div><div class="time" id="time">30:00</div><div class="lab" id="lab">Listo</div></div></div></div>
+<p class="sub">Dime cómo estás y yo me encargo del resto.</p>
+<div class="stage"><div class="moon off" id="moon"><div><div class="time" id="time">Hola</div><div class="lab" id="lab">Elige abajo</div></div></div></div>
 
-<div class="k"><span>Fondo</span></div><div class="row" id="fondos"></div>
+<div id="estado" aria-live="polite">
+  <h3 id="eTit"></h3>
+  <p id="eFase"></p>
+  <p class="que" id="eQue"></p>
+  <div class="btns"><button class="btn" id="eGuia">Ver el círculo</button><button class="btn fill" id="eParar">Parar</button></div>
+</div>
+
+<h2>¿Cómo estás esta noche?</h2>
+<p class="sub">Toca una opción. Primero respiras unos minutos siguiendo el sonido y luego suena algo tranquilo que se apaga solo.</p>
+<div class="planes" id="planes"></div>
+
+<h2>Solo respirar</h2>
+<p class="sub">Un círculo que crece al coger aire y se encoge al soltarlo, con un sonido que sube y baja al mismo ritmo. Puedes cerrar los ojos y seguir solo el sonido.</p>
+<div class="k">Ritmo</div><div class="row" id="ritmos"></div>
+<p class="hint" id="ritmoHint"></p>
+<div class="k">Duración</div><div class="row" id="rdur"></div>
+<label class="sw"><input type="checkbox" id="rson"> Con el sonido que guía</label>
+<button class="big" id="respBtn">Empezar a respirar</button>
+<button class="big ghost" id="blackBtn">Pantalla negra</button>
+
+<details id="aj">
+<summary>Ajustes a mano</summary>
+<div class="k">Fondo</div><div class="row" id="fondos"></div>
 <input type="range" id="volA" min="0" max="100" aria-label="Volumen del fondo">
-<div class="k"><span>Frecuencia</span></div><div class="row" id="frecs"></div>
-<input type="range" id="volB" min="0" max="100" aria-label="Volumen de la frecuencia">
+<div class="k">Acompañamiento</div><div class="row" id="frecs"></div>
+<input type="range" id="volB" min="0" max="100" aria-label="Volumen del acompañamiento">
 <p class="hint" id="frecHint"></p>
 <div class="k">Apagar en</div><div class="row" id="timers"></div>
 <button class="big" id="play">Reproducir</button>
+</details>
 
-<h2>Respira</h2>
-<p class="sub">Sigue el círculo: crece al inspirar y se encoge al soltar el aire. Funciona sin sonido.</p>
-<div class="k">Ritmo</div><div class="row" id="ritmos"></div>
-<div class="k">Duración</div><div class="row" id="rdur"></div>
-<label class="sw"><input type="checkbox" id="rvoz"> Decir «inspira» y «expira» en voz baja</label>
-<button class="big" id="respBtn">Empezar a respirar</button>
-
-<h2>Meditación guiada</h2>
-<p class="sub">Elige un fondo y tócala. La voz baja el sonido mientras habla.</p>
-<div class="med" id="meds"></div>
-<div class="now" id="now"></div>
-<div class="k">Voz</div>
-<div class="vrow"><select id="voz" aria-label="Voz"></select><button class="chip" id="probar">Probar</button></div>
-<button class="big ghost" id="blackBtn">Pantalla negra</button>
-
-<div class="note">
-<p>Con la app instalada (menú del navegador, «Instalar» o «Añadir a pantalla de inicio»), los sonidos siguen con la pantalla apagada.</p>
-<p>La voz es la del propio móvil y algunos la pausan al bloquear: para las meditaciones usa la pantalla negra, que deja el móvil despierto pero a oscuras.</p>
-<p>Las binaurales (delta y theta) solo funcionan con auriculares, porque cada oído recibe un tono distinto. Igual que las de 432 y 528 Hz, sirven para relajarse; no hay pruebas sólidas de que hagan algo más.</p>
+<details>
+<summary>¿Qué es todo esto?</summary>
+<div class="faq">
+<h3>Lo que de verdad ayuda a dormir</h3>
+<p>Soltar el aire más despacio de lo que lo coges frena el cuerpo: baja el pulso y relaja los músculos. Por eso todas las opciones empiezan respirando.</p>
+<p>Un sonido constante (lluvia, olas, ruido grave) tapa los ruidos de la casa y de la calle, que son los que te despiertan o no te dejan desconectar.</p>
+<h3>¿Y los pulsos de «sueño profundo» y «relajación»?</h3>
+<p>Son dos tonos casi iguales, uno en cada oído. El cerebro los junta y oye un pulso lento. Mucha gente los usa para dormir o meditar. Los estudios dicen que pueden relajar, pero no que te metan en un sueño especial. Solo funcionan con auriculares; sin ellos se oye un zumbido grave suave, que tampoco molesta.</p>
+<h3>¿Y los tonos de 432 y 528 Hz?</h3>
+<p>Tienen fama en internet de curativos. No hay pruebas de eso, pero son tonos suaves y agradables de fondo.</p>
+<h3>Con la pantalla apagada</h3>
+<p>Instala la app (en el menú del navegador, «Instalar» o «Añadir a pantalla de inicio») y apaga la pantalla sin miedo: todo sigue sonando y se para solo.</p>
 </div>
+</details>
 </main>
 
 <div class="ov" id="resp" role="dialog" aria-label="Respiración">
-<div class="bwrap"><div class="bring"></div><div class="bc" id="bc"></div><div class="bt" id="bt">Inspira</div></div>
+<div class="bwrap"><div class="bring"></div><div class="bc" id="bc"></div><div class="bt" id="bt">Coge aire</div></div>
 <div class="bs" id="bs"></div><div class="bm" id="bm"></div>
 <button id="respSalir">Salir</button>
 </div>
@@ -111,6 +140,7 @@ select{width:100%;min-height:44px;border-radius:12px;border:1px solid var(--line
 <script>
 {
 const $=id=>document.getElementById(id);
+const ease=p=>(1-Math.cos(Math.PI*p))/2;
 const SR=22050,L=SR*48,F=SR*2,N=L+F,TAU=Math.PI*2;
 
 /* ---------- Síntesis de sonidos (bucles de 48 s sin cortes) ---------- */
@@ -172,11 +202,11 @@ const tono=f=>()=>{const m=new Float32Array(L);
   for(let i=0;i<L;i++){const t=i/SR;m[i]=(.45*Math.sin(TAU*f*t)+.3*Math.sin(TAU*f/2*t)+.06*Math.sin(TAU*f*1.5*t))*(.7+.3*Math.sin(TAU*t/12))}
   return sala(m,.2)};
 const FRECS=[
- {id:'no',n:'Ninguna'},
- {id:'delta',n:'Delta 2 Hz',d:'Binaural para sueño profundo. Con auriculares.',g:binaural(100,102)},
- {id:'theta',n:'Theta 6 Hz',d:'Binaural para relajarse y meditar. Con auriculares.',g:binaural(200,206)},
- {id:'f432',n:'432 Hz',d:'Tono suave y estable.',g:tono(432)},
- {id:'f528',n:'528 Hz',d:'Tono suave y estable.',g:tono(528)}
+ {id:'no',n:'Nada'},
+ {id:'delta',n:'Sueño profundo',d:'Pulso grave muy lento (binaural delta, 2 Hz). Mejor con auriculares.',g:binaural(100,102)},
+ {id:'theta',n:'Relajación',d:'Pulso lento, como al quedarse traspuesto (binaural theta, 6 Hz). Mejor con auriculares.',g:binaural(200,206)},
+ {id:'f432',n:'Tono cálido',d:'Un tono suave y redondo de 432 Hz que acompaña de fondo.',g:tono(432)},
+ {id:'f528',n:'Tono claro',d:'Un tono suave de 528 Hz, algo más brillante.',g:tono(528)}
 ];
 
 function wav(d){const st=d.l?2:1,n=st===2?d.l.length:d.length,ch=st===2?[d.l,d.r]:[d];let m=0;
@@ -189,207 +219,151 @@ function wav(d){const st=d.l?2:1,n=st===2?d.l.length:d.length,ch=st===2?[d.l,d.r
 const cache={};
 const url=(lista,id)=>{const s=lista.find(x=>x.id===id);if(!s||!s.g)return'';const k=lista===FONDOS?'a'+id:'b'+id;return cache[k]||(cache[k]=wav(s.g()))};
 
-/* ---------- Meditaciones ---------- */
-const cuerpoNidra=['Pulgar de la mano derecha','el índice','el dedo corazón','el anular','el meñique','la palma de la mano','el dorso','la muñeca','el antebrazo','el codo','el brazo','el hombro derecho','el costado derecho','la cadera derecha','el muslo','la rodilla','la pantorrilla','el tobillo','el talón','la planta del pie','los dedos del pie derecho',
- 'Pulgar de la mano izquierda','el índice','el dedo corazón','el anular','el meñique','la palma de la mano','el dorso','la muñeca','el antebrazo','el codo','el brazo','el hombro izquierdo','el costado izquierdo','la cadera izquierda','el muslo','la rodilla','la pantorrilla','el tobillo','el talón','la planta del pie','los dedos del pie izquierdo',
- 'La espalda entera','la nuca','la coronilla','la frente','las cejas','el entrecejo','los párpados','las mejillas','la nariz','los labios','la barbilla','la garganta','el pecho','el vientre','el ombligo'];
-const imagenes=['Una vela encendida','Un camino de tierra al atardecer','Las olas llegando a la orilla','Un gato dormido al sol','Lluvia en el cristal','Un faro a lo lejos','Una manta caliente','El cielo lleno de estrellas','Una barca quieta en un lago','La luna sobre el mar'];
-const MEDS=[
- {id:'478',n:'Respiración 4-7-8',d:'Para bajar pulsaciones antes de dormir',t:'5 min',steps:[
-  ['Ponte cómodo, boca arriba o de lado. Deja los brazos sueltos.',6],
-  ['Vamos a respirar con el ritmo cuatro, siete, ocho. Inhalas en cuatro. Aguantas en siete. Y sueltas el aire en ocho.',5],
-  ['Primero, suelta todo el aire por la boca.',5],
-  ...Array.from({length:10},(_,i)=>[['Inspira por la nariz.',3.5],['Mantén.',6.5],['Suelta despacio por la boca.',7.5]].concat(i===3?[['Muy bien. Si te mareas, respira normal un momento.',5]]:[])).flat(),
-  ['Ahora deja la respiración a su aire. No tienes que hacer nada más.',15],
-  ['Solo escucha el sonido y deja que te lleve. Buenas noches.',1]]},
- {id:'cuerpo',n:'Escaneo corporal',d:'Aflojar el cuerpo de los pies a la cabeza',t:'10 min',fondo:'lluvia',steps:[
-  ['Cierra los ojos. Nota el peso de tu cuerpo sobre la cama.',10],
-  ['Haz tres respiraciones lentas, un poco más largas de lo normal.',22],
-  ['Lleva la atención a los dedos de los pies. Nota cómo están, sin cambiar nada. Y deja que se aflojen.',30],
-  ['Las plantas de los pies, los talones, los tobillos. Pesados. Tranquilos.',30],
-  ['Sube a las piernas. Pantorrillas, rodillas, muslos. Que pesen. Que se hundan un poco en el colchón.',35],
-  ['Ahora las caderas y la parte baja de la espalda. Suelta lo que estés sujetando ahí.',35],
-  ['El vientre. Nota cómo sube y baja con cada respiración. Déjalo blando.',35],
-  ['El pecho. El aire entra y sale solo. Tú solo miras.',35],
-  ['La espalda, vértebra a vértebra, apoyada y sostenida.',30],
-  ['Los hombros. Déjalos caer, lejos de las orejas.',30],
-  ['Brazos, manos, dedos. Pesados y calientes.',30],
-  ['El cuello y la nuca. Afloja.',25],
-  ['La cara. La mandíbula se separa un poco. La lengua descansa. Los ojos se relajan. La frente se alisa.',35],
-  ['Ahora todo el cuerpo a la vez, de los pies a la cabeza. Pesado, caliente, en calma.',40],
-  ['Si aparece un pensamiento, déjalo pasar como una nube y vuelve al sonido.',60],
-  ['Sigue aquí, descansando. Buenas noches.',1]]},
- {id:'nidra',n:'Yoga nidra para dormir',d:'El cuerpo duerme, la mente sigue la voz',t:'15 min',fondo:'cuencos',steps:[
-  ['Túmbate boca arriba, con los brazos un poco separados del cuerpo y las palmas hacia arriba.',10],
-  ['Esto es un yoga nidra. Tu cuerpo va a dormir, y tu mente va a seguir mi voz sin esfuerzo. Si te duermes, perfecto.',12],
-  ['Escucha los sonidos más lejanos. Después, los más cercanos. Después, tu propia respiración.',25],
-  ['Piensa un deseo sencillo para ti, en una frase corta. Por ejemplo: estoy en calma. Repítelo tres veces por dentro.',25],
-  ['Ahora vamos a recorrer el cuerpo. Lleva la atención a cada parte que nombre, solo un instante, y pasa a la siguiente.',6],
-  ...cuerpoNidra.map(p=>[p+'.',2.5]),
-  ['Todo el lado derecho del cuerpo.',5],['Todo el lado izquierdo.',5],['Los dos lados a la vez.',5],['El cuerpo entero.',15],
-  ['Siente el cuerpo muy pesado, como si se hundiera en la cama.',25],
-  ['Ahora siente el cuerpo muy ligero, como si flotara un poco por encima.',25],
-  ['Siente calor, como un sol de tarde en la piel.',25],
-  ['Y ahora frescor, como una brisa que entra por la ventana.',25],
-  ['Te voy a nombrar algunas imágenes. Solo déjalas aparecer, sin buscarlas.',6],
-  ...imagenes.map(p=>[p+'.',7]),
-  ['Recuerda tu deseo. Repítelo tres veces por dentro.',30],
-  ['Ya no hace falta seguir nada. Deja que el sueño llegue cuando quiera.',40],
-  ['Buenas noches.',1]]},
- {id:'mar',n:'Paseo por la orilla',d:'Visualización de una playa al anochecer',t:'8 min',fondo:'olas',steps:[
-  ['Cierra los ojos y respira despacio.',12],
-  ['Imagina que es la última hora de la tarde y bajas a una playa tranquila. No hay nadie.',18],
-  ['Nota la arena fresca bajo los pies descalzos. Cada paso se hunde un poco.',25],
-  ['El cielo pasa del naranja al morado. El agua refleja los colores.',25],
-  ['Escucha las olas. Llegan. Se retiran. Llegan. Se retiran. Respira con ellas.',40],
-  ['Camina despacio por la orilla. El agua te moja los tobillos, tibia.',30],
-  ['Busca un sitio donde sentarte. La arena todavía guarda el calor del día.',25],
-  ['Aparece la primera estrella. Luego otra. Luego muchas.',30],
-  ['Túmbate en la arena. El cielo es enorme, y tú estás tranquilo debajo de él.',35],
-  ['Cada ola se lleva un poco de cansancio. No tienes que hacer nada.',50],
-  ['Quédate aquí, escuchando el mar, todo el tiempo que quieras.',60],
-  ['Buenas noches.',1]]},
- {id:'dia',n:'Soltar el día',d:'Para cuando la cabeza no para',t:'7 min',steps:[
-  ['Ponte cómodo y cierra los ojos.',8],
-  ['El día ya ha terminado. Lo que quedó pendiente puede esperar a mañana. Ahora no hay nada que resolver.',15],
-  ['Respira hondo. Y al soltar el aire, imagina que sueltas también el día.',18],
-  ['Piensa en una cosa pequeña de hoy que haya estado bien. Un café, una conversación, un rato tranquilo. Quédate un momento con ella.',35],
-  ['Si hay algo que te preocupa, imagina que lo escribes en un papel y lo dejas encima de la mesa. Seguirá ahí mañana. No tienes que llevarlo contigo esta noche.',35],
-  ['Con cada respiración, el cuerpo pesa un poco más.',30],
-  ['Imagina un sitio donde estés tranquilo. Mira los colores. Escucha. Nota la temperatura.',45],
-  ['Quédate ahí. No hace falta hacer nada.',60],
-  ['Deja que el sonido te acompañe. Buenas noches.',1]]},
- {id:'siesta',n:'Siesta reparadora',d:'20 minutos y te despierta con suavidad',t:'20 min',fondo:'pad',fin:true,steps:[
-  ['Esta siesta dura unos veinte minutos. Al final te despertaré con suavidad.',6],
-  ['Ponte cómodo y cierra los ojos.',8],
-  ['Respira hondo tres veces. Al soltar el aire, deja caer los hombros.',22],
-  ['Nota el peso del cuerpo. Déjalo todo en manos de la cama o del sofá.',22],
-  ['No intentes dormir. Solo descansa. Si te duermes, bien. Si no, también descansas.',25],
-  ['Te dejo con el sonido. Volveré dentro de un rato.',2],
-  ['',900],
-  ['Poco a poco, empieza a volver.',15],
-  ['Respira un poco más hondo.',12],
-  ['Mueve los dedos de las manos y de los pies.',12],
-  ['Estírate como quieras, sin prisa.',15],
-  ['Cuando estés listo, abre los ojos. Ya has descansado.',3]]}
-];
+
+/* ---------- Guía de respiración con sonido ---------- */
 const RITMOS=[
- {id:'suave',n:'Para dormir 4-6',f:[['Inspira',4],['Expira',6]]},
- {id:'coh',n:'Coherencia 5-5',f:[['Inspira',5],['Expira',5]]},
- {id:'478',n:'4-7-8',f:[['Inspira',4],['Mantén',7],['Expira',8]]},
- {id:'caja',n:'Caja 4-4-4-4',f:[['Inspira',4],['Mantén',4],['Expira',4],['Mantén',4]]}
+ {id:'suave',n:'Para dormir',d:'Coges aire en 4 segundos y lo sueltas en 6. El más sencillo.',f:[['Inspira',4],['Expira',6]]},
+ {id:'coh',n:'Pareja',d:'5 segundos para coger aire y 5 para soltarlo. Calma la cabeza.',f:[['Inspira',5],['Expira',5]]},
+ {id:'478',n:'4-7-8',d:'Coges aire en 4, lo aguantas 7 y lo sueltas en 8. El que más frena.',f:[['Inspira',4],['Mantén',7],['Expira',8]]},
+ {id:'caja',n:'En cuadrado',d:'4 coger, 4 aguantar, 4 soltar, 4 aguantar. Muy estable.',f:[['Inspira',4],['Mantén',4],['Expira',4],['Mantén',4]]}
+];
+const nivel=(f,t)=>{const C=f.reduce((s,x)=>s+x[1],0);let u=((t%C)+C)%C,j=0;while(u>=f[j][1]){u-=f[j][1];j++}
+  const[nom,d]=f[j],p=u/d,prev=f[(j+f.length-1)%f.length][0];
+  return{nom,d,u,j,e:nom==='Inspira'?ease(p):nom==='Expira'?1-ease(p):(prev==='Inspira'?1:0)}};
+// Un acorde grave que crece y brilla al coger aire y se apaga al soltarlo, con un soplo suave
+function guia(f){const C=f.reduce((s,x)=>s+x[1],0),Lb=C*Math.max(1,Math.round(48/C))*SR,o=new Float32Array(Lb),pk=pinkGen();let lp=0,lp2=0;
+  for(let i=0;i<Lb;i++){const t=i/SR,e=.1+.9*nivel(f,t).e,x=pk();lp+=.05*(x-lp);lp2+=.05*(lp-lp2);
+    o[i]=(Math.sin(TAU*110*t)*.5+Math.sin(TAU*165*t)*.32*e+Math.sin(TAU*220*t)*.22*e*e+Math.sin(TAU*277*t)*.1*e*e*e)*(.2+.8*e)+lp2*2.2*e*e}
+  return sala(o,.25)}
+const urlGuia=id=>cache['r'+id]||(cache['r'+id]=wav(guia(RITMOS.find(r=>r.id===id).f)));
+let urlCampana='';
+const campanas=()=>urlCampana||(urlCampana=wav((()=>{const o=new Float32Array(SR*8);[[0,587.33],[1.3,739.99],[2.6,880],[4.2,739.99]].forEach(([t0,f])=>{const fn=campana(f,.5,2.2);for(let j=0;j<o.length-t0*SR;j++)o[Math.floor(t0*SR)+j]+=fn(j/SR)});return o})()));
+
+/* ---------- Planes: lo que ve alguien que no sabe del tema ---------- */
+const PLANES=[
+ {id:'dormir',n:'Quiero dormirme',d:'Una noche normal en la que cuesta arrancar.',ritmo:'suave',resp:3,fondo:'lluvia',frec:'delta',min:45,
+  que:'Primero respiras 3 minutos. Después, lluvia con un pulso grave muy suave durante 45 minutos.'},
+ {id:'desvelo',n:'Me he desvelado',d:'Son las tantas y tienes los ojos como platos.',ritmo:'478',resp:3,fondo:'marron',frec:'delta',min:60,
+  que:'La respiración que más frena y después un ruido grave y constante, como el de un avión, que tapa todo lo demás.'},
+ {id:'cabeza',n:'La cabeza no para',d:'Le das vueltas a todo y no desconectas.',ritmo:'coh',resp:5,fondo:'olas',frec:'theta',min:45,
+  que:'5 minutos de respiración lenta y pareja. Después olas: su vaivén te invita a seguir respirando despacio.'},
+ {id:'siesta',n:'Siesta de 20 minutos',d:'Descansar sin despertarte hecho polvo.',ritmo:'suave',resp:2,fondo:'pad',frec:'no',min:18,campana:true,
+  que:'2 minutos respirando y 18 de música tranquila. Al final suenan unas campanitas suaves para despertarte.'},
+ {id:'calma',n:'Solo quiero relajarme',d:'Sin prisa por dormir.',ritmo:'caja',resp:4,fondo:'cuencos',frec:'f432',min:0,
+  que:'Respiración en cuadrado y después cuencos tibetanos con un tono cálido de fondo, sin límite de tiempo.'}
 ];
 const TIMERS=[15,30,45,60,90,0],RDUR=[3,5,10,0];
 
 /* ---------- Estado ---------- */
-let st={fondo:'lluvia',frec:'no',min:30,volA:70,volB:35,ritmo:'suave',rdur:5,rvoz:false,voz:''};
-try{Object.assign(st,JSON.parse(localStorage.getItem('duerme2')||'{}'))}catch(e){}
-const save=()=>{try{localStorage.setItem('duerme2',JSON.stringify(st))}catch(e){}};
-$('volA').value=st.volA;$('volB').value=st.volB;$('rvoz').checked=st.rvoz;
+let st={fondo:'lluvia',frec:'no',min:30,volA:70,volB:30,ritmo:'suave',rdur:5,rson:true};
+try{Object.assign(st,JSON.parse(localStorage.getItem('duerme3')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('duerme3',JSON.stringify(st))}catch(e){}};
+$('volA').value=st.volA;$('volB').value=st.volB;$('rson').checked=st.rson;
 
-const auA=new Audio(),auB=new Audio();for(const a of[auA,auB]){a.loop=true;a.preload='auto'}
-let playing=false,endAt=0,duck=1,cur=null,medTok=0,msg='Listo',cambiando=false;
-const fmt=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const auA=new Audio(),auB=new Audio(),auC=new Audio();for(const a of[auA,auB,auC]){a.loop=true;a.preload='auto'}
+let playing=false,endAt=0,plan=null,respEnd=0,fase2=false,guiaSola=false,msg='Elige abajo',cambiando=false;
+const fmt=ms=>{const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const nombre=()=>{const a=FONDOS.find(x=>x.id===st.fondo),b=FRECS.find(x=>x.id===st.frec);return[a.id!=='no'&&a.n,b.id!=='no'&&b.n].filter(Boolean).join(' + ')||'Silencio'};
+const setv=(a,v)=>{try{a.volume=Math.max(0,Math.min(1,v))}catch(e){}};
+function pon(au,u){cambiando=true;if(!u){au.pause();au.removeAttribute('src');au.dataset.u=''}else if(au.dataset.u!==u){au.src=u;au.dataset.u=u}cambiando=false;return!!u}
+const toca=au=>{const p=au.play();if(p)p.catch(()=>{})};
+const calla=au=>{cambiando=true;au.pause();cambiando=false};
 
 function showTime(){
-  $('time').textContent=playing&&endAt?fmt(Math.max(0,endAt-Date.now())):(playing&&!endAt&&cur&&cur.fin?'Siesta':(st.min?fmt(st.min*60000):'Sin fin'));
-  $('lab').textContent=playing?(cur?cur.n:nombre()):msg;
+  const now=Date.now();
+  if(playing){
+    $('time').textContent=endAt?fmt(endAt-now):'Sin fin';
+    $('lab').textContent=plan&&!fase2?'Respira · '+fmt(respEnd-now):nombre();
+  }else{$('time').textContent=msg==='Elige abajo'?'Hola':'Buenas';$('lab').textContent=msg}
 }
 const chips=(lista,clave,txt)=>lista.map(x=>{const v=typeof x==='object'?x.id:x;return`<button class="chip" data-v="${v}" aria-pressed="${st[clave]===v}">${txt(x)}</button>`}).join('');
+const resumen=p=>`${p.resp} min respirando · ${p.min?p.min+' min':'sin fin'} de ${FONDOS.find(f=>f.id===p.fondo).n.toLowerCase()}`;
 function ui(){
+  $('planes').innerHTML=PLANES.map(p=>`<button class="plan" data-id="${p.id}" aria-pressed="${plan===p}"><b>${p.n}</b><span>${p.d}</span><small>${resumen(p)}</small></button>`).join('');
   $('fondos').innerHTML=chips(FONDOS,'fondo',x=>x.n);
   $('frecs').innerHTML=chips(FRECS,'frec',x=>x.n);
   $('timers').innerHTML=chips(TIMERS,'min',m=>m?m+' min':'Sin límite');
   $('ritmos').innerHTML=chips(RITMOS,'ritmo',x=>x.n);
   $('rdur').innerHTML=chips(RDUR,'rdur',m=>m?m+' min':'Libre');
-  $('meds').innerHTML=MEDS.map(m=>`<button class="mcard" data-id="${m.id}" aria-pressed="${cur===m}"><div><b>${m.n}</b><span>${m.d}</span></div><em>${cur===m?'Parar':m.t}</em></button>`).join('');
-  $('frecHint').textContent=(FRECS.find(x=>x.id===st.frec).d)||'';
+  $('ritmoHint').textContent=RITMOS.find(r=>r.id===st.ritmo).d;
+  $('frecHint').textContent=FRECS.find(x=>x.id===st.frec).d||'';
   $('volA').hidden=st.fondo==='no';$('volB').hidden=st.frec==='no';
-  $('play').textContent=playing?'Parar':'Reproducir';
+  $('play').textContent=playing&&!plan?'Parar':'Reproducir';
   $('app').classList.toggle('playing',playing);$('moon').classList.toggle('off',!playing);
+  const on=playing&&!!plan;$('estado').classList.toggle('on',on);
+  if(on){$('eTit').textContent=plan.n;$('eQue').textContent=plan.que;
+    $('eFase').textContent=fase2?'Ya está. Deja la respiración libre y escucha. El sonido se apagará solo.':'Respira con el sonido: cuando sube, coge aire por la nariz; cuando baja, suéltalo despacio. Puedes cerrar los ojos o apagar la pantalla.';
+    $('eGuia').hidden=fase2}
   showTime();
 }
 
 /* ---------- Reproducción ---------- */
-function fuente(au,lista,id){const u=url(lista,id);cambiando=true;if(!u){au.pause();au.removeAttribute('src');au.load()}else if(au.dataset.u!==u){au.src=u;au.dataset.u=u}cambiando=false;return!!u}
-function arranca(){const p=[];
-  if(fuente(auA,FONDOS,st.fondo))p.push(auA.play());
-  if(fuente(auB,FRECS,st.frec))p.push(auB.play());
-  for(const x of p)x.catch(()=>{if(playing){playing=false;msg='Toca otra vez';ui()}})}
-function start(){
-  msg='Listo';playing=true;endAt=st.min?Date.now()+st.min*60000:0;if(cur&&cur.fin)endAt=0;
-  tick(true);arranca();setMS();ui();
+function arranca(conFrec){
+  if(pon(auA,url(FONDOS,st.fondo)))toca(auA);
+  if(conFrec&&pon(auB,url(FRECS,st.frec)))toca(auB);else if(!conFrec)calla(auB);
 }
-function stop(m){playing=false;endAt=0;stopMed();cambiando=true;auA.pause();auB.pause();cambiando=false;msg=m||'Listo';ui()}
+function start(){                                   // desde «Ajustes a mano»
+  paraGuia();plan=null;fase2=true;msg='';playing=true;endAt=st.min?Date.now()+st.min*60000:0;
+  tick(true);arranca(true);setMS();ui();
+}
+function iniciaPlan(p){
+  paraGuia();plan=p;st.fondo=p.fondo;st.frec=p.frec;save();
+  playing=true;fase2=false;respEnd=Date.now()+p.resp*60000;endAt=p.min?respEnd+p.min*60000:0;
+  auC.loop=true;pon(auC,urlGuia(p.ritmo));auC.dataset.r=p.ritmo;auC.currentTime=0;
+  tick(true);toca(auC);arranca(false);setMS();ui();
+  setTimeout(()=>url(FRECS,st.frec),200);           // prepara el acompañamiento mientras respiras
+}
+function stop(m){playing=false;endAt=0;plan=null;fase2=false;for(const a of[auA,auB,auC])calla(a);msg=m||'Elige abajo';ui()}
+function fin(){
+  const conCampana=plan&&plan.campana;stop(conCampana?'Arriba, sin prisa':'Buenas noches');
+  if(conCampana){auC.loop=false;pon(auC,campanas());setv(auC,.9);toca(auC)}
+}
 function tick(force){
-  if(!playing&&!force)return;
-  let f=1;if(endAt){const r=endAt-Date.now();if(r<=0){stop('Buenas noches');return}f=Math.min(1,r/60000)}
-  try{auA.volume=Math.max(0,Math.min(1,st.volA/100*duck*f));auB.volume=Math.max(0,Math.min(1,st.volB/100*duck*f))}catch(e){}
+  if(!playing&&!force){if(guiaSola)setv(auC,.6);return}
+  const now=Date.now();
+  if(playing&&endAt&&now>=endAt){fin();return}
+  const f=endAt?Math.min(1,(endAt-now)/60000):1;
+  let a=1,b=1,c=0;
+  if(plan){const x=Math.max(0,Math.min(1,(now-respEnd)/10000));   // 10 s de fundido al acabar de respirar
+    c=.6*(1-x);a=.3+.7*x;b=x;
+    if(now>=respEnd&&!fase2){fase2=true;arranca(true);setMS();ui()}
+    if(x>=1&&!auC.paused)calla(auC)}
+  setv(auA,st.volA/100*a*f);setv(auB,st.volB/100*b*f);if(plan)setv(auC,c);
   showTime();
 }
-setInterval(tick,1000);auA.addEventListener('timeupdate',()=>tick());auB.addEventListener('timeupdate',()=>tick());
-for(const a of[auA,auB])a.addEventListener('pause',()=>{if(playing&&!cambiando&&a.getAttribute('src')){playing=false;stopMed();ui()}});
+setInterval(tick,1000);for(const a of[auA,auB,auC])a.addEventListener('timeupdate',()=>tick());
+for(const a of[auA,auB])a.addEventListener('pause',()=>{if(playing&&!cambiando&&a.getAttribute('src')){stop()}});
 
 function setMS(){try{if(!('mediaSession'in navigator))return;
-  navigator.mediaSession.metadata=new MediaMetadata({title:nombre(),artist:'Duerme',artwork:[{src:'icon-512.png',sizes:'512x512',type:'image/png'}]});
-  navigator.mediaSession.setActionHandler('play',()=>start());
+  navigator.mediaSession.metadata=new MediaMetadata({title:plan?plan.n:nombre(),artist:'Duerme',artwork:[{src:'icon-512.png',sizes:'512x512',type:'image/png'}]});
+  navigator.mediaSession.setActionHandler('play',()=>plan?iniciaPlan(plan):start());
   navigator.mediaSession.setActionHandler('pause',()=>stop());
   navigator.mediaSession.setActionHandler('stop',()=>stop());}catch(e){}}
 
-/* ---------- Voz ---------- */
-const hayVoz='speechSynthesis'in window;let voces=[];
-function puntua(v){let p=0;if(v.lang==='es-ES')p+=3;else if(/^es/i.test(v.lang))p+=1;if(/natural|neural|premium|enhanced|mejorad|online/i.test(v.name))p+=4;if(/google/i.test(v.name))p+=2;return p}
-function cargaVoces(){if(!hayVoz)return;voces=speechSynthesis.getVoices().filter(v=>/^es/i.test(v.lang)).sort((a,b)=>puntua(b)-puntua(a));
-  if(!voces.length){$('voz').innerHTML='<option>Voz del sistema</option>';return}
-  if(!voces.some(v=>v.name===st.voz))st.voz=voces[0].name;
-  $('voz').innerHTML=voces.map(v=>`<option${v.name===st.voz?' selected':''}>${v.name.replace(/[<>&]/g,'')}</option>`).join('')}
-if(hayVoz){cargaVoces();speechSynthesis.onvoiceschanged=cargaVoces}else{$('voz').innerHTML='<option>Este navegador no tiene voz</option>'}
-const wait=s=>new Promise(r=>setTimeout(r,s*1000));
-function dice(t,vol){if(!hayVoz||!t)return Promise.resolve();
-  const p=new Promise(r=>{const u=new SpeechSynthesisUtterance(t);u.lang='es-ES';const v=voces.find(x=>x.name===st.voz);if(v)u.voice=v;u.rate=.78;u.pitch=.92;u.volume=vol||1;u.onend=u.onerror=r;speechSynthesis.speak(u)});
-  return Promise.race([p,wait(t.split(' ').length*.8+4)])}
-// Frase a frase, con un respiro entre medias: suena más pausado y natural
-async function habla(t,tok){for(const f of t.split(/(?<=[.?!])\s+/)){if(tok!==medTok)return;await dice(f);if(tok!==medTok)return;await wait(1.3)}}
-function stopMed(){medTok++;try{hayVoz&&speechSynthesis.cancel()}catch(e){}duck=1;cur=null;$('now').textContent=''}
-async function runMed(m){
-  if(!hayVoz){$('now').textContent='Este navegador no tiene voz para las meditaciones.';return}
-  stopMed();const tok=medTok;cur=m;duck=.4;
-  dice(' ');                                   // desbloquea la voz dentro del toque (iOS)
-  if(!playing){if(m.fondo)st.fondo=m.fondo;save();start()}else{if(m.fin)endAt=0;tick();ui()}
-  for(const[t,p]of m.steps){
-    if(tok!==medTok)return;
-    $('now').textContent=t||'…';
-    await habla(t,tok);if(tok!==medTok)return;
-    await wait(p);
-  }
-  if(tok!==medTok)return;
-  if(m.fin){stop('Ya has descansado');return}
-  cur=null;duck=1;$('now').textContent='';ui();
-}
-
-/* ---------- Respiración ---------- */
-let rRaf=0,rT0=0,rFase=-1,rWl=null;
-const ease=p=>(1-Math.cos(Math.PI*p))/2;
-function respira(){
-  const r=RITMOS.find(x=>x.id===st.ritmo),C=r.f.reduce((s,x)=>s+x[1],0),durS=st.rdur*60;
-  rT0=performance.now();rFase=-1;$('resp').classList.add('on');lock();
-  if(st.rvoz)dice(' ');
+/* ---------- Círculo de respiración ---------- */
+let rRaf=0,rFase=-1;
+const TXT={Inspira:'Coge aire',Expira:'Suelta',Mantén:'Aguanta'};
+function circulo(ritmoId,durS){
+  const r=RITMOS.find(x=>x.id===ritmoId),t0=performance.now();rFase=-1;$('resp').classList.add('on');lock();
+  const sinc=()=>!auC.paused&&auC.dataset.r===ritmoId;      // si suena la guía, el círculo la sigue al segundo
   const paso=()=>{
-    const el=(performance.now()-rT0)/1000;
-    if(durS&&el>=durS){$('bt').textContent='Ya está';$('bs').textContent='Deja la respiración libre';$('bm').textContent='';$('bc').style.transform='scale(.45)';return}
-    let u=el%C,i=0;while(u>=r.f[i][1]){u-=r.f[i][1];i++}
-    const[nom,d]=r.f[i],p=u/d,prev=r.f[(i+r.f.length-1)%r.f.length][0];
-    const s=nom==='Inspira'?.45+.55*ease(p):nom==='Expira'?1-.55*ease(p):(prev==='Inspira'?1:.45);
-    $('bc').style.transform=`scale(${s.toFixed(4)})`;
-    const ciclo=Math.floor(el/C)*r.f.length+i;
-    if(ciclo!==rFase){rFase=ciclo;$('bt').textContent=nom;if(st.rvoz&&nom!=='Mantén')dice(nom==='Inspira'?'inspira':'expira',.6)}
-    $('bs').textContent=Math.ceil(d-u)+' s';
+    const el=(performance.now()-t0)/1000;
+    if(durS&&el>=durS){$('bt').textContent='Ya está';$('bs').textContent='Deja la respiración libre';$('bm').textContent='';$('bc').style.transform='scale(.45)';if(guiaSola)paraGuia();return}
+    const t=sinc()?auC.currentTime:el,n=nivel(r.f,t);
+    $('bc').style.transform=`scale(${(.45+.55*n.e).toFixed(4)})`;
+    const k=Math.floor(t/ r.f.reduce((s,x)=>s+x[1],0))*10+n.j;
+    if(k!==rFase){rFase=k;$('bt').textContent=TXT[n.nom]}
+    $('bs').textContent=Math.ceil(n.d-n.u)+' s';
     $('bm').textContent=durS?'Quedan '+fmt((durS-el)*1000):r.n;
     rRaf=requestAnimationFrame(paso)};
   paso();
 }
-function salResp(){cancelAnimationFrame(rRaf);$('resp').classList.remove('on');if(!$('black').classList.contains('on'))suelta()}
+function cierraCirculo(){cancelAnimationFrame(rRaf);$('resp').classList.remove('on');if(guiaSola)paraGuia();if(!$('black').classList.contains('on'))suelta()}
+function respiraSolo(){
+  if(st.rson){if(playing&&plan)stop();guiaSola=true;auC.loop=true;pon(auC,urlGuia(st.ritmo));auC.dataset.r=st.ritmo;auC.currentTime=0;setv(auC,.6);toca(auC)}
+  circulo(st.ritmo,st.rdur*60);
+}
+function paraGuia(){if(guiaSola){guiaSola=false;calla(auC)}}
 
 /* ---------- Pantalla ---------- */
 let wl=null;const lock=async()=>{try{wl=await navigator.wakeLock.request('screen')}catch(e){}};
@@ -399,29 +373,29 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 /* ---------- Eventos ---------- */
 const deleg=(id,fn)=>$(id).addEventListener('click',e=>{const b=e.target.closest('[data-v],[data-id]');if(b)fn(b.dataset.v??b.dataset.id)});
 const prepara=(lista,id)=>setTimeout(()=>url(lista,id),60);
-// Si el sonido aún no está generado, avisa y genera un instante después (puede tardar un segundo)
-const cambia=(lista,v)=>{const k=(lista===FONDOS?'a':'b')+v;if(!playing){prepara(lista,v);return}
-  if(cache[k]||v==='no'){arranca();setMS();return}
-  $('lab').textContent='Preparando…';setTimeout(()=>{arranca();setMS();showTime()},40)};
+const cambia=(lista,v)=>{const k=(lista===FONDOS?'a':'b')+v;if(!playing||plan&&!fase2){prepara(lista,v);return}
+  if(cache[k]||v==='no'){arranca(true);setMS();return}
+  $('lab').textContent='Preparando…';setTimeout(()=>{arranca(true);setMS();showTime()},40)};
+deleg('planes',v=>{const p=PLANES.find(x=>x.id===v);if(plan===p&&playing){stop();return}
+  $('lab').textContent='Preparando…';iniciaPlan(p);scrollTo({top:0,behavior:'smooth'})});
 deleg('fondos',v=>{st.fondo=v;save();cambia(FONDOS,v);ui()});
 deleg('frecs',v=>{st.frec=v;save();cambia(FRECS,v);ui()});
-deleg('timers',v=>{st.min=+v;save();if(playing&&!(cur&&cur.fin))endAt=st.min?Date.now()+st.min*60000:0;ui()});
-deleg('ritmos',v=>{st.ritmo=v;save();ui()});
+deleg('timers',v=>{st.min=+v;save();if(playing&&!plan)endAt=st.min?Date.now()+st.min*60000:0;ui()});
+deleg('ritmos',v=>{st.ritmo=v;save();ui();setTimeout(()=>urlGuia(v),60)});
 deleg('rdur',v=>{st.rdur=+v;save();ui()});
-deleg('meds',v=>{const m=MEDS.find(x=>x.id===v);if(cur===m){stopMed();ui()}else runMed(m)});
 $('volA').oninput=e=>{st.volA=+e.target.value;save();tick(true)};
 $('volB').oninput=e=>{st.volB=+e.target.value;save();tick(true)};
-$('rvoz').onchange=e=>{st.rvoz=e.target.checked;save()};
-$('voz').onchange=e=>{st.voz=e.target.value;save()};
-$('probar').onclick=()=>{if(hayVoz){speechSynthesis.cancel();dice('Hola. Respira despacio. Todo está en calma.')}};
-$('play').onclick=()=>playing?stop():start();
-$('respBtn').onclick=respira;
-$('respSalir').onclick=salResp;
+$('rson').onchange=e=>{st.rson=e.target.checked;save()};
+$('play').onclick=()=>playing&&!plan?stop():start();
+$('eParar').onclick=()=>stop();
+$('eGuia').onclick=()=>{if(plan)circulo(plan.ritmo,Math.max(1,(respEnd-Date.now())/1000))};
+$('respBtn').onclick=respiraSolo;
+$('respSalir').onclick=cierraCirculo;
 $('blackBtn').onclick=()=>{$('black').classList.add('on');lock()};
 let lastTap=0;$('black').addEventListener('pointerup',()=>{const n=Date.now();if(n-lastTap<400){$('black').classList.remove('on');if(!$('resp').classList.contains('on'))suelta()}lastTap=n});
 
 ui();
-setTimeout(()=>{url(FONDOS,st.fondo);if(st.frec!=='no')url(FRECS,st.frec)},400);
+setTimeout(()=>{urlGuia('suave');url(FONDOS,'lluvia')},400);
 // PWA: registrar el service worker para poder instalarla y abrirla sin conexión
 if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
