@@ -2,6 +2,13 @@
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0f1719">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Duerme">
 <title>Duerme</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,500&family=Figtree:wght@400;600&display=swap" rel="stylesheet">
@@ -211,6 +218,8 @@ let lastTap=0;$('black').addEventListener('pointerup',()=>{const n=Date.now();if
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&$('black').classList.contains('on'))lock()});
 
 ui();setTimeout(()=>url(st.snd),300);
+// PWA: registrar el service worker para poder instalarla y abrirla sin conexión
+if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 }
 </script>
 </body></html>
